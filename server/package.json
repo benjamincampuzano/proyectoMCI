@@ -16,8 +16,6 @@
     "express",
     "node",
     "javascript",
-    "mongodb",
-    "mongoose",
     "dotenv",
     "nodemon",
     "helmet",
