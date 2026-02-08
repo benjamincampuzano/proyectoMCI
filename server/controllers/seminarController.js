@@ -1,0 +1,342 @@
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+const { getUserNetwork } = require('../utils/networkUtils');
+
+// Get all seminar modules
+const getAllModules = async (req, res) => {
+    try {
+        const { type } = req.query;
+        const whereClause = type ? { type } : {};
+
+        const modules = await prisma.seminarModule.findMany({
+            where: whereClause,
+            include: {
+                _count: {
+                    select: {
+                        enrollments: true
+                    }
+                }
+            },
+            orderBy: {
+                moduleNumber: 'asc'
+            }
+        });
+
+        res.json(modules);
+    } catch (error) {
+        console.error('Error fetching modules:', error);
+        res.status(500).json({ error: 'Error fetching modules' });
+    }
+};
+
+// Get single module details (with staff) - NEW
+const getModuleDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const moduleData = await prisma.seminarModule.findUnique({
+            where: { id: parseInt(id) },
+            include: {
+                professor: true,
+                auxiliaries: true
+            }
+        });
+
+        if (!moduleData) return res.status(404).json({ error: 'Module not found' });
+
+        res.json(moduleData);
+    } catch (error) {
+        console.error('Error fetching module details:', error);
+        res.status(500).json({ error: 'Error fetching module details' });
+    }
+};
+
+// Create a new module
+const createModule = async (req, res) => {
+    try {
+        const { name, description, moduleNumber, code, type, professorId, auxiliaryIds } = req.body;
+
+        if (!name) {
+            return res.status(400).json({ error: 'Name is required' });
+        }
+
+        const moduleData = {
+            name,
+            description,
+            type: type || 'SEMINARIO',
+            code,
+            professorId: professorId ? parseInt(professorId) : null,
+            // Handle multiple auxiliaries connection
+            auxiliaries: auxiliaryIds && Array.isArray(auxiliaryIds) ? {
+                connect: auxiliaryIds.map(id => ({ id: parseInt(id) }))
+            } : undefined
+        };
+
+        if (moduleNumber !== undefined && moduleNumber !== null && moduleNumber !== '') {
+            const parsedModuleNumber = parseInt(moduleNumber);
+            if (isNaN(parsedModuleNumber)) {
+                return res.status(400).json({ error: 'Module number must be a valid number' });
+            }
+            moduleData.moduleNumber = parsedModuleNumber;
+        }
+
+        const module = await prisma.seminarModule.create({
+            data: moduleData
+        });
+
+        res.status(201).json(module);
+    } catch (error) {
+        console.error('Error creating module:', error);
+        if (error.code === 'P2002') {
+            return res.status(400).json({ error: 'Module code or number already exists' });
+        }
+        res.status(500).json({ error: 'Error creating module' });
+    }
+};
+
+// Update a module
+const updateModule = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, moduleNumber, code, type, professorId, auxiliaryIds } = req.body;
+
+        // Check if module exists
+        const existingModule = await prisma.seminarModule.findUnique({
+            where: { id: parseInt(id) }
+        });
+
+        if (!existingModule) {
+            return res.status(404).json({ error: 'Module not found' });
+        }
+
+        const updateData = {
+            ...(name && { name }),
+            ...(description && { description }),
+            ...(code && { code }),
+            ...(type && { type }),
+            ...(moduleNumber !== undefined && { moduleNumber: parseInt(moduleNumber) }),
+            professorId: professorId ? parseInt(professorId) : undefined
+        };
+
+        // Handle Auxiliaries Update (Disconnect all existing, connect new)
+        if (auxiliaryIds && Array.isArray(auxiliaryIds)) {
+            updateData.auxiliaries = {
+                set: [], // Clear existing relations
+                connect: auxiliaryIds.map(aid => ({ id: parseInt(aid) }))
+            };
+        }
+
+        const module = await prisma.seminarModule.update({
+            where: { id: parseInt(id) },
+            data: updateData
+        });
+
+        res.json(module);
+    } catch (error) {
+        console.error('Error updating module:', error);
+        if (error.code === 'P2002') {
+            return res.status(400).json({ error: 'Module code or number already exists' });
+        }
+        res.status(500).json({ error: 'Error updating module' });
+    }
+};
+
+// Update enrollment progress (assignments, status, finalProjectGrade)
+const updateProgress = async (req, res) => {
+    try {
+        const { enrollmentId } = req.params;
+        const { assignmentsDone, status, finalProjectGrade } = req.body;
+
+        const updateData = {};
+        if (assignmentsDone !== undefined) updateData.assignmentsDone = parseInt(assignmentsDone);
+        if (status) updateData.status = status;
+        if (finalProjectGrade !== undefined) updateData.finalProjectGrade = parseFloat(finalProjectGrade);
+
+        const enrollment = await prisma.seminarEnrollment.update({
+            where: { id: parseInt(enrollmentId) },
+            data: updateData
+        });
+
+        res.json(enrollment);
+    } catch (error) {
+        console.error('Error updating progress:', error);
+        res.status(500).json({ error: 'Error updating progress' });
+    }
+};
+
+// Delete a module
+const deleteModule = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+
+        const roles = user.roles || [];
+        // Strict Role Check - NEW
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN') && !roles.includes('LIDER_DOCE')) {
+            return res.status(403).json({ error: 'No tienes permiso para eliminar módulos.' });
+        }
+
+        await prisma.seminarModule.delete({
+            where: { id: parseInt(id) }
+        });
+
+        res.json({ message: 'Module deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting module:', error);
+        res.status(500).json({ error: 'Error deleting module' });
+    }
+};
+
+// Delete an enrollment (Unenroll student) - NEW
+const deleteEnrollment = async (req, res) => {
+    try {
+        const { id } = req.params; // Enrollment ID
+        const user = req.user;
+
+        const roles = user.roles || [];
+        // Role Check: Only Admin or Lider Doce
+        if (!roles.includes('ADMIN') && !roles.includes('ADMIN') && !roles.includes('LIDER_DOCE')) {
+            return res.status(403).json({ error: 'No tienes permiso para eliminar inscripciones.' });
+        }
+
+        await prisma.seminarEnrollment.delete({
+            where: { id: parseInt(id) }
+        });
+
+        res.json({ message: 'Inscripción eliminada correctamente.' });
+    } catch (error) {
+        console.error('Error deleting enrollment:', error);
+        res.status(500).json({ error: 'Error eliminando inscripción.' });
+    }
+};
+
+
+// Enroll a user in a module
+const enrollStudent = async (req, res) => {
+    try {
+        const { moduleId } = req.params;
+        const { userId, phone, address } = req.body;
+        const requestingUser = req.user;
+
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        const roles = requestingUser.roles || [];
+        // --- Refinement: Role and Network Check ---
+        // "Solo los lideres de 12 pueden inscribir"
+        // Also allow ADMIN for testing/management
+        if (!roles.includes('LIDER_DOCE') && !roles.includes('ADMIN') && !roles.includes('ADMIN')) {
+            return res.status(403).json({ error: 'Solo los Líderes de 12 pueden inscribir estudiantes.' });
+        }
+
+        // "Personas de su red"
+        // If ADMIN, bypass check.
+        if (roles.includes('LIDER_DOCE') && !roles.includes('ADMIN') && !roles.includes('ADMIN')) {
+            const networkIds = await getUserNetwork(requestingUser.id);
+            if (!networkIds.includes(parseInt(userId))) {
+                return res.status(403).json({ error: 'Solo puedes inscribir a personas de tu red.' });
+            }
+        }
+        // -------------------------------------------
+
+        if (phone || address) {
+            await prisma.user.update({
+                where: { id: parseInt(userId) },
+                data: {
+                    ...(phone && { phone }),
+                    ...(address && {
+                        profile: {
+                            update: { address }
+                        }
+                    })
+                }
+            });
+        }
+
+        // Check if already enrolled
+        const existingEnrollment = await prisma.seminarEnrollment.findUnique({
+            where: {
+                userId_moduleId: {
+                    userId: parseInt(userId),
+                    moduleId: parseInt(moduleId)
+                }
+            }
+        });
+
+        if (existingEnrollment) {
+            return res.status(400).json({ error: 'User is already enrolled in this module' });
+        }
+
+        const enrollment = await prisma.seminarEnrollment.create({
+            data: {
+                userId: parseInt(userId),
+                moduleId: parseInt(moduleId),
+                status: 'INSCRITO'
+            }
+        });
+
+        res.status(201).json(enrollment);
+    } catch (error) {
+        console.error('Error enrolling student:', error);
+        res.status(500).json({ error: 'Error enrolling student' });
+    }
+};
+
+// Get enrollments for a module
+const getModuleEnrollments = async (req, res) => {
+    try {
+        const { moduleId } = req.params;
+        const user = req.user;
+        let where = { moduleId: parseInt(moduleId) };
+
+        const roles = user.roles || [];
+        // Security Filter
+        if (roles.includes('ADMIN') || roles.includes('ADMIN')) {
+            // See all
+        } else if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
+            const userId = parseInt(user.id);
+            const networkIds = await getUserNetwork(userId);
+            where.userId = { in: [...networkIds, userId] };
+        } else {
+            // Members see only themselves
+            where.userId = parseInt(user.id);
+        }
+
+        const enrollments = await prisma.seminarEnrollment.findMany({
+            where,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        profile: {
+                            select: { fullName: true }
+                        }
+                    }
+                },
+                classAttendances: {
+                    orderBy: {
+                        classNumber: 'asc'
+                    }
+                }
+            }
+        });
+
+        res.json(enrollments);
+    } catch (error) {
+        console.error('Error fetching enrollments:', error);
+        res.status(500).json({ error: 'Error fetching enrollments' });
+    }
+};
+
+module.exports = {
+    getAllModules,
+    getModuleDetails,
+    createModule,
+    updateModule,
+    deleteModule,
+    deleteEnrollment,
+    enrollStudent,
+    getModuleEnrollments,
+    updateProgress
+};

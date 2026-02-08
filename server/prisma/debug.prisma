@@ -1,0 +1,543 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AuditLog {
+  id         Int         @id @default(autoincrement())
+  userId     Int?
+  entityId   Int?
+  createdAt  DateTime    @default(now()) @db.Timestamptz(6)
+  ipAddress  String?
+  userAgent  String?
+  action     AuditAction
+  entityType EntityType
+  details    Json?
+  User       User?       @relation(fields: [userId], references: [id])
+
+  @@index([action])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
+model Cell {
+  id                          Int              @id @default(autoincrement())
+  name                        String
+  description                 String?
+  leaderId                    Int
+  createdAt                   DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt                   DateTime         @db.Timestamptz(6)
+  address                     String?
+  city                        String?
+  dayOfWeek                   String?
+  hostId                      Int?
+  time                        String?
+  latitude                    Float?
+  longitude                   Float?
+  liderDoceId                 Int?
+  cellType                    String           @default("ABIERTA")
+  isDeleted                   Boolean          @default(false)
+  User_Cell_hostIdToUser      User?            @relation("Cell_hostIdToUser", fields: [hostId], references: [id])
+  User_Cell_leaderIdToUser    User             @relation("Cell_leaderIdToUser", fields: [leaderId], references: [id])
+  User_Cell_liderDoceIdToUser User?            @relation("Cell_liderDoceIdToUser", fields: [liderDoceId], references: [id])
+  CellAttendance              CellAttendance[]
+  User_User_cellIdToCell      User[]           @relation("User_cellIdToCell")
+
+  @@index([hostId])
+  @@index([leaderId])
+  @@index([liderDoceId])
+}
+
+model CellAttendance {
+  id        Int              @id @default(autoincrement())
+  date      DateTime         @db.Timestamptz(6)
+  cellId    Int
+  userId    Int
+  status    AttendanceStatus @default(PRESENTE)
+  createdAt DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime         @db.Timestamptz(6)
+  Cell      Cell             @relation(fields: [cellId], references: [id])
+  User      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([date, cellId, userId])
+  @@index([createdAt])
+  @@index([date])
+  @@index([status])
+}
+
+model ChurchAttendance {
+  id        Int              @id @default(autoincrement())
+  date      DateTime         @db.Timestamptz(6)
+  userId    Int
+  status    AttendanceStatus @default(PRESENTE)
+  createdAt DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime         @db.Timestamptz(6)
+  User      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([date, userId])
+  @@index([createdAt])
+  @@index([date])
+  @@index([status])
+}
+
+model ClassAttendance {
+  id                Int                   @id @default(autoincrement())
+  enrollmentId      Int
+  userId            Int
+  classNumber       Int
+  status            ClassAttendanceStatus @default(ASISTE)
+  notes             String?
+  createdAt         DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime              @db.Timestamptz(6)
+  grade             Float?
+  SeminarEnrollment SeminarEnrollment     @relation(fields: [enrollmentId], references: [id])
+  User              User                  @relation(fields: [userId], references: [id])
+
+  @@unique([enrollmentId, classNumber])
+}
+
+model ClassMaterial {
+  id            Int             @id @default(autoincrement())
+  moduleId      Int
+  classNumber   Int
+  description   String?
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime        @db.Timestamptz(6)
+  SeminarModule SeminarModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  ClassResource ClassResource[]
+
+  @@unique([moduleId, classNumber])
+}
+
+model ClassResource {
+  id            Int           @id @default(autoincrement())
+  materialId    Int
+  type          ResourceType
+  url           String
+  ClassMaterial ClassMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([type])
+}
+
+model Convention {
+  id                     Int                      @id @default(autoincrement())
+  type                   ConventionType
+  year                   Int
+  theme                  String?
+  cost                   Float
+  startDate              DateTime                 @db.Timestamptz(6)
+  endDate                DateTime                 @db.Timestamptz(6)
+  createdAt              DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime                 @db.Timestamptz(6)
+  isDeleted              Boolean                  @default(false)
+  ConventionLeader       ConventionLeader[]
+  ConventionRegistration ConventionRegistration[]
+
+  @@unique([type, year])
+  @@index([startDate])
+  @@index([type])
+}
+
+model ConventionLeader {
+  conventionId Int
+  userId       Int
+  Convention   Convention @relation(fields: [conventionId], references: [id], onDelete: Cascade)
+  User         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conventionId, userId])
+}
+
+model ConventionPayment {
+  id                     Int                    @id @default(autoincrement())
+  registrationId         Int
+  amount                 Float
+  date                   DateTime               @default(now()) @db.Timestamptz(6)
+  notes                  String?
+  createdAt              DateTime               @default(now()) @db.Timestamptz(6)
+  updatedAt              DateTime               @db.Timestamptz(6)
+  ConventionRegistration ConventionRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+}
+
+model ConventionRegistration {
+  id                                               Int                 @id @default(autoincrement())
+  userId                                           Int
+  conventionId                                     Int
+  status                                           RegistrationStatus  @default(REGISTERED)
+  discountPercentage                               Float               @default(0)
+  createdAt                                        DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt                                        DateTime            @db.Timestamptz(6)
+  needsAccommodation                               Boolean             @default(false)
+  needsTransport                                   Boolean             @default(false)
+  registeredById                                   Int?
+  ConventionPayment                                ConventionPayment[]
+  Convention                                       Convention          @relation(fields: [conventionId], references: [id], onDelete: Cascade)
+  User_ConventionRegistration_registeredByIdToUser User?               @relation("ConventionRegistration_registeredByIdToUser", fields: [registeredById], references: [id])
+  User_ConventionRegistration_userIdToUser         User                @relation("ConventionRegistration_userIdToUser", fields: [userId], references: [id])
+
+  @@unique([userId, conventionId])
+  @@index([createdAt])
+  @@index([status])
+}
+
+model Encuentro {
+  id                    Int                     @id @default(autoincrement())
+  type                  EncuentroType
+  name                  String
+  description           String?
+  cost                  Float
+  startDate             DateTime                @db.Timestamptz(6)
+  endDate               DateTime                @db.Timestamptz(6)
+  createdAt             DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime                @db.Timestamptz(6)
+  coordinatorId         Int?
+  isDeleted             Boolean                 @default(false)
+  User                  User?                   @relation(fields: [coordinatorId], references: [id])
+  EncuentroLeader       EncuentroLeader[]
+  EncuentroRegistration EncuentroRegistration[]
+
+  @@index([startDate])
+  @@index([type])
+}
+
+model EncuentroClassAttendance {
+  id                    Int                   @id @default(autoincrement())
+  registrationId        Int
+  classNumber           Int
+  attended              Boolean               @default(false)
+  date                  DateTime              @default(now()) @db.Timestamptz(6)
+  createdAt             DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime              @db.Timestamptz(6)
+  EncuentroRegistration EncuentroRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([registrationId, classNumber])
+}
+
+model EncuentroLeader {
+  encuentroId Int
+  userId      Int
+  Encuentro   Encuentro @relation(fields: [encuentroId], references: [id], onDelete: Cascade)
+  User        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([encuentroId, userId])
+}
+
+model EncuentroPayment {
+  id                    Int                   @id @default(autoincrement())
+  registrationId        Int
+  amount                Float
+  date                  DateTime              @default(now()) @db.Timestamptz(6)
+  notes                 String?
+  createdAt             DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime              @db.Timestamptz(6)
+  EncuentroRegistration EncuentroRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+}
+
+model EncuentroRegistration {
+  id                       Int                        @id @default(autoincrement())
+  guestId                  Int?
+  encuentroId              Int
+  status                   RegistrationStatus         @default(REGISTERED)
+  discountPercentage       Float                      @default(0)
+  createdAt                DateTime                   @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime                   @db.Timestamptz(6)
+  userId                   Int?
+  EncuentroClassAttendance EncuentroClassAttendance[]
+  EncuentroPayment         EncuentroPayment[]
+  Encuentro                Encuentro                  @relation(fields: [encuentroId], references: [id], onDelete: Cascade)
+  Guest                    Guest?                     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  User                     User?                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([guestId, encuentroId])
+  @@unique([userId, encuentroId])
+  @@index([createdAt])
+  @@index([status])
+}
+
+model Guest {
+  id                            Int                     @id @default(autoincrement())
+  name                          String
+  phone                         String
+  address                       String?
+  prayerRequest                 String?
+  status                        GuestStatus             @default(NUEVO)
+  invitedById                   Int
+  assignedToId                  Int?
+  createdAt                     DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt                     DateTime                @db.Timestamptz(6)
+  callObservation               String?
+  called                        Boolean                 @default(false)
+  visitObservation              String?
+  visited                       Boolean                 @default(false)
+  birthDate                     DateTime?               @db.Timestamptz(6)
+  city                          String?
+  documentNumber                String?
+  documentType                  DocumentType?
+  isDeleted                     Boolean                 @default(false)
+  sex                           Sex?
+  EncuentroRegistration         EncuentroRegistration[]
+  User_Guest_assignedToIdToUser User?                   @relation("Guest_assignedToIdToUser", fields: [assignedToId], references: [id])
+  User_Guest_invitedByIdToUser  User                    @relation("Guest_invitedByIdToUser", fields: [invitedById], references: [id])
+  GuestCall                     GuestCall[]
+  GuestVisit                    GuestVisit[]
+
+  @@index([assignedToId])
+  @@index([createdAt])
+  @@index([invitedById])
+  @@index([status])
+}
+
+model GuestCall {
+  id          Int      @id @default(autoincrement())
+  guestId     Int
+  date        DateTime @default(now()) @db.Timestamptz(6)
+  observation String
+  callerId    Int?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  User        User?    @relation(fields: [callerId], references: [id])
+  Guest       Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+}
+
+model GuestVisit {
+  id          Int      @id @default(autoincrement())
+  guestId     Int
+  date        DateTime @default(now()) @db.Timestamptz(6)
+  observation String
+  visitorId   Int?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  Guest       Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  User        User?    @relation(fields: [visitorId], references: [id])
+}
+
+model Permission {
+  id             Int              @id @default(autoincrement())
+  key            String           @unique
+  RolePermission RolePermission[]
+}
+
+model Role {
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
+  RolePermission RolePermission[]
+  UserRole       UserRole[]
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  Permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  Role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model SeminarEnrollment {
+  id                                              Int               @id @default(autoincrement())
+  userId                                          Int
+  moduleId                                        Int
+  status                                          EnrollmentStatus  @default(INSCRITO)
+  createdAt                                       DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt                                       DateTime          @db.Timestamptz(6)
+  assignedAuxiliarId                              Int?
+  assignmentsDone                                 Int               @default(0)
+  finalGrade                                      Float?
+  finalProjectGrade                               Float?
+  projectNotes                                    String?
+  ClassAttendance                                 ClassAttendance[]
+  User_SeminarEnrollment_assignedAuxiliarIdToUser User?             @relation("SeminarEnrollment_assignedAuxiliarIdToUser", fields: [assignedAuxiliarId], references: [id])
+  SeminarModule                                   SeminarModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  User_SeminarEnrollment_userIdToUser             User              @relation("SeminarEnrollment_userIdToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleId])
+  @@index([createdAt])
+  @@index([moduleId])
+  @@index([status])
+  @@index([userId])
+}
+
+model SeminarModule {
+  id                                   Int                 @id @default(autoincrement())
+  name                                 String
+  description                          String?
+  moduleNumber                         Int?
+  createdAt                            DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt                            DateTime            @db.Timestamptz(6)
+  code                                 String?             @unique
+  endDate                              DateTime?           @db.Timestamptz(6)
+  professorId                          Int?
+  startDate                            DateTime?           @db.Timestamptz(6)
+  type                                 String              @default("SEMINARIO")
+  isDeleted                            Boolean             @default(false)
+  ClassMaterial                        ClassMaterial[]
+  SeminarEnrollment                    SeminarEnrollment[]
+  User_SeminarModule_professorIdToUser User?               @relation("SeminarModule_professorIdToUser", fields: [professorId], references: [id])
+  User_ModuleAuxiliaries               User[]              @relation("ModuleAuxiliaries")
+}
+
+model User {
+  id                                                                 Int                      @id @default(autoincrement())
+  email                                                              String                   @unique
+  password                                                           String
+  createdAt                                                          DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt                                                          DateTime                 @db.Timestamptz(6)
+  cellId                                                             Int?
+  phone                                                              String?                  @unique
+  isActive                                                           Boolean                  @default(true)
+  isDeleted                                                          Boolean                  @default(false)
+  AuditLog                                                           AuditLog[]
+  Cell_Cell_hostIdToUser                                             Cell[]                   @relation("Cell_hostIdToUser")
+  Cell_Cell_leaderIdToUser                                           Cell[]                   @relation("Cell_leaderIdToUser")
+  Cell_Cell_liderDoceIdToUser                                        Cell[]                   @relation("Cell_liderDoceIdToUser")
+  CellAttendance                                                     CellAttendance[]
+  ChurchAttendance                                                   ChurchAttendance[]
+  ClassAttendance                                                    ClassAttendance[]
+  ConventionLeader                                                   ConventionLeader[]
+  ConventionRegistration_ConventionRegistration_registeredByIdToUser ConventionRegistration[] @relation("ConventionRegistration_registeredByIdToUser")
+  ConventionRegistration_ConventionRegistration_userIdToUser         ConventionRegistration[] @relation("ConventionRegistration_userIdToUser")
+  Encuentro                                                          Encuentro[]
+  EncuentroLeader                                                    EncuentroLeader[]
+  EncuentroRegistration                                              EncuentroRegistration[]
+  Guest_Guest_assignedToIdToUser                                     Guest[]                  @relation("Guest_assignedToIdToUser")
+  Guest_Guest_invitedByIdToUser                                      Guest[]                  @relation("Guest_invitedByIdToUser")
+  GuestCall                                                          GuestCall[]
+  GuestVisit                                                         GuestVisit[]
+  SeminarEnrollment_SeminarEnrollment_assignedAuxiliarIdToUser       SeminarEnrollment[]      @relation("SeminarEnrollment_assignedAuxiliarIdToUser")
+  SeminarEnrollment_SeminarEnrollment_userIdToUser                   SeminarEnrollment[]      @relation("SeminarEnrollment_userIdToUser")
+  SeminarModule_SeminarModule_professorIdToUser                      SeminarModule[]          @relation("SeminarModule_professorIdToUser")
+  Cell_User_cellIdToCell                                             Cell?                    @relation("User_cellIdToCell", fields: [cellId], references: [id])
+  UserHierarchy_UserHierarchy_childIdToUser                          UserHierarchy[]          @relation("UserHierarchy_childIdToUser")
+  UserHierarchy_UserHierarchy_parentIdToUser                         UserHierarchy[]          @relation("UserHierarchy_parentIdToUser")
+  UserProfile                                                        UserProfile?
+  UserRole                                                           UserRole[]
+  SeminarModule_ModuleAuxiliaries                                    SeminarModule[]          @relation("ModuleAuxiliaries")
+
+  @@index([createdAt])
+  @@index([email])
+}
+
+model UserHierarchy {
+  id                                Int           @id @default(autoincrement())
+  parentId                          Int
+  childId                           Int
+  role                              HierarchyRole
+  createdAt                         DateTime      @default(now()) @db.Timestamptz(6)
+  User_UserHierarchy_childIdToUser  User          @relation("UserHierarchy_childIdToUser", fields: [childId], references: [id])
+  User_UserHierarchy_parentIdToUser User          @relation("UserHierarchy_parentIdToUser", fields: [parentId], references: [id])
+
+  @@unique([parentId, childId])
+  @@index([role])
+}
+
+model UserProfile {
+  id             Int           @id @default(autoincrement())
+  userId         Int           @unique
+  fullName       String
+  sex            Sex?
+  documentType   DocumentType?
+  documentNumber String?
+  birthDate      DateTime?     @db.Timestamptz(6)
+  address        String?
+  city           String?
+  latitude       Float?
+  longitude      Float?
+  User           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentType, documentNumber])
+}
+
+model UserRole {
+  userId Int
+  roleId Int
+  Role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  User   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+enum AttendanceStatus {
+  PRESENTE
+  AUSENTE
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+}
+
+enum ClassAttendanceStatus {
+  ASISTE
+  AUSENCIA_JUSTIFICADA
+  AUSENCIA_NO_JUSTIFICADA
+  BAJA
+}
+
+enum ConventionType {
+  FAMILIAS
+  MUJERES
+  JOVENES
+  HOMBRES
+}
+
+enum DocumentType {
+  RC
+  TI
+  CC
+  CE
+  PP
+  PEP
+}
+
+enum EncuentroType {
+  MUJERES
+  HOMBRES
+  JOVENES
+}
+
+enum EnrollmentStatus {
+  INSCRITO
+  EN_PROGRESO
+  COMPLETADO
+  ABANDONADO
+}
+
+enum EntityType {
+  USER
+  GUEST
+  CELL
+  CONVENTION
+  ENCUENTRO
+  CLASS
+}
+
+enum GuestStatus {
+  NUEVO
+  CONTACTADO
+  CONSOLIDADO
+  GANADO
+}
+
+enum HierarchyRole {
+  PASTOR
+  LIDER_DOCE
+  LIDER_CELULA
+  MIEMBRO
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  CANCELLED
+  ATTENDED
+}
+
+enum ResourceType {
+  DOCUMENT
+  VIDEO
+  QUIZ
+}
+
+enum Sex {
+  HOMBRE
+  MUJER
+}

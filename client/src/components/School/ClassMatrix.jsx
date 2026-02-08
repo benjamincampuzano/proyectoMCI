@@ -1,0 +1,333 @@
+import React, { useState, useEffect } from 'react';
+import api from '../../utils/api';
+import { Save, UserPlus, Trash2, BookOpen, ExternalLink } from 'lucide-react';
+import ClassMaterialManager from './ClassMaterialManager';
+import { AsyncSearchSelect, Button } from '../ui';
+
+const ClassMatrix = ({ courseId }) => {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [showEnrollModal, setShowEnrollModal] = useState(false);
+    const [showMaterialModal, setShowMaterialModal] = useState(false);
+    const [selectedClassNum, setSelectedClassNum] = useState(null);
+    const [classMaterials, setClassMaterials] = useState([]);
+
+    // Enrollment Form
+    const [enrollForm, setEnrollForm] = useState({
+        studentId: '',
+        assignedAuxiliarId: ''
+    });
+
+    useEffect(() => {
+        fetchMatrix();
+        fetchMaterials();
+    }, [courseId]);
+
+    const fetchMatrix = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get(`/school/modules/${courseId}/matrix`);
+            setData(res.data);
+            setLoading(false);
+        } catch (err) {
+            setError('Error loading matrix');
+            setLoading(false);
+        }
+    };
+
+    const fetchMaterials = async () => {
+        try {
+            const res = await api.get(`/school/modules/${courseId}/materials`);
+            setClassMaterials(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    // fetchUsers removed - using UserSearchSelect
+
+    const handleUpdate = async (enrollmentId, type, key, value) => {
+        // Optimistic update could happen here
+        try {
+            await api.post('/school/matrix/update', {
+                enrollmentId, type, key, value
+            });
+        } catch (err) {
+            alert('Error guarding change');
+        }
+    };
+
+    const handleEnroll = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/school/enroll', {
+                moduleId: courseId,
+                studentId: enrollForm.studentId,
+                assignedAuxiliarId: enrollForm.assignedAuxiliarId
+            });
+            setShowEnrollModal(false);
+            setEnrollForm({ studentId: '', assignedAuxiliarId: '' });
+            fetchMatrix();
+        } catch (err) {
+            alert('Error enrolling student: ' + (err.response?.data?.error || 'Unknown error'));
+        }
+    };
+
+    const handleDeleteEnrollment = async (enrollmentId) => {
+        if (!window.confirm("¿Seguro que deseas eliminar a este estudiante de la clase?")) return;
+        try {
+            await api.delete(`/school/enrollments/${enrollmentId}`);
+            fetchMatrix();
+        } catch (error) {
+            alert('Error deleting student');
+        }
+    };
+
+    if (loading) return <div className="text-center py-10">Cargando matriz...</div>;
+    if (error) return <div className="text-center text-red-500 py-10">{error}</div>;
+
+    const { module, matrix } = data;
+    const permissions = data?.permissions || {};
+    const { isProfessor = false, isAuxiliar = false, isStudent = true } = permissions;
+
+    // Logic: Professors can edit everything. 
+    // Auxiliaries can edit if assigned (usually handled in row).
+    // Students (or Disciples in this context) cannot edit.
+    // We'll rely on backend 403 for detailed row-level security, but primarily disable UI here.
+    const canEnroll = isProfessor;
+
+    // Note: 'permissions' object structure from backend is { isProfessor, isAuxiliar, isStudent }.
+    // So 'isStudent' being true effectively means Read-Only for this matrix.
+
+    return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 overflow-hidden">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{module.name}</h2>
+                    <p className="text-sm text-gray-500">
+                        Profesor: {module.professor?.fullName} | {module.auxiliaries?.length} Auxiliares
+                    </p>
+                </div>
+                {canEnroll && (
+                    <Button
+                        onClick={() => { setShowEnrollModal(true); }}
+                        variant="success"
+                        icon={UserPlus}
+                    >
+                        Inscribir Estudiante
+                    </Button>
+                )}
+            </div>
+
+            {/* Matrix Table */}
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-700 z-10 w-48">
+                                Estudiante
+                            </th>
+                            <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-32">
+                                Auxiliar
+                            </th>
+                            {[...Array(10)].map((_, i) => {
+                                const classNum = i + 1;
+                                const hasMaterial = classMaterials.some(m => m.classNumber === classNum);
+                                return (
+                                    <th key={i} className="px-1 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[80px]">
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span>Clase {classNum}</span>
+                                            {isProfessor && (
+                                                <Button
+                                                    onClick={() => { setSelectedClassNum(classNum); setShowMaterialModal(true); }}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className={`p-1 rounded transition-colors ${hasMaterial ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-400 hover:text-blue-500'}`}
+                                                    title="Gestionar Material"
+                                                >
+                                                    <BookOpen size={14} />
+                                                </Button>
+                                            )}
+                                            {(!isProfessor && hasMaterial) && (
+                                                <div className="text-blue-500" title="Material Disponible">
+                                                    <BookOpen size={14} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </th>
+                                );
+                            })}
+                            <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[150px]">
+                                Proyecto
+                            </th>
+                            <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Nota Final
+                            </th>
+                            <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {matrix.map((row) => {
+                            // Check backend permissions logic or use state
+                            const canEdit = isProfessor || (isAuxiliar && row.auxiliarId === parseInt(permissions.userId || 0)); // userId not passed currently in permissions object, relying on backend validation mostly, but valid UI check would need userId.
+
+                            return (
+                                <tr key={row.id}>
+                                    <td className="px-3 py-4 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800">
+                                        {row.studentName}
+                                    </td>
+                                    <td className="px-2 py-4 text-xs text-gray-500 dark:text-gray-400">
+                                        {row.auxiliarName}
+                                    </td>
+
+                                    {/* 10 Classes */}
+                                    {[...Array(10)].map((_, i) => {
+                                        const classNum = i + 1;
+                                        const attendStatus = row.attendances[classNum] || '';
+                                        const grade = row.grades[classNum] || '';
+
+                                        return (
+                                            <td key={classNum} className="px-1 py-2 border-l border-gray-100 dark:border-gray-700">
+                                                <div className="flex flex-col space-y-1">
+                                                    <select
+                                                        className={`text-xs p-1 rounded border-none focus:ring-1 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white font-bold ${attendStatus === 'ASISTE' ? 'text-green-600 dark:text-green-400' :
+                                                            attendStatus === 'AUSENCIA_JUSTIFICADA' ? 'text-yellow-600 dark:text-yellow-400' :
+                                                                attendStatus === 'AUSENCIA_NO_JUSTIFICADA' ? 'text-red-500 dark:text-red-400' :
+                                                                    attendStatus === 'BAJA' ? 'text-gray-900 dark:text-gray-300' : ''
+                                                            }`}
+                                                        defaultValue={attendStatus}
+                                                        onChange={(e) => handleUpdate(row.id, 'attendance', classNum, e.target.value)}
+                                                        disabled={isStudent}
+                                                    >
+                                                        <option value="">-</option>
+                                                        <option value="ASISTE">AS</option>
+                                                        <option value="AUSENCIA_JUSTIFICADA">AJ</option>
+                                                        <option value="AUSENCIA_NO_JUSTIFICADA">ASJ</option>
+                                                        <option value="BAJA">BJ</option>
+                                                    </select>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="5"
+                                                        step="0.1"
+                                                        placeholder="Nota"
+                                                        className="w-full text-xs p-1 bg-transparent border-b border-gray-200 dark:border-gray-600 focus:outline-none focus:border-blue-500 text-center dark:text-white disabled:opacity-50"
+                                                        defaultValue={grade}
+                                                        onBlur={(e) => handleUpdate(row.id, 'grade', classNum, e.target.value)}
+                                                        disabled={isStudent}
+                                                    />
+                                                </div>
+                                            </td>
+                                        );
+                                    })}
+
+                                    {/* Project */}
+                                    <td className="px-2 py-4 text-sm ">
+                                        <textarea
+                                            rows="2"
+                                            className="w-full text-xs p-1 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 disabled:opacity-50"
+                                            placeholder="Obs..."
+                                            defaultValue={row.projectNotes || ''}
+                                            onBlur={(e) => handleUpdate(row.id, 'projectNotes', null, e.target.value)}
+                                            disabled={isStudent}
+                                        />
+                                    </td>
+
+                                    {/* Final Grade */}
+                                    <td className="px-2 py-4 text-sm font-bold text-center">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="5"
+                                            step="0.1"
+                                            className="w-16 p-1 border rounded text-center dark:bg-gray-700 dark:text-white dark:border-gray-600 disabled:opacity-50"
+                                            defaultValue={row.finalGrade || ''}
+                                            onBlur={(e) => handleUpdate(row.id, 'finalGrade', null, e.target.value)}
+                                            disabled={isStudent}
+                                        />
+                                    </td>
+
+                                    {/* Actions */}
+                                    <td className="px-2 py-4 text-center">
+                                        {canEnroll && (
+                                            <Button
+                                                onClick={() => handleDeleteEnrollment(row.id)}
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                title="Eliminar Estudiante"
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
+                                        )}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+                {matrix.length === 0 && (
+                    <p className="text-gray-500 text-center py-6">No hay estudiantes inscritos.</p>
+                )}
+            </div>
+
+            {/* Enroll Modal */}
+            {showEnrollModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 transition-all">
+                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full p-8 transform transition-all scale-100">
+                        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Inscribir Estudiante</h3>
+                        <form onSubmit={handleEnroll} className="space-y-5">
+                            <div>
+                                <AsyncSearchSelect
+                                    fetchItems={(term) => {
+                                        const params = { search: term };
+                                        return api.get('/users/search', { params })
+                                            .then(res => res.data.filter(u => !matrix.map(row => row.studentId).includes(u.id)));
+                                    }}
+                                    selectedValue={enrollForm.studentId}
+                                    onSelect={(user) => setEnrollForm({ ...enrollForm, studentId: user?.id || '' })}
+                                    placeholder="Buscar estudiante por nombre..."
+                                    labelKey="fullName"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Asignar Auxiliar</label>
+                                <select
+                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all dark:text-white"
+                                    value={enrollForm.assignedAuxiliarId}
+                                    onChange={e => setEnrollForm({ ...enrollForm, assignedAuxiliarId: e.target.value })}
+                                >
+                                    <option value="">Ninguno (o Profesor)</option>
+                                    {module.auxiliaries.map(a => (
+                                        <option key={a.id} value={a.id}>{a.fullName}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-2">
+                                <Button type="button" onClick={() => setShowEnrollModal(false)} variant="secondary">Cancelar</Button>
+                                <Button type="submit" variant="success">Inscribir</Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* Material Modal */}
+            {showMaterialModal && (
+                <ClassMaterialManager
+                    moduleId={courseId}
+                    classNumber={selectedClassNum}
+                    onClose={() => {
+                        setShowMaterialModal(false);
+                        fetchMaterials();
+                    }}
+                />
+            )}
+        </div>
+    );
+};
+
+export default ClassMatrix;

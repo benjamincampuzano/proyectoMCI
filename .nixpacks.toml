@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.build]
+cmds = [
+  "cd server && npm install --legacy-peer-deps",
+  "cd server && npx prisma generate"
+]
+
+[start]
+cmd = "cd server && npm start"
