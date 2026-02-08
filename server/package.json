@@ -8,7 +8,7 @@
     "dev": "nodemon index.js",
     "build": "echo Build skipped", 
     "postinstall": "npx prisma generate",
-    "start": "npx prisma migrate deploy && node index.js"
+    "start": "node index.js"
   },
   "keywords": ["iglesia", "prisma", "express", "node", "javascript", "typescript", "mongodb", "mongoose", "dotenv", "nodemon", "helmet", "compression", "cors", "bcryptjs", "jsonwebtoken", "axios"],
   "author": "Benjamin Campuzano",
