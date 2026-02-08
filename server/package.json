@@ -16,7 +16,6 @@
     "express",
     "node",
     "javascript",
-    "typescript",
     "mongodb",
     "mongoose",
     "dotenv",
