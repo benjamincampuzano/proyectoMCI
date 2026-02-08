@@ -6,16 +6,33 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js",
-    "build": "echo Build skipped", 
+    "build": "echo Build skipped",
     "postinstall": "npx prisma generate",
     "start": "node index.js"
   },
-  "keywords": ["iglesia", "prisma", "express", "node", "javascript", "typescript", "mongodb", "mongoose", "dotenv", "nodemon", "helmet", "compression", "cors", "bcryptjs", "jsonwebtoken", "axios"],
+  "keywords": [
+    "iglesia",
+    "prisma",
+    "express",
+    "node",
+    "javascript",
+    "typescript",
+    "mongodb",
+    "mongoose",
+    "dotenv",
+    "nodemon",
+    "helmet",
+    "compression",
+    "cors",
+    "bcryptjs",
+    "jsonwebtoken",
+    "axios"
+  ],
   "author": "Benjamin Campuzano",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@prisma/client": "5.22.0",
+    "@prisma/client": "^6.6.0",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
@@ -26,7 +43,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "nodemon": "^3.1.11",
-    "prisma": "^5.22.0"
+    "prisma": "^6.6.0"
   },
   "devDependencies": {
     "eslint": "^9.39.2"
