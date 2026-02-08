@@ -8,7 +8,7 @@
     "dev": "nodemon index.js",
     "build": "echo Build skipped",
     "postinstall": "npx prisma generate",
-    "start": "node index.js"
+    "start": "npx prisma migrate deploy && node index.js"
   },
   "keywords": [
     "iglesia",
