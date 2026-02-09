@@ -12,7 +12,7 @@ const {
     getMyNetwork,
     searchUsers // Added
 } = require('../controllers/userController');
-const { authenticate, isAdmin } = require('../middleware/auth');
+const { authenticate, isAdmin, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -33,13 +33,17 @@ router.get('/search', authenticate, (req, res, next) => {
     }
 }, searchUsers);
 
-// Admin routes (ADMIN and LIDER_DOCE only)
-router.get('/', authenticate, isAdmin, getAllUsers);
-router.get('/:id', authenticate, isAdmin, getUserById);
-router.put('/:id', authenticate, isAdmin, updateUser);
-router.post('/', authenticate, isAdmin, createUser);
-router.delete('/:id', authenticate, isAdmin, deleteUser);
-router.post('/assign-leader/:id', authenticate, isAdmin, assignLeader);
+// Role-based routes
+// Read access: ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA
+router.get('/', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']), getAllUsers);
+router.get('/:id', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']), getUserById);
+
+// Write access: ADMIN, PASTOR, LIDER_DOCE
+router.post('/', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), createUser);
+router.put('/:id', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), updateUser);
+router.delete('/:id', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), deleteUser);
+router.post('/assign-leader/:id', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), assignLeader);
+
 router.get('/my-network/all', authenticate, getMyNetwork);
 
 module.exports = router;

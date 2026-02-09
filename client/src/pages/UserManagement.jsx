@@ -35,6 +35,7 @@ const UserManagement = () => {
         handleUpdateUser,
         handleDeleteUser,
         getAssignableRoles,
+        canEdit,
     } = useUserManagement();
 
     return (
@@ -43,13 +44,15 @@ const UserManagement = () => {
                 title={<div className="flex items-center gap-3"><Users className="text-blue-600" size={32} />Gestión de Usuarios</div>}
                 description="Administra perfiles, roles y jerarquía de la iglesia."
                 action={
-                    <Button
-                        onClick={() => setShowCreateForm(true)}
-                        icon={UserPlus}
-                        className="shadow-lg shadow-blue-500/20"
-                    >
-                        Nuevo Usuario
-                    </Button>
+                    canEdit && (
+                        <Button
+                            onClick={() => setShowCreateForm(true)}
+                            icon={UserPlus}
+                            className="shadow-lg shadow-blue-500/20"
+                        >
+                            Nuevo Usuario
+                        </Button>
+                    )
                 }
             />
 
@@ -176,7 +179,7 @@ const UserManagement = () => {
                             </div>
                         )
                     },
-                    {
+                    ...(canEdit ? [{
                         key: 'actions',
                         header: 'Acciones',
                         headerClassName: 'px-6 py-4 text-xs font-semibold text-gray-500 uppercase text-right',
@@ -203,7 +206,7 @@ const UserManagement = () => {
                                 </button>
                             </div>
                         )
-                    }
+                    }] : [])
                 ]}
                 data={filteredUsers}
                 loading={loading}

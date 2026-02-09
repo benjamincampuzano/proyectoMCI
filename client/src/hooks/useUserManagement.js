@@ -138,6 +138,11 @@ const useUserManagement = () => {
         });
     }, [liderDoceFilter, roleFilter, searchTerm, sexFilter, users]);
 
+    const canEdit = useMemo(() => {
+        if (!currentUser || !currentUser.roles) return false;
+        return currentUser.roles.some(r => ['ADMIN', 'SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r));
+    }, [currentUser]);
+
     const getAssignableRoles = useCallback(() => {
         if (!currentUser || !currentUser.roles) return [];
         if (currentUser.roles.includes('ADMIN')) return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'ADMIN'];
@@ -175,6 +180,7 @@ const useUserManagement = () => {
         handleUpdateUser,
         handleDeleteUser,
         getAssignableRoles,
+        canEdit,
     };
 };
 

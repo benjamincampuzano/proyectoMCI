@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone, Home, User, MessageSquare, AlertCircle, Plus, History, X, Clock, CheckCircle2 } from 'lucide-react';
+import { Phone, Home, User, MessageSquare, MessageCircle, AlertCircle, Plus, History, X, Clock, CheckCircle2 } from 'lucide-react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
@@ -130,8 +130,21 @@ const GuestTracking = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                                                <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                                                {guest.phone}
+                                                <div className="flex items-center flex-1">
+                                                    <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                                                    {guest.phone}
+                                                </div>
+                                                {guest.phone && (
+                                                    <a
+                                                        href={`https://wa.me/57${guest.phone.replace(/\D/g, '')}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="ml-2 p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                                                        title="Enviar WhatsApp"
+                                                    >
+                                                        <MessageCircle className="w-4 h-4" />
+                                                    </a>
+                                                )}
                                             </div>
                                             <div className="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-300">
                                                 <Home className="w-4 h-4 mr-2 text-gray-400" />

@@ -27,11 +27,11 @@ const isAdmin = (req, res, next) => {
         return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const adminRoles = ['ADMIN', 'LIDER_DOCE', 'ADMIN'];
+    const adminRoles = ['ADMIN', 'SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'];
     const hasAdminRole = req.user.roles.some(role => adminRoles.includes(role));
 
     if (!hasAdminRole) {
-        return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+        return res.status(403).json({ message: 'Access denied. Admin or leadership privileges required.' });
     }
 
     next();
