@@ -14,16 +14,26 @@ app.use(helmet({
 }));
 app.use(compression());
 
-/* ✅ CORS correcto para Vercel */
+/* ✅ CORS dinámico */
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL
+].filter(Boolean).map(url => url.replace(/\/$/, ''));
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173", // Cambia esto al puerto real de tu Front (ej: React/Vite)
-      "https://proyecto-iglesia.vercel.app"
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Añade OPTIONS explícitamente
+    origin: (origin, callback) => {
+      // Permitir peticiones sin origen (como apps móviles o curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== "production") {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"] // Asegúrate de permitir estos
+    allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
 
