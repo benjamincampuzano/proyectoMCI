@@ -140,7 +140,7 @@ const useUserManagement = () => {
 
     const canEdit = useMemo(() => {
         if (!currentUser || !currentUser.roles) return false;
-        return currentUser.roles.some(r => ['ADMIN', 'SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r));
+        return currentUser.roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r));
     }, [currentUser]);
 
     const getAssignableRoles = useCallback(() => {

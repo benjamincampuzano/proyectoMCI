@@ -27,7 +27,7 @@ const getUserNetwork = async (leaderId) => {
             SELECT DISTINCT "childId" FROM hierarchy;
         `;
 
-        return descendants.map(d => d.childId);
+        return descendants.map(d => Number(d.childId));
     } catch (error) {
         console.error('Error in getUserNetwork utils:', error);
         return [];

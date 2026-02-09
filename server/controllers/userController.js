@@ -191,7 +191,7 @@ const getAllUsers = async (req, res) => {
         // Note: currentUser.roles is an array from the token
         if (currentUser.roles.includes('ADMIN')) {
             where = {};
-        } else if (currentUser.roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
+        } else if (currentUser.roles.some(r => ['PASTOR', 'LIDER_DOCE'].includes(r))) {
             const networkIds = await getUserNetwork(currentUser.id);
             where = {
                 id: { in: [...networkIds, currentUser.id] },
@@ -200,6 +200,12 @@ const getAllUsers = async (req, res) => {
                         role: { name: 'ADMIN' }
                     }
                 }
+            };
+        } else if (currentUser.roles.includes('LIDER_CELULA')) {
+            // LIDER_CELULA also sees their network
+            const networkIds = await getUserNetwork(currentUser.id);
+            where = {
+                id: { in: [...networkIds, currentUser.id] }
             };
         } else {
             where = { id: currentUser.id };
@@ -332,7 +338,8 @@ const updateUser = async (req, res) => {
         if (req.user.roles.some(r => ['LIDER_DOCE', 'PASTOR'].includes(r)) && !req.user.roles.includes('ADMIN')) {
             const networkIds = await getUserNetwork(req.user.id);
             if (!networkIds.includes(userId) && userId !== req.user.id) {
-                return res.status(403).json({ message: 'You can only update users in your network' });
+                console.warn(`Unauthorized update attempt by user ${req.user.id} on user ${userId}`);
+                return res.status(403).json({ message: 'No tienes permiso para editar usuarios fuera de tu red' });
             }
         }
 
@@ -563,11 +570,11 @@ const deleteUser = async (req, res) => {
 
         const userToDelete = await prisma.user.findUnique({
             where: { id: userId },
-            include: { 
-                _count: { 
-                    select: { 
-                        children: true, 
-                        ledCells: true, 
+            include: {
+                _count: {
+                    select: {
+                        children: true,
+                        ledCells: true,
                         invitedGuests: true,
                         churchAttendances: true,
                         cellAttendances: true,
@@ -578,12 +585,21 @@ const deleteUser = async (req, res) => {
                         encuentroRegistrations: true,
                         guestCalls: true,
                         guestVisits: true
-                    } 
-                } 
+                    }
+                }
             }
         });
 
         if (!userToDelete) return res.status(404).json({ message: 'User not found' });
+
+        // Security check for deletion
+        if (!req.user.roles.includes('ADMIN')) {
+            const networkIds = await getUserNetwork(req.user.id);
+            if (!networkIds.includes(userId)) {
+                console.warn(`Unauthorized delete attempt by user ${req.user.id} on user ${userId}`);
+                return res.status(403).json({ message: 'No tienes permiso para eliminar usuarios fuera de tu red' });
+            }
+        }
 
         if (userToDelete._count.children > 0 || userToDelete._count.ledCells > 0 || userToDelete._count.invitedGuests > 0) {
             return res.status(400).json({ message: 'User has dependencies (descendants, cells, or guests) and cannot be deleted yet.' });
@@ -593,22 +609,22 @@ const deleteUser = async (req, res) => {
             // Eliminar roles y jerarquías
             prisma.userRole.deleteMany({ where: { userId } }),
             prisma.userHierarchy.deleteMany({ where: { OR: [{ parentId: userId }, { childId: userId }] } }),
-            
+
             // Eliminar asistencias y registros relacionados
             prisma.churchAttendance.deleteMany({ where: { userId } }),
             prisma.cellAttendance.deleteMany({ where: { userId } }),
             prisma.classAttendance.deleteMany({ where: { userId } }),
             prisma.seminarEnrollment.deleteMany({ where: { userId } }),
-            
+
             // Eliminar registros de eventos
             prisma.conventionRegistration.deleteMany({ where: { userId } }),
             prisma.conventionRegistration.deleteMany({ where: { registeredById: userId } }),
             prisma.encuentroRegistration.deleteMany({ where: { userId } }),
-            
+
             // Eliminar llamadas y visitas a invitados
             prisma.guestCall.deleteMany({ where: { callerId: userId } }),
             prisma.guestVisit.deleteMany({ where: { visitorId: userId } }),
-            
+
             // Eliminar perfil y usuario
             prisma.userProfile.delete({ where: { userId } }),
             prisma.user.delete({ where: { id: userId } })

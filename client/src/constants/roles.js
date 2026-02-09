@@ -7,7 +7,6 @@ export const ROLES = {
   LIDER_DOCE: 'LIDER_DOCE',
   LIDER_CELULA: 'LIDER_CELULA',
   DISCIPULO: 'DISCIPULO',
-  SUPER_ADMIN: 'SUPER_ADMIN', // For legacy/compatibility if needed
 };
 
 /**
@@ -30,5 +29,4 @@ export const ROLE_DISPLAY_NAMES = {
   [ROLES.LIDER_DOCE]: 'Líder de 12',
   [ROLES.LIDER_CELULA]: 'Líder de Célula',
   [ROLES.DISCIPULO]: 'Discípulo',
-  [ROLES.SUPER_ADMIN]: 'Super Administrador',
 };

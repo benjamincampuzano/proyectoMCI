@@ -27,7 +27,7 @@ const isAdmin = (req, res, next) => {
         return res.status(401).json({ message: 'Authentication required' });
     }
 
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN', 'PASTOR', 'LIDER_DOCE'];
+    const adminRoles = ['ADMIN'];
     const hasAdminRole = req.user.roles.some(role => adminRoles.includes(role));
 
     if (!hasAdminRole) {
