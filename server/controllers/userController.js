@@ -254,10 +254,10 @@ const getAllUsers = async (req, res) => {
 
         // Format for frontend consumption
         const formattedUsers = users.map(u => ({
-            id: u.id,
+            ...u.profile,
+            id: u.id,  // Ensure User ID is not overwritten by Profile ID
             email: u.email,
             phone: u.phone,
-            ...u.profile,
             roles: u.roles.map(r => r.role.name),
             pastorId: u.parents.find(p => p.role === 'PASTOR')?.parentId || null,
             liderDoceId: u.parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null,
@@ -296,10 +296,10 @@ const getUserById = async (req, res) => {
         }
 
         const formattedUser = {
+            ...user.profile,
             id: user.id,
             email: user.email,
             phone: user.phone,
-            ...user.profile,
             roles: user.roles.map(r => r.role.name),
             pastorId: user.parents.find(p => p.role === 'PASTOR')?.parentId || null,
             liderDoceId: user.parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null,
