@@ -1,6 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { getUserNetwork, checkCycle } = require('../utils/networkUtils');
+const { getUserNetwork, getLiderDoceName, checkCycle } = require('../utils/networkUtils');
 
 /**
  * Get all users with role LIDER_DOCE
@@ -177,7 +177,7 @@ const getNetwork = async (req, res) => {
 
                     // Find the highest rank among all current parents of this child
                     const maxRank = Math.max(...childParents.map(p => ROLE_RANK[p.role] || 0));
-                    
+
                     // Only include the child if the current parent's relationship rank matches the max rank
                     return ROLE_RANK[edge.role] === maxRank;
                 })
@@ -395,11 +395,169 @@ const getPastores = async (req, res) => {
     }
 };
 
+/**
+ * Get an aggregated list of activity for users in a leader's network
+ */
+const getUserActivityList = async (req, res) => {
+    try {
+        const { id: requesterId, roles: requesterRoles } = req.user;
+        const currentUserId = parseInt(requesterId);
+        const isSuperAdmin = requesterRoles.includes('ADMIN');
+
+        let targetUserIds = [];
+
+        if (isSuperAdmin) {
+            // Admin can see all non-admin users
+            const allUsers = await prisma.user.findMany({
+                where: {
+                    roles: { none: { role: { name: 'ADMIN' } } },
+                    isDeleted: false
+                },
+                select: { id: true }
+            });
+            targetUserIds = allUsers.map(u => u.id);
+        } else {
+            // Get leader's network
+            const networkIds = await getUserNetwork(currentUserId);
+            // Include themselves
+            targetUserIds = [...new Set([...networkIds, currentUserId])];
+        }
+
+        if (targetUserIds.length === 0) {
+            return res.json([]);
+        }
+
+        // Fetch user basic info and activity-related relations
+        const users = await prisma.user.findMany({
+            where: { id: { in: targetUserIds } },
+            include: {
+                profile: true,
+                roles: { include: { role: true } },
+                _count: {
+                    select: {
+                        invitedGuests: true,
+                        hostedCells: true
+                    }
+                },
+                cell: { select: { name: true } },
+                oracionesMiembro: {
+                    include: {
+                        oracionDeTres: true
+                    }
+                },
+                churchAttendances: {
+                    where: { status: 'PRESENTE' }
+                },
+                cellAttendances: {
+                    where: { status: 'PRESENTE' }
+                },
+                classAttendances: {
+                    include: {
+                        enrollment: {
+                            include: { module: true }
+                        }
+                    }
+                },
+                seminarEnrollments: {
+                    include: { module: true }
+                },
+                encuentroRegistrations: {
+                    where: { status: 'ATTENDED' },
+                    include: { encuentro: true }
+                },
+                conventionRegistrations: {
+                    where: { status: 'ATTENDED' },
+                    include: { convention: true }
+                },
+                guestCalls: true,
+                guestVisits: true,
+                auditLogs: {
+                    where: { action: 'LOGIN' },
+                    orderBy: { createdAt: 'desc' },
+                    take: 1
+                }
+            }
+        });
+
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+        const activityList = users.map(u => {
+            // Prayer of Three logic
+            const activeOracion = u.oracionesMiembro.find(om => {
+                const group = om.oracionDeTres;
+                return group.estado === 'ACTIVO' && group.createdAt >= threeMonthsAgo;
+            });
+
+            // Attendance counters
+            const churchCount = u.churchAttendances.length;
+            const cellCount = u.cellAttendances.length;
+            const schoolCount = u.classAttendances.filter(ca => ca.status === 'ASISTE').length;
+
+            // Encuentro attendance: either status is ATTENDED or has class attendances
+            // Let's also check for specific EncuentroClassAttendance but for now we use status 'ATTENDED'
+            const encuentroCount = u.encuentroRegistrations.length;
+
+            // Ganar Reports: Calls + Visits
+            const ganarReports = u.guestCalls.length + u.guestVisits.length;
+
+            // Class details
+            const classes = u.seminarEnrollments.map(enrol => {
+                const classNotes = u.classAttendances
+                    .filter(ca => ca.enrollmentId === enrol.id)
+                    .map(ca => ({
+                        class: ca.classNumber,
+                        grade: ca.grade,
+                        notes: ca.notes
+                    }));
+
+                return {
+                    moduleName: enrol.module.name,
+                    finalGrade: enrol.finalGrade,
+                    status: enrol.status,
+                    notes: classNotes
+                };
+            });
+
+            return {
+                id: u.id,
+                fullName: u.profile?.fullName || 'Sin Nombre',
+                roles: u.roles.map(r => r.role.name),
+                invitadosCount: u._count.invitedGuests,
+                isOracionDeTres: !!activeOracion,
+                oracionDeTresCount: activeOracion ? 3 : 0, // Request says "verificar si esta dentro de una oracion de 3 o no"
+                asistencias: {
+                    iglesia: churchCount,
+                    celula: cellCount,
+                    escuela: schoolCount,
+                    encuentro: encuentroCount,
+                    ganar: ganarReports
+                },
+                clases: classes,
+                celula: {
+                    nombre: u.cell?.name || 'No registrada',
+                    isAnfitrion: u._count.hostedCells > 0,
+                    hostedCount: u._count.hostedCells
+                },
+                encuentrosAsistidos: encuentroCount,
+                convencionesAsistidas: u.conventionRegistrations.length,
+                ultimoAcceso: u.auditLogs[0]?.createdAt || null
+            };
+        });
+
+        res.json(activityList);
+    } catch (error) {
+        console.error('Error in getUserActivityList:', error);
+        res.status(500).json({ error: 'Error al obtener el listado de actividad: ' + error.message });
+    }
+};
+
 module.exports = {
     getLosDoce,
     getPastores,
     getNetwork,
     getAvailableUsers,
     assignUserToLeader,
-    removeUserFromNetwork
+    removeUserFromNetwork,
+    getUserActivityList
 };

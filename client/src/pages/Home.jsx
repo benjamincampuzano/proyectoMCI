@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import LosDoceGrid from '../components/LosDoceGrid';
 import api from '../utils/api';
 import NetworkTree from '../components/NetworkTree';
+import UserActivityList from '../components/UserActivityList';
 import { PageHeader } from '../components/ui';
 
 // Lazy load heavy chart component
@@ -122,6 +123,11 @@ const Home = () => {
                                     )}
                                 </div>
                             )}
+
+                            {/* Activity List Section */}
+                            <div className="pt-8">
+                                <UserActivityList />
+                            </div>
                         </>
                     ) : (
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-100 dark:border-gray-700">

@@ -6,7 +6,8 @@ const {
     getNetwork,
     getAvailableUsers,
     assignUserToLeader,
-    removeUserFromNetwork
+    removeUserFromNetwork,
+    getUserActivityList
 } = require('../controllers/networkController');
 const { authenticate } = require('../middleware/auth');
 
@@ -30,5 +31,8 @@ router.post('/assign', assignUserToLeader);
 
 // Remove a user from their leader's network
 router.delete('/remove/:userId', removeUserFromNetwork);
+
+// Get aggregated activity list for network
+router.get('/activity-list', getUserActivityList);
 
 module.exports = router;
