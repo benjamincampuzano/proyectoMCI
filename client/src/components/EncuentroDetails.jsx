@@ -786,12 +786,17 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                 </div>
                             </div>
                             <div>
-                                <UserSearchSelect
-                                    value={editData.coordinatorId}
-                                    onChange={(id) => setEditData({ ...editData, coordinatorId: id })}
-                                    label="Coordinador del Encuentro"
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Coordinador del Encuentro</label>
+                                <AsyncSearchSelect
+                                    fetchItems={(term) => {
+                                        const params = { search: term, role: 'LIDER_DOCE' };
+                                        return api.get('/users/search', { params })
+                                            .then(res => res.data);
+                                    }}
+                                    selectedValue={editData.coordinatorId}
+                                    onSelect={(user) => setEditData({ ...editData, coordinatorId: user?.id || null })}
                                     placeholder="Seleccionar coordinador..."
-                                    roleFilter="LIDER_DOCE"
+                                    labelKey="fullName"
                                 />
                             </div>
                             <div className="pt-4">

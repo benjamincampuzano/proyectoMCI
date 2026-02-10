@@ -45,7 +45,7 @@ const ClassMatrix = ({ courseId }) => {
         }
     };
 
-    // fetchUsers removed - using UserSearchSelect
+    // fetchUsers removed - using AsyncSearchSelect
 
     const handleUpdate = async (enrollmentId, type, key, value) => {
         // Optimistic update could happen here

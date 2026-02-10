@@ -178,6 +178,7 @@ model User {
 
   // Encuentro Relations
   coordinatedEncuentros Encuentro[] @relation("EncuentroCoordinator")
+  coordinatedConventions Convention[] @relation("ConventionCoordinator")
   encuentroRegistrations EncuentroRegistration[]
 
   // Metas
@@ -475,6 +476,9 @@ model Convention {
   leaders     ConventionLeader[]
   registrations ConventionRegistration[]
   goals         Goal[]
+  
+  coordinatorId Int?
+  coordinator   User?    @relation("ConventionCoordinator", fields: [coordinatorId], references: [id], onDelete: SetNull)
   isDeleted   Boolean  @default(false)
 
   createdAt   DateTime @default(now()) @db.Timestamptz

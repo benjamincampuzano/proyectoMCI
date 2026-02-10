@@ -3,6 +3,19 @@ const prisma = new PrismaClient();
 const { logActivity } = require('../utils/auditLogger');
 const { getUserNetwork } = require('../utils/networkUtils');
 
+// Helper to check if user has modification access to a convention
+const checkConventionAccess = async (user, conventionId) => {
+    if (user.roles.includes('ADMIN')) return true;
+
+    const convention = await prisma.convention.findUnique({
+        where: { id: parseInt(conventionId) },
+        select: { coordinatorId: true }
+    });
+
+    if (!convention) return false;
+    return convention.coordinatorId === parseInt(user.id);
+};
+
 const getConventions = async (req, res) => {
     try {
         const { year } = req.query;
@@ -30,6 +43,10 @@ const getConventions = async (req, res) => {
                 accommodationCost: true,
                 startDate: true,
                 endDate: true,
+                coordinatorId: true,
+                coordinator: {
+                    include: { profile: true }
+                },
                 _count: {
                     select: { registrations: true }
                 },
@@ -80,6 +97,7 @@ const getConventions = async (req, res) => {
 
             return {
                 ...conv,
+                coordinator: conv.coordinator ? { id: conv.coordinator.id, fullName: conv.coordinator.profile?.fullName } : null,
                 stats: {
                     registeredCount: conv._count?.registrations || 0,
                     totalCollected,
@@ -116,6 +134,10 @@ const getConventionById = async (req, res) => {
                 accommodationCost: true,
                 startDate: true,
                 endDate: true,
+                coordinatorId: true,
+                coordinator: {
+                    include: { profile: true }
+                },
                 registrations: {
                     where: {
                         user: {
@@ -156,7 +178,10 @@ const getConventionById = async (req, res) => {
         // Filter registrations based on Role & Network
         let visibleRegistrations = convention.registrations || [];
 
-        if (roles.includes('ADMIN') || roles.includes('ADMIN')) {
+        const isAdmin = roles.includes('ADMIN');
+        const isCoordinator = convention.coordinatorId === parseInt(currentUserId);
+
+        if (isAdmin || isCoordinator) {
             // See all
         } else if (roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA', 'PASTOR'].includes(r))) {
             if (currentUserId) {
@@ -221,7 +246,11 @@ const getConventionById = async (req, res) => {
             };
         });
 
-        res.json({ ...convention, registrations: registrationsWithBalance });
+        res.json({
+            ...convention,
+            coordinator: convention.coordinator ? { id: convention.coordinator.id, fullName: convention.coordinator.profile?.fullName } : null,
+            registrations: registrationsWithBalance
+        });
     } catch (error) {
         console.error('Error fetching convention details:', error);
         res.status(500).json({ error: 'Error getting convention details: ' + error.message });
@@ -236,7 +265,7 @@ const createConvention = async (req, res) => {
         if (!roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        const { type, year, theme, cost, transportCost, accommodationCost, startDate, endDate, liderDoceIds } = req.body;
+        const { type, year, theme, cost, transportCost, accommodationCost, startDate, endDate, liderDoceIds, coordinatorId } = req.body;
 
         const existing = await prisma.convention.findUnique({
             where: {
@@ -262,6 +291,7 @@ const createConvention = async (req, res) => {
                 accommodationCost: parseFloat(accommodationCost || 0),
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
+                coordinatorId: coordinatorId ? parseInt(coordinatorId) : null,
                 leaders: {
                     create: (liderDoceIds || []).map(id => ({ userId: parseInt(id) }))
                 }
@@ -285,11 +315,13 @@ const updateConvention = async (req, res) => {
         const roles = req.user?.roles || [];
         const userId = req.user?.id;
 
-        if (!roles.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r))) {
-            return res.status(403).json({ error: 'Not authorized' });
+        // Restriction: Only ADMIN or Coordinator
+        const hasAccess = await checkConventionAccess(req.user, id);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para modificar esta convención. Solo el coordinador asignado o un administrador pueden hacerlo.' });
         }
 
-        const { type, year, theme, cost, transportCost, accommodationCost, startDate, endDate, liderDoceIds } = req.body;
+        const { type, year, theme, cost, transportCost, accommodationCost, startDate, endDate, liderDoceIds, coordinatorId } = req.body;
 
         const updateData = {};
         if (type !== undefined) updateData.type = type;
@@ -300,6 +332,7 @@ const updateConvention = async (req, res) => {
         if (accommodationCost !== undefined) updateData.accommodationCost = parseFloat(accommodationCost);
         if (startDate !== undefined) updateData.startDate = new Date(startDate);
         if (endDate !== undefined) updateData.endDate = new Date(endDate);
+        if (coordinatorId !== undefined) updateData.coordinatorId = coordinatorId ? parseInt(coordinatorId) : null;
         if (liderDoceIds !== undefined) {
             updateData.leaders = {
                 deleteMany: {},
@@ -331,9 +364,10 @@ const registerUser = async (req, res) => {
         const roles = req.user?.roles || [];
         const currentUserId = req.user?.id;
 
-        // Restriction: Only ADMIN, ADMIN, PASTOR, or LIDER_DOCE
-        if (!roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
-            return res.status(403).json({ error: 'No tienes permisos para registrar participantes en convenciones' });
+        // Restriction: Only ADMIN or Coordinator
+        const hasAccess = await checkConventionAccess(req.user, conventionId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para registrar participantes en esta convención.' });
         }
 
         const existing = await prisma.conventionRegistration.findUnique({
@@ -347,8 +381,31 @@ const registerUser = async (req, res) => {
         });
 
         if (existing) {
-            return res.status(400).json({ error: 'User is already registered for this convention' });
+            return res.status(400).json({ error: 'El usuario ya está registrado en esta convención.' });
         }
+
+        const convention = await prisma.convention.findUnique({
+            where: { id: parseInt(conventionId) },
+            select: { type: true, year: true }
+        });
+
+        if (!convention) {
+            return res.status(404).json({ error: 'Convención no encontrada.' });
+        }
+
+        // --- NEW RESTRICTIONS ---
+        const userProfile = await prisma.userProfile.findUnique({
+            where: { userId: parseInt(userId) },
+            select: { sex: true }
+        });
+
+        if (convention.type === 'HOMBRES' && userProfile?.sex !== 'HOMBRE') {
+            return res.status(400).json({ error: 'Esta convención es exclusiva para hombres.' });
+        }
+        if (convention.type === 'MUJERES' && userProfile?.sex !== 'MUJER') {
+            return res.status(400).json({ error: 'Esta convención es exclusiva para mujeres.' });
+        }
+        // --- END RESTRICTIONS ---
 
         const registration = await prisma.conventionRegistration.create({
             data: {
@@ -365,11 +422,6 @@ const registerUser = async (req, res) => {
                     include: { profile: true }
                 }
             }
-        });
-
-        const convention = await prisma.convention.findUnique({
-            where: { id: parseInt(conventionId) },
-            select: { type: true, year: true }
         });
 
         if (currentUserId) {
@@ -395,9 +447,19 @@ const addPayment = async (req, res) => {
         const roles = req.user?.roles || [];
         const userId = req.user?.id;
 
-        // Restriction: Only ADMIN, ADMIN, PASTOR, or LIDER_DOCE
-        if (!roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
-            return res.status(403).json({ error: 'No tienes permisos para agregar pagos' });
+        const foundRegistration = await prisma.conventionRegistration.findUnique({
+            where: { id: parseInt(registrationId) },
+            select: { conventionId: true }
+        });
+
+        if (!foundRegistration) {
+            return res.status(404).json({ error: 'Registration not found' });
+        }
+
+        // Restriction: Only ADMIN or Coordinator
+        const hasAccess = await checkConventionAccess(req.user, foundRegistration.conventionId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para agregar pagos en esta convención.' });
         }
 
         const payment = await prisma.conventionPayment.create({
@@ -426,8 +488,19 @@ const deleteRegistration = async (req, res) => {
         const roles = req.user?.roles || [];
         const userId = req.user?.id;
 
-        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
-            return res.status(403).json({ error: 'Not authorized to delete registrations' });
+        const foundRegToDelete = await prisma.conventionRegistration.findUnique({
+            where: { id: parseInt(registrationId) },
+            select: { conventionId: true }
+        });
+
+        if (!foundRegToDelete) {
+            return res.status(404).json({ error: 'Registration not found' });
+        }
+
+        // Restriction: Only ADMIN or Coordinator
+        const hasAccess = await checkConventionAccess(req.user, foundRegToDelete.conventionId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para eliminar inscripciones en esta convención.' });
         }
 
         const registration = await prisma.conventionRegistration.delete({
@@ -452,7 +525,7 @@ const deleteConvention = async (req, res) => {
         const roles = req.user?.roles || [];
         const userId = req.user?.id;
 
-        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Not authorized to delete conventions' });
         }
 
@@ -484,6 +557,7 @@ const getConventionBalanceReport = async (req, res) => {
                 cost: true,
                 transportCost: true,
                 accommodationCost: true,
+                coordinatorId: true,
                 registrations: {
                     select: {
                         id: true,
@@ -520,7 +594,11 @@ const getConventionBalanceReport = async (req, res) => {
 
         // Apply Network Filter
         let visibleRegistrations = convention.registrations || [];
-        if (roles.includes('ADMIN') || roles.includes('ADMIN')) {
+
+        const isAdmin = roles.includes('ADMIN');
+        const isCoordinator = convention.coordinatorId === parseInt(userId);
+
+        if (isAdmin || isCoordinator) {
             // All
         } else if (roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
             if (userId) {

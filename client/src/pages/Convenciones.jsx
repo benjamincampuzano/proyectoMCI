@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ConventionDetails from '../components/ConventionDetails';
 import ActionModal from '../components/ActionModal';
-import { Button, Modal, Skeleton, PageHeader } from '../components/ui';
+import { Button, Modal, Skeleton, PageHeader, AsyncSearchSelect } from '../components/ui';
 
 const Convenciones = () => {
     const { user, hasAnyRole } = useAuth();
@@ -22,7 +22,8 @@ const Convenciones = () => {
         transportCost: '',
         accommodationCost: '',
         startDate: '',
-        endDate: ''
+        endDate: '',
+        coordinatorId: null
     });
 
     useEffect(() => {
@@ -71,7 +72,8 @@ const Convenciones = () => {
                 transportCost: '',
                 accommodationCost: '',
                 startDate: '',
-                endDate: ''
+                endDate: '',
+                coordinatorId: null
             });
         } catch (error) {
             console.error('Error creating convention:', error);
@@ -173,12 +175,12 @@ const Convenciones = () => {
                                         {new Date(conv.startDate).toLocaleDateString()}
                                     </div>
                                     <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                        <Users size={16} className="mr-2 text-green-500" />
-                                        {conv.stats?.registeredCount || 0} Inscritos
-                                    </div>
-                                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                                         <DollarSign size={16} className="mr-2 text-orange-500" />
                                         {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(conv.cost)}
+                                    </div>
+                                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                                        <UserCheck size={16} className="mr-2 text-blue-500" />
+                                        Coord: {conv.coordinator?.fullName || 'Sin Asignar'}
                                     </div>
                                 </div>
                             </div>
@@ -191,7 +193,8 @@ const Convenciones = () => {
                         </div>
                     )}
                 </div>
-            )}
+            )
+            }
 
             {/* Create Modal */}
             <Modal
@@ -293,6 +296,21 @@ const Convenciones = () => {
                                 />
                             </div>
                         </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Coordinador de la Convención</label>
+                            <AsyncSearchSelect
+                                fetchItems={(term) => {
+                                    const params = { search: term, role: 'LIDER_DOCE' };
+                                    return api.get('/users/search', { params })
+                                        .then(res => res.data);
+                                }}
+                                selectedValue={formData.coordinatorId}
+                                onSelect={(user) => setFormData({ ...formData, coordinatorId: user?.id || null })}
+                                placeholder="Seleccionar coordinador..."
+                                labelKey="fullName"
+                            />
+                        </div>
                     </Modal.Content>
 
                     <Modal.Footer>
@@ -316,7 +334,7 @@ const Convenciones = () => {
                     </Modal.Footer>
                 </form>
             </Modal>
-        </div>
+        </div >
     );
 };
 

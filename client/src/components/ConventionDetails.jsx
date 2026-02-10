@@ -8,7 +8,12 @@ import MultiUserSelect from './MultiUserSelect';
 import BalanceReport from './BalanceReport';
 
 const ConventionDetails = ({ convention, onBack, onRefresh }) => {
-    const { user, hasAnyRole, isSuperAdmin } = useAuth();
+    const { user, hasAnyRole } = useAuth();
+
+    // Check if current user is admin or coordinator
+    const isCoordinator = convention.coordinatorId === parseInt(user?.id);
+    const isAdmin = hasAnyRole(['ADMIN']);
+    const canModify = isAdmin || isCoordinator;
     const [activeTab, setActiveTab] = useState('attendees'); // attendees, report
     const [reportData, setReportData] = useState([]);
     const [loadingReport, setLoadingReport] = useState(false);
@@ -33,7 +38,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         accommodationCost: '',
         startDate: '',
         endDate: '',
-        liderDoceIds: []
+        liderDoceIds: [],
+        coordinatorId: null
     });
 
     // Registration Form State
@@ -102,7 +108,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             accommodationCost: convention.accommodationCost || 0,
             startDate: new Date(convention.startDate).toISOString().split('T')[0],
             endDate: new Date(convention.endDate).toISOString().split('T')[0],
-            liderDoceIds: convention.liderDoceIds || []
+            liderDoceIds: convention.liderDoceIds || [],
+            coordinatorId: convention.coordinatorId || null
         });
         setShowEditModal(true);
     };
@@ -296,7 +303,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 Exportar Excel
                             </button>
                         )}
-                        {hasAnyRole(['ADMIN']) && (
+                        {canModify && (
                             <button
                                 onClick={openEditModal}
                                 className="flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
@@ -305,7 +312,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 Editar Convención
                             </button>
                         )}
-                        {hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
+                        {canModify && (
                             <button
                                 onClick={() => setShowRegisterModal(true)}
                                 className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -361,7 +368,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                 {formatCurrency(reg.balance)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
-                                                {hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
+                                                {canModify && (
                                                     <button
                                                         onClick={() => openPaymentModal(reg)}
                                                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
@@ -371,7 +378,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                         Abonar
                                                     </button>
                                                 )}
-                                                {hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
+                                                {canModify && (
                                                     <button
                                                         onClick={() => handleDelete(reg.id)}
                                                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
@@ -424,10 +431,13 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                     Usuario
                                 </label>
                                 <AsyncSearchSelect
-                                    fetchItems={(term) =>
-                                        api.get('/users/search', { params: { search: term } })
-                                            .then(res => res.data)
-                                    }
+                                    fetchItems={(term) => {
+                                        const params = { search: term };
+                                        if (convention.type === 'HOMBRES') params.sex = 'HOMBRE';
+                                        if (convention.type === 'MUJERES') params.sex = 'MUJER';
+                                        return api.get('/users/search', { params })
+                                            .then(res => res.data);
+                                    }}
                                     selectedValue={selectedUserId}
                                     onSelect={(user) => setSelectedUserId(user?.id || null)}
                                     placeholder="Buscar por nombre..."
@@ -671,6 +681,21 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                     onChange={(e) => setEditData({ ...editData, cost: e.target.value })}
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                     required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Coordinador de la Convención</label>
+                                <AsyncSearchSelect
+                                    fetchItems={(term) => {
+                                        const params = { search: term, role: 'LIDER_DOCE' };
+                                        return api.get('/users/search', { params })
+                                            .then(res => res.data);
+                                    }}
+                                    selectedValue={editData.coordinatorId}
+                                    onSelect={(user) => setEditData({ ...editData, coordinatorId: user?.id || null })}
+                                    placeholder="Seleccionar coordinador..."
+                                    labelKey="fullName"
                                 />
                             </div>
 

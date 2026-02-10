@@ -66,11 +66,11 @@ const GuestTracking = () => {
         const hasVisits = guest.visits && guest.visits.length > 0;
         const alerts = [];
 
-        if (diffDays >= 4 && !hasCalls) {
-            alerts.push({ type: 'call', message: 'Llamada pendiente (4+ días)' });
+        if (diffDays >= 1 && !hasCalls) {
+            alerts.push({ type: 'call', message: 'Llamada pendiente (1+ días)' });
         }
-        if (diffDays >= 6 && !hasVisits) {
-            alerts.push({ type: 'visit', message: 'Visita pendiente (6+ días)' });
+        if (diffDays >= 2 && !hasVisits) {
+            alerts.push({ type: 'visit', message: 'Visita pendiente (2+ días)' });
         }
 
         return alerts;

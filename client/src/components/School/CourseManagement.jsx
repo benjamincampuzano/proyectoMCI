@@ -48,7 +48,7 @@ const CourseManagement = () => {
         }
     };
 
-    // fetchLeaders removed - using UserSearchSelect now
+    // fetchLeaders removed - using AsyncSearchSelect now
 
     const handleDelete = async (e, id) => {
         e.stopPropagation();
