@@ -4,7 +4,7 @@ const axios = require('axios');
 const { logActivity } = require('../utils/auditLogger');
 const { validatePassword } = require('../utils/passwordValidator');
 
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
 
 // Geocoding helper using Nominatim
 const geocodeAddress = async (address, city) => {

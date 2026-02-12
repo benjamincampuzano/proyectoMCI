@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { logActivity } = require('../utils/auditLogger');
 const { validatePassword } = require('../utils/passwordValidator');
 
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
 
 const register = async (req, res) => {
     try {

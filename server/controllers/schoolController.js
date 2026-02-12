@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../prisma/client');
 const { SCHOOL_LEVELS } = require('../utils/levelConstants');
 const { getUserNetwork } = require('../utils/networkUtils');
 
