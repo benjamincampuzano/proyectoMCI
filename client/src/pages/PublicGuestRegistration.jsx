@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, Loader, X, Search, ChevronDown, UserPlus, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
+import { DATA_POLICY_URL } from '../constants/policies';
 
 const PublicGuestRegistration = () => {
     const navigate = useNavigate();
@@ -16,6 +17,9 @@ const PublicGuestRegistration = () => {
         city: '',
         prayerRequest: '',
         invitedById: null,
+        dataPolicyAccepted: false,
+        dataTreatmentAuthorized: false,
+        minorConsentAuthorized: false,
     });
     const [loading, setLoading] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
@@ -96,6 +100,9 @@ const PublicGuestRegistration = () => {
                 city: '',
                 prayerRequest: '',
                 invitedById: null,
+                dataPolicyAccepted: false,
+                dataTreatmentAuthorized: false,
+                minorConsentAuthorized: false,
             });
             setSelectedInviter(null);
 
@@ -107,6 +114,20 @@ const PublicGuestRegistration = () => {
             setLoading(false);
         }
     };
+
+    const calculateAge = (birthDate) => {
+        if (!birthDate) return null;
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
+    const isMinor = formData.birthDate ? calculateAge(formData.birthDate) < 18 : false;
 
     return (
         <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
@@ -318,6 +339,55 @@ const PublicGuestRegistration = () => {
                             className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition-colors resize-none"
                             placeholder="¿Cómo podemos orar por ti?"
                         />
+                    </div>
+
+                    {/* Data Authorization Checks */}
+                    <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-700 space-y-4">
+                        <label className="flex items-start gap-4 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                name="dataPolicyAccepted"
+                                required
+                                className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
+                                checked={formData.dataPolicyAccepted}
+                                onChange={e => setFormData({ ...formData, dataPolicyAccepted: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                                Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos Personales</a> de MCI.
+                            </span>
+                        </label>
+                        <label className="flex items-start gap-4 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                name="dataTreatmentAuthorized"
+                                required
+                                className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
+                                checked={formData.dataTreatmentAuthorized}
+                                onChange={e => setFormData({ ...formData, dataTreatmentAuthorized: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                                Autorizo de manera expresa el tratamiento de mis datos personales conforme a la Ley 1581 de 2012.
+                            </span>
+                        </label>
+                        <label className="flex items-start gap-4 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                name="minorConsentAuthorized"
+                                required={isMinor}
+                                className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
+                                checked={formData.minorConsentAuthorized}
+                                onChange={e => setFormData({ ...formData, minorConsentAuthorized: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                                {isMinor ? (
+                                    <span className="text-blue-500 font-semibold">
+                                        Cuento con el documento de autorización física/digital firmado por el padre o tutor legal para el tratamiento de datos del menor. (Obligatorio para menores)
+                                    </span>
+                                ) : (
+                                    "En caso de registrar información de menores de edad, declaro contar con la autorización de su representante legal."
+                                )}
+                            </span>
+                        </label>
                     </div>
 
                     <button

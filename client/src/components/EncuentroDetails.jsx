@@ -6,6 +6,7 @@ import { AsyncSearchSelect } from './ui';
 import MultiUserSelect from './MultiUserSelect';
 import EncuentroClassTracker from './EncuentroClassTracker';
 import BalanceReport from './BalanceReport';
+import { DATA_POLICY_URL } from '../constants/policies';
 
 const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const { user, isSuperAdmin } = useAuth();
@@ -21,7 +22,13 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [selectedHistoryRegistration, setSelectedHistoryRegistration] = useState(null);
     const [showConvertModal, setShowConvertModal] = useState(false);
-    const [convertData, setConvertData] = useState({ email: '', password: '' });
+    const [convertData, setConvertData] = useState({
+        email: '',
+        password: '',
+        dataPolicyAccepted: false,
+        dataTreatmentAuthorized: false,
+        minorConsentAuthorized: false
+    });
 
     // Edit Modal State
     const [showEditModal, setShowEditModal] = useState(false);
@@ -139,10 +146,19 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
 
             await api.post(`/guests/${guestId}/convert-to-member`, {
                 email: convertData.email,
-                password: convertData.password
+                password: convertData.password,
+                dataPolicyAccepted: convertData.dataPolicyAccepted,
+                dataTreatmentAuthorized: convertData.dataTreatmentAuthorized,
+                minorConsentAuthorized: convertData.minorConsentAuthorized,
             });
             setShowConvertModal(false);
-            setConvertData({ email: '', password: '' });
+            setConvertData({
+                email: '',
+                password: '',
+                dataPolicyAccepted: false,
+                dataTreatmentAuthorized: false,
+                minorConsentAuthorized: false
+            });
             alert('Invitado convertido a Discípulo exitosamente!');
             onRefresh();
         } catch (error) {
@@ -680,6 +696,34 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     required
                                     minLength={6}
                                 />
+                            </div>
+
+                            {/* Data Authorization Checks */}
+                            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
+                                <label className="flex items-start gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        required
+                                        className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                        checked={convertData.dataPolicyAccepted}
+                                        onChange={e => setConvertData({ ...convertData, dataPolicyAccepted: e.target.checked })}
+                                    />
+                                    <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                        Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos</a>.
+                                    </span>
+                                </label>
+                                <label className="flex items-start gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        required
+                                        className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                        checked={convertData.dataTreatmentAuthorized}
+                                        onChange={e => setConvertData({ ...convertData, dataTreatmentAuthorized: e.target.checked })}
+                                    />
+                                    <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                        Autorizo de manera expresa el tratamiento de mis datos personales.
+                                    </span>
+                                </label>
                             </div>
                             <div className="pt-4">
                                 <button

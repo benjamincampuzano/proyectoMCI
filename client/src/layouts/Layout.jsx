@@ -1,10 +1,11 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network, Activity, ChevronLeft, ChevronRight, Target } from 'lucide-react';
+import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network, Activity, ChevronLeft, ChevronRight, Target, Shield } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';
 import logo from '../assets/logo.jpg';
+import { DATA_POLICY_URL } from '../constants/policies';
 
 const SidebarItem = ({ to, icon: Icon, label, active }) => (
     <Link
@@ -36,9 +37,9 @@ const Layout = () => {
         { to: '/enviar', icon: Send, label: 'Enviar' },
         { to: '/encuentros', icon: Users, label: 'Encuentros' },
         { to: '/convenciones', icon: Calendar, label: 'Convenciones' },
+        { to: '/documentos-legales', icon: BookOpen, label: 'Documentos' },
         ...(isAdmin()
             ? [
-                { to: '/usuarios', icon: Users, label: 'Usuarios' },
                 { to: '/auditoria', icon: Activity, label: 'Auditoría' }
             ]
             : [])
@@ -88,20 +89,45 @@ const Layout = () => {
                 </button>
 
                 <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.to}
-                            to={item.to}
-                            className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 rounded-lg transition-colors ${location.pathname === item.to
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-                                }`}
-                            title={isCollapsed ? item.label : ''}
-                        >
-                            <item.icon size={20} />
-                            {!isCollapsed && <span className="font-medium">{item.label}</span>}
-                        </Link>
-                    ))}
+                    {navItems.map((item) => {
+                        const isExternal = item.external;
+                        const content = (
+                            <>
+                                <item.icon size={20} />
+                                {!isCollapsed && <span className="font-medium">{item.label}</span>}
+                            </>
+                        );
+                        const className = `flex items-center ${isCollapsed ? 'justify-center px-0' : 'space-x-3 px-4'} py-3 rounded-lg transition-colors ${!isExternal && location.pathname === item.to
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                            }`;
+
+                        if (isExternal) {
+                            return (
+                                <a
+                                    key={item.label}
+                                    href={item.to}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={className}
+                                    title={isCollapsed ? item.label : ''}
+                                >
+                                    {content}
+                                </a>
+                            );
+                        }
+
+                        return (
+                            <Link
+                                key={item.to}
+                                to={item.to}
+                                className={className}
+                                title={isCollapsed ? item.label : ''}
+                            >
+                                {content}
+                            </Link>
+                        );
+                    })}
                 </nav>
 
                 <div className="p-4 border-t border-gray-200 dark:border-gray-800">

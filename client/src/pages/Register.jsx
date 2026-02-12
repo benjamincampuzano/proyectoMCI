@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, User, Check, X as XIcon } from 'lucide-react';
-import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
+import { User, Mail, Lock, Phone, MapPin, Calendar, ChevronDown, Check, Loader, Shield, X } from 'lucide-react';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
+import { DATA_POLICY_URL } from '../constants/policies';
+import logo from '../assets/logo.jpg';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -17,7 +19,10 @@ const Register = () => {
         phone: '',
         address: '',
         city: '',
-        liderDoceId: ''
+        liderDoceId: '',
+        dataPolicyAccepted: false,
+        dataTreatmentAuthorized: false,
+        minorConsentAuthorized: false
     });
     const [lideresDoce, setLideresDoce] = useState([]);
     const [error, setError] = useState('');
@@ -36,6 +41,20 @@ const Register = () => {
         };
         fetchLeaders();
     }, []);
+
+    const calculateAge = (birthDate) => {
+        if (!birthDate) return null;
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
+    const isMinor = formData.birthDate ? calculateAge(formData.birthDate) < 18 : false;
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -260,6 +279,55 @@ const Register = () => {
                         </div>
                     </div>
 
+                    {/* Data Authorization Checks */}
+                    <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-700 space-y-3 mt-4">
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                name="dataPolicyAccepted"
+                                required
+                                className="mt-1 w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
+                                checked={formData.dataPolicyAccepted}
+                                onChange={e => setFormData({ ...formData, dataPolicyAccepted: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                                Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos Personales</a> de MCI.
+                            </span>
+                        </label>
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                name="dataTreatmentAuthorized"
+                                required
+                                className="mt-1 w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
+                                checked={formData.dataTreatmentAuthorized}
+                                onChange={e => setFormData({ ...formData, dataTreatmentAuthorized: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                                Autorizo de manera expresa el tratamiento de mis datos conforme a la <strong>Ley 1581 de 2012</strong>.
+                            </span>
+                        </label>
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                name="minorConsentAuthorized"
+                                required={isMinor}
+                                className="mt-1 w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
+                                checked={formData.minorConsentAuthorized}
+                                onChange={e => setFormData({ ...formData, minorConsentAuthorized: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                                {isMinor ? (
+                                    <span className="text-blue-500 font-semibold">
+                                        Cuento con el documento de autorización física/digital firmado por el padre o tutor legal para el tratamiento de datos del menor. (Obligatorio para menores)
+                                    </span>
+                                ) : (
+                                    "En caso de registrar información de menores, declaro contar con autorización del representante legal."
+                                )}
+                            </span>
+                        </label>
+                    </div>
+
                     <button
                         type="submit"
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg transition-colors shadow-lg shadow-blue-600/20 mt-6 text-lg"
@@ -281,7 +349,7 @@ const Register = () => {
 
 const Requirement = ({ label, met }) => (
     <div className={`flex items-center gap-1 ${met ? 'text-green-500' : 'text-gray-500'}`}>
-        {met ? <Check size={10} /> : <XIcon size={10} />}
+        {met ? <Check size={10} /> : <X size={10} />}
         <span>{label}</span>
     </div>
 );

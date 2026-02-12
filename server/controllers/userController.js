@@ -114,6 +114,9 @@ const updateProfile = async (req, res) => {
                         ...(documentType !== undefined && { documentType }),
                         ...(documentNumber !== undefined && { documentNumber }),
                         ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
+                        ...(req.body.dataPolicyAccepted !== undefined && { dataPolicyAccepted: req.body.dataPolicyAccepted }),
+                        ...(req.body.dataTreatmentAuthorized !== undefined && { dataTreatmentAuthorized: req.body.dataTreatmentAuthorized }),
+                        ...(req.body.minorConsentAuthorized !== undefined && { minorConsentAuthorized: req.body.minorConsentAuthorized }),
                     }
                 }
             },
@@ -375,6 +378,9 @@ const updateUser = async (req, res) => {
                             ...(documentType !== undefined && { documentType }),
                             ...(documentNumber !== undefined && { documentNumber }),
                             ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
+                            ...(req.body.dataPolicyAccepted !== undefined && { dataPolicyAccepted: req.body.dataPolicyAccepted }),
+                            ...(req.body.dataTreatmentAuthorized !== undefined && { dataTreatmentAuthorized: req.body.dataTreatmentAuthorized }),
+                            ...(req.body.minorConsentAuthorized !== undefined && { minorConsentAuthorized: req.body.minorConsentAuthorized }),
                         }
                     }
                 },
@@ -498,7 +504,10 @@ const createUser = async (req, res) => {
                             longitude: coords.lng,
                             documentType,
                             documentNumber,
-                            birthDate: birthDate ? new Date(birthDate) : null
+                            birthDate: birthDate ? new Date(birthDate) : null,
+                            dataPolicyAccepted: req.body.dataPolicyAccepted || false,
+                            dataTreatmentAuthorized: req.body.dataTreatmentAuthorized || false,
+                            minorConsentAuthorized: req.body.minorConsentAuthorized || false,
                         }
                     }
                 },

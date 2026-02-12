@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Settings, Users, LogOut } from 'lucide-react';
+import { User, Settings, Users, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
+import { DATA_POLICY_URL } from '../constants/policies';
 
 const UserMenu = ({ onOpenProfile }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -64,6 +65,16 @@ const UserMenu = ({ onOpenProfile }) => {
                         <Settings size={18} className="text-gray-500 dark:text-gray-400" />
                         <span className="text-sm text-gray-700 dark:text-gray-200">Mi Perfil</span>
                     </button>
+
+                    <a
+                        href={DATA_POLICY_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    >
+                        <Shield size={18} className="text-gray-500 dark:text-gray-400" />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">Política de Datos</span>
+                    </a>
 
                     {isAdmin && (
                         <>

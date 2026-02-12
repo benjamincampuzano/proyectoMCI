@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 const useUserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -13,7 +14,16 @@ const useUserManagement = () => {
     const [editingUser, setEditingUser] = useState(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null);
+    const auth = useAuth();
+    const currentUser = auth.user;
+
+    // Use isAdmin from AuthContext but also fall back to property check
+    const isUserAdmin = useMemo(() => {
+        if (typeof auth.isAdmin === 'function' && auth.isAdmin()) return true;
+        if (!currentUser) return false;
+        const roles = currentUser.roles || [currentUser.role];
+        return roles.map(r => String(r).toUpperCase()).includes('ADMIN');
+    }, [auth, currentUser]);
 
     const [formData, setFormData] = useState({
         documentType: '',
@@ -29,7 +39,10 @@ const useUserManagement = () => {
         city: '',
         pastorId: '',
         liderDoceId: '',
-        liderCelulaId: ''
+        liderCelulaId: '',
+        dataPolicyAccepted: false,
+        dataTreatmentAuthorized: false,
+        minorConsentAuthorized: false
     });
 
     const fetchUsers = useCallback(async () => {
@@ -45,8 +58,6 @@ const useUserManagement = () => {
     }, []);
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        setCurrentUser(user);
         fetchUsers();
     }, [fetchUsers]);
 
@@ -72,9 +83,11 @@ const useUserManagement = () => {
             setSuccess('Usuario creado exitosamente');
             setShowCreateForm(false);
             setFormData({
-                fullName: '', email: '', password: '', role: 'DISCIPULO',
+                documentType: '', documentNumber: '', fullName: '', birthDate: '',
+                email: '', password: '', role: 'DISCIPULO',
                 sex: 'HOMBRE', phone: '', address: '', city: '',
-                pastorId: '', liderDoceId: '', liderCelulaId: ''
+                pastorId: '', liderDoceId: '', liderCelulaId: '',
+                dataPolicyAccepted: false, dataTreatmentAuthorized: false, minorConsentAuthorized: false
             });
             fetchUsers();
         } catch (err) {
@@ -99,7 +112,11 @@ const useUserManagement = () => {
                 city: editingUser.city,
                 pastorId: editingUser.pastorId ? parseInt(editingUser.pastorId) : null,
                 liderDoceId: editingUser.liderDoceId ? parseInt(editingUser.liderDoceId) : null,
-                liderCelulaId: editingUser.liderCelulaId ? parseInt(editingUser.liderCelulaId) : null
+                liderCelulaId: editingUser.liderCelulaId ? parseInt(editingUser.liderCelulaId) : null,
+                birthDate: editingUser.birthDate,
+                dataPolicyAccepted: editingUser.dataPolicyAccepted,
+                dataTreatmentAuthorized: editingUser.dataTreatmentAuthorized,
+                minorConsentAuthorized: editingUser.minorConsentAuthorized
             };
             await api.put(`/users/${userId}`, payload);
             setSuccess('Usuario actualizado');
@@ -139,9 +156,13 @@ const useUserManagement = () => {
     }, [liderDoceFilter, roleFilter, searchTerm, sexFilter, users]);
 
     const canEdit = useMemo(() => {
-        if (!currentUser || !currentUser.roles) return false;
-        return currentUser.roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r));
+        if (!currentUser) return false;
+        // Check both roles array and single role property for backward compatibility
+        const roles = currentUser.roles || [currentUser.role];
+        return roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r));
     }, [currentUser]);
+
+    // isAdmin is now taken from useAuth()
 
     const getAssignableRoles = useCallback(() => {
         if (!currentUser || !currentUser.roles) return [];
@@ -181,6 +202,7 @@ const useUserManagement = () => {
         handleDeleteUser,
         getAssignableRoles,
         canEdit,
+        isAdmin: isUserAdmin,
     };
 };
 

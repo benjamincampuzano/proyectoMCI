@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 const register = async (req, res) => {
     try {
-        const { email, password, fullName, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate } = req.body;
+        const { email, password, fullName, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
 
         const validation = validatePassword(password, { email, fullName });
         if (!validation.isValid) {
@@ -33,7 +33,10 @@ const register = async (req, res) => {
                             city,
                             documentType,
                             documentNumber,
-                            birthDate: birthDate ? new Date(birthDate) : null
+                            birthDate: birthDate ? new Date(birthDate) : null,
+                            dataPolicyAccepted: dataPolicyAccepted || false,
+                            dataTreatmentAuthorized: dataTreatmentAuthorized || false,
+                            minorConsentAuthorized: minorConsentAuthorized || false,
                         }
                     }
                 }
@@ -199,7 +202,7 @@ const registerSetup = async (req, res) => {
             return res.status(403).json({ message: 'System is already initialized' });
         }
 
-        const { email, password, fullName, sex, phone, address, city, documentType, documentNumber, birthDate } = req.body;
+        const { email, password, fullName, sex, phone, address, city, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
 
         const validation = validatePassword(password, { email, fullName });
         if (!validation.isValid) {
@@ -228,7 +231,10 @@ const registerSetup = async (req, res) => {
                             city,
                             documentType: documentType || undefined,
                             documentNumber,
-                            birthDate: birthDate ? new Date(birthDate) : null
+                            birthDate: birthDate ? new Date(birthDate) : null,
+                            dataPolicyAccepted: dataPolicyAccepted || false,
+                            dataTreatmentAuthorized: dataTreatmentAuthorized || false,
+                            minorConsentAuthorized: minorConsentAuthorized || false,
                         }
                     }
                 },

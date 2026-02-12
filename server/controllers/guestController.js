@@ -6,7 +6,7 @@ const { getUserNetwork } = require('../utils/networkUtils');
 // Crear nuevo invitado
 const createGuest = async (req, res) => {
     try {
-        let { name, phone, address, city, prayerRequest, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex } = req.body;
+        let { name, phone, address, city, prayerRequest, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
         const { roles, id: currentUserId } = req.user;
 
         if (!name || !phone) {
@@ -45,6 +45,9 @@ const createGuest = async (req, res) => {
                 documentNumber,
                 birthDate: birthDate ? new Date(birthDate) : null,
                 sex,
+                dataPolicyAccepted: dataPolicyAccepted || false,
+                dataTreatmentAuthorized: dataTreatmentAuthorized || false,
+                minorConsentAuthorized: minorConsentAuthorized || false,
             },
             include: {
                 invitedBy: {
@@ -236,7 +239,7 @@ const getGuestById = async (req, res) => {
 const updateGuest = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, phone, address, city, prayerRequest, status, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex } = req.body;
+        const { name, phone, address, city, prayerRequest, status, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
         const { roles, id: currentUserId } = req.user;
 
         const existingGuest = await prisma.guest.findUnique({
@@ -281,6 +284,9 @@ const updateGuest = async (req, res) => {
                 ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
                 ...(sex !== undefined && { sex }),
                 ...(city !== undefined && { city }),
+                ...(dataPolicyAccepted !== undefined && { dataPolicyAccepted: Boolean(dataPolicyAccepted) }),
+                ...(dataTreatmentAuthorized !== undefined && { dataTreatmentAuthorized: Boolean(dataTreatmentAuthorized) }),
+                ...(minorConsentAuthorized !== undefined && { minorConsentAuthorized: Boolean(minorConsentAuthorized) }),
             };
         } else {
             const canEdit = existingGuest.invitedById === currentUserId || existingGuest.assignedToId === currentUserId;
@@ -448,7 +454,10 @@ const convertGuestToMember = async (req, res) => {
                             sex: guest.sex,
                             documentType: guest.documentType,
                             documentNumber: guest.documentNumber,
-                            birthDate: guest.birthDate
+                            birthDate: guest.birthDate,
+                            dataPolicyAccepted: guest.dataPolicyAccepted,
+                            dataTreatmentAuthorized: guest.dataTreatmentAuthorized,
+                            minorConsentAuthorized: guest.minorConsentAuthorized,
                         }
                     }
                 },
@@ -574,7 +583,7 @@ const addVisit = async (req, res) => {
 // Crear invitado público (desde página de login)
 const createPublicGuest = async (req, res) => {
     try {
-        const { name, phone, address, city, prayerRequest, invitedById, sex, documentType, documentNumber, birthDate } = req.body;
+        const { name, phone, address, city, prayerRequest, invitedById, sex, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
 
         if (!name || !phone || !invitedById) {
             return res.status(400).json({ message: 'Name, phone and inviter are required' });
@@ -593,6 +602,9 @@ const createPublicGuest = async (req, res) => {
                 documentType: documentType || null,
                 documentNumber: documentNumber || null,
                 birthDate: birthDate ? new Date(birthDate) : null,
+                dataPolicyAccepted: dataPolicyAccepted || false,
+                dataTreatmentAuthorized: dataTreatmentAuthorized || false,
+                minorConsentAuthorized: minorConsentAuthorized || false,
             }
         });
 

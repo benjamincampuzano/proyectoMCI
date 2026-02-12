@@ -25,6 +25,7 @@ const UserManagement = lazy(() => import('./pages/UserManagement'));
 const SetupWizard = lazy(() => import('./pages/SetupWizard'));
 const Metas = lazy(() => import('./pages/Metas'));
 const PublicGuestRegistration = lazy(() => import('./pages/PublicGuestRegistration'));
+const LegalDocuments = lazy(() => import('./pages/LegalDocuments'));
 
 // Placeholder components for now
 
@@ -117,6 +118,7 @@ function App() {
                   <Route path="network" element={<NetworkAssignment />} />
                   <Route path="usuarios" element={<AdminRoute><UserManagement /></AdminRoute>} />
                   <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
+                  <Route path="documentos-legales" element={<LegalDocuments />} />
                 </Route>
               </Routes>
             </Suspense>

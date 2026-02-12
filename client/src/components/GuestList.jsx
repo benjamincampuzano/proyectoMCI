@@ -3,6 +3,8 @@ import { Search, Filter, Edit2, Trash2, UserPlus, Loader, X, Save, UserCheck } f
 import PropTypes from 'prop-types';
 import { AsyncSearchSelect, Button } from './ui';
 import useGuestManagement from '../hooks/useGuestManagement';
+import { useAuth } from '../context/AuthContext';
+import { DATA_POLICY_URL } from '../constants/policies';
 import api from '../utils/api';
 
 const GuestList = ({ refreshTrigger }) => {
@@ -30,6 +32,11 @@ const GuestList = ({ refreshTrigger }) => {
     const [convertingGuest, setConvertingGuest] = useState(null);
     const [conversionEmail, setConversionEmail] = useState('');
     const [conversionPassword, setConversionPassword] = useState('');
+    const [conversionConsent, setConversionConsent] = useState({
+        dataPolicyAccepted: false,
+        dataTreatmentAuthorized: false,
+        minorConsentAuthorized: false
+    });
 
     const handleSearch = () => {
         fetchGuests();
@@ -51,12 +58,21 @@ const GuestList = ({ refreshTrigger }) => {
             return;
         }
 
-        const res = await convertGuestToMember(convertingGuest.id, { email: conversionEmail, password: conversionPassword });
+        const res = await convertGuestToMember(convertingGuest.id, {
+            email: conversionEmail,
+            password: conversionPassword,
+            ...conversionConsent
+        });
         if (!res.success) return;
 
         setConvertingGuest(null);
         setConversionEmail('');
         setConversionPassword('');
+        setConversionConsent({
+            dataPolicyAccepted: false,
+            dataTreatmentAuthorized: false,
+            minorConsentAuthorized: false
+        });
         alert('Invitado consolidado a Discípulo exitosamente');
     };
 
@@ -416,6 +432,34 @@ const GuestList = ({ refreshTrigger }) => {
                                         placeholder="Contraseña"
                                     />
                                 </div>
+
+                                {/* Data Authorization Checks */}
+                                <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2">
+                                    <label className="flex items-start gap-2 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            required
+                                            className="mt-1 w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                            checked={conversionConsent.dataPolicyAccepted}
+                                            onChange={e => setConversionConsent({ ...conversionConsent, dataPolicyAccepted: e.target.checked })}
+                                        />
+                                        <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                            Acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos</a>.
+                                        </span>
+                                    </label>
+                                    <label className="flex items-start gap-2 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            required
+                                            className="mt-1 w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                            checked={conversionConsent.dataTreatmentAuthorized}
+                                            onChange={e => setConversionConsent({ ...conversionConsent, dataTreatmentAuthorized: e.target.checked })}
+                                        />
+                                        <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                            Autorizo el tratamiento de mis datos personales.
+                                        </span>
+                                    </label>
+                                </div>
                                 <div className="flex justify-end space-x-2 mt-6">
                                     <Button
                                         variant="secondary"
@@ -423,6 +467,11 @@ const GuestList = ({ refreshTrigger }) => {
                                             setConvertingGuest(null);
                                             setConversionEmail('');
                                             setConversionPassword('');
+                                            setConversionConsent({
+                                                dataPolicyAccepted: false,
+                                                dataTreatmentAuthorized: false,
+                                                minorConsentAuthorized: false
+                                            });
                                         }}
                                     >
                                         Cancelar

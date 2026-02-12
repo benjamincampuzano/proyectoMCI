@@ -60,6 +60,7 @@ const schoolRoutes = require("./routes/schoolRoutes");
 const auditRoutes = require("./routes/auditRoutes");
 const goalRoutes = require("./routes/goalRoutes");
 const oracionDeTresRoutes = require("./routes/oracionDeTresRoutes");
+const legalDocumentRoutes = require("./routes/legalDocumentRoutes");
 
 /* ✅ API endpoints */
 app.use("/api/auth", authRoutes);
@@ -75,6 +76,7 @@ app.use("/api/school", schoolRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/metas", goalRoutes);
 app.use("/api/oracion-de-tres", oracionDeTresRoutes);
+app.use("/api/legal-documents", legalDocumentRoutes);
 
 /* ✅ Healthcheck */
 app.get("/", (req, res) => {

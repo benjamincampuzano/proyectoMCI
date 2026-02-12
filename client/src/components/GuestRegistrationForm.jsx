@@ -16,6 +16,9 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
         prayerRequest: '',
         invitedById: null,
         assignedToId: null,
+        dataPolicyAccepted: false,
+        dataTreatmentAuthorized: false,
+        minorConsentAuthorized: false,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -34,7 +37,9 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
     }, []);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        const name = e.target.name;
+        setFormData({ ...formData, [name]: value });
         setError('');
         setSuccess('');
     };
@@ -65,6 +70,9 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                 prayerRequest: '',
                 invitedById: null,
                 assignedToId: null,
+                dataPolicyAccepted: false,
+                dataTreatmentAuthorized: false,
+                minorConsentAuthorized: false,
             });
 
             if (onGuestCreated) {
@@ -90,6 +98,9 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
             prayerRequest: '',
             invitedById: null,
             assignedToId: null,
+            dataPolicyAccepted: false,
+            dataTreatmentAuthorized: false,
+            minorConsentAuthorized: false,
         });
         setError('');
         setSuccess('');
@@ -299,6 +310,48 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                     />
                 </div>
 
+                {/* Data Authorization Checks */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            name="dataPolicyAccepted"
+                            required
+                            className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                            checked={formData.dataPolicyAccepted}
+                            onChange={handleChange}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                            Declaro que he leído y acepto la <strong>Política de Tratamiento de Datos Personales</strong> de MCI.
+                        </span>
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            name="dataTreatmentAuthorized"
+                            required
+                            className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                            checked={formData.dataTreatmentAuthorized}
+                            onChange={handleChange}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                            Autorizo de manera expresa el tratamiento de mis datos conforme a la <strong>Ley 1581 de 2012</strong>.
+                        </span>
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            name="minorConsentAuthorized"
+                            className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                            checked={formData.minorConsentAuthorized}
+                            onChange={handleChange}
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                            En caso de registrar información de menores, declaro contar con autorización del representante legal.
+                        </span>
+                    </label>
+                </div>
+
                 <div className="flex space-x-3">
                     <button
                         type="submit"
@@ -323,8 +376,8 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                         <span>Limpiar</span>
                     </button>
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     );
 };
 

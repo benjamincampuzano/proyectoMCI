@@ -36,7 +36,20 @@ const UserManagement = () => {
         handleDeleteUser,
         getAssignableRoles,
         canEdit,
+        isAdmin,
     } = useUserManagement();
+
+    const calculateAge = (birthDate) => {
+        if (!birthDate) return null;
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    };
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto px-4 py-8">
@@ -144,8 +157,43 @@ const UserManagement = () => {
                                         <Phone size={14} /> {user.phone}
                                     </div>
                                 )}
+                                <div className="mt-1">
+                                    {user.birthDate ? (
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${calculateAge(user.birthDate) < 18 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400'}`}>
+                                                {calculateAge(user.birthDate)} años {calculateAge(user.birthDate) < 18 && '• Menor de edad'}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-xs text-gray-400">Sin fecha nac.</span>
+                                    )}
+                                </div>
                             </div>
                         )
+                    },
+                    {
+                        key: 'authorization',
+                        header: 'Autorización',
+                        headerClassName: 'px-6 py-4 text-xs font-semibold text-gray-500 uppercase',
+                        cellClassName: 'px-6 py-4',
+                        render: (user) => {
+                            const isMinor = calculateAge(user.birthDate) < 18;
+                            return (
+                                <div className="flex gap-2">
+                                    <div title="Política de Datos" className={`w-6 h-6 rounded flex items-center justify-center ${user.dataPolicyAccepted ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                        <div className="w-2 h-2 rounded-full bg-current" />
+                                    </div>
+                                    <div title="Ley 1581" className={`w-6 h-6 rounded flex items-center justify-center ${user.dataTreatmentAuthorized ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                        <div className="w-2 h-2 rounded-full bg-current" />
+                                    </div>
+                                    {isMinor && (
+                                        <div title="Autorización Tutor" className={`w-6 h-6 rounded flex items-center justify-center ${user.minorConsentAuthorized ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                                            <div className="w-2 h-2 rounded-full bg-current" />
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
                     },
                     {
                         key: 'location',
@@ -189,6 +237,7 @@ const UserManagement = () => {
                                 <button
                                     onClick={() => setEditingUser({
                                         ...user,
+                                        birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : '',
                                         pastorId: user.pastorId || '',
                                         liderDoceId: user.liderDoceId || '',
                                         liderCelulaId: user.liderCelulaId || '',
@@ -358,6 +407,61 @@ const UserManagement = () => {
                             </>
                         )}
                     </div>
+
+                    {/* Data Authorization Checks */}
+                    <div className="md:col-span-2 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3 mt-2">
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                required
+                                disabled={!isAdmin}
+                                className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                                checked={formData.dataPolicyAccepted}
+                                onChange={e => setFormData({ ...formData, dataPolicyAccepted: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                Declaro que he leído y acepto la <strong>Política de Tratamiento de Datos Personales</strong> de MCI.
+                            </span>
+                        </label>
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                required
+                                disabled={!isAdmin}
+                                className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                                checked={formData.dataTreatmentAuthorized}
+                                onChange={e => setFormData({ ...formData, dataTreatmentAuthorized: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                Autorizo de manera expresa el tratamiento de mis datos conforme a la <strong>Ley 1581 de 2012</strong>.
+                            </span>
+                        </label>
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                disabled={!isAdmin}
+                                required={calculateAge(formData.birthDate) < 18}
+                                className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                                checked={formData.minorConsentAuthorized}
+                                onChange={e => setFormData({ ...formData, minorConsentAuthorized: e.target.checked })}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                {calculateAge(formData.birthDate) < 18 ? (
+                                    <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                                        Cuento con el documento de autorización física/digital firmado por el padre o tutor legal para el tratamiento de datos del menor. (Obligatorio)
+                                    </span>
+                                ) : (
+                                    "En caso de registrar información de menores, declaro contar con autorización del representante legal."
+                                )}
+                            </span>
+                        </label>
+                        {!isAdmin && (
+                            <p className="text-xs text-orange-600 dark:text-orange-400 italic">
+                                * Solo un administrador puede modificar el estado de autorización de datos.
+                            </p>
+                        )}
+                    </div>
+
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                         <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">Cancelar</button>
                         <button type="submit" disabled={submitting} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-lg shadow-blue-500/30">
@@ -387,6 +491,15 @@ const UserManagement = () => {
                         <div>
                             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
                             <input type="email" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.email} onChange={e => setEditingUser({ ...editingUser, email: e.target.value })} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Fecha de Nacimiento</label>
+                            <input
+                                type="date"
+                                className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                value={editingUser.birthDate || ''}
+                                onChange={e => setEditingUser({ ...editingUser, birthDate: e.target.value })}
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
@@ -465,6 +578,61 @@ const UserManagement = () => {
                             </>
                         )}
                     </div>
+
+                    {/* Data Authorization Checks in Edit */}
+                    <div className="px-6 pb-6 space-y-3">
+                        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
+                            <label className="flex items-start gap-3 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    disabled={!isAdmin}
+                                    className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                                    checked={editingUser.dataPolicyAccepted || false}
+                                    onChange={e => setEditingUser({ ...editingUser, dataPolicyAccepted: e.target.checked })}
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                    Acepta la Política de Tratamiento de Datos Personales de MCI.
+                                </span>
+                            </label>
+                            <label className="flex items-start gap-3 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    disabled={!isAdmin}
+                                    className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                                    checked={editingUser.dataTreatmentAuthorized || false}
+                                    onChange={e => setEditingUser({ ...editingUser, dataTreatmentAuthorized: e.target.checked })}
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                    Autoriza el tratamiento de datos conforme a la Ley 1581 de 2012.
+                                </span>
+                            </label>
+                            <label className="flex items-start gap-3 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    disabled={!isAdmin}
+                                    required={calculateAge(editingUser.birthDate) < 18}
+                                    className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                                    checked={editingUser.minorConsentAuthorized || false}
+                                    onChange={e => setEditingUser({ ...editingUser, minorConsentAuthorized: e.target.checked })}
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                    {calculateAge(editingUser.birthDate) < 18 ? (
+                                        <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                                            Cuento con el documento de autorización física/digital firmado por el padre o tutor legal. (Obligatorio)
+                                        </span>
+                                    ) : (
+                                        "Cuenta con autorización del representante legal (para menores)."
+                                    )}
+                                </span>
+                            </label>
+                            {!isAdmin && (
+                                <p className="text-xs text-orange-600 dark:text-orange-400 italic">
+                                    * Solo un administrador puede modificar el estado de autorización de datos.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="p-6 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
                         <button type="button" onClick={() => setEditingUser(null)} className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">Cancelar</button>
                         <button disabled={submitting} onClick={() => handleUpdateUser(editingUser.id)} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30">

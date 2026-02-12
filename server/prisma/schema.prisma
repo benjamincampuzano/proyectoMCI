@@ -44,6 +44,7 @@ enum EntityType {
   ORACION_DE_TRES
   GUEST_CALL
   GUEST_VISIT
+  DOCUMENT
 }
 
 enum ResourceType {
@@ -209,6 +210,10 @@ model UserProfile {
   city           String?
   latitude       Float?
   longitude      Float?
+  
+  dataPolicyAccepted      Boolean @default(false)
+  dataTreatmentAuthorized Boolean @default(false)
+  minorConsentAuthorized  Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -263,6 +268,10 @@ model Guest {
   prayerRequest String?
   status        GuestStatus @default(NUEVO)
   isDeleted     Boolean     @default(false)
+  
+  dataPolicyAccepted      Boolean @default(false)
+  dataTreatmentAuthorized Boolean @default(false)
+  minorConsentAuthorized  Boolean @default(false)
   
   called         Boolean     @default(false)
   callObservation String?
@@ -723,4 +732,13 @@ model OracionDeTresReunion {
   createdAt        DateTime      @default(now()) @db.Timestamptz
 
   @@index([oracionDeTresId])
+}
+
+model LegalDocument {
+  id        Int      @id @default(autoincrement())
+  name      String
+  url       String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
 }

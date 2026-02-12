@@ -127,11 +127,11 @@ export const AuthProvider = ({ children }) => {
     };
 
     const isAdmin = () => {
-        return hasAnyRole(['ADMIN']);
+        return hasRole('ADMIN');
     };
 
     const isSuperAdmin = () => {
-        return hasRole('ADMIN');
+        return isAdmin();
     };
 
     return (
