@@ -163,10 +163,10 @@ const ChurchAttendanceChart = () => {
                             <YAxis />
                             <Tooltip
                                 labelFormatter={formatDate}
-                                formatter={(value, name) => [value, name === 'present' ? 'Presentes' : 'Ausentes']}
+                                formatter={(value, name) => [value, name]}
                             />
                             <Legend
-                                formatter={(value) => value === 'present' ? 'Presentes' : 'Ausentes'}
+                                formatter={(value) => value}
                             />
                             <Bar dataKey="present" fill="#10b981" name="Presentes" />
                             <Bar dataKey="absent" fill="#ef4444" name="Ausentes" />

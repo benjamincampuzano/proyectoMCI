@@ -1,12 +1,24 @@
 import TabNavigator from '../components/TabNavigator';
 import CourseManagement from '../components/School/CourseManagement';
 import SchoolLeaderStats from '../components/School/SchoolLeaderStats';
+import StudentMatrix from '../components/School/StudentMatrix';
 import { PageHeader } from '../components/ui';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 
 const Discipular = () => {
     const tabs = [
-        { id: 'management', label: 'Clases y Notas', component: CourseManagement },
+        { 
+            id: 'management', 
+            label: 'Clases y Notas', 
+            component: CourseManagement,
+            roles: ROLE_GROUPS.CAN_MANAGE_CLASSES
+        },
+        {
+            id: 'matrix',
+            label: 'Matriz de Estudiantes',
+            component: StudentMatrix,
+            roles: ROLE_GROUPS.ALL_LEADERS
+        },
         {
             id: 'stats',
             label: 'Reporte Estadístico',

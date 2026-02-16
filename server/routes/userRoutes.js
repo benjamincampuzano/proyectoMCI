@@ -34,7 +34,7 @@ router.get('/search', authenticate, (req, res, next) => {
 }, searchUsers);
 
 // Role-based routes
-// Read access: ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA
+// Read access: ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA (all leadership roles)
 router.get('/', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']), getAllUsers);
 router.get('/:id', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']), getUserById);
 

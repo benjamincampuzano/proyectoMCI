@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
     Activity, User, Calendar, Filter, Search, Download, Trash2,
-    Edit, PlusCircle, LogIn, ChevronLeft, ChevronRight
+    Edit, PlusCircle, LogIn, ChevronLeft, ChevronRight, Shield
 } from 'lucide-react';
 import useAuditDashboard from '../hooks/useAuditDashboard';
 import DataTable from '../components/DataTable';
@@ -16,6 +16,144 @@ const AuditDashboard = () => {
     const { logs, stats, loading, pagination, filters, setFilters, handleFilterChange } = useAuditDashboard();
     const [selectedLog, setSelectedLog] = useState(null); // Modal state
     const memoizedStats = useMemo(() => stats, [stats]);
+
+    const handleDownloadBackup = async () => {
+        try {
+            // Mostrar indicador de carga
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<span class="animate-spin">⏳</span> Creando backup...';
+            button.disabled = true;
+
+            // Llamar al endpoint profesional de backup PostgreSQL
+            const response = await fetch('http://localhost:5000/api/audit/backup', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Error al descargar el backup');
+            }
+
+            // Obtener el nombre del archivo desde los headers o usar uno predeterminado
+            const contentDisposition = response.headers.get('content-disposition');
+            let fileName = `backup_postgres_${new Date().toISOString().replace(/[:.]/g, '-')}.dump`;
+            
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (fileNameMatch) {
+                    fileName = fileNameMatch[1];
+                }
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            alert('✅ Backup de PostgreSQL descargado exitosamente');
+        } catch (error) {
+            console.error('Error downloading backup:', error);
+            alert(`❌ Error: ${error.message}`);
+        } finally {
+            // Restaurar botón
+            if (button) {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+    };
+
+    const handleRestoreBackup = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validar que sea un archivo .dump de PostgreSQL
+        if (!file.name.endsWith('.dump')) {
+            alert('❌ Error: Solo se permiten archivos de backup de PostgreSQL (.dump)');
+            event.target.value = '';
+            return;
+        }
+
+        // Validar tamaño máximo (ej. 100MB)
+        const maxSize = 100 * 1024 * 1024; // 100MB
+        if (file.size > maxSize) {
+            alert('❌ Error: El archivo es demasiado grande. Máximo permitido: 100MB');
+            event.target.value = '';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('backupFile', file);
+
+        // Mostrar confirmación más detallada
+        const confirmMessage = `⚠️ ADVERTENCIA CRÍTICA ⚠️\n\n` +
+            `Estás a punto de restaurar la base de datos completa desde el archivo:\n` +
+            `📁 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)\n\n` +
+            `🚨 ESTA ACCIÓN ELIMINARÁ TODOS LOS DATOS ACTUALES\n` +
+            `🚨 NO SE PUEDE DESHACER\n` +
+            `🚨 LA APLICACIÓN SE RECARGARÁ AUTOMÁTICAMENTE\n\n` +
+            `¿Estás absolutamente seguro de continuar?`;
+
+        if (!window.confirm(confirmMessage)) {
+            event.target.value = '';
+            return;
+        }
+
+        // Referencia al botón de restauración
+        const restoreButton = event.target.closest('div').querySelector('button');
+        const originalText = restoreButton ? restoreButton.innerHTML : '';
+        
+        try {
+            // Mostrar indicador de carga
+            if (restoreButton) {
+                restoreButton.innerHTML = '<span class="animate-spin">⏳</span> Restaurando...';
+                restoreButton.disabled = true;
+            }
+
+            const response = await fetch('http://localhost:5000/api/audit/restore', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Error al restaurar el backup');
+            }
+
+            alert('✅ Restauración completada exitosamente.\n\nLa aplicación se recargará en 3 segundos...');
+            
+            // Recargar después de un breve delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
+
+        } catch (error) {
+            console.error('Error restoring backup:', error);
+            alert(`❌ Error crítico: ${error.message}\n\nLa base de datos no fue modificada.`);
+        } finally {
+            // Restaurar botón si no se recarga
+            if (restoreButton && originalText) {
+                restoreButton.innerHTML = originalText;
+                restoreButton.disabled = false;
+            }
+        }
+
+        // Reset input
+        event.target.value = '';
+    };
 
     const formatDate = (dateStr) => {
         return new Date(dateStr).toLocaleString('es-ES', {
@@ -467,6 +605,67 @@ const AuditDashboard = () => {
                     </div>
                 </div>
             )}
+            {/* Database Tools Section - Admin Only */}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center gap-2">
+                    <Shield size={20} className="text-purple-600" />
+                    Herramientas de Base de Datos
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Backup Section */}
+                    <div className="p-4 border border-blue-100 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                        <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                            <Download size={18} />
+                            Copia de Seguridad
+                        </h4>
+                        <p className="text-sm text-blue-600 dark:text-blue-400 mb-4">
+                            Descarga una copia completa de la base de datos
+                        </p>
+                        <button
+                            onClick={handleDownloadBackup}
+                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Download size={18} />
+                            Descargar Backup
+                        </button>
+                    </div>
+
+                    {/* Restore Section */}
+                    <div className="p-4 border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 rounded-xl">
+                        <h4 className="font-medium text-red-800 dark:text-red-300 mb-2 flex items-center gap-2">
+                            <Activity size={18} />
+                            Restaurar Base de Datos
+                        </h4>
+                        <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+                            Sube un archivo de backup para restaurar la base de datos completa.
+                        </p>
+
+                        <div className="flex gap-2">
+                            <input
+                                type="file"
+                                id="backupUpload"
+                                accept=".dump"
+                                className="hidden"
+                                onChange={handleRestoreBackup}
+                            />
+                            <button
+                                onClick={() => {
+                                    if (window.confirm('⚠️ ADVERTENCIA CRÍTICA ⚠️\n\nAl restaurar una copia de seguridad, SE PERDERÁN TODOS LOS DATOS ACTUALES y serán reemplazados por los del archivo.\n\nEsta acción NO se puede deshacer.\n\n¿Estás absolutamente seguro de continuar?')) {
+                                        document.getElementById('backupUpload').click();
+                                    }
+                                }}
+                                className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v3.2a1 1 0 11-2 0V12.332a7.002 7.002 0 01-11.215-1.996.999.999 0 01.61-1.276z" clipRule="evenodd" />
+                                </svg>
+                                Restaurar Backup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

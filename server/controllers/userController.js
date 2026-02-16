@@ -326,7 +326,7 @@ const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const userId = parseInt(id);
-        const { fullName, email, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId } = req.body;
+        const { fullName, email, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, maritalStatus, network } = req.body;
 
         const userToUpdate = await prisma.user.findUnique({
             where: { id: userId },
@@ -378,6 +378,8 @@ const updateUser = async (req, res) => {
                             ...(documentType !== undefined && { documentType }),
                             ...(documentNumber !== undefined && { documentNumber }),
                             ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
+                            ...(req.body.maritalStatus !== undefined && { maritalStatus: req.body.maritalStatus || null }),
+                            ...(req.body.network !== undefined && { network: req.body.network || null }),
                             ...(req.body.dataPolicyAccepted !== undefined && { dataPolicyAccepted: req.body.dataPolicyAccepted }),
                             ...(req.body.dataTreatmentAuthorized !== undefined && { dataTreatmentAuthorized: req.body.dataTreatmentAuthorized }),
                             ...(req.body.minorConsentAuthorized !== undefined && { minorConsentAuthorized: req.body.minorConsentAuthorized }),
@@ -466,14 +468,14 @@ const updateUser = async (req, res) => {
 // Admin: Crear nuevo usuario
 const createUser = async (req, res) => {
     try {
-        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId } = req.body;
+        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, maritalStatus, network } = req.body;
 
         if (!email || !password || !fullName) {
             return res.status(400).json({ message: 'Email, password, and full name are required' });
         }
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) return res.status(400).json({ message: 'User already exists' });
+        if (existingUser) return res.status(400).json({ message: 'El correo electrónico ya está registrado. Por favor use otro correo.' });
 
         // Check for duplicate document information
         if (documentType && documentNumber) {
@@ -505,6 +507,8 @@ const createUser = async (req, res) => {
                             documentType,
                             documentNumber,
                             birthDate: birthDate ? new Date(birthDate) : null,
+                            maritalStatus: maritalStatus || null,
+                            network: network || null,
                             dataPolicyAccepted: req.body.dataPolicyAccepted || false,
                             dataTreatmentAuthorized: req.body.dataTreatmentAuthorized || false,
                             minorConsentAuthorized: req.body.minorConsentAuthorized || false,

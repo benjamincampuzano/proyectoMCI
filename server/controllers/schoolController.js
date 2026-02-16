@@ -11,11 +11,12 @@ const resolveLeaderName = (userWithParents) => {
     // Check parents in UserHierarchy
     if (userWithParents.parents && userWithParents.parents.length > 0) {
         // Find immediate parent with specific roles
-        const cellLeader = userWithParents.parents.find(p => p.parent.roles.some(r => r.role.name === 'LIDER_CELULA'));
-        if (cellLeader) return cellLeader.parent.profile?.fullName || 'Sin Nombre';
-
+        // Modified: Priority changed to LIDER_DOCE > LIDER_CELULA for School Reports
         const doceLeader = userWithParents.parents.find(p => p.parent.roles.some(r => r.role.name === 'LIDER_DOCE'));
         if (doceLeader) return doceLeader.parent.profile?.fullName || 'Sin Nombre';
+
+        const cellLeader = userWithParents.parents.find(p => p.parent.roles.some(r => r.role.name === 'LIDER_CELULA'));
+        if (cellLeader) return cellLeader.parent.profile?.fullName || 'Sin Nombre';
 
         const pastor = userWithParents.parents.find(p => p.parent.roles.some(r => r.role.name === 'PASTOR'));
         if (pastor) return pastor.parent.profile?.fullName || 'Sin Nombre';
@@ -565,7 +566,7 @@ const getSchoolStatsByLeader = async (req, res) => {
             if (enrol.finalGrade) {
                 stats.totalGradeSum += enrol.finalGrade;
                 stats.gradeCount++;
-                if (enrol.finalGrade >= 3.0) stats.passedCount++;
+                if (enrol.finalGrade >= 7) stats.passedCount++;
             }
 
             const expectedClasses = 10;
@@ -591,6 +592,128 @@ const getSchoolStatsByLeader = async (req, res) => {
 };
 
 // --- Class Materials ---
+
+const getStudentMatrix = async (req, res) => {
+    try {
+        const user = req.user;
+        const userId = parseInt(user.id);
+
+        // Determine which users to include based on role
+        let userWhereClause = {};
+        const roles = user.roles || [];
+
+        if (roles.includes('ADMIN') || roles.includes('PASTOR')) {
+            // See all students
+            userWhereClause = {
+                roles: { some: { role: { name: 'DISCIPULO' } } }
+            };
+        } else if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
+            // See students in their network
+            const networkUserIds = await getUserNetwork(userId);
+            userWhereClause = {
+                id: { in: [...networkUserIds, userId] },
+                roles: { some: { role: { name: 'DISCIPULO' } } }
+            };
+        } else {
+            // Students can only see themselves
+            userWhereClause = {
+                id: userId,
+                roles: { some: { role: { name: 'DISCIPULO' } } }
+            };
+        }
+
+        // Fetch all students with their enrollments and grades
+        const students = await prisma.user.findMany({
+            where: userWhereClause,
+            include: {
+                profile: true,
+                roles: { include: { role: true } },
+                parents: {
+                    include: {
+                        parent: {
+                            include: {
+                                profile: true,
+                                roles: { include: { role: true } }
+                            }
+                        }
+                    }
+                },
+                seminarEnrollments: {
+                    where: { 
+                        module: { 
+                            type: 'ESCUELA' 
+                        } 
+                    },
+                    include: {
+                        module: {
+                            select: {
+                                id: true,
+                                name: true,
+                                moduleNumber: true,
+                                type: true
+                            }
+                        },
+                        classAttendances: {
+                            orderBy: { classNumber: 'asc' }
+                        }
+                    }
+                }
+            },
+            orderBy: { profile: { fullName: 'asc' } }
+        });
+
+        // Format the response
+        const formattedStudents = students.map(student => {
+            // Calculate attendance rate for each enrollment
+            const enrollmentsWithAttendance = student.seminarEnrollments.map(enrollment => {
+                const expectedClasses = 10; // Assuming 10 classes per module
+                const attendedClasses = enrollment.classAttendances.filter(c => c.status === 'ASISTE').length;
+                const attendanceRate = expectedClasses > 0 ? (attendedClasses / expectedClasses) * 100 : 0;
+
+                // Calculate grades for this enrollment
+                const grades = enrollment.classAttendances
+                    .filter(c => c.grade !== null)
+                    .map(c => c.grade);
+
+                const avgGrade = grades.length > 0 
+                    ? grades.reduce((sum, grade) => sum + grade, 0) / grades.length 
+                    : null;
+
+                return {
+                    ...enrollment,
+                    attendanceRate,
+                    avgGrade,
+                    grades: enrollment.classAttendances.map(c => ({
+                        classNumber: c.classNumber,
+                        grade: c.grade,
+                        finalGrade: enrollment.finalGrade
+                    }))
+                };
+            });
+
+            // Find the leader (prioritize LIDER_DOCE)
+            const leaderDoce = student.parents.find(p => 
+                p.parent.roles.some(r => r.role.name === 'LIDER_DOCE')
+            )?.parent;
+
+            return {
+                id: student.id,
+                fullName: student.profile?.fullName || 'Sin Nombre',
+                leaderDoce: leaderDoce ? {
+                    id: leaderDoce.id,
+                    fullName: leaderDoce.profile?.fullName || 'Sin Nombre'
+                } : null,
+                enrollments: enrollmentsWithAttendance
+            };
+        });
+
+        res.json(formattedStudents);
+
+    } catch (error) {
+        console.error('Error fetching student matrix:', error);
+        res.status(500).json({ error: 'Error fetching student matrix' });
+    }
+};
 
 const getClassMaterials = async (req, res) => {
     try {
@@ -668,6 +791,7 @@ module.exports = {
     updateModule,
     unenrollStudent,
     getSchoolStatsByLeader,
+    getStudentMatrix,
     getClassMaterials,
     updateClassMaterial
 };

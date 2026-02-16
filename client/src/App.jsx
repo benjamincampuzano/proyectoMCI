@@ -43,6 +43,14 @@ const AdminRoute = ({ children }) => {
   return user && authorized ? children : <Navigate to="/" />;
 };
 
+const UserManagementRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  const roles = user?.roles || [];
+  const authorized = roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
+  return user && authorized ? children : <Navigate to="/" />;
+};
+
 const PageLoader = () => (
   <div className="flex items-center justify-center h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -116,7 +124,7 @@ function App() {
                   <Route path="encuentros" element={<Encuentros />} />
                   <Route path="convenciones" element={<Convenciones />} />
                   <Route path="network" element={<NetworkAssignment />} />
-                  <Route path="usuarios" element={<AdminRoute><UserManagement /></AdminRoute>} />
+                  <Route path="usuarios" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
                   <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
                   <Route path="documentos-legales" element={<LegalDocuments />} />
                 </Route>

@@ -67,6 +67,23 @@ enum DocumentType {
   PEP  // Permiso Especial de Permanencia
 }
 
+enum MaritalStatus {
+  SOLTERO
+  CASADO
+  DIVORCIADO
+  VIUDO
+  UNION_LIBRE
+  SEPARADO
+}
+
+enum Network {
+  MUJERES
+  HOMBRES
+  JOVENES
+  KIDS
+  ROCAS
+}
+
 enum GuestStatus {
   NUEVO
   CONTACTADO
@@ -210,6 +227,8 @@ model UserProfile {
   city           String?
   latitude       Float?
   longitude      Float?
+  maritalStatus  MaritalStatus?
+  network        Network?
   
   dataPolicyAccepted      Boolean @default(false)
   dataTreatmentAuthorized Boolean @default(false)

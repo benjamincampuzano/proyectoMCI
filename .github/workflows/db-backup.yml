@@ -1,0 +1,29 @@
+name: Backup Semanal de la Base de Datos
+
+on:
+  schedule:
+    - cron: "0 3 * * 0" # Domingo 3AM
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get install postgresql-client
+
+      - name: Run backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          mkdir -p backups
+          pg_dump "$DATABASE_URL" -Fc -f backups/backup.dump
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: postgres-backup
+          path: backups/backup.dump

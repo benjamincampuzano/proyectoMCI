@@ -104,10 +104,22 @@ const createCell = async (req, res) => {
 // Assign functionality (Add member to cell)
 const assignMember = async (req, res) => {
     try {
-        const { cellId, userId } = req.body;
+        let { cellId, userId, memberId } = req.body;
+
+        // Start Fix: Handle params and alternative body fields
+        if (req.params.id) {
+            cellId = req.params.id;
+        }
+
+        const targetUserId = userId || memberId;
+
+        if (!cellId || !targetUserId) {
+            return res.status(400).json({ error: 'Missing cellId or memberId' });
+        }
+        // End Fix
 
         await prisma.user.update({
-            where: { id: parseInt(userId) },
+            where: { id: parseInt(targetUserId) },
             data: { cellId: parseInt(cellId) }
         });
 

@@ -6,7 +6,9 @@
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm run dev",
-    "install:all": "npm install && cd client && npm install && cd server && npm install"
+    "install:all": "npm install && cd client && npm install && cd server && npm install",
+    "backup": "node scripts/backup-db.js",
+    "restore": "node scripts/restore-db.js"
   },
   "keywords": [],
   "author": "Benjamin Campuzano Castañeda",

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Lock, Phone, MapPin, Calendar, ChevronDown, Check, Loader, Shield, X } from 'lucide-react';
+import { User, Mail, Lock, Phone, MapPin, Calendar, ChevronDown, Check, Loader, Shield, X, Eye, EyeOff } from 'lucide-react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
@@ -19,6 +19,8 @@ const Register = () => {
         phone: '',
         address: '',
         city: '',
+        maritalStatus: '',
+        network: '',
         liderDoceId: '',
         dataPolicyAccepted: false,
         dataTreatmentAuthorized: false,
@@ -26,6 +28,7 @@ const Register = () => {
     });
     const [lideresDoce, setLideresDoce] = useState([]);
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
 
@@ -177,14 +180,21 @@ const Register = () => {
                                 <div className="relative">
                                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                                     <input
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         name="password"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors pr-12"
                                         placeholder="••••••••"
                                         required
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                                    >
+                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </button>
                                 </div>
                                 {formData.password && (
                                     <div className="mt-2 space-y-2">
@@ -257,6 +267,42 @@ const Register = () => {
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                         placeholder="Ciudad"
                                     />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Estado Civil</label>
+                                    <select
+                                        name="maritalStatus"
+                                        value={formData.maritalStatus}
+                                        onChange={handleChange}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    >
+                                        <option value="">Seleccione...</option>
+                                        <option value="SOLTERO">Soltero/a</option>
+                                        <option value="CASADO">Casado/a</option>
+                                        <option value="DIVORCIADO">Divorciado/a</option>
+                                        <option value="VIUDO">Viudo/a</option>
+                                        <option value="UNION_LIBRE">Unión de hecho/libre</option>
+                                        <option value="SEPARADO">Separado/a</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">RED</label>
+                                    <select
+                                        name="network"
+                                        value={formData.network}
+                                        onChange={handleChange}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    >
+                                        <option value="">Seleccione...</option>
+                                        <option value="MUJERES">Mujeres</option>
+                                        <option value="HOMBRES">Hombres</option>
+                                        <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
+                                        <option value="KIDS">Kids (5 a 10 años)</option>
+                                        <option value="ROCAS">Rocas (11 a 13 años)</option>
+                                    </select>
                                 </div>
                             </div>
 

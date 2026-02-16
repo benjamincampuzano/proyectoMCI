@@ -32,7 +32,7 @@ const CellManagement = () => {
 
     // Management State
     const [selectedCell, setSelectedCell] = useState(null);
-    const [selectedMember, setSelectedMember] = useState('');
+    const [selectedMember, setSelectedMember] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
@@ -210,10 +210,10 @@ const CellManagement = () => {
         try {
             setLoading(true);
             await api.post(`/enviar/cells/${selectedCell.id}/members`, {
-                memberId: selectedMember
+                memberId: selectedMember.id
             });
             alert('Discípulo asignado exitosamente');
-            setSelectedMember('');
+            setSelectedMember(null);
             fetchAssignedMembers(selectedCell.id);
             fetchCells();
         } catch (error) {
@@ -312,8 +312,13 @@ const CellManagement = () => {
                                 <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Asignar Discípulo</h4>
                                 <div className="flex gap-2">
                                     <AsyncSearchSelect
-                                        value={selectedMember}
-                                        onChange={setSelectedMember}
+                                        fetchItems={(term) =>
+                                            api.get('/users/search', { params: { search: term } })
+                                                .then(res => res.data)
+                                        }
+                                        selectedValue={selectedMember}
+                                        onSelect={setSelectedMember}
+                                        labelKey="fullName"
                                         placeholder="Buscar discípulo..."
                                         className="flex-1"
                                     />

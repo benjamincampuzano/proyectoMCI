@@ -37,6 +37,8 @@ const useUserManagement = () => {
         phone: '',
         address: '',
         city: '',
+        maritalStatus: '',
+        network: '',
         pastorId: '',
         liderDoceId: '',
         liderCelulaId: '',
@@ -86,6 +88,7 @@ const useUserManagement = () => {
                 documentType: '', documentNumber: '', fullName: '', birthDate: '',
                 email: '', password: '', role: 'DISCIPULO',
                 sex: 'HOMBRE', phone: '', address: '', city: '',
+                maritalStatus: '', network: '',
                 pastorId: '', liderDoceId: '', liderCelulaId: '',
                 dataPolicyAccepted: false, dataTreatmentAuthorized: false, minorConsentAuthorized: false
             });
@@ -110,6 +113,8 @@ const useUserManagement = () => {
                 phone: editingUser.phone,
                 address: editingUser.address,
                 city: editingUser.city,
+                maritalStatus: editingUser.maritalStatus || null,
+                network: editingUser.network || null,
                 pastorId: editingUser.pastorId ? parseInt(editingUser.pastorId) : null,
                 liderDoceId: editingUser.liderDoceId ? parseInt(editingUser.liderDoceId) : null,
                 liderCelulaId: editingUser.liderCelulaId ? parseInt(editingUser.liderCelulaId) : null,

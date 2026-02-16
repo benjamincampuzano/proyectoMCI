@@ -1,11 +1,12 @@
 import useUserManagement from '../hooks/useUserManagement';
 import {
     Users, UserPlus, Search, Edit, Trash2, Loader,
-    Filter, Mail, Phone, MapPin
+    Filter, Mail, Phone, MapPin, Eye, EyeOff
 } from 'lucide-react';
 import DataTable from '../components/DataTable';
 import ActionModal from '../components/ActionModal';
 import { PageHeader, Button } from '../components/ui';
+import { useState } from 'react';
 
 const UserManagement = () => {
     const {
@@ -38,6 +39,37 @@ const UserManagement = () => {
         canEdit,
         isAdmin,
     } = useUserManagement();
+
+    // Password visibility and validation states
+    const [showPassword, setShowPassword] = useState(false);
+    const [passwordErrors, setPasswordErrors] = useState([]);
+
+    // Validate password in real-time
+    const validatePasswordRealTime = (password, fullName) => {
+        const errors = [];
+
+        if (password.length > 0 && password.length < 8) {
+            errors.push('La contraseña debe tener al menos 8 caracteres');
+        }
+
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSymbols = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+        if (password.length >= 8 && !(hasUpperCase && hasLowerCase && hasNumbers && hasSymbols)) {
+            errors.push('Debe incluir mayúsculas, minúsculas, números y símbolos');
+        }
+
+        if (fullName && password.length > 0) {
+            const names = fullName.toLowerCase().split(' ').filter(n => n.length > 2);
+            if (names.some(name => password.toLowerCase().includes(name))) {
+                errors.push('La contraseña no debe contener tu nombre');
+            }
+        }
+
+        return errors;
+    };
 
     const calculateAge = (birthDate) => {
         if (!birthDate) return null;
@@ -316,7 +348,66 @@ const UserManagement = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Password</label>
-                            <input required type="password" placeholder="Mínimo 6 caracteres" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                            <div className="relative">
+                                <input
+                                    required
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Mínimo 8 caracteres"
+                                    className="w-full p-2 pr-10 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text- white focus:outline-none focus:border-blue-500"
+                                    value={formData.password}
+                                    onChange={e => {
+                                        setFormData({ ...formData, password: e.target.value });
+                                        setPasswordErrors(validatePasswordRealTime(e.target.value, formData.fullName));
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
+                            {passwordErrors.length > 0 && (
+                                <div className="mt-1 space-y-1">
+                                    {passwordErrors.map((error, idx) => (
+                                        <p key={idx} className="text-xs text-red-600 dark:text-red-400">
+                                            ⚠️ {error}
+                                        </p>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Estado Civil</label>
+                            <select
+                                className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                value={formData.maritalStatus || ''}
+                                onChange={e => setFormData({ ...formData, maritalStatus: e.target.value })}
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="SOLTERO">Soltero/a</option>
+                                <option value="CASADO">Casado/a</option>
+                                <option value="DIVORCIADO">Divorciado/a</option>
+                                <option value="VIUDO">Viudo/a</option>
+                                <option value="UNION_LIBRE">Unión de hecho/libre</option>
+                                <option value="SEPARADO">Separado/a</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">RED</label>
+                            <select
+                                className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                value={formData.network || ''}
+                                onChange={e => setFormData({ ...formData, network: e.target.value })}
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="MUJERES">Mujeres</option>
+                                <option value="HOMBRES">Hombres</option>
+                                <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
+                                <option value="KIDS">Kids (5 a 10 años)</option>
+                                <option value="ROCAS">Rocas (11 a 13 años)</option>
+                            </select>
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
@@ -525,6 +616,37 @@ const UserManagement = () => {
                         <div>
                             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ciudad</label>
                             <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={editingUser.city || ''} onChange={e => setEditingUser({ ...editingUser, city: e.target.value })} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Estado Civil</label>
+                            <select
+                                className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                value={editingUser.maritalStatus || ''}
+                                onChange={e => setEditingUser({ ...editingUser, maritalStatus: e.target.value })}
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="SOLTERO">Soltero/a</option>
+                                <option value="CASADO">Casado/a</option>
+                                <option value="DIVORCIADO">Divorciado/a</option>
+                                <option value="VIUDO">Viudo/a</option>
+                                <option value="UNION_LIBRE">Unión de hecho/libre</option>
+                                <option value="SEPARADO">Separado/a</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">RED</label>
+                            <select
+                                className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                value={editingUser.network || ''}
+                                onChange={e => setEditingUser({ ...editingUser, network: e.target.value })}
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="MUJERES">Mujeres</option>
+                                <option value="HOMBRES">Hombres</option>
+                                <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
+                                <option value="KIDS">Kids (5 a 10 años)</option>
+                                <option value="ROCAS">Rocas (11 a 13 años)</option>
+                            </select>
                         </div>
 
                         {/* Dynamic Leader Selection in Edit */}

@@ -11,6 +11,7 @@ const {
     updateModule,
     unenrollStudent,
     getSchoolStatsByLeader,
+    getStudentMatrix,
     getClassMaterials,
     updateClassMaterial
 } = require('../controllers/schoolController');
@@ -33,5 +34,8 @@ router.post('/modules/:moduleId/materials/:classNumber', updateClassMaterial);
 
 // Stats
 router.get('/stats/leader', getSchoolStatsByLeader); // New
+
+// Student Matrix
+router.get('/student-matrix', getStudentMatrix); // New
 
 module.exports = router;

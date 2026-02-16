@@ -76,7 +76,7 @@ const UserMenu = ({ onOpenProfile }) => {
                         <span className="text-sm text-gray-700 dark:text-gray-200">Política de Datos</span>
                     </a>
 
-                    {isAdmin && (
+                    {(user?.roles?.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) && (
                         <>
                             <Link
                                 to="/usuarios"
@@ -84,7 +84,7 @@ const UserMenu = ({ onOpenProfile }) => {
                                 className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                             >
                                 <Users size={18} className="text-gray-500 dark:text-gray-400" />
-                                <span className="text-sm text-gray-700 dark:text-gray-200">Gestionar Usuarios</span>
+                                <span className="text-sm text-gray-700 dark:text-gray-200">Administrador de Usuarios</span>
                             </Link>
                         </>
                     )}

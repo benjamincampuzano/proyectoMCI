@@ -184,34 +184,19 @@ const PublicGuestRegistration = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Tipo de Documento</label>
-                            <select
-                                name="documentType"
-                                value={formData.documentType}
-                                onChange={handleChange}
-                                className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
-                            >
-                                <option value="">Seleccionar...</option>
-                                <option value="RC">RC (Registro Civil)</option>
-                                <option value="TI">TI (Tarjeta Identidad)</option>
-                                <option value="CC">CC (Cédula Ciudadanía)</option>
-                                <option value="CE">CE (Cédula Extranjería)</option>
-                                <option value="PP">Pasaporte</option>
-                                <option value="PEP">PEP</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Número de Documento</label>
-                            <input
-                                type="text"
-                                name="documentNumber"
-                                value={formData.documentNumber}
-                                onChange={handleChange}
-                                className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
-                                placeholder="123456789"
-                            />
-                        </div>
+                        {/* Hidden Document Type Field */}
+                        <input
+                            type="hidden"
+                            name="documentType"
+                            value="NO_SPECIFIED"
+                        />
+                        
+                        {/* Hidden Document Number Field */}
+                        <input
+                            type="hidden"
+                            name="documentNumber"
+                            value="NO_SPECIFIED"
+                        />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -170,13 +170,13 @@ const AttendanceChart = () => {
                                 }}
                                 itemStyle={{ color: isDarkMode ? '#f3f4f6' : '#111827' }}
                                 labelFormatter={formatDate}
-                                formatter={(value, name) => [value, name === 'present' ? 'Presentes' : 'Ausentes']}
+                                formatter={(value, name) => [value, name]}
                             />
                             <Legend
                                 wrapperStyle={{ paddingTop: '20px' }}
                                 formatter={(value) => (
                                     <span style={{ color: isDarkMode ? '#e5e7eb' : '#374151' }}>
-                                        {value === 'present' ? 'Presentes' : 'Ausentes'}
+                                        {value}
                                     </span>
                                 )}
                             />

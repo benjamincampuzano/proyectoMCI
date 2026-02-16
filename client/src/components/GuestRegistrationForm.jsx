@@ -143,39 +143,18 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Tipo de Documento
-                        </label>
-                        <select
-                            name="documentType"
-                            value={formData.documentType}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                        >
-                            <option value="">Seleccionar...</option>
-                            <option value="RC">RC - Registro Civil</option>
-                            <option value="TI">TI - Tarjeta de Identidad</option>
-                            <option value="CC">CC - Cédula de Ciudadanía</option>
-                            <option value="CE">CE - Cédula de Extranjería</option>
-                            <option value="PP">PP - Pasaporte</option>
-                            <option value="PEP">PEP - Permiso Especial de Permanencia</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Número de Documento
-                        </label>
-                        <input
-                            type="text"
-                            name="documentNumber"
-                            value={formData.documentNumber}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                        />
-                    </div>
-
+                    {/* Hidden Document Type Field */}
+                    <input
+                        type="hidden"
+                        name="documentType"
+                        value="NO_SPECIFIED"
+                    />
+                    {/* Hidden Document Number Field */}
+                    <input
+                        type="hidden"
+                        name="documentNumber"
+                        value="NO_SPECIFIED"
+                    />
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Nombre Completo <span className="text-red-400">*</span>
