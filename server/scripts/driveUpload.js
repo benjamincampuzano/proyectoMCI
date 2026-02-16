@@ -3,7 +3,7 @@ const fs = require("fs");
 
 async function uploadToDrive(filePath, fileName) {
   const auth = new google.auth.GoogleAuth({
-    keyFile: "google-service-account.json",
+    credentials: JSON.parse(process.env.google_service_account || "{}"),
     scopes: ["https://www.googleapis.com/auth/drive.file"],
   });
 
