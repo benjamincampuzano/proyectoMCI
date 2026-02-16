@@ -13,5 +13,6 @@ router.get('/stats', authenticate, authorize(['ADMIN', 'PASTOR']), auditControll
 // Database Backup Routes - Restricted to ADMIN only for safety
 router.get('/backup', authenticate, authorize(['ADMIN']), backupController.downloadBackup);
 router.post('/restore', authenticate, authorize(['ADMIN']), upload.single('backupFile'), backupController.restoreBackup);
+router.post('/backup/drive', authenticate, authorize(['ADMIN']), backupController.backupToDrive);
 
 module.exports = router;

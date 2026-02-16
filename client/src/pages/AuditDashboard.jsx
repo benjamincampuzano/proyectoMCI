@@ -17,7 +17,7 @@ const AuditDashboard = () => {
     const [selectedLog, setSelectedLog] = useState(null); // Modal state
     const memoizedStats = useMemo(() => stats, [stats]);
 
-    const handleDownloadBackup = async () => {
+    const handleDownloadBackup = async (event) => {
         try {
             // Mostrar indicador de carga
             const button = event.target;

@@ -9,7 +9,7 @@ require("dotenv").config();
 
 const downloadBackup = async (req, res) => {
     try {
-        const DATABASE_URL = process.env.PG_DUMP_URL;
+        const DATABASE_URL = process.env.PG_DUMP_URL || process.env.DATABASE_URL;
 
         if (!DATABASE_URL) {
             return res.status(500).json({ error: "DATABASE_URL no está definida" });
@@ -29,7 +29,25 @@ const downloadBackup = async (req, res) => {
 
         console.log("📦 Iniciando backup PostgreSQL...");
 
-        const cmd = `"${PG_DUMP_PATH}" "${DATABASE_URL}" -Fc -f "${filePath}"`;
+        // Intentar usar pg_dump directamente (si está en el PATH)
+        let cmd = `pg_dump "${DATABASE_URL}" -Fc -f "${filePath}"`;
+        
+        // Si estamos en Windows, intentar con la ruta por defecto de PostgreSQL
+        if (process.platform === 'win32') {
+            const possiblePaths = [
+                "C:\\Program Files\\PostgreSQL\\16\\bin\\pg_dump.exe",
+                "C:\\Program Files\\PostgreSQL\\15\\bin\\pg_dump.exe",
+                "C:\\Program Files\\PostgreSQL\\14\\bin\\pg_dump.exe",
+                "C:\\Program Files\\PostgreSQL\\13\\bin\\pg_dump.exe"
+            ];
+            
+            for (const pgPath of possiblePaths) {
+                if (fs.existsSync(pgPath)) {
+                    cmd = `"${pgPath}" "${DATABASE_URL}" -Fc -f "${filePath}"`;
+                    break;
+                }
+            }
+        }
 
         try {
             execSync(cmd, { stdio: "inherit" });
@@ -49,7 +67,11 @@ const downloadBackup = async (req, res) => {
             });
         } catch (execError) {
             console.error("Error al ejecutar pg_dump:", execError);
-            return res.status(500).json({ error: "Error al crear el backup de la base de datos" });
+            console.error("Comando ejecutado:", cmd);
+            return res.status(500).json({ 
+                error: "Error al crear el backup de la base de datos. Asegúrate de que PostgreSQL esté instalado y que pg_dump esté en el PATH del sistema.",
+                details: process.env.NODE_ENV !== 'production' ? execError.message : undefined
+            });
         }
     } catch (error) {
         console.error("Error en downloadBackup:", error);
@@ -59,7 +81,7 @@ const downloadBackup = async (req, res) => {
 
 const restoreBackup = async (req, res) => {
     try {
-        const DATABASE_URL = process.env.PG_DUMP_URL;
+        const DATABASE_URL = process.env.PG_DUMP_URL || process.env.DATABASE_URL;
 
         if (!DATABASE_URL) {
             return res.status(500).json({ error: "DATABASE_URL no está definida" });
@@ -74,8 +96,25 @@ const restoreBackup = async (req, res) => {
         console.log("♻️ Restaurando backup...");
         console.log("📌 Archivo:", filePath);
 
-        // Limpia y restaura completo
-        const cmd = `"${PG_RESTORE_PATH}" --clean --if-exists --no-owner --dbname="${DATABASE_URL}" "${filePath}"`;
+        // Intentar usar pg_restore directamente (si está en el PATH)
+        let cmd = `pg_restore --clean --if-exists --no-owner --dbname="${DATABASE_URL}" "${filePath}"`;
+        
+        // Si estamos en Windows, intentar con la ruta por defecto de PostgreSQL
+        if (process.platform === 'win32') {
+            const possiblePaths = [
+                "C:\\Program Files\\PostgreSQL\\16\\bin\\pg_restore.exe",
+                "C:\\Program Files\\PostgreSQL\\15\\bin\\pg_restore.exe",
+                "C:\\Program Files\\PostgreSQL\\14\\bin\\pg_restore.exe",
+                "C:\\Program Files\\PostgreSQL\\13\\bin\\pg_restore.exe"
+            ];
+            
+            for (const pgPath of possiblePaths) {
+                if (fs.existsSync(pgPath)) {
+                    cmd = `"${pgPath}" --clean --if-exists --no-owner --dbname="${DATABASE_URL}" "${filePath}"`;
+                    break;
+                }
+            }
+        }
 
         try {
             execSync(cmd, { stdio: "inherit" });
@@ -89,7 +128,11 @@ const restoreBackup = async (req, res) => {
             return res.status(200).json({ message: "Base de datos restaurada exitosamente" });
         } catch (execError) {
             console.error("Error al ejecutar pg_restore:", execError);
-            return res.status(500).json({ error: "Error al restaurar la base de datos" });
+            console.error("Comando ejecutado:", cmd);
+            return res.status(500).json({ 
+                error: "Error al restaurar la base de datos. Asegúrate de que PostgreSQL esté instalado y que pg_restore esté en el PATH del sistema.",
+                details: process.env.NODE_ENV !== 'production' ? execError.message : undefined
+            });
         }
     } catch (error) {
         console.error("Error en restoreBackup:", error);
@@ -121,5 +164,6 @@ exports.backupToDrive = async (req, res) => {
 
 module.exports = {
     downloadBackup,
-    restoreBackup
+    restoreBackup,
+    backupToDrive
 };
