@@ -17,6 +17,7 @@ app.use(compression());
 /* ✅ CORS dinámico */
 const allowedOrigins = [
   "http://localhost:5173",
+  "https://proyecto-mci.vercel.app",
   process.env.FRONTEND_URL
 ].filter(Boolean).map(url => url.replace(/\/$/, ''));
 
