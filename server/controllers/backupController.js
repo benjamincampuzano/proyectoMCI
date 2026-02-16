@@ -140,30 +140,8 @@ const restoreBackup = async (req, res) => {
     }
 };
 
-const uploadToDrive = require("../scripts/driveUpload");
-
-exports.backupToDrive = async (req, res) => {
-  try {
-    const fileName = `backup_${Date.now()}.dump`;
-    const filePath = `backups/${fileName}`;
-
-    // 1. Generar backup
-    execSync(`pg_dump "${process.env.PG_DUMP_URL}" -Fc -f "${filePath}"`);
-
-    // 2. Subir a Drive
-    await uploadToDrive(filePath, fileName);
-
-    // 3. Borrar archivo local
-    fs.unlinkSync(filePath);
-
-    res.json({ success: true, message: "Backup guardado en Google Drive" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
 
 module.exports = {
     downloadBackup,
-    restoreBackup,
-    backupToDrive
+    restoreBackup
 };

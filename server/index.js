@@ -99,11 +99,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-/* ✅ Iniciar sistema de backups automáticos */
-if (process.env.NODE_ENV === 'production') {
-  require('./scripts/autoBackup');
-}
-
 /* ✅ Start server */
 const PORT = process.env.PORT || 5000;
 
