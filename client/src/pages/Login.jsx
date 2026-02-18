@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
@@ -16,10 +18,18 @@ const Login = () => {
         setError('');
         const result = await login(email, password);
         if (result.success) {
-            navigate('/');
+            if (result.mustChangePassword) {
+                setShowPasswordChangeModal(true);
+            } else {
+                navigate('/');
+            }
         } else {
             setError(result.message);
         }
+    };
+
+    const handlePasswordChanged = () => {
+        navigate('/');
     };
 
     return (
@@ -98,6 +108,12 @@ const Login = () => {
                     </button>
                 </div>
             </div>
+
+            <ChangePasswordModal
+                isOpen={showPasswordChangeModal}
+                onClose={() => setShowPasswordChangeModal(false)}
+                onPasswordChanged={handlePasswordChanged}
+            />
         </div>
     );
 };

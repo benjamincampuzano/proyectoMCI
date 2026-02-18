@@ -3,9 +3,32 @@ const path = require("path");
 const fs = require("fs");
 require("dotenv").config();
 
-// Rutas completas para PostgreSQL en Windows
-// const PG_DUMP_PATH = "C:\\Program Files\\PostgreSQL\\18\\bin\\pg_dump.exe";
-// const PG_RESTORE_PATH = "C:\\Program Files\\PostgreSQL\\18\\bin\\pg_restore.exe";
+// Helper para encontrar ejecutables de PostgreSQL en Windows
+const findPgExecutable = (exeName) => {
+    // 1. Priorizar variable de entorno específica si existe
+    const envVar = exeName === 'pg_dump' ? process.env.PG_DUMP_PATH : process.env.PG_RESTORE_PATH;
+    if (envVar && fs.existsSync(envVar)) return envVar;
+
+    // 2. Intentar encontrarlo en el PATH
+    try {
+        const whereCmd = process.platform === 'win32' ? `where ${exeName}` : `which ${exeName}`;
+        const output = execSync(whereCmd, { encoding: 'utf8' }).split('\n')[0].trim();
+        if (output && fs.existsSync(output)) return output;
+    } catch (e) {
+        // Ignorar error si no está en el PATH
+    }
+
+    // 3. Rutas comunes en Windows
+    if (process.platform === 'win32') {
+        const versions = ['18', '17', '16', '15', '14', '13'];
+        for (const v of versions) {
+            const fullPath = `C:\\Program Files\\PostgreSQL\\${v}\\bin\\${exeName}.exe`;
+            if (fs.existsSync(fullPath)) return fullPath;
+        }
+    }
+
+    return exeName; // Retornar solo el nombre si no se encontró ruta completa
+};
 
 const downloadBackup = async (req, res) => {
     try {
@@ -18,7 +41,7 @@ const downloadBackup = async (req, res) => {
         const backupsDir = path.join(__dirname, "../backups");
 
         if (!fs.existsSync(backupsDir)) {
-            fs.mkdirSync(backupsDir);
+            fs.mkdirSync(backupsDir, { recursive: true });
         }
 
         const fileName = `backup_${new Date()
@@ -29,48 +52,34 @@ const downloadBackup = async (req, res) => {
 
         console.log("📦 Iniciando backup PostgreSQL...");
 
-        // Intentar usar pg_dump directamente (si está en el PATH)
-        let cmd = `pg_dump "${DATABASE_URL}" -Fc -f "${filePath}"`;
-        
-        // Si estamos en Windows, intentar con la ruta por defecto de PostgreSQL
-        if (process.platform === 'win32') {
-            const possiblePaths = [
-                "C:\\Program Files\\PostgreSQL\\16\\bin\\pg_dump.exe",
-                "C:\\Program Files\\PostgreSQL\\15\\bin\\pg_dump.exe",
-                "C:\\Program Files\\PostgreSQL\\14\\bin\\pg_dump.exe",
-                "C:\\Program Files\\PostgreSQL\\13\\bin\\pg_dump.exe"
-            ];
-            
-            for (const pgPath of possiblePaths) {
-                if (fs.existsSync(pgPath)) {
-                    cmd = `"${pgPath}" "${DATABASE_URL}" -Fc -f "${filePath}"`;
-                    break;
-                }
-            }
-        }
+        const pgDumpPath = findPgExecutable('pg_dump');
+        // Usamos comillas para manejar espacios en rutas y URLs
+        const cmd = `"${pgDumpPath}" "${DATABASE_URL}" -Fc -f "${filePath}"`;
 
         try {
-            execSync(cmd, { stdio: "inherit" });
+            // No usamos { stdio: "inherit" } para poder capturar el error si ocurre
+            execSync(cmd, { stdio: "pipe" });
             console.log("✅ Backup completado:", filePath);
 
             // Enviar el archivo al cliente
             res.download(filePath, fileName, (err) => {
                 if (err) {
                     console.error("Error al enviar el archivo:", err);
-                    return res.status(500).json({ error: "Error al descargar el backup" });
+                    // No podemos enviar otra respuesta si ya se inició la descarga
                 }
                 
-                // Opcional: eliminar el archivo después de enviarlo
+                // Eliminar el archivo después de enviarlo para ahorrar espacio
                 fs.unlink(filePath, (unlinkErr) => {
                     if (unlinkErr) console.error("Error al eliminar archivo temporal:", unlinkErr);
                 });
             });
         } catch (execError) {
-            console.error("Error al ejecutar pg_dump:", execError);
-            console.error("Comando ejecutado:", cmd);
+            console.error("Error al ejecutar pg_dump:", execError.message);
+            if (execError.stderr) console.error("Detalle stderr:", execError.stderr.toString());
+            
             return res.status(500).json({ 
-                error: "Error al crear el backup de la base de datos. Asegúrate de que PostgreSQL esté instalado y que pg_dump esté en el PATH del sistema.",
-                details: process.env.NODE_ENV !== 'production' ? execError.message : undefined
+                error: "Error al crear el backup de la base de datos.",
+                details: execError.stderr ? execError.stderr.toString() : execError.message
             });
         }
     } catch (error) {
@@ -96,28 +105,11 @@ const restoreBackup = async (req, res) => {
         console.log("♻️ Restaurando backup...");
         console.log("📌 Archivo:", filePath);
 
-        // Intentar usar pg_restore directamente (si está en el PATH)
-        let cmd = `pg_restore --clean --if-exists --no-owner --dbname="${DATABASE_URL}" "${filePath}"`;
-        
-        // Si estamos en Windows, intentar con la ruta por defecto de PostgreSQL
-        if (process.platform === 'win32') {
-            const possiblePaths = [
-                "C:\\Program Files\\PostgreSQL\\16\\bin\\pg_restore.exe",
-                "C:\\Program Files\\PostgreSQL\\15\\bin\\pg_restore.exe",
-                "C:\\Program Files\\PostgreSQL\\14\\bin\\pg_restore.exe",
-                "C:\\Program Files\\PostgreSQL\\13\\bin\\pg_restore.exe"
-            ];
-            
-            for (const pgPath of possiblePaths) {
-                if (fs.existsSync(pgPath)) {
-                    cmd = `"${pgPath}" --clean --if-exists --no-owner --dbname="${DATABASE_URL}" "${filePath}"`;
-                    break;
-                }
-            }
-        }
+        const pgRestorePath = findPgExecutable('pg_restore');
+        const cmd = `"${pgRestorePath}" --clean --if-exists --no-owner --dbname="${DATABASE_URL}" "${filePath}"`;
 
         try {
-            execSync(cmd, { stdio: "inherit" });
+            execSync(cmd, { stdio: "pipe" });
             console.log("✅ Restore completado con éxito.");
 
             // Eliminar el archivo temporal
@@ -127,11 +119,12 @@ const restoreBackup = async (req, res) => {
 
             return res.status(200).json({ message: "Base de datos restaurada exitosamente" });
         } catch (execError) {
-            console.error("Error al ejecutar pg_restore:", execError);
-            console.error("Comando ejecutado:", cmd);
+            console.error("Error al ejecutar pg_restore:", execError.message);
+            if (execError.stderr) console.error("Detalle stderr:", execError.stderr.toString());
+
             return res.status(500).json({ 
-                error: "Error al restaurar la base de datos. Asegúrate de que PostgreSQL esté instalado y que pg_restore esté en el PATH del sistema.",
-                details: process.env.NODE_ENV !== 'production' ? execError.message : undefined
+                error: "Error al restaurar la base de datos.",
+                details: execError.stderr ? execError.stderr.toString() : execError.message
             });
         }
     } catch (error) {

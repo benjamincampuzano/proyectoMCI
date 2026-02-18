@@ -68,9 +68,23 @@ export const AuthProvider = ({ children }) => {
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);
-            return { success: true };
+            return { success: true, mustChangePassword: res.data.user?.mustChangePassword || false };
         } catch (error) {
             return { success: false, message: error.response?.data?.message || 'Login failed' };
+        }
+    };
+
+    const changePassword = async (currentPassword, newPassword) => {
+        try {
+            await api.post('/auth/change-password', { currentPassword, newPassword });
+            // Update user state to reflect password change
+            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const updatedUser = { ...storedUser, mustChangePassword: false };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            return { success: true };
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message || 'Error al cambiar contraseña' };
         }
     };
 
@@ -138,7 +152,8 @@ export const AuthProvider = ({ children }) => {
         <AuthContext.Provider value={{
             user, login, register, setup, logout, updateProfile,
             loading, isInitialized,
-            hasRole, hasAnyRole, isAdmin, isSuperAdmin
+            hasRole, hasAnyRole, isAdmin, isSuperAdmin,
+            changePassword
         }}>
             {children}
         </AuthContext.Provider>

@@ -92,7 +92,8 @@ const register = async (req, res) => {
                 phone: user.phone,
                 address: user.profile.address,
                 city: user.profile.city,
-                sex: user.profile.sex
+                sex: user.profile.sex,
+                mustChangePassword: user.mustChangePassword
             }
         });
     } catch (error) {
@@ -143,7 +144,8 @@ const login = async (req, res) => {
                 phone: user.phone,
                 address: user.profile.address,
                 city: user.profile.city,
-                sex: user.profile.sex
+                sex: user.profile.sex,
+                mustChangePassword: user.mustChangePassword
             }
         });
     } catch (error) {
@@ -223,6 +225,7 @@ const registerSetup = async (req, res) => {
                     email,
                     password: hashedPassword,
                     phone,
+                    mustChangePassword: false, // El admin inicial no necesita cambiar contraseña
                     profile: {
                         create: {
                             fullName,
@@ -273,4 +276,107 @@ const registerSetup = async (req, res) => {
     }
 };
 
-module.exports = { register, login, getPublicLeaders, checkInitStatus, registerSetup };
+// Change password controller
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user.id;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Contraseña actual y nueva contraseña son requeridas' });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Verify current password
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'La contraseña actual es incorrecta' });
+        }
+
+        // Validate new password
+        const userProfile = await prisma.userProfile.findUnique({
+            where: { userId: userId }
+        });
+
+        const validation = validatePassword(newPassword, {
+            email: user.email,
+            fullName: userProfile?.fullName
+        });
+
+        if (!validation.isValid) {
+            return res.status(400).json({ message: validation.message });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password and reset mustChangePassword flag
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                password: hashedPassword,
+                mustChangePassword: false
+            }
+        });
+
+        await logActivity(userId, 'UPDATE', 'USER', userId, { message: 'Cambio de contraseña' }, req.ip, req.headers['user-agent']);
+
+        res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
+    } catch (error) {
+        console.error('Change password error:', error);
+        res.status(500).json({ message: 'Error al cambiar la contraseña' });
+    }
+};
+
+// Force password change (for admins to reset user passwords)
+const forcePasswordChange = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { newTempPassword } = req.body;
+
+        // Validate the temporary password
+        const user = await prisma.user.findUnique({
+            where: { id: parseInt(userId) },
+            include: { profile: true }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        const validation = validatePassword(newTempPassword, {
+            email: user.email,
+            fullName: user.profile?.fullName
+        });
+
+        if (!validation.isValid) {
+            return res.status(400).json({ message: validation.message });
+        }
+
+        const hashedPassword = await bcrypt.hash(newTempPassword, 10);
+
+        await prisma.user.update({
+            where: { id: parseInt(userId) },
+            data: {
+                password: hashedPassword,
+                mustChangePassword: true
+            }
+        });
+
+        await logActivity(req.user.userId, 'UPDATE', 'USER', parseInt(userId), { message: 'Reinicio de contraseña por administrador' }, req.ip, req.headers['user-agent']);
+
+        res.status(200).json({ message: 'Contraseña reiniciada. El usuario deberá cambiarla en su próximo inicio de sesión.' });
+    } catch (error) {
+        console.error('Force password change error:', error);
+        res.status(500).json({ message: 'Error al forzar el cambio de contraseña' });
+    }
+};
+
+module.exports = { register, login, getPublicLeaders, checkInitStatus, registerSetup, changePassword, forcePasswordChange };

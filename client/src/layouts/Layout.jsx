@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Home, Users, UserPlus, Heart, Send, Calendar, BookOpen, LogOut, Network, Activity, ChevronLeft, ChevronRight, Target, Shield } from 'lucide-react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';
+import PasswordChangeModal from '../components/auth/PasswordChangeModal';
 import logo from '../assets/logo.jpg';
 import { DATA_POLICY_URL } from '../constants/policies';
 
@@ -162,6 +163,11 @@ const Layout = () => {
             <UserProfileModal
                 isOpen={showProfileModal}
                 onClose={() => setShowProfileModal(false)}
+            />
+
+            <PasswordChangeModal
+                isOpen={user?.mustChangePassword}
+                onClose={() => { }}
             />
         </div>
     );

@@ -173,7 +173,10 @@ const changePassword = async (req, res) => {
 
         await prisma.user.update({
             where: { id: userId },
-            data: { password: hashedPassword },
+            data: {
+                password: hashedPassword,
+                mustChangePassword: false
+            },
         });
 
         res.status(200).json({ message: 'Password changed successfully' });
@@ -468,10 +471,34 @@ const updateUser = async (req, res) => {
 // Admin: Crear nuevo usuario
 const createUser = async (req, res) => {
     try {
-        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, maritalStatus, network } = req.body;
+        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, maritalStatus, network, generateTempPassword, mustChangePassword } = req.body;
 
-        if (!email || !password || !fullName) {
-            return res.status(400).json({ message: 'Email, password, and full name are required' });
+        if (!email || !fullName) {
+            return res.status(400).json({ message: 'Email and full name are required' });
+        }
+
+        // Forzar cambio de contraseña para nuevos usuarios creados por administrador
+        let finalPassword = password;
+        let shouldChangePassword = true;
+
+        if (generateTempPassword) {
+            // Generar una contraseña temporal segura
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+            let tempPass = '';
+            // Al menos 8 caracteres
+            for (let i = 0; i < 8; i++) {
+                tempPass += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            // Asegurar que tenga al menos una mayúscula, minúscula, número y símbolo
+            if (!/[A-Z]/.test(tempPass)) tempPass = 'A' + tempPass.slice(1);
+            if (!/[a-z]/.test(tempPass)) tempPass = 'a' + tempPass.slice(1);
+            if (!/\d/.test(tempPass)) tempPass = '1' + tempPass.slice(1);
+            if (!/[!@#$%^&*]/.test(tempPass)) tempPass = '!' + tempPass.slice(1);
+
+            finalPassword = tempPass;
+            shouldChangePassword = true;
+        } else if (!password) {
+            return res.status(400).json({ message: 'Password is required when not generating temporary password' });
         }
 
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -487,7 +514,7 @@ const createUser = async (req, res) => {
             }
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(finalPassword, 10);
         const coords = await geocodeAddress(address, city);
 
         const user = await prisma.$transaction(async (tx) => {
@@ -496,6 +523,7 @@ const createUser = async (req, res) => {
                     email,
                     password: hashedPassword,
                     phone,
+                    mustChangePassword: shouldChangePassword,
                     profile: {
                         create: {
                             fullName,

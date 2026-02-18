@@ -26,7 +26,8 @@ const AuditDashboard = () => {
             button.disabled = true;
 
             // Llamar al endpoint profesional de backup PostgreSQL
-            const response = await fetch('http://localhost:5000/api/audit/backup', {
+            const baseURL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+            const response = await fetch(`${baseURL}/api/audit/backup`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -41,7 +42,7 @@ const AuditDashboard = () => {
             // Obtener el nombre del archivo desde los headers o usar uno predeterminado
             const contentDisposition = response.headers.get('content-disposition');
             let fileName = `backup_postgres_${new Date().toISOString().replace(/[:.]/g, '-')}.dump`;
-            
+
             if (contentDisposition) {
                 const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
                 if (fileNameMatch) {
@@ -111,7 +112,7 @@ const AuditDashboard = () => {
         // Referencia al botón de restauración
         const restoreButton = event.target.closest('div').querySelector('button');
         const originalText = restoreButton ? restoreButton.innerHTML : '';
-        
+
         try {
             // Mostrar indicador de carga
             if (restoreButton) {
@@ -119,7 +120,8 @@ const AuditDashboard = () => {
                 restoreButton.disabled = true;
             }
 
-            const response = await fetch('http://localhost:5000/api/audit/restore', {
+            const baseURL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+            const response = await fetch(`${baseURL}/api/audit/restore`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -134,7 +136,7 @@ const AuditDashboard = () => {
             }
 
             alert('✅ Restauración completada exitosamente.\n\nLa aplicación se recargará en 3 segundos...');
-            
+
             // Recargar después de un breve delay
             setTimeout(() => {
                 window.location.reload();
