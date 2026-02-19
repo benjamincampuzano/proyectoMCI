@@ -36,6 +36,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         name: '',
         description: '',
         cost: '',
+        transportCost: '',
+        accommodationCost: '',
         startDate: '',
         endDate: '',
         type: ''
@@ -46,9 +48,12 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [selectedGuestId, setSelectedGuestId] = useState(null);
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [discount, setDiscount] = useState(0);
+    const [needsTransport, setNeedsTransport] = useState(false);
+    const [needsAccommodation, setNeedsAccommodation] = useState(false);
 
     // Payment Form State
     const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentType, setPaymentType] = useState('ENCUENTRO');
     const [paymentNotes, setPaymentNotes] = useState('');
 
     const canModify = user.id === encuentro.coordinatorId || user.roles?.includes('ADMIN');
@@ -79,12 +84,16 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             await api.post(`/encuentros/${encuentro.id}/register`, {
                 guestId: registrationType === 'GUEST' ? selectedGuestId : null,
                 userId: registrationType === 'USER' ? selectedUserId : null,
-                discountPercentage: parseFloat(discount)
+                discountPercentage: parseFloat(discount),
+                needsTransport,
+                needsAccommodation
             });
             setShowRegisterModal(false);
             setSelectedGuestId(null);
             setSelectedUserId(null);
             setDiscount(0);
+            setNeedsTransport(false);
+            setNeedsAccommodation(false);
             onRefresh();
             if (activeTab === 'report') fetchReport();
         } catch (error) {
@@ -101,11 +110,13 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         try {
             await api.post(`/encuentros/registrations/${selectedRegistration.id}/payments`, {
                 amount: parseFloat(paymentAmount),
+                paymentType,
                 notes: paymentNotes
             });
             setShowPaymentModal(false);
             setSelectedRegistration(null);
             setPaymentAmount('');
+            setPaymentType('ENCUENTRO');
             setPaymentNotes('');
             onRefresh();
             if (activeTab === 'report') fetchReport();
@@ -174,6 +185,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             name: encuentro.name,
             description: encuentro.description || '',
             cost: encuentro.cost,
+            transportCost: encuentro.transportCost || 0,
+            accommodationCost: encuentro.accommodationCost || 0,
             startDate: new Date(encuentro.startDate).toISOString().split('T')[0],
             endDate: new Date(encuentro.endDate).toISOString().split('T')[0],
             type: encuentro.type,
@@ -365,7 +378,31 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                 {formatCurrency(reg.totalPaid)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 dark:text-red-400 font-medium">
-                                                {formatCurrency(reg.balance)}
+                                                <div className="flex flex-col items-end">
+                                                    <span>{formatCurrency(reg.balance)}</span>
+                                                    {reg.balance > 0 && (
+                                                        <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-tight text-right">
+                                                            {(reg.baseCost - (reg.paymentsByType?.ENCUENTRO || 0)) > 0 && (
+                                                                <div className="flex justify-between w-32">
+                                                                    <span>Encuentro:</span>
+                                                                    <span>{formatCurrency(reg.baseCost - (reg.paymentsByType?.ENCUENTRO || 0))}</span>
+                                                                </div>
+                                                            )}
+                                                            {(reg.transportCost - (reg.paymentsByType?.TRANSPORT || 0)) > 0 && (
+                                                                <div className="flex justify-between w-32">
+                                                                    <span>Transp:</span>
+                                                                    <span>{formatCurrency(reg.transportCost - (reg.paymentsByType?.TRANSPORT || 0))}</span>
+                                                                </div>
+                                                            )}
+                                                            {(reg.accommodationCost - (reg.paymentsByType?.ACCOMMODATION || 0)) > 0 && (
+                                                                <div className="flex justify-between w-32">
+                                                                    <span>Hosped:</span>
+                                                                    <span>{formatCurrency(reg.accommodationCost - (reg.paymentsByType?.ACCOMMODATION || 0))}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
                                                 {canModify && (
@@ -544,6 +581,26 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <label className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={needsTransport}
+                                        onChange={(e) => setNeedsTransport(e.target.checked)}
+                                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Transporte</span>
+                                </label>
+                                <label className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={needsAccommodation}
+                                        onChange={(e) => setNeedsAccommodation(e.target.checked)}
+                                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Hospedaje</span>
+                                </label>
+                            </div>
                             <div className="pt-4">
                                 <button
                                     type="submit"
@@ -595,6 +652,20 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Tipo de Pago
+                                </label>
+                                <select
+                                    value={paymentType}
+                                    onChange={(e) => setPaymentType(e.target.value)}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="ENCUENTRO">Encuentro</option>
+                                    <option value="TRANSPORT">Transporte</option>
+                                    <option value="ACCOMMODATION">Hospedaje</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Observación (Opcional)
                                 </label>
                                 <input
@@ -637,9 +708,14 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     {selectedHistoryRegistration.payments.map((payment) => (
                                         <div key={payment.id} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
                                             <div className="flex justify-between items-center mb-2">
-                                                <span className="font-bold text-green-600 dark:text-green-400">
-                                                    {formatCurrency(payment.amount)}
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-green-600 dark:text-green-400">
+                                                        {formatCurrency(payment.amount)}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+                                                        {payment.paymentType === 'TRANSPORT' ? 'Transporte' : payment.paymentType === 'ACCOMMODATION' ? 'Hospedaje' : 'Encuentro'}
+                                                    </span>
+                                                </div>
                                                 <span className="text-xs text-gray-500 dark:text-gray-400">
                                                     {new Date(payment.date).toLocaleDateString()}
                                                 </span>
@@ -788,7 +864,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Costo
+                                        Donación Encuentro ($)
                                     </label>
                                     <input
                                         type="number"
@@ -813,6 +889,32 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                         <option value="JOVENES">Jóvenes</option>
                                         <option value="HOMBRES">Hombres</option>
                                     </select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Costo Transporte ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editData.transportCost}
+                                        onChange={(e) => setEditData({ ...editData, transportCost: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Costo Hospedaje ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editData.accommodationCost}
+                                        onChange={(e) => setEditData({ ...editData, accommodationCost: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">

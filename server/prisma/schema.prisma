@@ -387,21 +387,23 @@ model ConventionPayment {
 }
 
 model Encuentro {
-  id            Int                     @id @default(autoincrement())
-  type          EncuentroType
-  name          String
-  description   String?
-  cost          Float
-  startDate     DateTime                @db.Timestamptz(6)
-  endDate       DateTime                @db.Timestamptz(6)
-  coordinatorId Int?
-  isDeleted     Boolean                 @default(false)
-  createdAt     DateTime                @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime                @updatedAt @db.Timestamptz(6)
-  coordinator   User?                   @relation("EncuentroCoordinator", fields: [coordinatorId], references: [id])
-  leaders       EncuentroLeader[]
-  registrations EncuentroRegistration[]
-  goals         Goal[]
+  id                Int                     @id @default(autoincrement())
+  type              EncuentroType
+  name              String
+  description       String?
+  cost              Float
+  transportCost     Float                   @default(0)
+  accommodationCost Float                   @default(0)
+  startDate         DateTime                @db.Timestamptz(6)
+  endDate           DateTime                @db.Timestamptz(6)
+  coordinatorId     Int?
+  isDeleted         Boolean                 @default(false)
+  createdAt         DateTime                @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime                @updatedAt @db.Timestamptz(6)
+  coordinator       User?                   @relation("EncuentroCoordinator", fields: [coordinatorId], references: [id])
+  leaders           EncuentroLeader[]
+  registrations     EncuentroRegistration[]
+  goals             Goal[]
 
   @@index([type])
   @@index([startDate])
@@ -423,6 +425,8 @@ model EncuentroRegistration {
   encuentroId        Int
   status             RegistrationStatus         @default(REGISTERED)
   discountPercentage Float                      @default(0)
+  needsTransport     Boolean                    @default(false)
+  needsAccommodation Boolean                    @default(false)
   createdAt          DateTime                   @default(now()) @db.Timestamptz(6)
   updatedAt          DateTime                   @updatedAt @db.Timestamptz(6)
   classAttendances   EncuentroClassAttendance[]
@@ -441,11 +445,18 @@ model EncuentroPayment {
   id             Int                   @id @default(autoincrement())
   registrationId Int
   amount         Float
+  paymentType    EncuentroPaymentType  @default(ENCUENTRO)
   date           DateTime              @default(now()) @db.Timestamptz(6)
   notes          String?
   createdAt      DateTime              @default(now()) @db.Timestamptz(6)
   updatedAt      DateTime              @updatedAt @db.Timestamptz(6)
   registration   EncuentroRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+}
+
+enum EncuentroPaymentType {
+  ENCUENTRO
+  TRANSPORT
+  ACCOMMODATION
 }
 
 model EncuentroClassAttendance {

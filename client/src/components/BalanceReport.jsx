@@ -14,6 +14,7 @@ const BalanceReport = ({ data, title }) => {
     const celulas = useMemo(() => [...new Set(data.map(item => item.liderCelulaName).filter(n => n !== 'N/A'))].sort(), [data]);
 
     // Apply filters
+    // Apply filters
     const filteredData = useMemo(() => {
         return data.filter(item => {
             return (
@@ -33,9 +34,13 @@ const BalanceReport = ({ data, title }) => {
         }), { cost: 0, paid: 0, balance: 0 });
     }, [filteredData]);
 
+    const isEncuentro = useMemo(() => data.some(item => item.paymentsByType?.ENCUENTRO !== undefined), [data]);
+    const baseType = isEncuentro ? 'ENCUENTRO' : 'CONVENTION';
+    const baseLabel = isEncuentro ? 'Encuentro' : 'Conv.';
+
     // Export to CSV
     const handleExport = () => {
-        const headers = ['Nombre', 'Rol', 'Pastor', 'Líder 12', 'Líder Célula', 'Costo Final', 'Pagado', 'Saldo Conv.', 'Saldo Trans.', 'Saldo Hosp.', 'Saldo Total'];
+        const headers = ['Nombre', 'Rol', 'Pastor', 'Líder 12', 'Líder Célula', 'Costo Final', 'Pagado', `Saldo ${baseLabel}`, 'Saldo Trans.', 'Saldo Hosp.', 'Saldo Total'];
 
         const csvContent = [
             headers.join(','),
@@ -47,7 +52,7 @@ const BalanceReport = ({ data, title }) => {
                 `"${row.liderCelulaName}"`,
                 row.cost.toFixed(2),
                 row.paid.toFixed(2),
-                (row.baseCost - (row.paymentsByType?.CONVENTION || 0)).toFixed(2),
+                (row.baseCost - (row.paymentsByType?.[baseType] || 0)).toFixed(2),
                 (row.transportCost - (row.paymentsByType?.TRANSPORT || 0)).toFixed(2),
                 (row.accommodationCost - (row.paymentsByType?.ACCOMMODATION || 0)).toFixed(2),
                 row.balance.toFixed(2)
@@ -174,7 +179,7 @@ const BalanceReport = ({ data, title }) => {
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jerarquía</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo Final</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pagado</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Conv.</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo {baseLabel}</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Trans.</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Hosp.</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Total</th>
@@ -206,7 +211,7 @@ const BalanceReport = ({ data, title }) => {
                                         ${item.paid.toLocaleString()}
                                     </td>
                                     <td className="px-6 py-4 text-right text-sm text-gray-600 dark:text-gray-300">
-                                        ${(item.baseCost - (item.paymentsByType?.CONVENTION || 0)).toLocaleString()}
+                                        ${(item.baseCost - (item.paymentsByType?.[baseType] || 0)).toLocaleString()}
                                     </td>
                                     <td className="px-6 py-4 text-right text-sm text-gray-600 dark:text-gray-300">
                                         ${(item.transportCost - (item.paymentsByType?.TRANSPORT || 0)).toLocaleString()}

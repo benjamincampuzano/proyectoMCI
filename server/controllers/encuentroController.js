@@ -65,7 +65,15 @@ const getEncuentroById = async (req, res) => {
                         user: {
                             include: { profile: true }
                         },
-                        payments: true,
+                        payments: {
+                            select: {
+                                id: true,
+                                amount: true,
+                                paymentType: true,
+                                date: true,
+                                notes: true
+                            }
+                        },
                         classAttendances: true
                     }
                 }
@@ -98,9 +106,22 @@ const getEncuentroById = async (req, res) => {
             });
         }
 
-        const registrationsWithStats = filteredRegistrations.map(reg => {
-            const totalPaid = reg.payments.reduce((sum, p) => sum + p.amount, 0);
-            const finalCost = encuentro.cost * (1 - reg.discountPercentage / 100);
+        const registrationsWithFinancials = filteredRegistrations.map(reg => {
+            // Calculate payments by type
+            const paymentsByType = reg.payments.reduce((acc, p) => {
+                const type = p.paymentType || 'ENCUENTRO';
+                acc[type] = (acc[type] || 0) + p.amount;
+                return acc;
+            }, { ENCUENTRO: 0, TRANSPORT: 0, ACCOMMODATION: 0 });
+
+            const totalPaid = Object.values(paymentsByType).reduce((sum, amount) => sum + amount, 0);
+
+            // Costs
+            const baseCost = encuentro.cost * (1 - ((reg.discountPercentage || 0) / 100));
+            const transportCost = reg.needsTransport ? encuentro.transportCost : 0;
+            const accommodationCost = reg.needsAccommodation ? encuentro.accommodationCost : 0;
+
+            const finalCost = baseCost + transportCost + accommodationCost;
             const balance = finalCost - totalPaid;
 
             const classesAttended = reg.classAttendances.filter(c => c.attended).length;
@@ -110,7 +131,11 @@ const getEncuentroById = async (req, res) => {
             return {
                 ...reg,
                 user: reg.user ? { id: reg.user.id, fullName: reg.user.profile?.fullName, phone: reg.user.phone } : null,
+                paymentsByType,
                 totalPaid,
+                baseCost,
+                transportCost,
+                accommodationCost,
                 finalCost,
                 balance,
                 classesAttended,
@@ -122,7 +147,7 @@ const getEncuentroById = async (req, res) => {
         const formattedEncuentro = {
             ...encuentro,
             coordinator: encuentro.coordinator ? { id: encuentro.coordinator.id, fullName: encuentro.coordinator.profile?.fullName } : null,
-            registrations: registrationsWithStats
+            registrations: registrationsWithFinancials
         };
 
         res.json(formattedEncuentro);
@@ -139,13 +164,15 @@ const createEncuentro = async (req, res) => {
         if (!isAuthorized) {
             return res.status(403).json({ error: 'Not authorized to create encuentros' });
         }
-        const { type, name, description, cost, startDate, endDate, coordinatorId } = req.body;
+        const { type, name, description, cost, transportCost, accommodationCost, startDate, endDate, coordinatorId } = req.body;
         const encuentro = await prisma.encuentro.create({
             data: {
                 type,
                 name,
                 description,
                 cost: parseFloat(cost),
+                transportCost: parseFloat(transportCost || 0),
+                accommodationCost: parseFloat(accommodationCost || 0),
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
                 coordinatorId: coordinatorId ? parseInt(coordinatorId) : null
@@ -188,19 +215,20 @@ const updateEncuentro = async (req, res) => {
         const { id } = req.params;
         const { roles, id: userId } = req.user;
 
-        // Restriction: Only ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, id);
         if (!hasAccess) {
-            return res.status(403).json({ error: 'No tienes permisos para modificar este encuentro. Solo el coordinador asignado o un administrador pueden hacerlo.' });
+            return res.status(403).json({ error: 'No tienes permisos para modificar este encuentro.' });
         }
 
-        const { type, name, description, cost, startDate, endDate, coordinatorId } = req.body;
+        const { type, name, description, cost, transportCost, accommodationCost, startDate, endDate, coordinatorId } = req.body;
 
         const updateData = {};
         if (type !== undefined) updateData.type = type;
         if (name !== undefined) updateData.name = name;
         if (description !== undefined) updateData.description = description;
         if (cost !== undefined) updateData.cost = parseFloat(cost);
+        if (transportCost !== undefined) updateData.transportCost = parseFloat(transportCost);
+        if (accommodationCost !== undefined) updateData.accommodationCost = parseFloat(accommodationCost);
         if (startDate !== undefined) updateData.startDate = new Date(startDate);
         if (endDate !== undefined) updateData.endDate = new Date(endDate);
         if (coordinatorId !== undefined) updateData.coordinatorId = coordinatorId ? parseInt(coordinatorId) : null;
@@ -223,21 +251,18 @@ const updateEncuentro = async (req, res) => {
 const registerParticipant = async (req, res) => {
     try {
         const { encuentroId } = req.params;
-        const { guestId, userId, discountPercentage } = req.body;
+        const { guestId, userId, discountPercentage, needsTransport, needsAccommodation } = req.body;
         const { roles, id: currentUserId } = req.user;
 
-        // Restriction: Only ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, encuentroId);
         if (!hasAccess) {
-            return res.status(403).json({ error: 'No tienes permisos para registrar participantes en este encuentro.' });
+            return res.status(403).json({ error: 'No tienes permisos para registrar participantes.' });
         }
 
-        // Validation: Must be User XOR Guest
         if ((!guestId && !userId) || (guestId && userId)) {
             return res.status(400).json({ error: 'Must provide either guestId OR userId, not both.' });
         }
 
-        // Integrity Check: Already registered?
         const existing = await prisma.encuentroRegistration.findFirst({
             where: {
                 encuentroId: parseInt(encuentroId),
@@ -249,10 +274,9 @@ const registerParticipant = async (req, res) => {
         });
 
         if (existing) {
-            return res.status(400).json({ error: 'El participante ya está registrado en este encuentro.' });
+            return res.status(400).json({ error: 'El participante ya está registrado.' });
         }
 
-        // --- NEW RESTRICTIONS ---
         const encuentroInfo = await prisma.encuentro.findUnique({
             where: { id: parseInt(encuentroId) }
         });
@@ -277,7 +301,6 @@ const registerParticipant = async (req, res) => {
             participantBirthDate = user?.profile?.birthDate;
         }
 
-        // Validate Sex
         if (encuentroInfo.type === 'HOMBRES' && participantSex !== 'HOMBRE') {
             return res.status(400).json({ error: 'Este encuentro es exclusivo para hombres.' });
         }
@@ -285,10 +308,9 @@ const registerParticipant = async (req, res) => {
             return res.status(400).json({ error: 'Este encuentro es exclusivo para mujeres.' });
         }
 
-        // Validate Age for Jovenes (< 18)
         if (encuentroInfo.type === 'JOVENES') {
             if (!participantBirthDate) {
-                return res.status(400).json({ error: 'Se requiere la fecha de nacimiento para validar la inscripción a un encuentro de jóvenes.' });
+                return res.status(400).json({ error: 'Se requiere la fecha de nacimiento.' });
             }
             const birthDate = new Date(participantBirthDate);
             const today = new Date();
@@ -298,17 +320,18 @@ const registerParticipant = async (req, res) => {
                 age--;
             }
             if (age >= 18) {
-                return res.status(400).json({ error: 'Este encuentro es exclusivo para jóvenes menores de 18 años.' });
+                return res.status(400).json({ error: 'Este encuentro es exclusivo para jóvenes.' });
             }
         }
-        // --- END RESTRICTIONS ---
 
         const registration = await prisma.encuentroRegistration.create({
             data: {
                 encuentroId: parseInt(encuentroId),
                 guestId: guestId ? parseInt(guestId) : null,
                 userId: userId ? parseInt(userId) : null,
-                discountPercentage: parseFloat(discountPercentage || 0)
+                discountPercentage: parseFloat(discountPercentage || 0),
+                needsTransport: !!needsTransport,
+                needsAccommodation: !!needsAccommodation
             },
             include: {
                 guest: true,
@@ -316,7 +339,6 @@ const registerParticipant = async (req, res) => {
             }
         });
 
-        // If it's a guest, update status to GANADO (Consolidado)
         if (guestId) {
             await prisma.guest.update({
                 where: { id: parseInt(guestId) },
@@ -324,25 +346,14 @@ const registerParticipant = async (req, res) => {
             });
         }
 
-        const encuentro = await prisma.encuentro.findUnique({
-            where: { id: parseInt(encuentroId) },
-            select: { name: true }
-        });
-
         await logActivity(currentUserId, 'CREATE', 'ENCUENTRO_REGISTRATION', registration.id, {
-            Invitado: registration.guest?.name || registration.user?.profile?.fullName || registration.user?.email,
-            Encuentro: encuentro.name,
-            GuestId: guestId,
-            UserId: userId,
-            EncuentroId: encuentroId
+            participant: registration.guest?.name || registration.user?.profile?.fullName,
+            encuentroId
         }, req.ip, req.headers['user-agent']);
 
         res.status(201).json(registration);
     } catch (error) {
         console.error(error);
-        if (error.code === 'P2002') {
-            return res.status(400).json({ error: 'El participante ya está registrado en este encuentro' });
-        }
         res.status(500).json({ error: 'Error registering participant' });
     }
 };
@@ -361,10 +372,9 @@ const deleteRegistration = async (req, res) => {
             return res.status(404).json({ error: 'Registration not found' });
         }
 
-        // Restriction: Only ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
         if (!hasAccess) {
-            return res.status(403).json({ error: 'No tienes permisos para eliminar inscripciones en este encuentro.' });
+            return res.status(403).json({ error: 'No tienes permisos para eliminar inscripciones.' });
         }
 
         await prisma.encuentroRegistration.delete({
@@ -386,8 +396,8 @@ const deleteRegistration = async (req, res) => {
 const addPayment = async (req, res) => {
     try {
         const { registrationId } = req.params;
-        const { amount, notes } = req.body;
-        const { roles, id: userId } = req.user;
+        const { amount, notes, paymentType } = req.body;
+        const { id: userId } = req.user;
 
         const registration = await prisma.encuentroRegistration.findUnique({
             where: { id: parseInt(registrationId) },
@@ -398,16 +408,16 @@ const addPayment = async (req, res) => {
             return res.status(404).json({ error: 'Registration not found' });
         }
 
-        // Restriction: Only ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
         if (!hasAccess) {
-            return res.status(403).json({ error: 'No tienes permisos para agregar pagos en este encuentro.' });
+            return res.status(403).json({ error: 'No tienes permisos para agregar pagos.' });
         }
 
         const payment = await prisma.encuentroPayment.create({
             data: {
                 registrationId: parseInt(registrationId),
                 amount: parseFloat(amount),
+                paymentType: paymentType || 'ENCUENTRO',
                 notes
             }
         });
@@ -422,7 +432,7 @@ const addPayment = async (req, res) => {
 
 const updateClassAttendance = async (req, res) => {
     try {
-        const { registrationId, classNumber } = req.params; // classNumber 1-10
+        const { registrationId, classNumber } = req.params;
         const { attended } = req.body;
         const { id: userId } = req.user;
 
@@ -435,10 +445,9 @@ const updateClassAttendance = async (req, res) => {
             return res.status(404).json({ error: 'Registration not found' });
         }
 
-        // Restriction: Only ADMIN or Coordinator
         const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
         if (!hasAccess) {
-            return res.status(403).json({ error: 'No tienes permisos para actualizar asistencia en este encuentro.' });
+            return res.status(403).json({ error: 'No tienes permisos para actualizar asistencia.' });
         }
 
         const record = await prisma.encuentroClassAttendance.upsert({
@@ -465,9 +474,6 @@ const updateClassAttendance = async (req, res) => {
     }
 };
 
-// Helper to get network
-// Local getNetworkIds removed in favor of centralized getUserNetwork
-
 const getEncuentroBalanceReport = async (req, res) => {
     try {
         const { id } = req.params;
@@ -479,7 +485,7 @@ const getEncuentroBalanceReport = async (req, res) => {
                 registrations: {
                     where: {
                         OR: [
-                            { guest: { isNot: null } }, // Guests are fine
+                            { guest: { isNot: null } },
                             { user: { roles: { none: { role: { name: 'ADMIN' } } } } }
                         ]
                     },
@@ -489,17 +495,13 @@ const getEncuentroBalanceReport = async (req, res) => {
                                 assignedTo: {
                                     include: {
                                         profile: true,
-                                        parents: {
-                                            include: { parent: { include: { profile: true } } }
-                                        }
+                                        parents: { include: { parent: { include: { profile: true } } } }
                                     }
                                 },
                                 invitedBy: {
                                     include: {
                                         profile: true,
-                                        parents: {
-                                            include: { parent: { include: { profile: true } } }
-                                        }
+                                        parents: { include: { parent: { include: { profile: true } } } }
                                     }
                                 }
                             }
@@ -507,9 +509,7 @@ const getEncuentroBalanceReport = async (req, res) => {
                         user: {
                             include: {
                                 profile: true,
-                                parents: {
-                                    include: { parent: { include: { profile: true } } }
-                                }
+                                parents: { include: { parent: { include: { profile: true } } } }
                             }
                         },
                         payments: true
@@ -522,7 +522,6 @@ const getEncuentroBalanceReport = async (req, res) => {
             return res.status(404).json({ error: 'Encuentro not found' });
         }
 
-        // Apply Network Filter
         let visibleRegistrations = encuentro.registrations;
 
         const isAdmin = roles.includes('ADMIN');
@@ -533,23 +532,29 @@ const getEncuentroBalanceReport = async (req, res) => {
             const allowedIds = new Set([...networkIds, parseInt(userId)]);
 
             visibleRegistrations = encuentro.registrations.filter(reg => {
-                if (reg.guest) {
-                    const assignedCheck = reg.guest.assignedToId && allowedIds.has(reg.guest.assignedToId);
-                    const invitedCheck = reg.guest.invitedById && allowedIds.has(reg.guest.invitedById);
-                    return assignedCheck || invitedCheck;
-                } else {
-                    return allowedIds.has(reg.userId);
-                }
+                const participant = reg.guest || reg.user;
+                if (!participant) return false;
+                const ownerId = reg.guest ? (reg.guest.assignedToId || reg.guest.invitedById) : reg.userId;
+                return allowedIds.has(ownerId);
             });
         }
 
-        // Transform Data for Report
         const reportData = visibleRegistrations.map(reg => {
-            const totalPaid = reg.payments.reduce((sum, p) => sum + p.amount, 0);
-            const finalCost = encuentro.cost * (1 - (reg.discountPercentage / 100));
+            const paymentsByType = reg.payments.reduce((acc, p) => {
+                const type = p.paymentType || 'ENCUENTRO';
+                acc[type] = (acc[type] || 0) + p.amount;
+                return acc;
+            }, { ENCUENTRO: 0, TRANSPORT: 0, ACCOMMODATION: 0 });
+
+            const totalPaid = Object.values(paymentsByType).reduce((sum, amount) => sum + amount, 0);
+
+            const baseCost = encuentro.cost * (1 - (reg.discountPercentage / 100));
+            const transportCost = reg.needsTransport ? encuentro.transportCost : 0;
+            const accommodationCost = reg.needsAccommodation ? encuentro.accommodationCost : 0;
+
+            const finalCost = baseCost + transportCost + accommodationCost;
             const balance = finalCost - totalPaid;
 
-            // Use assignedTo for hierarchy, fallback to invitedBy (for guests)
             const responsibleUser = reg.guest ? (reg.guest.assignedTo || reg.guest.invitedBy) : reg.user;
 
             const getParentName = (role) => {
@@ -569,9 +574,13 @@ const getEncuentroBalanceReport = async (req, res) => {
                 liderDoceName: getParentName('LIDER_DOCE'),
                 liderCelulaName: getParentName('LIDER_CELULA'),
                 leaderName: getParentName('DISCIPULO'),
+                baseCost,
+                transportCost,
+                accommodationCost,
                 cost: finalCost,
                 paid: totalPaid,
-                balance: balance,
+                balance,
+                paymentsByType,
                 paymentsDetails: reg.payments
             };
         });
