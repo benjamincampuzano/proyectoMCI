@@ -341,8 +341,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 dark:text-gray-300">
-                                {stats.studentStats && stats.studentStats.map((item, idx) => (
-                                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                {stats.studentStats && stats.studentStats.map((item) => (
+                                    <tr key={item.moduleName} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <td className="p-3 font-medium">{item.moduleName}</td>
                                         <td className="p-3 text-center">{item.studentCount}</td>
                                         <td className="p-3 text-center font-bold text-blue-600">{item.avgGrade}</td>
@@ -375,8 +375,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700 dark:text-gray-300">
-                                    {Object.keys(stats.cellsByLeader || {}).map((leader, i) => (
-                                        <tr key={i}>
+                                    {Object.keys(stats.cellsByLeader || {}).map((leader) => (
+                                        <tr key={leader}>
                                             <td className="p-2 font-medium">{leader}</td>
                                             <td className="p-2 text-center">{stats.cellsByLeader[leader].count}</td>
                                             <td className="p-2 text-center">{stats.cellsByLeader[leader].avgAttendance}</td>
@@ -394,8 +394,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                     <div key={leader}>
                                         <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-1">{leader}</p>
                                         <ul className="text-xs text-gray-600 dark:text-gray-400 ml-2 space-y-1">
-                                            {stats.cellsByLeader[leader].locations.map((loc, idx) => (
-                                                <li key={idx} className="flex items-start gap-1">
+                                            {stats.cellsByLeader[leader].locations.map((loc) => (
+                                                <li key={`${loc.name}-${loc.address}`} className="flex items-start gap-1">
                                                     <span className="text-red-500">•</span>
                                                     <span>{loc.address || 'Sin dirección'}, {loc.city || ''} <span className="text-gray-400">({loc.name})</span></span>
                                                     {loc.lat && loc.lng && (

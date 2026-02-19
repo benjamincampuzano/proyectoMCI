@@ -1,14 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useReducer, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, Loader, X, Search, ChevronDown, UserPlus, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import { DATA_POLICY_URL } from '../constants/policies';
 
-const PublicGuestRegistration = () => {
-    const navigate = useNavigate();
-    const [formData, setFormData] = useState({
-        documentType: '',
-        documentNumber: '',
+const INITIAL_STATE = {
+    formData: {
+        documentType: 'NO_SPECIFIED',
+        documentNumber: 'NO_SPECIFIED',
         name: '',
         birthDate: '',
         sex: '',
@@ -20,23 +19,76 @@ const PublicGuestRegistration = () => {
         dataPolicyAccepted: false,
         dataTreatmentAuthorized: false,
         minorConsentAuthorized: false,
-    });
-    const [loading, setLoading] = useState(false);
-    const [searchLoading, setSearchLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [foundUsers, setFoundUsers] = useState([]);
-    const [selectedInviter, setSelectedInviter] = useState(null);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    },
+    loading: false,
+    searchLoading: false,
+    error: '',
+    success: '',
+    searchTerm: '',
+    foundUsers: [],
+    selectedInviter: null,
+    isDropdownOpen: false,
+};
+
+const reducer = (state, action) => {
+    switch (action.type) {
+        case 'SET_FIELD':
+            return {
+                ...state,
+                formData: { ...state.formData, [action.field]: action.value },
+                error: '',
+                success: ''
+            };
+        case 'SET_LOADING':
+            return { ...state, loading: action.payload };
+        case 'SET_SEARCH_LOADING':
+            return { ...state, searchLoading: action.payload };
+        case 'SET_ERROR':
+            return { ...state, error: action.payload, success: '' };
+        case 'SET_SUCCESS':
+            return { ...state, success: action.payload, error: '' };
+        case 'SET_SEARCH_TERM':
+            return { ...state, searchTerm: action.payload };
+        case 'SET_FOUND_USERS':
+            return { ...state, foundUsers: action.payload };
+        case 'SET_SELECTED_INVITER':
+            return {
+                ...state,
+                selectedInviter: action.payload,
+                formData: { ...state.formData, invitedById: action.payload?.id || null }
+            };
+        case 'SET_DROPDOWN_OPEN':
+            return { ...state, isDropdownOpen: action.payload };
+        case 'RESET_FORM':
+            return { ...INITIAL_STATE, success: action.success || '' };
+        default:
+            return state;
+    }
+};
+
+const PublicGuestRegistration = () => {
+    const navigate = useNavigate();
+    const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
     const dropdownRef = useRef(null);
+
+    const {
+        formData,
+        loading,
+        searchLoading,
+        error,
+        success,
+        searchTerm,
+        foundUsers,
+        selectedInviter,
+        isDropdownOpen
+    } = state;
 
     const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api';
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsDropdownOpen(false);
+                dispatch({ type: 'SET_DROPDOWN_OPEN', payload: false });
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -44,74 +96,59 @@ const PublicGuestRegistration = () => {
     }, []);
 
     const handleSearch = async (term) => {
-        setSearchTerm(term);
+        dispatch({ type: 'SET_SEARCH_TERM', payload: term });
         if (term.length < 3) {
-            setFoundUsers([]);
+            dispatch({ type: 'SET_FOUND_USERS', payload: [] });
             return;
         }
 
-        setSearchLoading(true);
+        dispatch({ type: 'SET_SEARCH_LOADING', payload: true });
         try {
             const res = await axios.get(`${API_URL}/auth/public/users/search?search=${term}`);
-            setFoundUsers(res.data);
-            setIsDropdownOpen(true);
+            dispatch({ type: 'SET_FOUND_USERS', payload: res.data });
+            dispatch({ type: 'SET_DROPDOWN_OPEN', payload: true });
         } catch (err) {
             console.error('Error searching users:', err);
         } finally {
-            setSearchLoading(false);
+            dispatch({ type: 'SET_SEARCH_LOADING', payload: false });
         }
     };
 
     const handleSelectInviter = (user) => {
-        setSelectedInviter(user);
-        setFormData({ ...formData, invitedById: user.id });
-        setIsDropdownOpen(false);
-        setSearchTerm('');
+        dispatch({ type: 'SET_SELECTED_INVITER', payload: user });
+        dispatch({ type: 'SET_DROPDOWN_OPEN', payload: false });
+        dispatch({ type: 'SET_SEARCH_TERM', payload: '' });
     };
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        setError('');
-        setSuccess('');
+        const { name, value, type, checked } = e.target;
+        dispatch({
+            type: 'SET_FIELD',
+            field: name,
+            value: type === 'checkbox' ? checked : value
+        });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.invitedById) {
-            setError('Por favor seleccione quién lo invitó');
+            dispatch({ type: 'SET_ERROR', payload: 'Por favor seleccione quién lo invitó' });
             return;
         }
 
-        setLoading(true);
-        setError('');
-        setSuccess('');
+        dispatch({ type: 'SET_LOADING', payload: true });
 
         try {
             await axios.post(`${API_URL}/auth/public/guests`, formData);
-            setSuccess('¡Invitado registrado exitosamente! Pronto nos pondremos en contacto contigo.');
-            setFormData({
-                documentType: '',
-                documentNumber: '',
-                name: '',
-                birthDate: '',
-                sex: '',
-                phone: '',
-                address: '',
-                city: '',
-                prayerRequest: '',
-                invitedById: null,
-                dataPolicyAccepted: false,
-                dataTreatmentAuthorized: false,
-                minorConsentAuthorized: false,
-            });
-            setSelectedInviter(null);
+            const successMsg = '¡Invitado registrado exitosamente! Pronto nos pondremos en contacto contigo.';
+            dispatch({ type: 'RESET_FORM', success: successMsg });
 
             // Redirect after 3 seconds
             setTimeout(() => navigate('/login'), 3000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al registrar invitado');
+            dispatch({ type: 'SET_ERROR', payload: err.response?.data?.message || 'Error al registrar invitado' });
         } finally {
-            setLoading(false);
+            dispatch({ type: 'SET_LOADING', payload: false });
         }
     };
 
@@ -136,23 +173,24 @@ const PublicGuestRegistration = () => {
                     <button
                         onClick={() => navigate('/login')}
                         className="text-gray-400 hover:text-white flex items-center space-x-2 transition-colors"
+                        type="button"
                     >
                         <ArrowLeft size={20} />
                         <span>Volver</span>
                     </button>
                     <div className="text-right">
-                        <h2 className="text-2xl font-bold text-white">Registro de Invitado</h2>
+                        <h1 className="text-2xl font-bold text-white">Registro de Invitado</h1>
                         <p className="text-gray-400 mt-1 italic">¡Estamos felices de tenerte!</p>
                     </div>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded mb-6 text-sm">
+                    <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded mb-6 text-sm" role="alert">
                         {error}
                     </div>
                 )}
                 {success && (
-                    <div className="bg-green-500/10 border border-green-500 text-green-500 p-4 rounded mb-6 text-sm font-medium">
+                    <div className="bg-green-500/10 border border-green-500 text-green-500 p-4 rounded mb-6 text-sm font-medium" role="status">
                         {success}
                     </div>
                 )}
@@ -160,8 +198,9 @@ const PublicGuestRegistration = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Nombre Completo *</label>
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-400 mb-2">Nombre Completo *</label>
                             <input
+                                id="name"
                                 type="text"
                                 name="name"
                                 value={formData.name}
@@ -171,8 +210,9 @@ const PublicGuestRegistration = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Teléfono *</label>
+                            <label htmlFor="phone" className="block text-sm font-medium text-gray-400 mb-2">Teléfono *</label>
                             <input
+                                id="phone"
                                 type="tel"
                                 name="phone"
                                 value={formData.phone}
@@ -184,25 +224,10 @@ const PublicGuestRegistration = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Hidden Document Type Field */}
-                        <input
-                            type="hidden"
-                            name="documentType"
-                            value="NO_SPECIFIED"
-                        />
-                        
-                        {/* Hidden Document Number Field */}
-                        <input
-                            type="hidden"
-                            name="documentNumber"
-                            value="NO_SPECIFIED"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Sexo</label>
+                            <label htmlFor="sex" className="block text-sm font-medium text-gray-400 mb-2">Sexo</label>
                             <select
+                                id="sex"
                                 name="sex"
                                 value={formData.sex}
                                 onChange={handleChange}
@@ -214,8 +239,9 @@ const PublicGuestRegistration = () => {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Fecha de Nacimiento</label>
+                            <label htmlFor="birthDate" className="block text-sm font-medium text-gray-400 mb-2">Fecha de Nacimiento</label>
                             <input
+                                id="birthDate"
                                 type="date"
                                 name="birthDate"
                                 value={formData.birthDate}
@@ -227,8 +253,9 @@ const PublicGuestRegistration = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Dirección</label>
+                            <label htmlFor="address" className="block text-sm font-medium text-gray-400 mb-2">Dirección</label>
                             <input
+                                id="address"
                                 type="text"
                                 name="address"
                                 value={formData.address}
@@ -238,8 +265,9 @@ const PublicGuestRegistration = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Ciudad</label>
+                            <label htmlFor="city" className="block text-sm font-medium text-gray-400 mb-2">Ciudad</label>
                             <input
+                                id="city"
                                 type="text"
                                 name="city"
                                 value={formData.city}
@@ -254,7 +282,12 @@ const PublicGuestRegistration = () => {
                         <label className="block text-sm font-medium text-gray-400 mb-2">¿Quién te invitó? *</label>
                         <div
                             className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg flex items-center justify-between cursor-pointer hover:border-blue-500 transition-colors"
-                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            onClick={() => dispatch({ type: 'SET_DROPDOWN_OPEN', payload: !isDropdownOpen })}
+                            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && dispatch({ type: 'SET_DROPDOWN_OPEN', payload: !isDropdownOpen })}
+                            role="combobox"
+                            tabIndex={0}
+                            aria-expanded={isDropdownOpen}
+                            aria-haspopup="listbox"
                         >
                             {selectedInviter ? (
                                 <div className="flex items-center justify-between w-full">
@@ -264,9 +297,17 @@ const PublicGuestRegistration = () => {
                                         className="text-gray-500 hover:text-white"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            setSelectedInviter(null);
-                                            setFormData({ ...formData, invitedById: null });
+                                            dispatch({ type: 'SET_SELECTED_INVITER', payload: null });
                                         }}
+                                        role="button"
+                                        aria-label="Eliminar invitado"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.stopPropagation();
+                                                dispatch({ type: 'SET_SELECTED_INVITER', payload: null });
+                                            }
+                                        }}
+                                        tabIndex={0}
                                     />
                                 </div>
                             ) : (
@@ -276,7 +317,7 @@ const PublicGuestRegistration = () => {
                         </div>
 
                         {isDropdownOpen && (
-                            <div className="absolute z-50 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl max-h-60 overflow-hidden flex flex-col">
+                            <div className="absolute z-50 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl max-h-60 overflow-hidden flex flex-col" role="listbox">
                                 <div className="p-3 border-b border-gray-700">
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
@@ -287,7 +328,7 @@ const PublicGuestRegistration = () => {
                                             placeholder="Escribe al menos 3 letras..."
                                             className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
                                             onClick={(e) => e.stopPropagation()}
-                                            autoFocus
+                                            aria-label="Buscar persona que invitó"
                                         />
                                     </div>
                                 </div>
@@ -303,7 +344,14 @@ const PublicGuestRegistration = () => {
                                             <div
                                                 key={user.id}
                                                 onClick={() => handleSelectInviter(user)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        handleSelectInviter(user);
+                                                    }
+                                                }}
                                                 className="px-4 py-3 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0 transition-colors"
+                                                role="option"
+                                                tabIndex={0}
                                             >
                                                 <p className="text-sm font-medium text-white">{user.fullName}</p>
                                             </div>
@@ -315,8 +363,9 @@ const PublicGuestRegistration = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Petición de Oración (Opcional)</label>
+                        <label htmlFor="prayerRequest" className="block text-sm font-medium text-gray-400 mb-2">Petición de Oración (Opcional)</label>
                         <textarea
+                            id="prayerRequest"
                             name="prayerRequest"
                             value={formData.prayerRequest}
                             onChange={handleChange}
@@ -335,7 +384,7 @@ const PublicGuestRegistration = () => {
                                 required
                                 className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
                                 checked={formData.dataPolicyAccepted}
-                                onChange={e => setFormData({ ...formData, dataPolicyAccepted: e.target.checked })}
+                                onChange={handleChange}
                             />
                             <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
                                 Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos Personales</a> de MCI.
@@ -348,7 +397,7 @@ const PublicGuestRegistration = () => {
                                 required
                                 className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
                                 checked={formData.dataTreatmentAuthorized}
-                                onChange={e => setFormData({ ...formData, dataTreatmentAuthorized: e.target.checked })}
+                                onChange={handleChange}
                             />
                             <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
                                 Autorizo de manera expresa el tratamiento de mis datos personales conforme a la Ley 1581 de 2012.
@@ -361,7 +410,7 @@ const PublicGuestRegistration = () => {
                                 required={isMinor}
                                 className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
                                 checked={formData.minorConsentAuthorized}
-                                onChange={e => setFormData({ ...formData, minorConsentAuthorized: e.target.checked })}
+                                onChange={handleChange}
                             />
                             <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
                                 {isMinor ? (
@@ -381,10 +430,10 @@ const PublicGuestRegistration = () => {
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center justify-center space-x-2 text-lg"
                     >
                         {loading ? (
-                            <Loader size={24} className="animate-spin" />
+                            <Loader size={24} className="animate-spin" aria-hidden="true" />
                         ) : (
                             <>
-                                <UserPlus size={24} />
+                                <UserPlus size={24} aria-hidden="true" />
                                 <span>Registrarme</span>
                             </>
                         )}

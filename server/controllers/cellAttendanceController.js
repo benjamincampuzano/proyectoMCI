@@ -28,9 +28,31 @@ const recordCellAttendance = async (req, res) => {
         const isSuperAdmin = userRoles.includes('ADMIN');
         const isPastor = userRoles.includes('PASTOR');
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
+        const isDiscipulo = userRoles.includes('DISCIPULO') || userRoles.includes('MIEMBRO');
 
-        if (!isSuperAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId) {
-            return res.status(403).json({ error: 'Not authorized to record attendance for this cell' });
+        const isAuthorized = isSuperAdmin || isLiderDoce || isPastor || cell.leaderId === userId;
+
+        if (!isAuthorized) {
+            // If they are not leadership, they MUST be a DISCIPULO/MIEMBRO recording ONLY THEIR OWN attendance
+            const isSelfRecording = isDiscipulo &&
+                attendances.length === 1 &&
+                attendances[0].userId === userId;
+
+            if (!isSelfRecording) {
+                return res.status(403).json({ error: 'Not authorized to record attendance for this cell' });
+            }
+
+            // Also verify they are actually members of the cell
+            const isMember = await prisma.user.findFirst({
+                where: {
+                    id: userId,
+                    cellId: parseInt(cellId)
+                }
+            });
+
+            if (!isMember) {
+                return res.status(403).json({ error: 'Not authorized to record attendance for this cell (not a member)' });
+            }
         }
 
         const results = await Promise.all(
@@ -86,15 +108,26 @@ const getCellAttendance = async (req, res) => {
         const isPastor = userRoles.includes('PASTOR');
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
 
+        // Check if user is a standard member (DISCIPULO or MIEMBRO) without administrative roles or being the leader
+        const isDiscipulo = (userRoles.includes('DISCIPULO') || userRoles.includes('MIEMBRO')) &&
+            !isSuperAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId;
+
         if (!isSuperAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell attendance' });
         }
 
+        let whereClause = {
+            cellId: parseInt(cellId),
+            date: new Date(date)
+        };
+
+        // Filter: DISCIPULO only sees their own attendance
+        if (isDiscipulo) {
+            whereClause.userId = userId;
+        }
+
         const attendances = await prisma.cellAttendance.findMany({
-            where: {
-                cellId: parseInt(cellId),
-                date: new Date(date)
-            },
+            where: whereClause,
             include: {
                 user: {
                     select: {
@@ -147,8 +180,12 @@ const getCells = async (req, res) => {
             where = {};
         } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
             // LIDER_DOCE y PASTOR pueden ver todas las células de su red
+            // O aquellas donde son explícitamente el lider doce asignado
             const networkUserIds = await getUserNetwork(userId);
-            where.leaderId = { in: networkUserIds };
+            where.OR = [
+                { leaderId: { in: networkUserIds } },
+                { liderDoceId: userId }
+            ];
         } else if (userRoles.includes('LIDER_CELULA')) {
             // LIDER_CELULA can only see their own cells
             where.leaderId = userId;
@@ -195,6 +232,9 @@ const getCells = async (req, res) => {
                         email: true
                     }
                 },
+                members: {
+                    select: { id: true }
+                },
                 _count: {
                     select: {
                         members: true
@@ -209,6 +249,7 @@ const getCells = async (req, res) => {
         // Flatten nested objects for easier frontend consumption
         const formattedCells = cells.map(cell => ({
             ...cell,
+            members: cell.members.map(m => m.id),
             leader: cell.leader ? { ...cell.leader, fullName: cell.leader.profile?.fullName } : null,
             host: cell.host ? { ...cell.host, fullName: cell.host.profile?.fullName } : null,
             liderDoce: cell.liderDoce ? { ...cell.liderDoce, fullName: cell.liderDoce.profile?.fullName } : null,
@@ -260,6 +301,23 @@ const getCellMembers = async (req, res) => {
             email: m.email,
             roles: m.roles.map(r => r.role.name)
         }));
+
+        // Filter: DISCIPULO/MIEMBRO only sees themselves
+        const isDiscipulo = (userRoles.includes('DISCIPULO') || userRoles.includes('MIEMBRO')) &&
+            !isAuthorized && cell.leaderId !== userId;
+        if (isDiscipulo) {
+            const currentUser = cell.members.find(m => m.id === userId);
+            if (currentUser) {
+                return res.json([{
+                    id: currentUser.id,
+                    fullName: currentUser.profile?.fullName,
+                    email: currentUser.email,
+                    roles: currentUser.roles.map(r => r.role.name)
+                }]);
+            } else {
+                return res.json([]);
+            }
+        }
 
         res.json(formattedMembers);
     } catch (error) {

@@ -5,7 +5,8 @@
       "Bash(npx prisma db push:*)",
       "Bash(npx prisma generate:*)",
       "Bash(del:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(npx eslint:*)"
     ]
   }
 }

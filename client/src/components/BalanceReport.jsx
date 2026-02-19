@@ -35,7 +35,7 @@ const BalanceReport = ({ data, title }) => {
 
     // Export to CSV
     const handleExport = () => {
-        const headers = ['Nombre', 'Rol', 'Pastor', 'Líder 12', 'Líder Célula', 'Costo Final', 'Pagado', 'Saldo Pendiente'];
+        const headers = ['Nombre', 'Rol', 'Pastor', 'Líder 12', 'Líder Célula', 'Costo Final', 'Pagado', 'Saldo Conv.', 'Saldo Trans.', 'Saldo Hosp.', 'Saldo Total'];
 
         const csvContent = [
             headers.join(','),
@@ -47,6 +47,9 @@ const BalanceReport = ({ data, title }) => {
                 `"${row.liderCelulaName}"`,
                 row.cost.toFixed(2),
                 row.paid.toFixed(2),
+                (row.baseCost - (row.paymentsByType?.CONVENTION || 0)).toFixed(2),
+                (row.transportCost - (row.paymentsByType?.TRANSPORT || 0)).toFixed(2),
+                (row.accommodationCost - (row.paymentsByType?.ACCOMMODATION || 0)).toFixed(2),
                 row.balance.toFixed(2)
             ].join(','))
         ].join('\n');
@@ -171,7 +174,10 @@ const BalanceReport = ({ data, title }) => {
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jerarquía</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo Final</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pagado</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Conv.</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Trans.</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Hosp.</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Total</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -199,6 +205,15 @@ const BalanceReport = ({ data, title }) => {
                                     <td className="px-6 py-4 text-right text-sm text-green-600 dark:text-green-400 font-medium">
                                         ${item.paid.toLocaleString()}
                                     </td>
+                                    <td className="px-6 py-4 text-right text-sm text-gray-600 dark:text-gray-300">
+                                        ${(item.baseCost - (item.paymentsByType?.CONVENTION || 0)).toLocaleString()}
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-sm text-gray-600 dark:text-gray-300">
+                                        ${(item.transportCost - (item.paymentsByType?.TRANSPORT || 0)).toLocaleString()}
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-sm text-gray-600 dark:text-gray-300">
+                                        ${(item.accommodationCost - (item.paymentsByType?.ACCOMMODATION || 0)).toLocaleString()}
+                                    </td>
                                     <td className="px-6 py-4 text-right">
                                         <span className={`inline-flex px-2 py-1 rounded-full text-xs font-bold ${item.balance > 0
                                             ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
@@ -211,7 +226,7 @@ const BalanceReport = ({ data, title }) => {
                             ))}
                             {filteredData.length === 0 && (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                         No se encontraron registros con los filtros seleccionados.
                                     </td>
                                 </tr>

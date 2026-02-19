@@ -45,11 +45,17 @@ const Modal = ({
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={handleBackdropClick}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleBackdropClick()}
+      role="button"
+      tabIndex={-1}
       {...props}
     >
       <div
         className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full ${sizeClasses[size]} overflow-hidden ${className}`}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         {/* Header */}
         {(title || showCloseButton) && (

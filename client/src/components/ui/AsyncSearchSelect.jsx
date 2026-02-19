@@ -102,13 +102,19 @@ const AsyncSearchSelect = ({
         <div className={`relative ${className}`} ref={wrapperRef}>
             <div
                 className={`
-                    w-full min-h-[42px] px-3 py-2 bg-white dark:bg-gray-700 
-                    border border-gray-300 dark:border-gray-600 rounded-lg 
+                    w-full min-h-[42px] px-3 py-2 bg-white dark:bg-gray-700
+                    border border-gray-300 dark:border-gray-600 rounded-lg
                     flex items-center justify-between cursor-text
                     focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent
                     ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800' : ''}
                 `}
                 onClick={() => !disabled && setIsOpen(true)}
+                onKeyDown={(e) => !disabled && (e.key === 'Enter' || e.key === ' ') && setIsOpen(true)}
+                role="combobox"
+                tabIndex={0}
+                aria-expanded={isOpen}
+                aria-haspopup="listbox"
+                aria-disabled={disabled}
             >
                 {/* Search Input when Open or Not Selected */}
                 {(!isSelected || isOpen) ? (
@@ -167,6 +173,9 @@ const AsyncSearchSelect = ({
                         <div
                             key={item[valueKey]}
                             onClick={() => handleSelect(item)}
+                            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelect(item)}
+                            role="option"
+                            tabIndex={0}
                             className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-700 dark:text-gray-200"
                         >
                             {renderItem ? renderItem(item) : (

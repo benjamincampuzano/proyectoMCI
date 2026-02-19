@@ -18,12 +18,12 @@ const useUserManagement = () => {
     const currentUser = auth.user;
 
     // Use isAdmin from AuthContext but also fall back to property check
-    const isUserAdmin = useMemo(() => {
+    const isUserAdmin = (() => {
         if (typeof auth.isAdmin === 'function' && auth.isAdmin()) return true;
         if (!currentUser) return false;
         const roles = currentUser.roles || [currentUser.role];
         return roles.map(r => String(r).toUpperCase()).includes('ADMIN');
-    }, [auth, currentUser]);
+    })();
 
     const [formData, setFormData] = useState({
         documentType: '',
@@ -145,9 +145,9 @@ const useUserManagement = () => {
         }
     }, [fetchUsers]);
 
-    const pastores = useMemo(() => users.filter(u => u.roles?.includes('PASTOR')), [users]);
-    const lideresDoce = useMemo(() => users.filter(u => u.roles?.includes('LIDER_DOCE')), [users]);
-    const lideresCelula = useMemo(() => users.filter(u => u.roles?.includes('LIDER_CELULA')), [users]);
+    const pastores = users.filter(u => u.roles?.includes('PASTOR'));
+    const lideresDoce = users.filter(u => u.roles?.includes('LIDER_DOCE'));
+    const lideresCelula = users.filter(u => u.roles?.includes('LIDER_CELULA'));
 
     const filteredUsers = useMemo(() => {
         return users.filter(u => {
@@ -160,12 +160,12 @@ const useUserManagement = () => {
         });
     }, [liderDoceFilter, roleFilter, searchTerm, sexFilter, users]);
 
-    const canEdit = useMemo(() => {
+    const canEdit = (() => {
         if (!currentUser) return false;
         // Check both roles array and single role property for backward compatibility
         const roles = currentUser.roles || [currentUser.role];
         return roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r));
-    }, [currentUser]);
+    })();
 
     // isAdmin is now taken from useAuth()
 

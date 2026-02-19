@@ -133,7 +133,7 @@ const CourseManagement = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Escuelas de Discipulado</h2>
-                {hasAnyRole(['ADMIN', 'PROFESOR', 'LIDER_DOCE']) && (
+                {hasAnyRole(['ADMIN']) && (
                     <Button
                         onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
                         variant="primary"
@@ -150,11 +150,14 @@ const CourseManagement = () => {
                     <div
                         key={course.id}
                         onClick={() => setSelectedCourseId(course.id)}
+                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedCourseId(course.id)}
+                        role="button"
+                        tabIndex={0}
                         className="bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700 relative group"
                     >
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                            {hasAnyRole(['ADMIN', 'PROFESOR', 'LIDER_DOCE']) && (
+                            {hasAnyRole(['ADMIN']) && (
                                 <div className="flex space-x-2">
                                     <Button
                                         onClick={(e) => openEditModal(e, course)}

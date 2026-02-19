@@ -45,10 +45,11 @@ const AttendanceChart = () => {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="cellSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Célula (Opcional)
                         </label>
                         <select
+                            id="cellSelect"
                             value={selectedCell}
                             onChange={(e) => setSelectedCell(e.target.value)}
                             className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
@@ -62,11 +63,12 @@ const AttendanceChart = () => {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             <Calendar className="inline w-4 h-4 mr-1" />
                             Fecha Inicio
                         </label>
                         <input
+                            id="startDate"
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
@@ -74,11 +76,12 @@ const AttendanceChart = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             <Calendar className="inline w-4 h-4 mr-1" />
                             Fecha Fin
                         </label>
                         <input
+                            id="endDate"
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}

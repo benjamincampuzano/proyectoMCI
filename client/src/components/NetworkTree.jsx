@@ -202,6 +202,9 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
                     <div
                         className="flex items-center gap-2 flex-1 cursor-pointer min-w-0"
                         onClick={() => hasChildren && setIsExpanded(!isExpanded)}
+                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && hasChildren && setIsExpanded(!isExpanded)}
+                        role="button"
+                        tabIndex={0}
                     >
                         {hasChildren ? (
                             <div className="text-gray-500 flex-shrink-0">

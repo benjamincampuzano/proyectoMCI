@@ -112,6 +112,9 @@ const OracionDeTresManagement = () => {
                             : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
                             }`}
                         onClick={() => setSelectedGroup(group)}
+                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedGroup(group)}
+                        role="button"
+                        tabIndex={0}
                     >
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-2">

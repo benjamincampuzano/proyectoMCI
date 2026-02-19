@@ -122,10 +122,11 @@ const GuestStats = () => {
                 {/* Date Filters */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Fecha Inicio
                         </label>
                         <input
+                            id="startDate"
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
@@ -133,10 +134,11 @@ const GuestStats = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Fecha Fin
                         </label>
                         <input
+                            id="endDate"
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
@@ -234,8 +236,8 @@ const GuestStats = () => {
                                             fill="#8884d8"
                                             dataKey="value"
                                         >
-                                            {getStatusChartData().map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            {getStatusChartData().map((entry) => (
+                                                <Cell key={entry.name} fill={entry.color} />
                                             ))}
                                         </Pie>
                                         <Tooltip />
@@ -294,7 +296,7 @@ const GuestStats = () => {
                                         </thead>
                                         <tbody className="divide-y divide-gray-600">
                                             {stats.topInviters.map((inviter, index) => (
-                                                <tr key={index} className="hover:bg-white dark:hover:bg-gray-600/50 transition-colors">
+                                                <tr key={inviter.name} className="hover:bg-white dark:hover:bg-gray-600/50 transition-colors">
                                                     <td className="px-4 py-3 text-gray-500 dark:text-gray-300">{index + 1}</td>
                                                     <td className="px-4 py-3 text-gray-900 dark:text-white">{inviter.name}</td>
                                                     <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-semibold">{inviter.count}</td>

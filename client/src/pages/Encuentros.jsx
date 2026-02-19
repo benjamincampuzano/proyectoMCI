@@ -126,6 +126,9 @@ const Encuentros = () => {
                         <div
                             key={enc.id}
                             onClick={() => fetchEncuentroDetails(enc.id)}
+                            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && fetchEncuentroDetails(enc.id)}
+                            role="button"
+                            tabIndex={0}
                             className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 cursor-pointer overflow-hidden relative"
                         >
                             <div className="absolute top-0 left-0 w-2 h-full bg-blue-500 group-hover:bg-blue-600 transition-colors"></div>

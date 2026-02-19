@@ -24,6 +24,9 @@ const LosDoceGrid = React.memo(({ losDoce, onSelectLeader }) => {
                 <div
                     key={leader.id}
                     onClick={() => handleClick(leader)}
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleClick(leader)}
+                    role="button"
+                    tabIndex={0}
                     className={`
             p-3 rounded-lg border hover:shadow-md cursor-pointer transition-all duration-200
             hover:scale-[1.02]

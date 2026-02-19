@@ -365,7 +365,31 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                 {formatCurrency(reg.totalPaid)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 dark:text-red-400 font-medium">
-                                                {formatCurrency(reg.balance)}
+                                                <div className="flex flex-col items-end">
+                                                    <span>{formatCurrency(reg.balance)}</span>
+                                                    {reg.balance > 0 && (
+                                                        <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-tight text-right">
+                                                            {(reg.baseCost - (reg.paymentsByType?.CONVENTION || 0)) > 0 && (
+                                                                <div className="flex justify-between w-32">
+                                                                    <span>Conv:</span>
+                                                                    <span>{formatCurrency(reg.baseCost - (reg.paymentsByType?.CONVENTION || 0))}</span>
+                                                                </div>
+                                                            )}
+                                                            {reg.needsTransport && (reg.transportCost - (reg.paymentsByType?.TRANSPORT || 0)) > 0 && (
+                                                                <div className="flex justify-between w-32">
+                                                                    <span>Trans:</span>
+                                                                    <span>{formatCurrency(reg.transportCost - (reg.paymentsByType?.TRANSPORT || 0))}</span>
+                                                                </div>
+                                                            )}
+                                                            {reg.needsAccommodation && (reg.accommodationCost - (reg.paymentsByType?.ACCOMMODATION || 0)) > 0 && (
+                                                                <div className="flex justify-between w-32">
+                                                                    <span>Hosp:</span>
+                                                                    <span>{formatCurrency(reg.accommodationCost - (reg.paymentsByType?.ACCOMMODATION || 0))}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
                                                 {canModify && (

@@ -125,6 +125,11 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
             {/* Input/Dropdown Trigger */}
             <div
                 onClick={() => setIsOpen(!isOpen)}
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setIsOpen(!isOpen)}
+                role="combobox"
+                tabIndex={0}
+                aria-expanded={isOpen}
+                aria-haspopup="listbox"
                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white cursor-pointer flex items-center justify-between hover:border-blue-500 transition-colors"
             >
                 <span className="text-gray-400">{placeholder}</span>
@@ -158,6 +163,9 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
                                 <div
                                     key={user.id}
                                     onClick={() => handleSelect(user)}
+                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelect(user)}
+                                    role="option"
+                                    tabIndex={0}
                                     className="px-4 py-3 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0"
                                 >
                                     <p className="text-sm font-medium text-white">{user.fullName}</p>

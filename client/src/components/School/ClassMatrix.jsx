@@ -172,8 +172,7 @@ const ClassMatrix = ({ courseId }) => {
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {matrix.map((row) => {
-                            // Check backend permissions logic or use state
-                            const canEdit = isProfessor || (isAuxiliar && row.auxiliarId === parseInt(permissions.userId || 0)); // userId not passed currently in permissions object, relying on backend validation mostly, but valid UI check would need userId.
+                            const canEdit = isProfessor || (isAuxiliar && row.auxiliarId === parseInt(permissions.userId || 0));
 
                             return (
                                 <tr key={row.id}>
@@ -201,7 +200,7 @@ const ClassMatrix = ({ courseId }) => {
                                                             }`}
                                                         defaultValue={attendStatus}
                                                         onChange={(e) => handleUpdate(row.id, 'attendance', classNum, e.target.value)}
-                                                        disabled={isStudent}
+                                                        disabled={!canEdit}
                                                     >
                                                         <option value="">-</option>
                                                         <option value="ASISTE">AS</option>
@@ -218,7 +217,7 @@ const ClassMatrix = ({ courseId }) => {
                                                         className="w-full text-xs p-1 bg-transparent border-b border-gray-200 dark:border-gray-600 focus:outline-none focus:border-blue-500 text-center dark:text-white disabled:opacity-50"
                                                         defaultValue={grade}
                                                         onBlur={(e) => handleUpdate(row.id, 'grade', classNum, e.target.value)}
-                                                        disabled={isStudent}
+                                                        disabled={!canEdit}
                                                     />
                                                 </div>
                                             </td>
@@ -233,7 +232,7 @@ const ClassMatrix = ({ courseId }) => {
                                             placeholder="Obs..."
                                             defaultValue={row.projectNotes || ''}
                                             onBlur={(e) => handleUpdate(row.id, 'projectNotes', null, e.target.value)}
-                                            disabled={isStudent}
+                                            disabled={!canEdit}
                                         />
                                     </td>
 
@@ -247,7 +246,7 @@ const ClassMatrix = ({ courseId }) => {
                                             className="w-16 p-1 border rounded text-center dark:bg-gray-700 dark:text-white dark:border-gray-600 disabled:opacity-50"
                                             defaultValue={row.finalGrade || ''}
                                             onBlur={(e) => handleUpdate(row.id, 'finalGrade', null, e.target.value)}
-                                            disabled={isStudent}
+                                            disabled={!canEdit}
                                         />
                                     </td>
 

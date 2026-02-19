@@ -161,6 +161,7 @@ const getConventionById = async (req, res) => {
                             select: {
                                 id: true,
                                 amount: true,
+                                paymentType: true,
                                 date: true,
                                 notes: true
                             },

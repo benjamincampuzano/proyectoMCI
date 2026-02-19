@@ -155,6 +155,9 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                                 <div
                                     key={user.id}
                                     onClick={() => setSelectedUserId(user.id)}
+                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedUserId(user.id)}
+                                    role="button"
+                                    tabIndex={0}
                                     className={`
                                         p-4 rounded-lg border-2 cursor-pointer transition-all
                                         ${selectedUserId === user.id

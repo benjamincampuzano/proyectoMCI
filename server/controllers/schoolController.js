@@ -35,12 +35,8 @@ const resolveLeaderName = (userWithParents) => {
 
 const createModule = async (req, res) => {
     try {
-        const roles = req.user.roles || [];
-        const isAdmin = roles.includes('ADMIN');
-        const isProfesorRole = roles.includes('PROFESOR');
-
-        if (!isAdmin && !isProfesorRole && !roles.includes('LIDER_DOCE')) {
-            return res.status(403).json({ error: 'Not authorized to create classes' });
+        if (!isAdmin) {
+            return res.status(403).json({ error: 'Solo los administradores pueden crear clases.' });
         }
 
         const { name, description, moduleId, professorId, startDate, endDate, auxiliarIds } = req.body;
@@ -139,11 +135,10 @@ const updateModule = async (req, res) => {
         const { name, description, moduleId, professorId, startDate, endDate, auxiliarIds } = req.body;
 
         const roles = req.user.roles || [];
-        const isAdmin = roles.includes('ADMIN') || roles.includes('ADMIN');
-        const isProfesorRole = roles.includes('PROFESOR');
+        const isAdmin = roles.includes('ADMIN');
 
-        if (!isAdmin && !isProfesorRole && !roles.includes('LIDER_DOCE')) {
-            return res.status(403).json({ error: 'Not authorized to update classes' });
+        if (!isAdmin) {
+            return res.status(403).json({ error: 'Solo los administradores pueden editar la configuración de las clases.' });
         }
 
         const updateData = {
@@ -179,11 +174,10 @@ const deleteModule = async (req, res) => {
         const { id } = req.params;
         const moduleId = parseInt(id);
         const roles = req.user.roles || [];
-        const isAdmin = roles.includes('ADMIN') || roles.includes('ADMIN');
-        const isProfesorRole = roles.includes('PROFESOR');
+        const isAdmin = roles.includes('ADMIN');
 
-        if (!isAdmin && !isProfesorRole && !roles.includes('LIDER_DOCE')) {
-            return res.status(403).json({ error: 'Not authorized to delete classes' });
+        if (!isAdmin) {
+            return res.status(403).json({ error: 'Solo los administradores pueden eliminar clases.' });
         }
 
         // Check if there are "notes" or "information" (grades, project notes, etc.)
@@ -308,7 +302,8 @@ const getModuleMatrix = async (req, res) => {
 
         // Access Control
         const roles = user.roles || [];
-        const isProfessor = moduleData.professorId === user.id || roles.includes('ADMIN');
+        const isAdmin = roles.includes('ADMIN');
+        const isProfessor = moduleData.professorId === user.id || isAdmin;
         const isAuxiliar = moduleData.auxiliaries.some(a => a.id === user.id);
         const isDisciple = roles.includes('DISCIPULO');
 
@@ -387,7 +382,8 @@ const getModuleMatrix = async (req, res) => {
             permissions: {
                 isProfessor: isProfessor && !isDisciple,
                 isAuxiliar: isAuxiliar && !isDisciple,
-                isStudent: !isProfessor && !isAuxiliar || isDisciple
+                isStudent: isDisciple || (!isProfessor && !isAuxiliar),
+                userId: user.id
             }
         });
 
@@ -412,19 +408,20 @@ const updateMatrixCell = async (req, res) => {
 
         // Permission Check
         const roles = user.roles || [];
-        const isAdmin = roles.includes('ADMIN') || roles.includes('ADMIN');
-        const isProfesorRole = roles.includes('PROFESOR');
-        const isAuxiliarRole = roles.includes('AUXILIAR');
+        const isAdmin = roles.includes('ADMIN');
 
-        const isProfessorOfModule = enrollment.module.professorId === user.id || isAdmin || isProfesorRole;
-        const isAssignedAuxiliar = enrollment.assignedAuxiliarId === user.id || isAuxiliarRole;
+        // LIDER_DOCE can only edit if they are the Professor of the module or ADMIN
+        const isProfessorOfModule = enrollment.module.professorId === user.id || isAdmin;
+
+        // LIDER_CELULA can only edit if they are the assigned Auxiliar for this specific student
+        const isAssignedAuxiliar = enrollment.assignedAuxiliarId === user.id;
 
         if (roles.includes('DISCIPULO')) {
             return res.status(403).json({ error: 'Estudiantes no pueden modificar notas o asistencia.' });
         }
 
         if (!isProfessorOfModule && !isAssignedAuxiliar) {
-            return res.status(403).json({ error: 'Not authorized to edit this student' });
+            return res.status(403).json({ error: 'No tienes permiso para editar este estudiante. Solo el profesor de la clase o el auxiliar asignado pueden realizar cambios.' });
         }
 
         // Update Logic
@@ -639,10 +636,10 @@ const getStudentMatrix = async (req, res) => {
                     }
                 },
                 seminarEnrollments: {
-                    where: { 
-                        module: { 
-                            type: 'ESCUELA' 
-                        } 
+                    where: {
+                        module: {
+                            type: 'ESCUELA'
+                        }
                     },
                     include: {
                         module: {
@@ -675,8 +672,8 @@ const getStudentMatrix = async (req, res) => {
                     .filter(c => c.grade !== null)
                     .map(c => c.grade);
 
-                const avgGrade = grades.length > 0 
-                    ? grades.reduce((sum, grade) => sum + grade, 0) / grades.length 
+                const avgGrade = grades.length > 0
+                    ? grades.reduce((sum, grade) => sum + grade, 0) / grades.length
                     : null;
 
                 return {
@@ -692,7 +689,7 @@ const getStudentMatrix = async (req, res) => {
             });
 
             // Find the leader (prioritize LIDER_DOCE)
-            const leaderDoce = student.parents.find(p => 
+            const leaderDoce = student.parents.find(p =>
                 p.parent.roles.some(r => r.role.name === 'LIDER_DOCE')
             )?.parent;
 
