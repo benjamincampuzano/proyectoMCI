@@ -124,7 +124,6 @@ const UserFormFields = ({
                     <option value="MUJERES">Mujeres</option>
                     <option value="HOMBRES">Hombres</option>
                     <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
-                    <option value="KIDS">Kids (5 a 10 años)</option>
                     <option value="ROCAS">Rocas (11 a 13 años)</option>
                 </select>
             </div>

@@ -120,42 +120,40 @@ const GuestStats = () => {
                 )}
 
                 {/* Date Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div>
-                        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Fecha Inicio
+                <div className="flex flex-wrap items-end gap-4 mb-6">
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="startDate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Desde
                         </label>
                         <input
                             id="startDate"
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                            className="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 text-sm"
                         />
                     </div>
-                    <div>
-                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Fecha Fin
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="endDate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Hasta
                         </label>
                         <input
                             id="endDate"
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                            className="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 text-sm"
                         />
                     </div>
                     {currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r)) && (
-                        <div className="flex items-end">
-                            <button
-                                onClick={exportToExcel}
-                                disabled={!stats || loading}
-                                className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
-                            >
-                                <Download size={20} />
-                                <span>Exportar a Excel</span>
-                            </button>
-                        </div>
+                        <button
+                            onClick={exportToExcel}
+                            disabled={!stats || loading}
+                            className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-1.5 rounded-lg transition-colors text-sm"
+                        >
+                            <Download size={16} />
+                            <span>Exportar</span>
+                        </button>
                     )}
                 </div>
 
@@ -166,55 +164,64 @@ const GuestStats = () => {
                 ) : stats ? (
                     <>
                         {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                                <div className="flex items-center justify-between">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                        <Users className="text-blue-600 dark:text-blue-400" size={20} />
+                                    </div>
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400 text-sm">Total Invitados</p>
-                                        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalGuests}</p>
+                                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.totalGuests}</p>
                                     </div>
-                                    <Users className="text-blue-500" size={32} />
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                                <div className="flex items-center justify-between">
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                                        <TrendingUp className="text-purple-600 dark:text-purple-400" size={20} />
+                                    </div>
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400 text-sm">Pr. Mensual</p>
-                                        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.monthlyAverage || 0}</p>
+                                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.monthlyAverage || 0}</p>
                                     </div>
-                                    <TrendingUp className="text-purple-500" size={32} />
                                 </div>
                             </div>
 
-
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                                <div className="flex items-center justify-between">
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                        <TrendingUp className="text-blue-600 dark:text-blue-400" size={20} />
+                                    </div>
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400 text-sm">Nuevos</p>
-                                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{stats.byStatus.NUEVO || 0}</p>
+                                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.byStatus.NUEVO || 0}</p>
                                     </div>
-                                    <TrendingUp className="text-blue-500" size={32} />
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                                <div className="flex items-center justify-between">
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                        <UserCheck className="text-green-600 dark:text-green-400" size={20} />
+                                    </div>
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400 text-sm">Consolidados</p>
-                                        <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.byStatus.GANADO || 0}</p>
+                                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.byStatus.GANADO || 0}</p>
                                     </div>
-                                    <UserCheck className="text-green-500" size={32} />
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                                <div className="flex items-center justify-between">
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                                        <TrendingUp className="text-purple-600 dark:text-purple-400" size={20} />
+                                    </div>
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400 text-sm">Tasa Conversión</p>
-                                        <p className="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-1">{stats.conversionRate}%</p>
+                                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.conversionRate}%</p>
                                     </div>
-                                    <TrendingUp className="text-purple-500" size={32} />
                                 </div>
                             </div>
                         </div>
@@ -222,7 +229,7 @@ const GuestStats = () => {
                         {/* Charts */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                             {/* Status Distribution */}
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-100 dark:border-gray-700">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Distribución por Estado</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <PieChart>
@@ -246,7 +253,7 @@ const GuestStats = () => {
                             </div>
 
                             {/* Top Inviters */}
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-100 dark:border-gray-700">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Invitadores</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <BarChart data={stats.topInviters || []}>
@@ -263,7 +270,7 @@ const GuestStats = () => {
 
                             {/* Invitations by LIDER_DOCE */}
                             {stats.invitationsByLiderDoce && stats.invitationsByLiderDoce.length > 0 && (
-                                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600 col-span-1 lg:col-span-2">
+                                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-100 dark:border-gray-700 col-span-1 lg:col-span-2">
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Invitaciones por Líder 12</h3>
                                     <ResponsiveContainer width="100%" height={300}>
                                         <BarChart data={stats.invitationsByLiderDoce}>
@@ -283,7 +290,7 @@ const GuestStats = () => {
 
                         {/* Top Inviters Table */}
                         {stats.topInviters && stats.topInviters.length > 0 && (
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-100 dark:border-gray-700">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Detalle de Invitadores</h3>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">

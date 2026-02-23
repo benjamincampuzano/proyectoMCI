@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import api from '../utils/api';
-import { Calendar, TrendingUp } from 'lucide-react';
+import { Calendar, TrendingUp, Users, UserX, ClipboardList, Percent } from 'lucide-react';
 
 const ChurchAttendanceChart = () => {
     const [stats, setStats] = useState([]);
@@ -58,96 +58,95 @@ const ChurchAttendanceChart = () => {
 
     return (
         <div className="space-y-6">
-            {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            <Calendar className="inline w-4 h-4 mr-1" />
-                            Fecha Inicio
-                        </label>
+            {/* Filters - Home Style */}
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-blue-600" />
+                        Estadísticas de Asistencia
+                    </h2>
+                    <div className="flex items-center gap-3">
                         <input
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-200"
+                            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
                         />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            <Calendar className="inline w-4 h-4 mr-1" />
-                            Fecha Fin
-                        </label>
+                        <span className="text-gray-400">a</span>
                         <input
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-200"
+                            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
                         />
                     </div>
                 </div>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Total Asistencias</p>
-                            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{totalPresent}</p>
+            {/* Summary Cards - Unified Style */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl border border-green-100 dark:border-green-800 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
+                            <Users size={20} />
                         </div>
-                        <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                            <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
-                        </div>
+                        <span className="text-sm font-bold text-green-800 dark:text-green-200 uppercase tracking-tight">Total Asistencias</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-3xl font-extrabold text-green-900 dark:text-white">{totalPresent}</span>
+                        <span className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">Registros de presencia</span>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Total Ausencias</p>
-                            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{totalAbsent}</p>
+                <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                            <UserX size={20} />
                         </div>
-                        <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-                            <TrendingUp className="w-6 h-6 text-red-600 dark:text-red-400" />
-                        </div>
+                        <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Total Ausencias</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-3xl font-extrabold text-red-900 dark:text-white">{totalAbsent}</span>
+                        <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Registros de ausencia</span>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Total Registros</p>
-                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalRecords}</p>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                            <ClipboardList size={20} />
                         </div>
-                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                            <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                        </div>
+                        <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Registros</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{totalRecords}</span>
+                        <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Suma de registros</span>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Tasa de Asistencia</p>
-                            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{attendanceRate}%</p>
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                            <Percent size={20} />
                         </div>
-                        <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                            <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                        </div>
+                        <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Tasa de Asistencia</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{attendanceRate}%</span>
+                        <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Porcentaje de presencia</span>
                     </div>
                 </div>
             </div>
 
             {/* Chart */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
                     Asistencia Diaria a la Iglesia
                 </h2>
                 {loading ? (
                     <div className="text-center py-12">
-                        <p className="text-gray-500">Cargando estadísticas...</p>
+                        <p className="text-gray-500 dark:text-gray-400">Cargando estadísticas...</p>
                     </div>
                 ) : stats.length === 0 ? (
                     <div className="text-center py-12">
-                        <p className="text-gray-500">No hay datos de asistencia para el rango de fechas seleccionado</p>
+                        <p className="text-gray-500 dark:text-gray-400">No hay datos de asistencia para el rango de fechas seleccionado</p>
                     </div>
                 ) : (
                     <ResponsiveContainer width="100%" height={400}>

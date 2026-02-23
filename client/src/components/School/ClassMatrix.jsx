@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { Save, UserPlus, Trash2, BookOpen, ExternalLink } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import ClassMaterialManager from './ClassMaterialManager';
 import { AsyncSearchSelect, Button } from '../ui';
 
@@ -48,13 +49,12 @@ const ClassMatrix = ({ courseId }) => {
     // fetchUsers removed - using AsyncSearchSelect
 
     const handleUpdate = async (enrollmentId, type, key, value) => {
-        // Optimistic update could happen here
         try {
             await api.post('/school/matrix/update', {
                 enrollmentId, type, key, value
             });
         } catch (err) {
-            alert('Error guarding change');
+            toast.error('Error guarding change');
         }
     };
 
@@ -70,7 +70,7 @@ const ClassMatrix = ({ courseId }) => {
             setEnrollForm({ studentId: '', assignedAuxiliarId: '' });
             fetchMatrix();
         } catch (err) {
-            alert('Error enrolling student: ' + (err.response?.data?.error || 'Unknown error'));
+            toast.error('Error enrolling student: ' + (err.response?.data?.error || 'Unknown error'));
         }
     };
 
@@ -80,7 +80,7 @@ const ClassMatrix = ({ courseId }) => {
             await api.delete(`/school/enrollments/${enrollmentId}`);
             fetchMatrix();
         } catch (error) {
-            alert('Error deleting student');
+            toast.error('Error deleting student');
         }
     };
 

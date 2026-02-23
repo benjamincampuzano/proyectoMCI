@@ -7,6 +7,7 @@ import {
     Activity, User, Calendar, Filter, Search, Download, Trash2,
     Edit, PlusCircle, LogIn, ChevronLeft, ChevronRight, Shield
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import useAuditDashboard from '../hooks/useAuditDashboard';
 import DataTable from '../components/DataTable';
 
@@ -60,10 +61,10 @@ const AuditDashboard = () => {
             a.remove();
             window.URL.revokeObjectURL(url);
 
-            alert('✅ Backup de PostgreSQL descargado exitosamente');
+            toast.success('✅ Backup de PostgreSQL descargado exitosamente');
         } catch (error) {
             console.error('Error downloading backup:', error);
-            alert(`❌ Error: ${error.message}`);
+            toast.error(`❌ Error: ${error.message}`);
         } finally {
             // Restaurar botón
             if (button) {
@@ -79,7 +80,7 @@ const AuditDashboard = () => {
 
         // Validar que sea un archivo .dump de PostgreSQL
         if (!file.name.endsWith('.dump')) {
-            alert('❌ Error: Solo se permiten archivos de backup de PostgreSQL (.dump)');
+            toast.error('❌ Error: Solo se permiten archivos de backup de PostgreSQL (.dump)');
             event.target.value = '';
             return;
         }
@@ -87,7 +88,7 @@ const AuditDashboard = () => {
         // Validar tamaño máximo (ej. 100MB)
         const maxSize = 100 * 1024 * 1024; // 100MB
         if (file.size > maxSize) {
-            alert('❌ Error: El archivo es demasiado grande. Máximo permitido: 100MB');
+            toast.error('❌ Error: El archivo es demasiado grande. Máximo permitido: 100MB');
             event.target.value = '';
             return;
         }
@@ -135,7 +136,7 @@ const AuditDashboard = () => {
                 throw new Error(data.error || 'Error al restaurar el backup');
             }
 
-            alert('✅ Restauración completada exitosamente.\n\nLa aplicación se recargará en 3 segundos...');
+            toast.success('✅ Restauración completada exitosamente.\n\nLa aplicación se recargará en 3 segundos...');
 
             // Recargar después de un breve delay
             setTimeout(() => {
@@ -144,7 +145,7 @@ const AuditDashboard = () => {
 
         } catch (error) {
             console.error('Error restoring backup:', error);
-            alert(`❌ Error crítico: ${error.message}\n\nLa base de datos no fue modificada.`);
+            toast.error(`❌ Error crítico: ${error.message}\n\nLa base de datos no fue modificada.`);
         } finally {
             // Restaurar botón si no se recarga
             if (restoreButton && originalText) {

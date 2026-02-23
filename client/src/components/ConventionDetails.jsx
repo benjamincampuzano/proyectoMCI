@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, DollarSign, XCircle, Trash2, FileText, Users, Edit2, Download } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';
@@ -66,7 +67,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             setReportData(response.data);
         } catch (error) {
             console.error('Error fetching report:', error);
-            alert('Error cargando el reporte financiero');
+            toast.error('Error cargando el reporte financiero');
         } finally {
             setLoadingReport(false);
         }
@@ -88,11 +89,10 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             setNeedsTransport(false);
             setNeedsAccommodation(false);
             onRefresh();
-            // Refresh report if active
             if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error registering user:', error);
-            alert('Error creating registration: ' + (error.response?.data?.error || error.message));
+            toast.error('Error creating registration: ' + (error.response?.data?.error || error.message));
         } finally {
             setLoading(false);
         }
@@ -120,11 +120,11 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         try {
             await api.put(`/convenciones/${convention.id}`, editData);
             setShowEditModal(false);
-            alert('Convención actualizada exitosamente!');
+            toast.success('Convención actualizada exitosamente!');
             onRefresh();
         } catch (error) {
             console.error('Error updating convention:', error);
-            alert('Error al actualizar: ' + (error.response?.data?.error || 'Error desconocido'));
+            toast.error('Error al actualizar: ' + (error.response?.data?.error || 'Error desconocido'));
         } finally {
             setLoading(false);
         }
@@ -132,7 +132,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
 
     const handleExportToExcel = () => {
         if (!convention.registrations || convention.registrations.length === 0) {
-            alert('No hay registros para exportar');
+            toast.error('No hay registros para exportar');
             return;
         }
 
@@ -183,11 +183,10 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             setPaymentNotes('');
             setPaymentType('CONVENTION');
             onRefresh();
-            // Refresh report if active
             if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error adding payment:', error);
-            alert('Error adding payment');
+            toast.error('Error adding payment');
         } finally {
             setLoading(false);
         }
@@ -204,7 +203,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error deleting registration:', error);
-            alert('Error al eliminar el registro: ' + (error.response?.data?.error || error.message));
+            toast.error('Error al eliminar el registro: ' + (error.response?.data?.error || error.message));
         }
     };
 

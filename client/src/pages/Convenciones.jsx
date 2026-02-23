@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2, UserCheck } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import ConventionDetails from '../components/ConventionDetails';
 import ActionModal from '../components/ActionModal';
@@ -48,7 +49,7 @@ const Convenciones = () => {
             setSelectedConvention(res.data);
         } catch (error) {
             console.error('Error fetching convention details:', error);
-            alert('Error loading details');
+            toast.error('Error loading details');
         }
     };
 
@@ -63,7 +64,6 @@ const Convenciones = () => {
             });
             setShowCreateModal(false);
             fetchConventions();
-            // Reset form
             setFormData({
                 type: 'FAMILIAS',
                 year: new Date().getFullYear(),
@@ -77,12 +77,12 @@ const Convenciones = () => {
             });
         } catch (error) {
             console.error('Error creating convention:', error);
-            alert('Error creating convention: ' + (error.response?.data?.error || error.message));
+            toast.error('Error creating convention: ' + (error.response?.data?.error || error.message));
         }
     };
 
     const handleDelete = async (e, id) => {
-        e.stopPropagation(); // Prevent card click
+        e.stopPropagation();
         if (!window.confirm('¿Estás seguro de eliminar esta convención? Se eliminarán todos los registros y pagos asociados.')) {
             return;
         }
@@ -91,7 +91,7 @@ const Convenciones = () => {
             fetchConventions();
         } catch (error) {
             console.error('Error deleting convention:', error);
-            alert('Error deleting convention');
+            toast.error('Error deleting convention');
         }
     };
 

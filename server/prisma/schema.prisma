@@ -575,6 +575,7 @@ enum AuditAction {
   LOGIN
   LOGOUT
   CONSOLIDATE
+  EXPORT
 }
 
 enum EntityType {
@@ -594,6 +595,9 @@ enum EntityType {
   GUEST_CALL
   GUEST_VISIT
   DOCUMENT
+  KIDS_GROUP
+  KID
+  KID_ATTENDANCE
 }
 
 enum ResourceType {
@@ -643,6 +647,7 @@ enum GuestStatus {
 enum AttendanceStatus {
   PRESENTE
   AUSENTE
+  JUSTIFICADO
 }
 
 enum ClassAttendanceStatus {

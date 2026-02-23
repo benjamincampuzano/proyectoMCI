@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Check, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 
 const ChurchAttendance = () => {
@@ -68,7 +69,7 @@ const ChurchAttendance = () => {
             }));
 
             if (attendanceData.length === 0) {
-                alert('No hay registros de asistencia para guardar');
+                toast.error('No hay registros de asistencia para guardar');
                 return;
             }
 
@@ -77,10 +78,10 @@ const ChurchAttendance = () => {
                 attendances: attendanceData
             });
 
-            alert('Asistencia guardada exitosamente');
+            toast.success('Asistencia guardada exitosamente');
         } catch (error) {
             console.error('Error saving attendance:', error);
-            alert('Error al guardar asistencia');
+            toast.error('Error al guardar asistencia');
         } finally {
             setSaving(false);
         }

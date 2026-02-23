@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Phone, Home, User, MessageSquare, MessageCircle, AlertCircle, Plus, History, X, Clock, CheckCircle2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
@@ -43,7 +44,7 @@ const GuestTracking = () => {
 
     const handleAction = async () => {
         if (!formData.observation.trim()) {
-            alert('La observación es obligatoria');
+            toast.error('La observación es obligatoria');
             return;
         }
 
@@ -54,7 +55,7 @@ const GuestTracking = () => {
             fetchGuests();
         } catch (error) {
             console.error(`Error saving ${modalType}:`, error);
-            alert('Error al guardar: ' + (error.response?.data?.message || error.message));
+            toast.error('Error al guardar: ' + (error.response?.data?.message || error.message));
         }
     };
 

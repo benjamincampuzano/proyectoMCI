@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, AlertTriangle, Loader2, UserMinus } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 
 /**
@@ -18,7 +19,7 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
             const data = response.data;
 
             // Show success notification
-            alert(`✓ ${data.message}`);
+            toast.success(data.message);
 
             // Notify parent component
             if (onUserRemoved) {

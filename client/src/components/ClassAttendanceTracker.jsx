@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ClipboardList } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 
 const ClassAttendanceTracker = () => {
@@ -78,10 +79,10 @@ const ClassAttendanceTracker = () => {
                 classNumber: selectedClass,
                 status: attendances[enrollmentId] || 'ASISTE'
             });
-            alert('Asistencia guardada');
+            toast.success('Asistencia guardada');
         } catch (error) {
             console.error('Error saving attendance:', error);
-            alert('Error al guardar asistencia');
+            toast.error('Error al guardar asistencia');
         } finally {
             setSaving(false);
         }

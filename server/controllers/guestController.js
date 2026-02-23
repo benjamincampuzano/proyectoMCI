@@ -118,10 +118,23 @@ const getAllGuests = async (req, res) => {
             };
         }
         if (search) {
-            queryFilters.OR = [
-                { name: { contains: search, mode: 'insensitive' } },
-                { phone: { contains: search } },
-            ];
+            // Filtros rápidos predefinidos
+            if (search === '__this_week__') {
+                const now = new Date();
+                const startOfWeek = new Date(now);
+                startOfWeek.setDate(now.getDate() - now.getDay());
+                startOfWeek.setHours(0, 0, 0, 0);
+                queryFilters.createdAt = { gte: startOfWeek };
+            } else if (search === '__this_month__') {
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                queryFilters.createdAt = { gte: startOfMonth };
+            } else {
+                queryFilters.OR = [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search } },
+                ];
+            }
         }
 
         // Lider Doce & Invited By Logic
@@ -142,9 +155,18 @@ const getAllGuests = async (req, res) => {
             queryFilters.invitedById = parseInt(invitedById);
         }
 
+        // Combinar filtros de seguridad y consulta
         const finalWhere = Object.keys(securityFilter).length > 0
             ? { AND: [securityFilter, queryFilters] }
             : queryFilters;
+
+        // Paginación
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        // Obtener total para paginación
+        const total = await prisma.guest.count({ where: finalWhere });
 
         const guests = await prisma.guest.findMany({
             where: finalWhere,
@@ -169,6 +191,8 @@ const getAllGuests = async (req, res) => {
                 }
             },
             orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit
         });
 
         // Format for frontend
@@ -180,7 +204,16 @@ const getAllGuests = async (req, res) => {
             visits: g.visits.map(v => ({ ...v, visitor: v.visitor ? { fullName: v.visitor.profile?.fullName } : null }))
         }));
 
-        res.status(200).json({ guests: formattedGuests });
+        res.status(200).json({
+            guests: formattedGuests,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+                hasMore: skip + guests.length < total
+            }
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

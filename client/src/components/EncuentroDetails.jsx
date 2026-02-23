@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, DollarSign, CheckCircle, XCircle, Trash2, Calendar, BookOpen, FileText, Edit2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { AsyncSearchSelect } from './ui';
@@ -71,7 +72,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             setReportData(response.data);
         } catch (error) {
             console.error('Error fetching report:', error);
-            alert('Error cargando el reporte financiero');
+            toast.error('Error cargando el reporte financiero');
         } finally {
             setLoadingReport(false);
         }
@@ -98,7 +99,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error registering guest:', error);
-            alert('Error creating registration: ' + (error.response?.data?.error || error.message));
+            toast.error('Error creating registration: ' + (error.response?.data?.error || error.message));
         } finally {
             setLoading(false);
         }
@@ -122,7 +123,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error adding payment:', error);
-            alert('Error adding payment');
+            toast.error('Error adding payment');
         } finally {
             setLoading(false);
         }
@@ -139,7 +140,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error deleting registration:', error);
-            alert('Error al eliminar');
+            toast.error('Error al eliminar');
         }
     };
 
@@ -151,7 +152,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             const guestId = selectedRegistration?.guest?.id;
 
             if (!guestId) {
-                alert('No guest selected');
+                toast.error('No guest selected');
                 return;
             }
 
@@ -170,11 +171,11 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                 dataTreatmentAuthorized: false,
                 minorConsentAuthorized: false
             });
-            alert('Invitado convertido a Discípulo exitosamente!');
+            toast.success('Invitado convertido a Discípulo exitosamente!');
             onRefresh();
         } catch (error) {
             console.error('Error converting guest:', error);
-            alert('Error al convertir: ' + (error.response?.data?.message || 'Error desconocido'));
+            toast.error('Error al convertir: ' + (error.response?.data?.message || 'Error desconocido'));
         } finally {
             setLoading(false);
         }
@@ -201,11 +202,11 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         try {
             await api.put(`/encuentros/${encuentro.id}`, editData);
             setShowEditModal(false);
-            alert('Encuentro actualizado exitosamente!');
+            toast.success('Encuentro actualizado exitosamente!');
             onRefresh();
         } catch (error) {
             console.error('Error updating encuentro:', error);
-            alert('Error al actualizar: ' + (error.response?.data?.error || 'Error desconocido'));
+            toast.error('Error al actualizar: ' + (error.response?.data?.error || 'Error desconocido'));
         } finally {
             setLoading(false);
         }

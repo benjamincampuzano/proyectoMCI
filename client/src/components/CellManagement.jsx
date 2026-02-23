@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Users, MapPin, Clock, Calendar, Trash2, Edit2, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 import { AsyncSearchSelect, Button } from './ui';
 
@@ -139,10 +140,10 @@ const CellManagement = () => {
         try {
             setLoading(true);
             await api.delete(`/enviar/cells/${cellId}`);
-            alert('Célula eliminada exitosamente');
+            toast.success('Célula eliminada exitosamente');
             fetchCells();
         } catch (error) {
-            alert(error.message);
+            toast.error(error.message);
         } finally {
             setLoading(false);
         }
@@ -155,14 +156,14 @@ const CellManagement = () => {
             let response;
             if (isEditing) {
                 response = await api.put(`/enviar/cells/${editingCellId}`, formData);
-                alert('Célula actualizada exitosamente');
+                toast.success('Célula actualizada exitosamente');
             } else {
                 response = await api.post('/enviar/cells', formData);
                 const newCell = response.data;
                 const geoStatus = (newCell.latitude && newCell.longitude)
                     ? 'y georreferenciada correctamente'
                     : 'pero no se pudo obtener su ubicación en el mapa. Verifique la dirección más tarde.';
-                alert(`Célula creada exitosamente ${geoStatus}`);
+                toast.success(`Célula creada exitosamente ${geoStatus}`);
             }
 
             setShowCreateForm(false);
@@ -181,7 +182,7 @@ const CellManagement = () => {
             });
             fetchCells();
         } catch (error) {
-            alert(error.message);
+            toast.error(error.message);
         } finally {
             setLoading(false);
         }
@@ -212,12 +213,12 @@ const CellManagement = () => {
             await api.post(`/enviar/cells/${selectedCell.id}/members`, {
                 memberId: selectedMember.id
             });
-            alert('Discípulo asignado exitosamente');
+            toast.success('Discípulo asignado exitosamente');
             setSelectedMember(null);
             fetchAssignedMembers(selectedCell.id);
             fetchCells();
         } catch (error) {
-            alert(error.message);
+            toast.error(error.message);
         } finally {
             setLoading(false);
         }
@@ -228,11 +229,11 @@ const CellManagement = () => {
         try {
             setLoading(true);
             await api.delete(`/enviar/cells/${selectedCell.id}/members/${memberId}`);
-            alert('Discípulo desvinculado exitosamente');
+            toast.success('Discípulo desvinculado exitosamente');
             fetchAssignedMembers(selectedCell.id);
             fetchCells();
         } catch (error) {
-            alert(error.message);
+            toast.error(error.message);
         } finally {
             setLoading(false);
         }

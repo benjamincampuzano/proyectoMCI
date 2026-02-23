@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Users,
     Calendar,
@@ -13,18 +13,43 @@ import {
     PhoneCall,
     MapPin,
     Trophy,
-    GraduationCap
+    GraduationCap,
+    Filter,
+    RefreshCw,
+    X
 } from 'lucide-react';
 import api from '../utils/api';
 import Table from './ui/Table';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Button } from './ui';
+
+const ROLES = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'MIEMBRO'];
+const ASISTENCIA_TIPOS = [
+    { key: 'iglesia', label: 'Iglesia', icon: Home },
+    { key: 'celula', label: 'Célula', icon: Heart },
+    { key: 'escuela', label: 'Escuela', icon: BookOpen },
+    { key: 'encuentro', label: 'Encuentro', icon: GraduationCap },
+    { key: 'ganar', label: 'Ganar', icon: PhoneCall }
+];
 
 const UserActivityList = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
+    
+    // Filtros
+    const [filters, setFilters] = useState({
+        role: '',
+        minIglesia: '',
+        minCelula: '',
+        minEscuela: '',
+        ultimoAcceso: '',
+        tieneOracionDeTres: '',
+        tieneCelula: ''
+    });
 
     useEffect(() => {
         fetchActivityData();
@@ -42,10 +67,69 @@ const UserActivityList = () => {
         }
     };
 
-    const filteredData = data.filter(item =>
-        item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.roles.some(r => r.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredData = useMemo(() => {
+        return data.filter(item => {
+            // Filtro por búsqueda de nombre/rol
+            const matchesSearch = !searchTerm || 
+                item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.roles.some(r => r.toLowerCase().includes(searchTerm.toLowerCase()));
+
+            // Filtro por rol
+            const matchesRole = !filters.role || item.roles.includes(filters.role);
+
+            // Filtro por mínimo de asistencia a iglesia
+            const matchesIglesia = !filters.minIglesia || 
+                item.asistencias.iglesia >= parseInt(filters.minIglesia);
+
+            // Filtro por mínimo de asistencia a célula
+            const matchesCelula = !filters.minCelula || 
+                item.asistencias.celula >= parseInt(filters.minCelula);
+
+            // Filtro por mínimo de asistencia a escuela
+            const matchesEscuela = !filters.minEscuela || 
+                item.asistencias.escuela >= parseInt(filters.minEscuela);
+
+            // Filtro por último acceso
+            let matchesUltimoAcceso = true;
+            if (filters.ultimoAcceso) {
+                if (!item.ultimoAcceso) {
+                    matchesUltimoAcceso = false;
+                } else {
+                    const daysDiff = Math.floor((new Date() - new Date(item.ultimoAcceso)) / (1000 * 60 * 60 * 24));
+                    if (filters.ultimoAcceso === '7') matchesUltimoAcceso = daysDiff <= 7;
+                    else if (filters.ultimoAcceso === '30') matchesUltimoAcceso = daysDiff <= 30;
+                    else if (filters.ultimoAcceso === '90') matchesUltimoAcceso = daysDiff <= 90;
+                    else if (filters.ultimoAcceso === 'never') matchesUltimoAcceso = !item.ultimoAcceso;
+                }
+            }
+
+            // Filtro por oración de tres
+            const matchesOracionDeTres = filters.tieneOracionDeTres === '' || 
+                (filters.tieneOracionDeTres === 'true' ? item.isOracionDeTres : !item.isOracionDeTres);
+
+            // Filtro por célula
+            const matchesCelulaMember = filters.tieneCelula === '' || 
+                (filters.tieneCelula === 'true' ? item.celula?.nombre : !item.celula?.nombre);
+
+            return matchesSearch && matchesRole && matchesIglesia && matchesCelula && 
+                   matchesEscuela && matchesUltimoAcceso && matchesOracionDeTres && matchesCelulaMember;
+        });
+    }, [data, searchTerm, filters]);
+
+    const clearFilters = () => {
+        setFilters({
+            role: '',
+            minIglesia: '',
+            minCelula: '',
+            minEscuela: '',
+            ultimoAcceso: '',
+            tieneOracionDeTres: '',
+            tieneCelula: ''
+        });
+        setSearchTerm('');
+    };
+
+    const hasActiveFilters = Object.values(filters).some(v => v !== '') || searchTerm;
 
     const columns = [
         {
@@ -224,15 +308,32 @@ const UserActivityList = () => {
 
     return (
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Trophy className="text-amber-500" size={24} />
-                        Reporte del Ministerio
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Seguimiento en tiempo real de progresos y asistencias</p>
+            <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Trophy className="text-amber-500" size={24} />
+                            Reporte del Ministerio
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Seguimiento en tiempo real de progresos y asistencias</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            variant={showFilters ? "primary" : "outline"} 
+                            size="sm" 
+                            icon={Filter}
+                            onClick={() => setShowFilters(!showFilters)}
+                        >
+                            Filtros {hasActiveFilters && `(${Object.values(filters).filter(v => v !== '').length + (searchTerm ? 1 : 0)})`}
+                        </Button>
+                        <Button variant="ghost" size="sm" icon={RefreshCw} onClick={fetchActivityData}>
+                            Actualizar
+                        </Button>
+                    </div>
                 </div>
 
+                {/* Panel de búsqueda y filtros rápidos */}
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
                         <Search size={18} />
@@ -245,6 +346,115 @@ const UserActivityList = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
+
+                {/* Panel de filtros avanzados */}
+                {showFilters && (
+                    <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-xl space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Filtros Avanzados</h4>
+                            {hasActiveFilters && (
+                                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs">
+                                    Limpiar filtros
+                                </Button>
+                            )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                            {/* Filtro por rol */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Rol</label>
+                                <select
+                                    value={filters.role}
+                                    onChange={(e) => setFilters({...filters, role: e.target.value})}
+                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                >
+                                    <option value="">Todos</option>
+                                    {ROLES.map(rol => (
+                                        <option key={rol} value={rol}>{rol.replace(/_/g, ' ')}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Filtro mínimo iglesia */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Mín. Iglesia</label>
+                                <select
+                                    value={filters.minIglesia}
+                                    onChange={(e) => setFilters({...filters, minIglesia: e.target.value})}
+                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                >
+                                    <option value="">Cualquiera</option>
+                                    <option value="1">1+</option>
+                                    <option value="2">2+</option>
+                                    <option value="3">3+</option>
+                                    <option value="5">5+</option>
+                                    <option value="10">10+</option>
+                                </select>
+                            </div>
+
+                            {/* Filtro mínimo célula */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Mín. Célula</label>
+                                <select
+                                    value={filters.minCelula}
+                                    onChange={(e) => setFilters({...filters, minCelula: e.target.value})}
+                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                >
+                                    <option value="">Cualquiera</option>
+                                    <option value="1">1+</option>
+                                    <option value="2">2+</option>
+                                    <option value="3">3+</option>
+                                    <option value="5">5+</option>
+                                </select>
+                            </div>
+
+                            {/* Filtro mínimo escuela */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Mín. Escuela</label>
+                                <select
+                                    value={filters.minEscuela}
+                                    onChange={(e) => setFilters({...filters, minEscuela: e.target.value})}
+                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                >
+                                    <option value="">Cualquiera</option>
+                                    <option value="1">1+</option>
+                                    <option value="3">3+</option>
+                                    <option value="6">6+</option>
+                                </select>
+                            </div>
+
+                            {/* Filtro último acceso */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Último Acceso</label>
+                                <select
+                                    value={filters.ultimoAcceso}
+                                    onChange={(e) => setFilters({...filters, ultimoAcceso: e.target.value})}
+                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                >
+                                    <option value="">Cualquiera</option>
+                                    <option value="7">Última semana</option>
+                                    <option value="30">Último mes</option>
+                                    <option value="90">Últimos 3 meses</option>
+                                    <option value="never">Nunca</option>
+                                </select>
+                            </div>
+
+                            {/* Filtro oración de tres */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Oración de 3</label>
+                                <select
+                                    value={filters.tieneOracionDeTres}
+                                    onChange={(e) => setFilters({...filters, tieneOracionDeTres: e.target.value})}
+                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                >
+                                    <option value="">Cualquiera</option>
+                                    <option value="true">Con grupo</option>
+                                    <option value="false">Sin grupo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="relative">
@@ -264,9 +474,13 @@ const UserActivityList = () => {
             </div>
 
             {!loading && data.length > 0 && (
-                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800 flex flex-col md:flex-row items-center justify-between gap-2">
                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                        Mostrando <b>{filteredData.length}</b> de <b>{data.length}</b> usuarios
+                        {hasActiveFilters ? (
+                            <>Mostrando <b>{filteredData.length}</b> de <b>{data.length}</b> usuarios (filtrados)</>
+                        ) : (
+                            <>Mostrando <b>{filteredData.length}</b> usuarios</>
+                        )}
                     </span>
                     <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
                         <div className="flex items-center gap-1"><Home size={10} /> IG: Iglesia</div>

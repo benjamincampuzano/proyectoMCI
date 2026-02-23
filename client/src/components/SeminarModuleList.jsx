@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, BookOpen } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -56,7 +57,7 @@ const SeminarModuleList = () => {
                 : await api.post('/seminar', payload);
 
             if (response.status === 200 || response.status === 201) {
-                alert(editingModule ? 'Módulo actualizado exitosamente' : 'Módulo creado exitosamente');
+                toast.success(editingModule ? 'Módulo actualizado exitosamente' : 'Módulo creado exitosamente');
                 await fetchModules();
                 setShowForm(false);
                 setEditingModule(null);
@@ -64,7 +65,7 @@ const SeminarModuleList = () => {
             }
         } catch (error) {
             console.error('Error saving module:', error);
-            alert(`Error: ${error.response?.data?.error || error.message}`);
+            toast.error(`Error: ${error.response?.data?.error || error.message}`);
         }
     };
 
@@ -84,11 +85,11 @@ const SeminarModuleList = () => {
 
         try {
             await api.delete(`/seminar/${id}`);
-            alert('Módulo eliminado exitosamente');
+            toast.success('Módulo eliminado exitosamente');
             fetchModules();
         } catch (error) {
             console.error('Error deleting module:', error);
-            alert(`Error: ${error.response?.data?.error || 'No se pudo eliminar el módulo'}`);
+            toast.error(`Error: ${error.response?.data?.error || 'No se pudo eliminar el módulo'}`);
         }
     };
 

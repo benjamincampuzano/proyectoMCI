@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Users, Calendar, Phone, CheckCircle, Clock, Edit2, Trash2, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import MultiUserSelect from './MultiUserSelect';
@@ -36,7 +37,7 @@ const OracionDeTresManagement = () => {
             setShowModal(false);
             setRefreshTrigger(prev => prev + 1);
         } catch (error) {
-            alert(error.response?.data?.error || 'Error al crear el grupo');
+            toast.error(error.response?.data?.error || 'Error al crear el grupo');
         }
     };
 
@@ -50,7 +51,7 @@ const OracionDeTresManagement = () => {
                 setSelectedGroup(res.data);
             }
         } catch (error) {
-            alert(error.response?.data?.error || 'Error al actualizar el grupo');
+            toast.error(error.response?.data?.error || 'Error al actualizar el grupo');
         }
     };
 
@@ -64,7 +65,7 @@ const OracionDeTresManagement = () => {
             setSelectedGroup(null);
             setRefreshTrigger(prev => prev + 1);
         } catch (error) {
-            alert(error.response?.data?.error || 'Error al eliminar el grupo');
+            toast.error(error.response?.data?.error || 'Error al eliminar el grupo');
         }
     };
 
@@ -77,7 +78,7 @@ const OracionDeTresManagement = () => {
                 setSelectedGroup(res.data);
             }
         } catch (error) {
-            alert(error.response?.data?.error || 'Error al registrar la reunión');
+            toast.error(error.response?.data?.error || 'Error al registrar la reunión');
         }
     };
 
@@ -295,7 +296,7 @@ const GroupModal = ({ onClose, onSubmit, initialData }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (miembros.length !== 3) {
-            alert('Debes seleccionar exactamente 3 discípulos.');
+            toast.error('Debes seleccionar exactamente 3 discípulos.');
             return;
         }
         onSubmit({ fechaInicio, miembros, personas, estado });

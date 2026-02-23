@@ -1,6 +1,31 @@
 import { CheckCircle2, XCircle, Clock, Edit2, Trash2 } from 'lucide-react';
 import PropTypes from 'prop-types';
 
+// Mapeos de colores estáticos para Tailwind
+const COLOR_CLASSES = {
+    green: {
+        bg: 'bg-green-500',
+        bgLight: 'bg-green-50 dark:bg-green-900/20',
+        text: 'text-green-500',
+        textDark: 'text-green-600 dark:text-green-400',
+        border: 'border-green-100 dark:border-green-800/50'
+    },
+    blue: {
+        bg: 'bg-blue-500',
+        bgLight: 'bg-blue-50 dark:bg-blue-900/20',
+        text: 'text-blue-500',
+        textDark: 'text-blue-600 dark:text-blue-400',
+        border: 'border-blue-100 dark:border-blue-800/50'
+    },
+    red: {
+        bg: 'bg-red-500',
+        bgLight: 'bg-red-50 dark:bg-red-900/20',
+        text: 'text-red-500',
+        textDark: 'text-red-600 dark:text-red-400',
+        border: 'border-red-100 dark:border-red-800/50'
+    }
+};
+
 const getGoalStatus = (goal, percent) => {
     const isMet = percent >= 100;
     let deadline = null;
@@ -10,7 +35,6 @@ const getGoalStatus = (goal, percent) => {
     } else if (goal.convention) {
         deadline = new Date(goal.convention.startDate);
     } else if (goal.month && goal.year) {
-        // Last day of the month
         deadline = new Date(goal.year, goal.month, 0);
     }
 
@@ -32,6 +56,7 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
     const percent = Math.min(Math.round((goal.currentValue / goal.targetValue) * 100), 100);
     const status = getGoalStatus(goal, percent);
     const StatusIcon = status.icon;
+    const colors = COLOR_CLASSES[status.color];
 
     let goalName = '';
     if (goal.type.includes('CELL')) goalName = goal.type === 'CELL_COUNT' ? 'Meta Células' : 'Asistencia Células';
@@ -72,11 +97,11 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
             <td className="p-4">
                 <div className="w-full max-w-[140px] mx-auto">
                     <div className="flex justify-between mb-1">
-                        <span className={`text-xs font-bold text-${status.color}-500`}>{percent}%</span>
+                        <span className={`text-xs font-bold ${colors.text}`}>{percent}%</span>
                     </div>
                     <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                         <div
-                            className={`h-full bg-${status.color}-500 transition-all duration-500`}
+                            className={`h-full ${colors.bg} transition-all duration-500`}
                             style={{ width: `${percent}%` }}
                         ></div>
                     </div>
@@ -86,7 +111,7 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
                 {getDeadlineText(goal)}
             </td>
             <td className="p-4">
-                <div className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-${status.color}-50 dark:bg-${status.color}-900/20 text-${status.color}-600 dark:text-${status.color}-400 text-xs font-bold border border-${status.color}-100 dark:border-${status.color}-800/50 w-fit mx-auto`}>
+                <div className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full ${colors.bgLight} ${colors.textDark} text-xs font-bold ${colors.border} w-fit mx-auto`}>
                     <StatusIcon size={14} />
                     {status.label}
                 </div>

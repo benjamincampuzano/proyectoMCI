@@ -21,6 +21,7 @@ const Enviar = lazy(() => import('./pages/Enviar'));
 const NetworkAssignment = lazy(() => import('./components/NetworkAssignment'));
 const Convenciones = lazy(() => import('./pages/Convenciones'));
 const Encuentros = lazy(() => import('./pages/Encuentros'));
+const KidsModule = lazy(() => import('./pages/KidsModule'));
 const AuditDashboard = lazy(() => import('./pages/AuditDashboard'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const SetupWizard = lazy(() => import('./pages/SetupWizard'));
@@ -99,6 +100,8 @@ const RouteTransitionHandler = () => {
   return null;
 };
 
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
     <ThemeProvider>
@@ -108,6 +111,7 @@ function App() {
             <ConnectivityHandler />
             <RouteTransitionHandler />
             <LoadingOverlay />
+            <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
             <Suspense fallback={<TransitionLoader />}>
               <Routes>
                 <Route path="/setup" element={<SetupWizard />} />
@@ -122,8 +126,9 @@ function App() {
                   <Route path="consolidar" element={<Consolidar />} />
                   <Route path="discipular" element={<Discipular />} />
                   <Route path="enviar" element={<Enviar />} />
-                  <Route path="encuentros" element={<Encuentros />} />
-                  <Route path="convenciones" element={<Convenciones />} />
+<Route path="encuentros" element={<Encuentros />} />
+                   <Route path="kids" element={<KidsModule />} />
+                   <Route path="convenciones" element={<Convenciones />} />
                   <Route path="network" element={<NetworkAssignment />} />
                   <Route path="usuarios" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
                   <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { X, FileText, Video, HelpCircle, Save, Plus, Trash } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { Button } from '../ui';
 
 const ClassMaterialManager = ({ moduleId, classNumber, onClose }) => {
@@ -43,7 +44,7 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose }) => {
             setSaving(false);
             onClose();
         } catch (error) {
-            alert('Error saving materials');
+            toast.error('Error saving materials');
             setSaving(false);
         }
     };

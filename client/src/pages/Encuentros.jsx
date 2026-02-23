@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2, UserCheck } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import EncuentroDetails from '../components/EncuentroDetails';
 import MultiUserSelect from '../components/MultiUserSelect';
@@ -49,7 +50,7 @@ const Encuentros = () => {
             setSelectedEncuentro(res.data);
         } catch (error) {
             console.error('Error fetching details:', error);
-            alert('Error loading details');
+            toast.error('Error loading details');
         }
     };
 
@@ -77,7 +78,7 @@ const Encuentros = () => {
             });
         } catch (error) {
             console.error('Error creating:', error);
-            alert('Error creating encuentro');
+            toast.error('Error creating encuentro');
         }
     };
 
@@ -89,7 +90,7 @@ const Encuentros = () => {
             fetchEncuentros();
         } catch (error) {
             console.error(error);
-            alert('Error deleting');
+            toast.error('Error deleting');
         }
     };
 

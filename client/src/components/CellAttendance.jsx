@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Check, X, Users, Map as MapIcon, MapPin, Clock, Info } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import useCellAttendance from '../hooks/useCellAttendance';
 import { useAuth } from '../context/AuthContext';
 import CellMap from './CellMap';
@@ -54,10 +55,10 @@ const CellAttendance = () => {
 
         const res = await saveAttendance();
         if (res.success) {
-            alert('Asistencia de célula guardada exitosamente');
+            toast.success('Asistencia de célula guardada exitosamente');
             return;
         }
-        alert(res.message || 'Error al guardar asistencia');
+        toast.error(res.message || 'Error al guardar asistencia');
     };
 
     return (

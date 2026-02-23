@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Search, UserPlus, Loader2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 
 /**
@@ -69,7 +70,7 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
             const data = response.data;
 
             // Show success notification
-            alert(`✓ ${data.message}`);
+            toast.success(data.message);
 
             // Notify parent component
             if (onUserAdded) {

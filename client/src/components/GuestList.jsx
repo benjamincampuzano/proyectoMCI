@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search, Filter, Edit2, Trash2, UserPlus, Loader, X, Save, UserCheck } from 'lucide-react';
 import PropTypes from 'prop-types';
+import { toast } from 'react-hot-toast';
 import { AsyncSearchSelect, Button } from './ui';
 import useGuestManagement from '../hooks/useGuestManagement';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +27,8 @@ const GuestList = ({ refreshTrigger }) => {
         updateGuest,
         deleteGuest,
         convertGuestToMember,
+        loadMore,
+        pagination,
     } = useGuestManagement({ refreshTrigger });
 
     const [editingGuest, setEditingGuest] = useState(null);
@@ -39,7 +42,7 @@ const GuestList = ({ refreshTrigger }) => {
     });
 
     const handleSearch = () => {
-        fetchGuests();
+        fetchGuests(1);
     };
 
     const handleUpdateGuest = async (guestId, updates) => {
@@ -73,7 +76,7 @@ const GuestList = ({ refreshTrigger }) => {
             dataTreatmentAuthorized: false,
             minorConsentAuthorized: false
         });
-        alert('Invitado consolidado a Discípulo exitosamente');
+        toast.success('Invitado consolidado a Discípulo exitosamente');
     };
 
     const getStatusBadgeColor = (status) => {
@@ -94,6 +97,44 @@ const GuestList = ({ refreshTrigger }) => {
             GANADO: 'Consolidado',
         };
         return labels[status] || status;
+    };
+
+    // Filtros rápidos predefinidos
+    const quickFilters = [
+        { id: 'all', label: 'Todos', icon: null },
+        { id: 'mine', label: 'Mis invitados', icon: UserPlus },
+        { id: 'uncontacted', label: 'Sin contactar', icon: null },
+        { id: 'this_week', label: 'Esta semana', icon: null },
+        { id: 'this_month', label: 'Este mes', icon: null },
+    ];
+
+    const handleQuickFilter = (filterId) => {
+        // Limpiar filtros anteriores
+        setStatusFilter('');
+        setInvitedByFilter(null);
+        setLiderDoceFilter(null);
+        setSearchTerm('');
+
+        switch (filterId) {
+            case 'mine':
+                setInvitedByFilter(currentUser?.id);
+                break;
+            case 'uncontacted':
+                setStatusFilter('NUEVO');
+                break;
+            case 'this_week':
+                // El backend manejará este filtro
+                setSearchTerm('__this_week__');
+                break;
+            case 'this_month':
+                setSearchTerm('__this_month__');
+                break;
+            default:
+                break;
+        }
+
+        // Aplicar el filtro
+        setTimeout(() => fetchGuests(), 0);
     };
 
     // Funciones auxiliares de permisos
@@ -120,6 +161,19 @@ const GuestList = ({ refreshTrigger }) => {
                     {error}
                 </div>
             )}
+
+            {/* Filtros rápidos */}
+            <div className="flex flex-wrap gap-2 mb-4">
+                {quickFilters.map((filter) => (
+                    <button
+                        key={filter.id}
+                        onClick={() => handleQuickFilter(filter.id)}
+                        className="px-3 py-1.5 text-sm font-medium rounded-full border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                        {filter.label}
+                    </button>
+                ))}
+            </div>
 
             {/* Filtros */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -397,7 +451,34 @@ const GuestList = ({ refreshTrigger }) => {
                         )}
                     </tbody>
                 </table>
-            </div >
+            </div>
+
+            {/* Paginación - Cargar más */}
+            {pagination.hasMore && (
+                <div className="mt-6 text-center">
+                    <Button
+                        onClick={loadMore}
+                        disabled={loading}
+                        variant="secondary"
+                    >
+                        {loading ? (
+                            <>
+                                <Loader size={18} className="animate-spin mr-2" />
+                                Cargando...
+                            </>
+                        ) : (
+                            `Cargar más (${pagination.total - guests.length} restantes)`
+                        )}
+                    </Button>
+                </div>
+            )}
+
+            {/* Información de paginación */}
+            {pagination.total > 0 && (
+                <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                    Mostrando {guests.length} de {pagination.total} invitados
+                </div>
+            )}
 
             {/* Modal para convertir a Discípulo */}
             {

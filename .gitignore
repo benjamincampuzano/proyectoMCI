@@ -33,3 +33,5 @@ backup/
 *.swp
 *.swo
 *.dump
+.claude/
+.gemini/

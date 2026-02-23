@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Search, Trash2, Edit, Save } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import api from '../utils/api';
 import { AsyncSearchSelect } from './ui';
 
@@ -66,7 +67,7 @@ const EnrollmentPanel = () => {
 
     const handleEnroll = async () => {
         if (!selectedUser || !selectedModule) {
-            alert('Selecciona un estudiante y un módulo');
+            toast.error('Selecciona un estudiante y un módulo');
             return;
         }
 
@@ -76,12 +77,12 @@ const EnrollmentPanel = () => {
                 moduleId: selectedModule
             });
 
-            alert('Estudiante inscrito exitosamente');
+            toast.success('Estudiante inscrito exitosamente');
             setSelectedUser(null);
             fetchEnrollments();
         } catch (error) {
             console.error('Error enrolling student:', error);
-            alert(error.response?.data?.error || 'Error al inscribir estudiante');
+            toast.error(error.response?.data?.error || 'Error al inscribir estudiante');
         }
     };
 
@@ -90,11 +91,11 @@ const EnrollmentPanel = () => {
 
         try {
             await api.delete(`/consolidar/seminar/enrollments/${enrollmentId}`);
-            alert('Estudiante eliminado.');
+            toast.success('Estudiante eliminado.');
             fetchEnrollments();
         } catch (e) {
             console.error(e);
-            alert(e.response?.data?.error || 'Error al eliminar.');
+            toast.error(e.response?.data?.error || 'Error al eliminar.');
         }
     };
 
@@ -104,11 +105,11 @@ const EnrollmentPanel = () => {
                 professorId: professor?.id,
                 auxiliaryIds: auxiliaries.map(a => a.id)
             });
-            alert('Personal actualizado.');
+            toast.success('Personal actualizado.');
             setShowStaffEdit(false);
         } catch (e) {
             console.error(e);
-            alert('Error al guardar personal.');
+            toast.error('Error al guardar personal.');
         }
     };
 
