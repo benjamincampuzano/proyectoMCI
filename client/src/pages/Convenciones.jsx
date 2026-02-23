@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2, UserCheck } from 'lucide-react';
+import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2, UserCheck, LayoutGrid, List, FileText } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import ConventionDetails from '../components/ConventionDetails';
+import ConvencionTable from '../components/ConvencionTable';
+import ConvencionesReport from '../components/ConvencionesReport';
 import ActionModal from '../components/ActionModal';
 import { Button, Modal, Skeleton, PageHeader, AsyncSearchSelect } from '../components/ui';
 
@@ -13,6 +15,8 @@ const Convenciones = () => {
     const [loading, setLoading] = useState(true);
     const [selectedConvention, setSelectedConvention] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
+    const [showReport, setShowReport] = useState(false);
 
     // Create Form State
     const [formData, setFormData] = useState({
@@ -95,6 +99,152 @@ const Convenciones = () => {
         }
     };
 
+    const canModify = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
+    const canViewReport = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
+
+    // Calculo de estadísticas para reporte
+    const stats = useMemo(() => {
+        if (!conventions || conventions.length === 0) {
+            return {
+                total: 0,
+                recaudado: 0,
+                pendiente: 0,
+                inscritos: 0
+            };
+        }
+
+        let totalRecaudado = 0;
+        let totalPendiente = 0;
+        let totalInscritos = 0;
+
+        conventions.forEach(conv => {
+            totalInscritos += conv.registrations?.length || 0;
+            conv.registrations?.forEach(reg => {
+                totalRecaudado += reg.totalPaid || 0;
+                totalPendiente += reg.balance || 0;
+            });
+        });
+
+        return {
+            total: conventions.length,
+            recaudado: totalRecaudado,
+            pendiente: totalPendiente,
+            inscritos: totalInscritos
+        };
+    }, [conventions]);
+
+    // Renderizar contenido según vista
+    const renderContent = () => {
+        if (showReport) {
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Reporte de Convenciones</h2>
+                        <Button variant="secondary" onClick={() => setShowReport(false)}>
+                            Volver a Lista
+                        </Button>
+                    </div>
+                    <ConvencionesReport conventions={conventions} />
+                </div>
+            );
+        }
+
+        if (viewMode === 'cards') {
+            // Vista de tarjetas (actual)
+            return (
+                <>
+                    {loading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <Skeleton variant="card" lines={4} />
+                            <Skeleton variant="card" lines={4} />
+                            <Skeleton variant="card" lines={4} />
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {conventions.map((conv) => (
+                                <div
+                                    key={conv.id}
+                                    onClick={() => fetchConventionDetails(conv.id)}
+                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && fetchConventionDetails(conv.id)}
+                                    role="button"
+                                    tabIndex={0}
+                                    className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 cursor-pointer overflow-hidden relative"
+                                >
+                                    <div className="absolute top-0 left-0 w-2 h-full bg-blue-500 group-hover:bg-blue-600 transition-colors"></div>
+                                    <div className="p-6 pl-8">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                    {conv.type}
+                                                </h3>
+                                                <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded mt-1">
+                                                    {conv.year}
+                                                </span>
+                                            </div>
+                                            <ChevronRight className="text-gray-400 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" size={24} />
+                                        </div>
+
+                                        <div className="absolute top-4 right-12 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {canModify && (
+                                                <button
+                                                    onClick={(e) => handleDelete(e, conv.id)}
+                                                    className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"
+                                                    title="Eliminar Convención"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {conv.theme && (
+                                            <p className="text-gray-600 dark:text-gray-300 italic mb-4 line-clamp-2">
+                                                "{conv.theme}"
+                                            </p>
+                                        )}
+
+                                        <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                                                <Calendar size={16} className="mr-2 text-blue-500" />
+                                                {new Date(conv.startDate).toLocaleDateString()}
+                                            </div>
+                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                                                <DollarSign size={16} className="mr-2 text-orange-500" />
+                                                {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(conv.cost)}
+                                            </div>
+                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                                                <UserCheck size={16} className="mr-2 text-blue-500" />
+                                                Coord: {conv.coordinator?.fullName || 'Sin Asignar'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {conventions.length === 0 && (
+                                <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                                    No hay convenciones creadas.<br />
+                                    ¡Crea una nueva convención para comenzar!
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </>
+            );
+        }
+
+        // Vista de tabla
+        return (
+            <div className="animate-fade-in">
+                <ConvencionTable
+                    conventions={conventions}
+                    onSelect={fetchConventionDetails}
+                    canModify={canModify}
+                    onDelete={handleDelete}
+                />
+            </div>
+        );
+    };
+
+    // Early return if selectedConvention is set
     if (selectedConvention) {
         return (
             <ConventionDetails
@@ -104,8 +254,6 @@ const Convenciones = () => {
             />
         );
     }
-
-    const canModify = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
 
     return (
         <div className="space-y-6">
@@ -123,81 +271,75 @@ const Convenciones = () => {
                 )}
             />
 
-            {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Skeleton variant="card" lines={4} />
-                    <Skeleton variant="card" lines={4} />
-                    <Skeleton variant="card" lines={4} />
+            {/* Estadísticas Resumidas */}
+            {!showReport && conventions.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Convenciones</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Inscritos</p>
+                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{stats.inscritos}</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Recaudado</p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+                            ${stats.recaudado.toLocaleString()}
+                        </p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pendiente</p>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
+                            ${stats.pendiente.toLocaleString()}
+                        </p>
+                    </div>
                 </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {conventions.map((conv) => (
-                        <div
-                            key={conv.id}
-                            onClick={() => fetchConventionDetails(conv.id)}
-                            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && fetchConventionDetails(conv.id)}
-                            role="button"
-                            tabIndex={0}
-                            className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 cursor-pointer overflow-hidden relative"
+            )}
+
+            {/* Toggle de Vista y Reporte */}
+            {!showReport && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <button
+                            onClick={() => setViewMode('cards')}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'cards'
+                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                            title="Vista de tarjetas"
                         >
-                            <div className="absolute top-0 left-0 w-2 h-full bg-blue-500 group-hover:bg-blue-600 transition-colors"></div>
-                            <div className="p-6 pl-8">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                            {conv.type}
-                                        </h3>
-                                        <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded mt-1">
-                                            {conv.year}
-                                        </span>
-                                    </div>
-                                    <ChevronRight className="text-gray-400 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" size={24} />
-                                </div>
+                            <LayoutGrid size={18} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('table')}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'table'
+                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                            title="Vista de tabla"
+                        >
+                            <List size={18} />
+                        </button>
+                    </div>
 
-                                <div className="absolute top-4 right-12 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {canModify && (
-                                        <button
-                                            onClick={(e) => handleDelete(e, conv.id)}
-                                            className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"
-                                            title="Eliminar Convención"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
-                                </div>
-
-                                {conv.theme && (
-                                    <p className="text-gray-600 dark:text-gray-300 italic mb-4 line-clamp-2">
-                                        "{conv.theme}"
-                                    </p>
-                                )}
-
-                                <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                        <Calendar size={16} className="mr-2 text-blue-500" />
-                                        {new Date(conv.startDate).toLocaleDateString()}
-                                    </div>
-                                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                        <DollarSign size={16} className="mr-2 text-orange-500" />
-                                        {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(conv.cost)}
-                                    </div>
-                                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                        <UserCheck size={16} className="mr-2 text-blue-500" />
-                                        Coord: {conv.coordinator?.fullName || 'Sin Asignar'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                    {conventions.length === 0 && (
-                        <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                            No hay convenciones creadas.<br />
-                            ¡Crea una nueva convención para comenzar!
-                        </div>
+                    {canViewReport && (
+                        <button
+                            onClick={() => setShowReport(true)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                                showReport
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            }`}
+                        >
+                            <FileText size={16} />
+                            Ver Reporte
+                        </button>
                     )}
                 </div>
-            )
-            }
+            )}
+
+            {renderContent()}
 
             {/* Create Modal */}
             <Modal

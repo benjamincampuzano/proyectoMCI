@@ -25,18 +25,49 @@ const getEncuentros = async (req, res) => {
                 },
                 _count: {
                     select: { registrations: true }
+                },
+                registrations: {
+                    select: {
+                        id: true,
+                        discountPercentage: true,
+                        needsTransport: true,
+                        needsAccommodation: true,
+                        payments: {
+                            select: { amount: true }
+                        }
+                    }
                 }
             },
             orderBy: { startDate: 'asc' }
         });
 
-        // Format for frontend
-        const formattedEncuentros = encuentros.map(e => ({
-            ...e,
-            coordinator: e.coordinator ? { id: e.coordinator.id, fullName: e.coordinator.profile?.fullName } : null
-        }));
+        // Calculate stats
+        const encuentrosWithStats = encuentros.map(enc => {
+            const totalCollected = enc.registrations?.reduce((acc, reg) => {
+                const paymentsSum = reg.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+                return acc + paymentsSum;
+            }, 0) || 0;
 
-        res.json(formattedEncuentros);
+            const expectedIncome = enc.registrations?.reduce((acc, reg) => {
+                const baseCost = enc.cost * (1 - ((reg.discountPercentage || 0) / 100));
+                const transportCost = reg.needsTransport ? enc.transportCost : 0;
+                const accommodationCost = reg.needsAccommodation ? enc.accommodationCost : 0;
+                const finalCost = baseCost + transportCost + accommodationCost;
+                return acc + finalCost;
+            }, 0) || 0;
+
+            return {
+                ...enc,
+                coordinator: enc.coordinator ? { id: enc.coordinator.id, fullName: enc.coordinator.profile?.fullName } : null,
+                stats: {
+                    registeredCount: enc._count?.registrations || 0,
+                    totalCollected,
+                    expectedIncome
+                }
+            };
+        });
+
+        res.json(encuentrosWithStats);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error fetching encuentros' });

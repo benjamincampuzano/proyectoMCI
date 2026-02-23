@@ -11,6 +11,7 @@ const ConsolidatedStatsReport = lazy(() => import('../components/ConsolidatedSta
 
 const Home = () => {
     const { user, hasRole, hasAnyRole, isSuperAdmin } = useAuth();
+    const [activeTab, setActiveTab] = useState('red');
     const [pastores, setPastores] = useState([]);
     const [lideresDoce, setLideresDoce] = useState([]);
     const [selectedLeader, setSelectedLeader] = useState(null);
@@ -92,6 +93,123 @@ const Home = () => {
     const canViewNetwork = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO']);
     const canViewReport = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
     const isAdminOrPastor = isSuperAdmin() || hasAnyRole(['PASTOR']);
+
+    // Render content based on active tab
+    const renderTabContent = () => {
+        if (activeTab === 'red') {
+            // Red de Personas tab
+            return (
+                <>
+                    {isSuperAdmin() && (
+                        <div className="min-h-[200px]">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                                    Pastores
+                                </h2>
+                                <Button variant="ghost" size="sm" icon={RefreshCw} onClick={fetchPastores}>
+                                    Actualizar
+                                </Button>
+                            </div>
+                            <LosDoceGrid losDoce={pastores} onSelectLeader={handleSelectLeader} />
+                        </div>
+                    )}
+
+                    {/* Network Selector for Pastor */}
+                    {hasAnyRole(['PASTOR']) && lideresDoce.length > 0 && (
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowNetworkSelector(!showNetworkSelector)}
+                                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            >
+                                <span className="text-gray-700 dark:text-gray-300">
+                                    Red de: {selectedLeader?.fullName || 'Seleccionar'}
+                                </span>
+                                <ChevronDown className="w-4 h-4" />
+                            </button>
+                            {showNetworkSelector && (
+                                <div className="absolute top-full mt-1 left-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[200px]">
+                                    {lideresDoce.map((ld) => (
+                                        <button
+                                            key={ld.id}
+                                            onClick={() => {
+                                                handleSelectLeader({ id: ld.id, fullName: ld.fullName, roles: ['LIDER_DOCE'] });
+                                                setShowNetworkSelector(false);
+                                            }}
+                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        >
+                                            {ld.fullName}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {networkLoading ? (
+                        <div className="flex items-center justify-center h-[300px] bg-gray-50 dark:bg-gray-800 rounded-lg">
+                            <div className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                Cargando red de discipulado...
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="min-h-[300px]">
+                            {network ? (
+                                <>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                                            {isSuperAdmin()
+                                                ? `Red de ${selectedLeader?.fullName}`
+                                                : 'Mi Red'
+                                            }
+                                        </h2>
+                                        {renderQuickStats()}
+                                    </div>
+                                    <NetworkTree
+                                        network={network}
+                                        currentUser={user}
+                                        onNetworkChange={() => handleSelectLeader(selectedLeader || user)}
+                                    />
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-[300px] bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
+                                    <Users className="w-12 h-12 text-gray-400 mb-4" />
+                                    <p className="text-gray-500 dark:text-gray-400">
+                                        {isSuperAdmin()
+                                            ? 'Selecciona un pastor para ver su red'
+                                            : 'No hay red disponible'
+                                        }
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </>
+            );
+        }
+
+        if (activeTab === 'actividad') {
+            // Actividad y Ministerio tab
+            return (
+                <div>
+                    <UserActivityList />
+                </div>
+            );
+        }
+
+        if (activeTab === 'informe') {
+            // Informe General tab
+            return (
+                <div className="min-h-[600px]">
+                    <Suspense fallback={<div className="h-[600px] flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400">Cargando Estadísticas...</div>}>
+                        <ConsolidatedStatsReport simpleMode={false} />
+                    </Suspense>
+                </div>
+            );
+        }
+
+        return null;
+    };
 
     const renderQuickStats = () => {
         if (!network) return null;
@@ -186,125 +304,66 @@ const Home = () => {
                 </div>
             )}
 
-            <div className="space-y-12">
-                {/* Network & Structure */}
-                <div className="space-y-8">
-                    {canViewNetwork ? (
-                        <>
-                            {isSuperAdmin() && (
-                                <div className="min-h-[200px]">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                                            Pastores
-                                        </h2>
-                                        <Button variant="ghost" size="sm" icon={RefreshCw} onClick={fetchPastores}>
-                                            Actualizar
-                                        </Button>
-                                    </div>
-                                    <LosDoceGrid losDoce={pastores} onSelectLeader={handleSelectLeader} />
-                                </div>
-                            )}
-
-                            {/* Network Selector for Pastor */}
-                            {hasAnyRole(['PASTOR']) && lideresDoce.length > 0 && (
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowNetworkSelector(!showNetworkSelector)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                                    >
-                                        <span className="text-gray-700 dark:text-gray-300">
-                                            Red de: {selectedLeader?.fullName || 'Seleccionar'}
-                                        </span>
-                                        <ChevronDown className="w-4 h-4" />
-                                    </button>
-                                    {showNetworkSelector && (
-                                        <div className="absolute top-full mt-1 left-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[200px]">
-                                            {lideresDoce.map((ld) => (
-                                                <button
-                                                    key={ld.id}
-                                                    onClick={() => {
-                                                        handleSelectLeader({ id: ld.id, fullName: ld.fullName, roles: ['LIDER_DOCE'] });
-                                                        setShowNetworkSelector(false);
-                                                    }}
-                                                    className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                >
-                                                    {ld.fullName}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {networkLoading ? (
-                                <div className="flex items-center justify-center h-[300px] bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                    <div className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                        <RefreshCw className="w-5 h-5 animate-spin" />
-                                        Cargando red de discipulado...
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="min-h-[300px]">
-                                    {network ? (
-                                        <>
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                                                    {isSuperAdmin()
-                                                        ? `Red de ${selectedLeader?.fullName}`
-                                                        : 'Mi Red'
-                                                    }
-                                                </h2>
-                                                {renderQuickStats()}
-                                            </div>
-                                            <NetworkTree
-                                                network={network}
-                                                currentUser={user}
-                                                onNetworkChange={() => handleSelectLeader(selectedLeader || user)}
-                                            />
-                                        </>
-                                    ) : (
-                                        <div className="flex flex-col items-center justify-center h-[300px] bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
-                                            <Users className="w-12 h-12 text-gray-400 mb-4" />
-                                            <p className="text-gray-500 dark:text-gray-400">
-                                                {isSuperAdmin() 
-                                                    ? 'Selecciona un pastor para ver su red' 
-                                                    : 'No hay red disponible'
-                                                }
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Activity List Section */}
-                            <div className="pt-8">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                                        Actividad Reciente
-                                    </h2>
-                                </div>
-                                <UserActivityList />
-                            </div>
-                        </>
-                    ) : (
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-100 dark:border-gray-700">
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Panel de Discípulo</h3>
-                            <p className="text-gray-600 dark:text-gray-400">Bienvenido al sistema de gestión.</p>
-                        </div>
+            {/* Tabs Navigation */}
+            <div className="border-b border-gray-200 dark:border-gray-700">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                    {canViewNetwork && (
+                        <button
+                            onClick={() => setActiveTab('red')}
+                            className={`
+                                py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
+                                ${activeTab === 'red'
+                                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                }
+                            `}
+                        >
+                            <span className="flex items-center gap-2">
+                                <Users className="w-5 h-5" />
+                                Red de Personas
+                            </span>
+                        </button>
                     )}
-                </div>
+                    {canViewNetwork && (
+                        <button
+                            onClick={() => setActiveTab('actividad')}
+                            className={`
+                                py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
+                                ${activeTab === 'actividad'
+                                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                }
+                            `}
+                        >
+                            <span className="flex items-center gap-2">
+                                <Calendar className="w-5 h-5" />
+                                Actividad y Ministerio
+                            </span>
+                        </button>
+                    )}
+                    {canViewReport && (
+                        <button
+                            onClick={() => setActiveTab('informe')}
+                            className={`
+                                py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
+                                ${activeTab === 'informe'
+                                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                }
+                            `}
+                        >
+                            <span className="flex items-center gap-2">
+                                <RefreshCw className="w-5 h-5" />
+                                Informe General
+                            </span>
+                        </button>
+                    )}
+                </nav>
+            </div>
 
-                {/* Bottom Section: Consolidated Report & Stats */}
-                {canViewReport && (
-                    <div className="min-h-[600px]">
-                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-                            Estadísticas Consolidadas
-                        </h2>
-                        <Suspense fallback={<div className="h-[600px] flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400">Cargando Estadísticas...</div>}>
-                            <ConsolidatedStatsReport simpleMode={false} />
-                        </Suspense>
-                    </div>
-                )}
+            {/* Tab Content */}
+            <div className="animate-in fade-in duration-300">
+                {renderTabContent()}
             </div>
         </div>
     );

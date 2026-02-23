@@ -35,6 +35,9 @@ const resolveLeaderName = (userWithParents) => {
 
 const createModule = async (req, res) => {
     try {
+        const roles = req.user.roles || [];
+        const isAdmin = roles.includes('ADMIN');
+
         if (!isAdmin) {
             return res.status(403).json({ error: 'Solo los administradores pueden crear clases.' });
         }

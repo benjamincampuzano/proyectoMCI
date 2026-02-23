@@ -262,6 +262,12 @@ const unenrollStudent = async (req, res) => {
     try {
         const { enrollmentId } = req.params;
 
+        // First delete class attendances associated with the enrollment
+        await prisma.classAttendance.deleteMany({
+            where: { enrollmentId: parseInt(enrollmentId) }
+        });
+
+        // Then delete the enrollment
         await prisma.seminarEnrollment.delete({
             where: { id: parseInt(enrollmentId) }
         });

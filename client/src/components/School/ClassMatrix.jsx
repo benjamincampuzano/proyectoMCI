@@ -205,7 +205,7 @@ const ClassMatrix = ({ courseId }) => {
                                                         <option value="">-</option>
                                                         <option value="ASISTE">AS</option>
                                                         <option value="AUSENCIA_JUSTIFICADA">AJ</option>
-                                                        <option value="AUSENCIA_NO_JUSTIFICADA">ASJ</option>
+                                                        <option value="AUSENCIA_NO_JUSTIFICADA">ANJ</option>
                                                         <option value="BAJA">BJ</option>
                                                     </select>
                                                     <input

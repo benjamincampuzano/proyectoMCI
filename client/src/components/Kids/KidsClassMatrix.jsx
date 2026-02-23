@@ -170,8 +170,6 @@ const KidsClassMatrix = ({ courseId }) => {
                                 </th>
                             ))}
                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Asist.</th>
-                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Nota F.</th>
-                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -196,10 +194,10 @@ const KidsClassMatrix = ({ courseId }) => {
                                                                 'bg-gray-100 text-gray-800'
                                                     }`}
                                             >
-                                                <option value="ASISTE">P</option>
+                                                <option value="ASISTE">A</option>
                                                 <option value="AUSENCIA_JUSTIFICADA">AJ</option>
-                                                <option value="AUSENCIA_NO_JUSTIFICADA">A</option>
-                                                <option value="BAJA">B</option>
+                                                <option value="AUSENCIA_NO_JUSTIFICADA">ANJ</option>
+                                                <option value="BAJA">BJ</option>
                                             </select>
                                         </td>
                                     );

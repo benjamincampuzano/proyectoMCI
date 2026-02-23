@@ -11,6 +11,7 @@ import { DATA_POLICY_URL } from '../constants/policies';
 
 const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const { user, isSuperAdmin } = useAuth();
+    
     const [activeTab, setActiveTab] = useState('general'); // general | classes | report
     const [reportData, setReportData] = useState([]);
     const [loadingReport, setLoadingReport] = useState(false);
@@ -57,18 +58,19 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [paymentType, setPaymentType] = useState('ENCUENTRO');
     const [paymentNotes, setPaymentNotes] = useState('');
 
-    const canModify = user.id === encuentro.coordinatorId || user.roles?.includes('ADMIN');
+    const canModify = user?.id === encuentro?.coordinatorId || user?.roles?.includes('ADMIN');
 
     useEffect(() => {
-        if (activeTab === 'report') {
+        if (activeTab === 'report' && encuentro) {
             fetchReport();
         }
-    }, [activeTab]);
+    }, [activeTab, encuentro]);
 
     const fetchReport = async () => {
+        if (!encuentro) return;
         setLoadingReport(true);
         try {
-            const response = await api.get(`/encuentros/${encuentro.id}/report/balance`);
+            const response = await api.get(`/encuentros/${encuentro?.id}/report/balance`);
             setReportData(response.data);
         } catch (error) {
             console.error('Error fetching report:', error);
@@ -233,6 +235,12 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
 
     return (
         <div className="space-y-6">
+            {!encuentro ? (
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-gray-500 dark:text-gray-400">Cargando detalles del encuentro...</div>
+                </div>
+            ) : (
+                <>
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center space-x-4">
@@ -628,8 +636,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         </div>
                         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 mx-6 mt-6 rounded-lg">
                             <div className="flex justify-between text-sm mb-1">
-                                <span className="text-gray-600 dark:text-gray-400">Invitado:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{selectedRegistration.guest.name}</span>
+                                <span className="text-gray-600 dark:text-gray-400">{selectedRegistration.guest ? 'Invitado:' : 'Usuario:'}</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{selectedRegistration.guest?.name || selectedRegistration.user?.fullName || 'N/A'}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Saldo Pendiente:</span>
@@ -697,7 +705,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
                         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                Historial de Pagos - {selectedHistoryRegistration.guest.name}
+                                Historial de Pagos - {selectedHistoryRegistration.guest?.name || selectedHistoryRegistration.user?.fullName || 'N/A'}
                             </h3>
                             <button onClick={() => setShowHistoryModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                                 <XCircle size={24} />
@@ -757,7 +765,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         </div>
                         <div className="px-6 pt-4">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Estás convirtiendo a <strong className="text-gray-900 dark:text-white">{selectedRegistration.guest.name}</strong> en un usuario Discípulo de la plataforma.
+                                Estás convirtiendo a <strong className="text-gray-900 dark:text-white">{selectedRegistration.guest?.name || selectedRegistration.user?.fullName || 'N/A'}</strong> en un usuario Discípulo de la plataforma.
                             </p>
                         </div>
                         <form onSubmit={handleConvertMember} className="p-6 space-y-4">
@@ -970,6 +978,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         </form>
                     </div>
                 </div>
+            )}
+                </>
             )}
         </div>
     );
