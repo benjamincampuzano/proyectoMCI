@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Users, Calendar, Phone, CheckCircle, Clock, Edit2, Trash2, X } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import MultiUserSelect from './MultiUserSelect';

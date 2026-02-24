@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Check, X } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import api from '../utils/api';
 
 const ChurchAttendance = () => {
@@ -21,7 +21,7 @@ const ChurchAttendance = () => {
             const response = await api.get('/consolidar/church-attendance/members/all');
             setMembers(response.data);
         } catch (error) {
-            console.error('Error fetching members:', error);
+            toast.error('Error al cargar miembros. Por favor intenta nuevamente.');
         } finally {
             setLoading(false);
         }
@@ -38,7 +38,7 @@ const ChurchAttendance = () => {
             });
             setAttendances(attendanceMap);
         } catch (error) {
-            console.error('Error fetching attendance:', error);
+            toast.error('Error al cargar asistencia. Por favor intenta nuevamente.');
         }
     };
 
@@ -80,8 +80,7 @@ const ChurchAttendance = () => {
 
             toast.success('Asistencia guardada exitosamente');
         } catch (error) {
-            console.error('Error saving attendance:', error);
-            toast.error('Error al guardar asistencia');
+            toast.error('Error al guardar asistencia. Por favor intenta nuevamente.');
         } finally {
             setSaving(false);
         }

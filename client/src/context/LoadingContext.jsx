@@ -20,7 +20,7 @@ export const LoadingProvider = ({ children }) => {
         let failsafe;
         if (isLoading) {
             failsafe = setTimeout(() => {
-                console.warn('Loading fail-safe triggered. Clearing stuck loading screen.');
+                console.warn('Loading fail-safe triggered. Clearing stuck loading screen after 15 seconds.');
                 activeTasks.current = 0;
                 setIsLoading(false);
                 setProgress(0);

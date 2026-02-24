@@ -5,6 +5,7 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import { DATA_POLICY_URL } from '../constants/policies';
+import { sileo as toast } from 'sileo';
 import logo from '../assets/logo.jpg';
 
 const Register = () => {
@@ -39,7 +40,7 @@ const Register = () => {
                 const response = await api.get('/auth/leaders');
                 setLideresDoce(response.data);
             } catch (err) {
-                console.error('Error fetching leaders:', err);
+                toast.error('Error al cargar líderes. Por favor intenta nuevamente.');
             }
         };
         fetchLeaders();

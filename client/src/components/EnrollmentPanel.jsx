@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Search, Trash2, Edit, Save } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import api from '../utils/api';
 import { AsyncSearchSelect } from './ui';
 
@@ -38,7 +38,7 @@ const EnrollmentPanel = () => {
                 setSelectedModule(data[0].id);
             }
         } catch (error) {
-            console.error('Error fetching modules:', error);
+            toast.error('Error al cargar módulos. Por favor intenta nuevamente.');
         }
     };
 
@@ -49,7 +49,7 @@ const EnrollmentPanel = () => {
             setProfessor(data.professor || null);
             setAuxiliaries(data.auxiliaries || []);
         } catch (error) {
-            console.error('Error fetching module details:', error);
+            toast.error('Error al cargar detalles del módulo. Por favor intenta nuevamente.');
         }
     };
 
@@ -59,7 +59,7 @@ const EnrollmentPanel = () => {
             const response = await api.get(`/consolidar/seminar/enrollments/module/${selectedModule}`);
             setEnrollments(response.data);
         } catch (error) {
-            console.error('Error fetching enrollments:', error);
+            toast.error('Error al cargar inscripciones. Por favor intenta nuevamente.');
         } finally {
             setLoading(false);
         }
@@ -108,8 +108,7 @@ const EnrollmentPanel = () => {
             toast.success('Personal actualizado.');
             setShowStaffEdit(false);
         } catch (e) {
-            console.error(e);
-            toast.error('Error al guardar personal.');
+            toast.error('Error al guardar personal. Por favor intenta nuevamente.');
         }
     };
 

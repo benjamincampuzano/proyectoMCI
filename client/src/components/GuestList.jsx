@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, Filter, Edit2, Trash2, UserPlus, Loader, X, Save, UserCheck } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import { AsyncSearchSelect, Button } from './ui';
 import useGuestManagement from '../hooks/useGuestManagement';
 import { useAuth } from '../context/AuthContext';

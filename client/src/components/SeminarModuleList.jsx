@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, BookOpen } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 

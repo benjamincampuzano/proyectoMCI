@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ClipboardList } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import api from '../utils/api';
 
 const ClassAttendanceTracker = () => {
@@ -38,7 +38,7 @@ const ClassAttendanceTracker = () => {
                 setSelectedModule(data[0].id);
             }
         } catch (error) {
-            console.error('Error fetching modules:', error);
+            toast.error('Error al cargar módulos. Por favor intenta nuevamente.');
         }
     };
 
@@ -58,7 +58,7 @@ const ClassAttendanceTracker = () => {
             });
             setAttendances(attendanceMap);
         } catch (error) {
-            console.error('Error fetching enrollments:', error);
+            toast.error('Error al cargar inscripciones. Por favor intenta nuevamente.');
         } finally {
             setLoading(false);
         }
@@ -81,8 +81,7 @@ const ClassAttendanceTracker = () => {
             });
             toast.success('Asistencia guardada');
         } catch (error) {
-            console.error('Error saving attendance:', error);
-            toast.error('Error al guardar asistencia');
+            toast.error('Error al guardar asistencia. Por favor intenta nuevamente.');
         } finally {
             setSaving(false);
         }

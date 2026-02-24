@@ -2,6 +2,7 @@ import { useReducer, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, Loader, X, Search, ChevronDown, UserPlus, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
+import { sileo as toast } from 'sileo';
 import { DATA_POLICY_URL } from '../constants/policies';
 
 const INITIAL_STATE = {
@@ -108,7 +109,7 @@ const PublicGuestRegistration = () => {
             dispatch({ type: 'SET_FOUND_USERS', payload: res.data });
             dispatch({ type: 'SET_DROPDOWN_OPEN', payload: true });
         } catch (err) {
-            console.error('Error searching users:', err);
+            toast.error('Error al buscar usuarios. Por favor intenta nuevamente.');
         } finally {
             dispatch({ type: 'SET_SEARCH_LOADING', payload: false });
         }

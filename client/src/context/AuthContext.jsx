@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import api from '../utils/api';
+import { sileo as toast } from 'sileo';
 
 const AuthContext = createContext();
 
@@ -27,7 +28,7 @@ export const AuthProvider = ({ children }) => {
                 const res = await api.get('/auth/init-status');
                 setIsInitialized(res.data.isInitialized);
             } catch (error) {
-                console.error('Error checking system initialization:', error);
+                toast.error('Error al verificar inicialización del sistema.');
             }
         };
 
@@ -44,7 +45,7 @@ export const AuthProvider = ({ children }) => {
                         localStorage.setItem('user', JSON.stringify(normalizedUser));
                     }
                 } catch (error) {
-                    console.error('Error fetching user profile:', error);
+                    toast.error('Error al cargar perfil de usuario.');
                     // If error is 401 or 404 (user not found/stale token), logout
                     if (error.response?.status === 401 || error.response?.status === 404) {
                         logout();

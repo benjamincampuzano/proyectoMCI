@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, X, UserPlus } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,8 +19,7 @@ const EncuentroClassTracker = ({ registrations, onRefresh, onConvert, canModify 
             });
             onRefresh();
         } catch (error) {
-            console.error('Error updating attendance:', error);
-            toast.error('Error al actualizar asistencia');
+            toast.error('Error al actualizar asistencia. Por favor intenta nuevamente.');
         } finally {
             setUpdating(prev => ({ ...prev, [key]: false }));
         }

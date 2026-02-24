@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Check, X, Users, Map as MapIcon, MapPin, Clock, Info } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import useCellAttendance from '../hooks/useCellAttendance';
 import { useAuth } from '../context/AuthContext';
 import CellMap from './CellMap';

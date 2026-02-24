@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
+import { sileo as toast } from 'sileo';
 
 const useAuditDashboard = () => {
     const [logs, setLogs] = useState([]);
@@ -29,7 +30,7 @@ const useAuditDashboard = () => {
                 setPagination(data.pagination);
             }
         } catch (error) {
-            console.error('Error fetching logs:', error);
+            toast.error('Error al cargar logs de auditoría. Por favor intenta nuevamente.');
         } finally {
             setLoading(false);
         }
@@ -40,7 +41,7 @@ const useAuditDashboard = () => {
             const response = await api.get('/audit/stats?days=30');
             setStats(response.data);
         } catch (error) {
-            console.error('Error fetching stats:', error);
+            toast.error('Error al cargar estadísticas de auditoría. Por favor intenta nuevamente.');
         }
     }, []);
 

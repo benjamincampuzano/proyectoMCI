@@ -7,7 +7,7 @@ import {
     Activity, User, Calendar, Filter, Search, Download, Trash2,
     Edit, PlusCircle, LogIn, ChevronLeft, ChevronRight, Shield
 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import useAuditDashboard from '../hooks/useAuditDashboard';
 import DataTable from '../components/DataTable';
 

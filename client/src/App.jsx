@@ -100,7 +100,7 @@ const RouteTransitionHandler = () => {
   return null;
 };
 
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from 'sileo';
 
 function App() {
   return (
@@ -126,9 +126,9 @@ function App() {
                   <Route path="consolidar" element={<Consolidar />} />
                   <Route path="discipular" element={<Discipular />} />
                   <Route path="enviar" element={<Enviar />} />
-<Route path="encuentros" element={<Encuentros />} />
-                   <Route path="kids" element={<KidsModule />} />
-                   <Route path="convenciones" element={<Convenciones />} />
+                  <Route path="encuentros" element={<Encuentros />} />
+                  <Route path="kids" element={<KidsModule />} />
+                  <Route path="convenciones" element={<Convenciones />} />
                   <Route path="network" element={<NetworkAssignment />} />
                   <Route path="usuarios" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
                   <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />

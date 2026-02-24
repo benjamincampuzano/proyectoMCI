@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import { Save, UserPlus, Trash2, X, AlertCircle } from 'lucide-react';
 import { AsyncSearchSelect, Button } from '../ui';
 

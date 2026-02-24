@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, AlertTriangle, Loader2, UserMinus } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import api from '../utils/api';
 
 /**

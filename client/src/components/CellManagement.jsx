@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Users, MapPin, Clock, Calendar, Trash2, Edit2, X } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import api from '../utils/api';
 import { AsyncSearchSelect, Button } from './ui';
 

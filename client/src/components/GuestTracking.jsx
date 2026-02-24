@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Phone, Home, User, MessageSquare, MessageCircle, AlertCircle, Plus, History, X, Clock, CheckCircle2 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { sileo as toast } from 'sileo';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';

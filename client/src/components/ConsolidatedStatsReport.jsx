@@ -3,6 +3,7 @@ import { Calendar, Printer, TrendingUp, Users, BookOpen, MapPin, Award, Lock } f
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { sileo as toast } from 'sileo';
 
 const ConsolidatedStatsReport = ({ simpleMode = false }) => {
     const { user, hasAnyRole } = useAuth();
@@ -35,7 +36,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
             });
             setStats(response.data);
         } catch (error) {
-            console.error('Error fetching consolidated stats:', error);
+            toast.error('Error al cargar estadísticas consolidadas. Por favor intenta nuevamente.');
         } finally {
             setLoading(false);
         }
