@@ -3,7 +3,7 @@ import { Calendar, Printer, TrendingUp, Users, BookOpen, MapPin, Award, Lock } f
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 
 const ConsolidatedStatsReport = ({ simpleMode = false }) => {
     const { user, hasAnyRole } = useAuth();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { Plus, Calendar, Users, Trash2, Edit } from 'lucide-react';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 import { useAuth } from "../../context/AuthContext";
 import ClassMatrix from './ClassMatrix';
 import { AsyncSearchSelect, Button } from '../ui';

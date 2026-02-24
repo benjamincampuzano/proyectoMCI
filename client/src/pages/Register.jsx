@@ -5,7 +5,7 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import { DATA_POLICY_URL } from '../constants/policies';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 import logo from '../assets/logo.jpg';
 
 const Register = () => {

@@ -2,7 +2,7 @@ import { useReducer, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, Loader, X, Search, ChevronDown, UserPlus, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 import { DATA_POLICY_URL } from '../constants/policies';
 
 const INITIAL_STATE = {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { X, FileText, Video, HelpCircle, Save, Plus, Trash } from 'lucide-react';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 import { Button } from '../ui';
 
 const ClassMaterialManager = ({ moduleId, classNumber, onClose }) => {

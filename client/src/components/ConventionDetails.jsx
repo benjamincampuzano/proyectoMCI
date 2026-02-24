@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, DollarSign, XCircle, Trash2, FileText, Users, Edit2, Download } from 'lucide-react';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 import api from '../utils/api';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';

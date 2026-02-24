@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { Save, UserPlus, Trash2, BookOpen, ExternalLink } from 'lucide-react';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 import ClassMaterialManager from './ClassMaterialManager';
 import { AsyncSearchSelect, Button } from '../ui';
 

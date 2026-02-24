@@ -100,7 +100,7 @@ const RouteTransitionHandler = () => {
   return null;
 };
 
-import { Toaster } from 'sileo';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (

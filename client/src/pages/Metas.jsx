@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Target, Plus, Clock, CheckCircle2, XCircle, Edit2, Trash2, FileText, TrendingUp, TrendingDown, Minus, LayoutGrid, List, Calendar } from 'lucide-react';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 import api from '../utils/api';
 import GoalForm from '../components/GoalForm';
 import GoalRow from '../components/GoalRow';

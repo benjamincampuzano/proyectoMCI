@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 
 const useAuditDashboard = () => {
     const [logs, setLogs] = useState([]);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, X, UserPlus } from 'lucide-react';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 

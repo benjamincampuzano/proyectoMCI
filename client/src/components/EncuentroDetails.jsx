@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, DollarSign, CheckCircle, XCircle, Trash2, Calendar, BookOpen, FileText, Edit2 } from 'lucide-react';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { AsyncSearchSelect } from './ui';

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
 import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2, UserCheck, LayoutGrid, List, FileText } from 'lucide-react';
-import { sileo as toast } from 'sileo';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import ConventionDetails from '../components/ConventionDetails';
 import ConvencionTable from '../components/ConvencionTable';
