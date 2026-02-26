@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Spinner } from '@phosphor-icons/react';
+import { SpinnerIcon } from '@phosphor-icons/react';
 import ActionModal from '../ActionModal';
 import UserFormFields from './UserFormFields';
 import PropTypes from 'prop-types';
@@ -67,7 +67,7 @@ const UserFormModal = ({
                     >
                         {submitting ? (
                             <div className="flex items-center gap-2">
-                                <Loader className="animate-spin" size={18} />
+                                <SpinnerIcon className="animate-spin" size={18} />
                                 <span>{mode === 'create' ? 'Creando...' : 'Guardando...'}</span>
                             </div>
                         ) : (mode === 'create' ? 'Crear Usuario' : 'Guardar Cambios')}
