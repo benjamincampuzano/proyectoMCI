@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, MapPin, Clock, Calendar, Trash2, Edit2, X } from 'lucide-react';
+import { Plus, Users, MapPin, Clock, Calendar, Trash, Pen, X, List, SquaresFourIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { AsyncSearchSelect, Button } from './ui';
@@ -19,8 +19,8 @@ const CellManagement = () => {
         hostId: '',
         liderDoceId: '',
         address: '',
-        city: '',
-        dayOfWeek: 'Viernes',
+        city: 'Manizales',
+        dayOfWeek: 'Martes',
         time: '19:00',
         cellType: 'ABIERTA'
     });
@@ -30,6 +30,7 @@ const CellManagement = () => {
 
     // Filtering
     const [filterDoce, setFilterDoce] = useState('');
+    const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
 
     // Management State
     const [selectedCell, setSelectedCell] = useState(null);
@@ -355,7 +356,7 @@ const CellManagement = () => {
                                                     variant="ghost"
                                                     size="sm"
                                                     className="text-red-500 hover:text-red-700"
-                                                    icon={Trash2}
+                                                    icon={Trash}
                                                 >
                                                     Desvincular
                                                 </Button>
@@ -522,89 +523,206 @@ const CellManagement = () => {
                         ))}
                     </select>
                 </div>
+                <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                    <button
+                        onClick={() => setViewMode('table')}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                            viewMode === 'table'
+                                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                        }`}
+                        title="Vista de tabla"
+                    >
+                        <List size={18} />
+                    </button>
+                    <button
+                        onClick={() => setViewMode('cards')}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                            viewMode === 'cards'
+                                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                        }`}
+                        title="Vista de tarjetas"
+                    >
+                        <SquaresFourIcon size={18} />
+                    </button>
+                </div>
                 <p className="text-xs text-gray-500 whitespace-nowrap">
                     Mostrando {filteredCells.length} células
                 </p>
             </div>
 
             {/* List of Cells */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCells.map(cell => (
-                    <div key={cell.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-white">{cell.name}</h3>
-                            <div className="flex gap-2">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
-                                    {cell.cellType}
-                                </span>
-                                <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
-                                    {cell._count?.members || 0}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                            <div className="flex items-center gap-2">
-                                <Users size={16} className="text-gray-400" />
-                                <span><strong className="text-gray-700 dark:text-gray-300">Líder:</strong> {cell.leader?.fullName}</span>
-                            </div>
-                            {cell.liderDoce && (
-                                <div className="flex items-center gap-2">
-                                    <Users size={16} className="text-blue-300" />
-                                    <span><strong className="text-gray-700 dark:text-gray-300">Líder 12:</strong> {cell.liderDoce?.fullName}</span>
+            {viewMode === 'cards' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredCells.map(cell => (
+                        <div key={cell.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-white">{cell.name}</h3>
+                                <div className="flex gap-2">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
+                                        {cell.cellType}
+                                    </span>
+                                    <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
+                                        {cell._count?.members || 0}
+                                    </span>
                                 </div>
-                            )}
-                            <div className="flex items-center gap-2">
-                                <MapPin size={16} className="text-gray-400" />
-                                <span><strong className="text-gray-700 dark:text-gray-300">Ciudad:</strong> {cell.city}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Clock size={16} className="text-gray-400" />
-                                <span><strong className="text-gray-700 dark:text-gray-300">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
-                            </div>
-                            <div className="flex items-center gap-2 pt-1">
-                                <MapPin size={16} className="text-blue-400" />
-                                <span className="text-xs text-gray-500 italic">
-                                    {cell.latitude && cell.longitude
-                                        ? `${cell.latitude.toFixed(4)}, ${cell.longitude.toFixed(4)}`
-                                        : 'Sin ubicación en mapa'
-                                    }
-                                </span>
-                            </div>
-                        </div>
 
-                        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                            <div className="flex gap-4">
+                            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="flex items-center gap-2">
+                                    <Users size={16} className="text-gray-400" />
+                                    <span><strong className="text-gray-700 dark:text-gray-300">Líder:</strong> {cell.leader?.fullName}</span>
+                                </div>
+                                {cell.liderDoce && (
+                                    <div className="flex items-center gap-2">
+                                        <Users size={16} className="text-blue-300" />
+                                        <span><strong className="text-gray-700 dark:text-gray-300">Líder 12:</strong> {cell.liderDoce?.fullName}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-2">
+                                    <MapPin size={16} className="text-gray-400" />
+                                    <span><strong className="text-gray-700 dark:text-gray-300">Ciudad:</strong> {cell.city}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Clock size={16} className="text-gray-400" />
+                                    <span><strong className="text-gray-700 dark:text-gray-300">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
+                                </div>
+                                <div className="flex items-center gap-2 pt-1">
+                                    <MapPin size={16} className="text-blue-400" />
+                                    <span className="text-xs text-gray-500 italic">
+                                        {cell.latitude && cell.longitude
+                                            ? `${cell.latitude.toFixed(4)}, ${cell.longitude.toFixed(4)}`
+                                            : 'Sin ubicación en mapa'
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                                <div className="flex gap-4">
+                                    <Button
+                                        onClick={() => setSelectedCell(cell)}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-blue-600 hover:text-blue-800"
+                                    >
+                                        Administrar
+                                    </Button>
+                                    <Button
+                                        onClick={() => handleEditClick(cell)}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-amber-600 hover:text-amber-800"
+                                    >
+                                        Editar
+                                    </Button>
+                                </div>
                                 <Button
-                                    onClick={() => setSelectedCell(cell)}
+                                    onClick={() => handleDeleteCell(cell.id)}
                                     variant="ghost"
                                     size="sm"
-                                    className="text-blue-600 hover:text-blue-800"
+                                    className="text-red-500 hover:text-red-700"
+                                    icon={Trash}
                                 >
-                                    Administrar
-                                </Button>
-                                <Button
-                                    onClick={() => handleEditClick(cell)}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-amber-600 hover:text-amber-800"
-                                >
-                                    Editar
+                                    Eliminar
                                 </Button>
                             </div>
-                            <Button
-                                onClick={() => handleDeleteCell(cell.id)}
-                                variant="ghost"
-                                size="sm"
-                                className="text-red-500 hover:text-red-700"
-                                icon={Trash2}
-                            >
-                                Eliminar
-                            </Button>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-900/50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Nombre
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Líder
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Ciudad
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Horario
+                                </th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Miembros
+                                </th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {filteredCells.map(cell => (
+                                <tr key={cell.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{cell.name}</div>
+                                            <div className="flex gap-2 mt-1">
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
+                                                    {cell.cellType}
+                                                </span>
+                                                {cell.liderDoce && (
+                                                    <span className="text-xs text-blue-600 dark:text-blue-400">
+                                                        L12: {cell.liderDoce.fullName}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {cell.leader?.fullName || 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {cell.city}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {cell.dayOfWeek} {cell.time}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                            {cell._count?.members || 0}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                onClick={() => setSelectedCell(cell)}
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-blue-600 hover:text-blue-800"
+                                            >
+                                                Administrar
+                                            </Button>
+                                            <Button
+                                                onClick={() => handleEditClick(cell)}
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-amber-600 hover:text-amber-800"
+                                            >
+                                                Editar
+                                            </Button>
+                                            <Button
+                                                onClick={() => handleDeleteCell(cell.id)}
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-red-500 hover:text-red-700"
+                                                icon={Trash}
+                                            >
+                                                Eliminar
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };

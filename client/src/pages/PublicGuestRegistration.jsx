@@ -1,6 +1,6 @@
-import { useReducer, useEffect, useRef } from 'react';
+import { useReducer, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, Loader, X, Search, ChevronDown, UserPlus, ArrowLeft } from 'lucide-react';
+import { FloppyDisk, Spinner, X, MagnifyingGlassIcon, CaretDownIcon, UserPlus, ArrowLeft, ArrowsClockwiseIcon } from '@phosphor-icons/react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { DATA_POLICY_URL } from '../constants/policies';
@@ -20,6 +20,7 @@ const INITIAL_STATE = {
         dataPolicyAccepted: false,
         dataTreatmentAuthorized: false,
         minorConsentAuthorized: false,
+        captchaAnswer: '',
     },
     loading: false,
     searchLoading: false,
@@ -71,6 +72,35 @@ const PublicGuestRegistration = () => {
     const navigate = useNavigate();
     const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
     const dropdownRef = useRef(null);
+    const [captcha, setCaptcha] = useState({ num1: 0, num2: 0, operator: '+' });
+
+    // Generate random captcha
+    const generateCaptcha = () => {
+        const operators = ['+', '-'];
+        const operator = operators[Math.floor(Math.random() * operators.length)];
+        let num1 = Math.floor(Math.random() * 10) + 1;
+        let num2 = Math.floor(Math.random() * 10) + 1;
+        
+        // Ensure subtraction doesn't result in negative
+        if (operator === '-' && num2 > num1) {
+            [num1, num2] = [num2, num1];
+        }
+        
+        setCaptcha({ num1, num2, operator });
+        dispatch({ type: 'SET_FIELD', field: 'captchaAnswer', value: '' });
+    };
+
+    useEffect(() => {
+        generateCaptcha();
+        
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                dispatch({ type: 'SET_DROPDOWN_OPEN', payload: false });
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const {
         formData,
@@ -137,6 +167,17 @@ const PublicGuestRegistration = () => {
             return;
         }
 
+        // Verify captcha
+        const expectedAnswer = captcha.operator === '+' 
+            ? captcha.num1 + captcha.num2 
+            : captcha.num1 - captcha.num2;
+        
+        if (parseInt(formData.captchaAnswer) !== expectedAnswer) {
+            dispatch({ type: 'SET_ERROR', payload: 'Por favor resuelve correctamente el captcha' });
+            generateCaptcha();
+            return;
+        }
+
         dispatch({ type: 'SET_LOADING', payload: true });
 
         try {
@@ -168,7 +209,7 @@ const PublicGuestRegistration = () => {
     const isMinor = formData.birthDate ? calculateAge(formData.birthDate) < 18 : false;
 
     return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="min-h-[100dvh] bg-gray-900 flex items-center justify-center p-4">
             <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-2xl border border-gray-700">
                 <div className="flex items-center justify-between mb-8">
                     <button
@@ -181,7 +222,7 @@ const PublicGuestRegistration = () => {
                     </button>
                     <div className="text-right">
                         <h1 className="text-2xl font-bold text-white">Registro de Invitado</h1>
-                        <p className="text-gray-400 mt-1 italic">¡Estamos felices de tenerte!</p>
+                        <p className="text-gray-400 mt-1 italic">¡Es un gusto tenerte Aquí!</p>
                     </div>
                 </div>
 
@@ -314,14 +355,14 @@ const PublicGuestRegistration = () => {
                             ) : (
                                 <span className="text-gray-500">Buscar por nombre...</span>
                             )}
-                            <ChevronDown size={20} className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                            <CaretDownIcon size={20} className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                         </div>
 
                         {isDropdownOpen && (
                             <div className="absolute z-50 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl max-h-60 overflow-hidden flex flex-col" role="listbox">
                                 <div className="p-3 border-b border-gray-700">
                                     <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
+                                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
                                         <input
                                             type="text"
                                             value={searchTerm}
@@ -374,6 +415,36 @@ const PublicGuestRegistration = () => {
                             className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition-colors resize-none"
                             placeholder="¿Cómo podemos orar por ti?"
                         />
+                    </div>
+
+                    {/* Captcha */}
+                    <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-700">
+                        <label className="block text-sm font-medium text-gray-400 mb-4">Verificación de Seguridad</label>
+                        <div className="flex items-center gap-4">
+                            <div className="bg-gray-800 px-4 py-2 rounded-lg border border-gray-600">
+                                <span className="text-white font-mono text-lg">
+                                    {captcha.num1} {captcha.operator} {captcha.num2} = ?
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={generateCaptcha}
+                                className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                                title="Generar nuevo captcha"
+                            >
+                                <ArrowsClockwiseIcon size={20} />
+                            </button>
+                            <input
+                                type="text"
+                                name="captchaAnswer"
+                                value={formData.captchaAnswer}
+                                onChange={handleChange}
+                                placeholder="Respuesta"
+                                className="flex-1 bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+                                required
+                            />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Resuelve la operación para continuar</p>
                     </div>
 
                     {/* Data Authorization Checks */}
@@ -431,7 +502,7 @@ const PublicGuestRegistration = () => {
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-lg transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center justify-center space-x-2 text-lg"
                     >
                         {loading ? (
-                            <Loader size={24} className="animate-spin" aria-hidden="true" />
+                            <Spinner size={24} className="animate-spin" aria-hidden="true" />
                         ) : (
                             <>
                                 <UserPlus size={24} aria-hidden="true" />

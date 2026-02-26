@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Printer, TrendingUp, Users, BookOpen, MapPin, Award, Lock } from 'lucide-react';
+import { Calendar, Printer, TrendUp, Users, BookOpen, MapPin, Medal, Lock} from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -181,7 +181,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                     <div className="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl border border-green-100 dark:border-green-800 shadow-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
-                                <Award size={20} />
+                                <Medal size={20} />
                             </div>
                             <span className="text-sm font-bold text-green-800 dark:text-green-200 uppercase tracking-tight">Conversiones</span>
                         </div>
@@ -225,7 +225,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 page-break-inside-avoid">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                         <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-                            <TrendingUp className="text-blue-500" /> Seguimiento de Invitados
+                            <TrendUp className="text-blue-500" /> Seguimiento de Invitados
                         </h3>
                         <div className="space-y-6">
                             <div>
@@ -261,7 +261,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
 
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
                         <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-                            <Award className="text-yellow-500" /> Embudo de Consolidación
+                            <Medal className="text-yellow-500" /> Embudo de Consolidación
                         </h3>
                         <div className="flex flex-col items-center justify-center h-40">
                             <div className="w-full max-w-[200px] flex flex-col gap-1">
@@ -306,7 +306,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                 {/* 4. Church Attendance by Month (Grouped by Leader) */}
                 <div className="mb-10 page-break-inside-avoid shadow-sm border border-gray-100 dark:border-gray-700 p-6 rounded-xl">
                     <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                        <TrendingUp className="text-green-600" /> Asistencia a la Iglesia (Mensual por Lider)
+                        <TrendUp className="text-green-600" /> Asistencia a la Iglesia (Mensual por Lider)
                     </h3>
                     <div className="h-80 w-full">
                         {attendanceData.length > 0 ? (
@@ -342,8 +342,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 dark:text-gray-300">
-                                {stats.studentStats && stats.studentStats.map((item) => (
-                                    <tr key={item.moduleName} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                {stats.studentStats && stats.studentStats.map((item, index) => (
+                                    <tr key={`${item.moduleName}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <td className="p-3 font-medium">{item.moduleName}</td>
                                         <td className="p-3 text-center">{item.studentCount}</td>
                                         <td className="p-3 text-center font-bold text-blue-600">{item.avgGrade}</td>
@@ -376,8 +376,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700 dark:text-gray-300">
-                                    {Object.keys(stats.cellsByLeader || {}).map((leader) => (
-                                        <tr key={leader}>
+                                    {Object.keys(stats.cellsByLeader || {}).map((leader, index) => (
+                                        <tr key={`${leader}-${index}`}>
                                             <td className="p-2 font-medium">{leader}</td>
                                             <td className="p-2 text-center">{stats.cellsByLeader[leader].count}</td>
                                             <td className="p-2 text-center">{stats.cellsByLeader[leader].avgAttendance}</td>
@@ -395,8 +395,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                     <div key={leader}>
                                         <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-1">{leader}</p>
                                         <ul className="text-xs text-gray-600 dark:text-gray-400 ml-2 space-y-1">
-                                            {stats.cellsByLeader[leader].locations.map((loc) => (
-                                                <li key={`${loc.name}-${loc.address}`} className="flex items-start gap-1">
+                                            {stats.cellsByLeader[leader].locations.map((loc, locIndex) => (
+                                                <li key={`${loc.name}-${loc.address}-${locIndex}`} className="flex items-start gap-1">
                                                     <span className="text-red-500">•</span>
                                                     <span>{loc.address || 'Sin dirección'}, {loc.city || ''} <span className="text-gray-400">({loc.name})</span></span>
                                                     {loc.lat && loc.lng && (
@@ -424,7 +424,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                 {/* 5. Informacion Encuentros */}
                 <div className="mb-10 page-break-inside-avoid">
                     <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                        <Award className="text-purple-600" /> Informacion Encuentros
+                        <Medal className="text-purple-600" /> Informacion Encuentros
                     </h2>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left border dark:border-gray-700 rounded-lg overflow-hidden">
@@ -442,7 +442,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                     Object.keys(stats.encuentrosInfo[leader]).map((cell, idx) => {
                                         const data = stats.encuentrosInfo[leader][cell];
                                         return (
-                                            <tr key={`${leader}-${cell}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                            <tr key={`${leader}-${cell}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                                 {idx === 0 && (
                                                     <td className="p-3 font-medium border-r dark:border-gray-700" rowSpan={Object.keys(stats.encuentrosInfo[leader]).length}>
                                                         {leader}
@@ -467,7 +467,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                 {/* 6. Informacion Convenciones */}
                 <div className="mb-10 page-break-inside-avoid">
                     <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                        <Award className="text-pink-600" /> Informacion Convenciones
+                        <Medal className="text-pink-600" /> Informacion Convenciones
                     </h2>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left border dark:border-gray-700 rounded-lg overflow-hidden">
@@ -480,10 +480,10 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 dark:text-gray-300">
-                                {Object.keys(stats.conventionsInfo || {}).map((leader) => {
+                                {Object.keys(stats.conventionsInfo || {}).map((leader, index) => {
                                     const data = stats.conventionsInfo[leader];
                                     return (
-                                        <tr key={leader} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                        <tr key={`${leader}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                             <td className="p-3 font-medium">{leader}</td>
                                             <td className="p-3 text-center font-bold">{data.count}</td>
                                             <td className="p-3 text-right text-green-600 dark:text-green-400 font-medium">{formatCurrency(data.totalPaid)}</td>

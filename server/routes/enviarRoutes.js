@@ -17,6 +17,7 @@ router.post('/cells/:id/coordinates', cellController.updateCellCoordinates);
 router.post('/cells/:id/members', cellController.assignMember); // Fix for 404 error
 router.post('/cells/assign', cellController.assignMember);
 router.post('/cells/unassign', cellController.unassignMember);
+router.delete('/cells/:cellId/members/:memberId', cellController.unassignMember);
 router.get('/eligible-leaders', cellController.getEligibleLeaders);
 router.get('/eligible-hosts', cellController.getEligibleHosts);
 router.get('/eligible-members', cellController.getEligibleMembers);

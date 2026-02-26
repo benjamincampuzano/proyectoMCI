@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import api from '../utils/api';
-import { Calendar, TrendingUp, Users, UserX, ClipboardList, Percent } from 'lucide-react';
+import { Calendar, TrendUp, Users, UserMinus, ClipboardIcon, Percent, X} from '@phosphor-icons/react';
 
 const ChurchAttendanceChart = () => {
     const [stats, setStats] = useState([]);
@@ -100,7 +100,7 @@ const ChurchAttendanceChart = () => {
                 <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                            <UserX size={20} />
+                            <X size={20} />
                         </div>
                         <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Total Ausencias</span>
                     </div>
@@ -112,7 +112,7 @@ const ChurchAttendanceChart = () => {
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                            <ClipboardList size={20} />
+                            <ClipboardIcon size={20} />
                         </div>
                         <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Registros</span>
                     </div>

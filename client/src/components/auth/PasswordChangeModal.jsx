@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Lock, Eye, EyeOff, AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Lock, Eye, EyeSlash, Warning, CheckCircle, ShieldCheck } from '@phosphor-icons/react';
 
 const PasswordChangeModal = ({ isOpen, onClose }) => {
     const { user, changePassword } = useAuth();
@@ -150,7 +150,7 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
                     ) : (
                         <div className="flex flex-col items-center text-center py-8 animate-in zoom-in-95 duration-500">
                             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mb-6 scale-110">
-                                <CheckCircle2 size={48} />
+                                <CheckCircle size={48} />
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                                 ¡Éxito!

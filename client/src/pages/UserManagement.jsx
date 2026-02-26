@@ -1,5 +1,5 @@
 import useUserManagement from '../hooks/useUserManagement';
-import { Users, UserPlus } from 'lucide-react';
+import { Users, UserPlus } from '@phosphor-icons/react';
 import { PageHeader, Button } from '../components/ui';
 import UserFilters from '../components/UserManagement/UserFilters';
 import UserTable from '../components/UserManagement/UserTable';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, Search, Trash2, Edit, Save } from 'lucide-react';
+import { UserPlus, MagnifyingGlass, Trash, Pen, FloppyDisk } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { AsyncSearchSelect } from './ui';
@@ -188,7 +188,7 @@ const EnrollmentPanel = () => {
                                         <div key={aux.id} className="flex justify-between items-center bg-white p-2 border rounded text-sm">
                                             <span>{aux.fullName}</span>
                                             <button onClick={() => removeAuxiliary(aux.id)} className="text-red-500 hover:text-red-700">
-                                                <Trash2 size={14} />
+                                                <Trash size={14} />
                                             </button>
                                         </div>
                                     ))}
@@ -302,7 +302,7 @@ const EnrollmentPanel = () => {
                                                 className="text-red-600 hover:text-red-900 bg-red-50 p-2 rounded-full hover:bg-red-100 transition-colors"
                                                 title="Eliminar Estudiante"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash className="w-4 h-4" />
                                             </button>
                                         </td>
                                     </tr>

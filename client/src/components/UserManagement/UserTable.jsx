@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, Edit, Trash2 } from 'lucide-react';
+import { EnvelopeOpen, Phone, MapPin, Pencil, Trash} from '@phosphor-icons/react';
 import DataTable from '../DataTable';
 import PropTypes from 'prop-types';
 
@@ -41,7 +41,7 @@ const UserTable = ({ users, loading, canEdit, onEdit, onDelete }) => {
             render: (user) => (
                 <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                        <Mail size={14} /> {user.email}
+                        <EnvelopeOpen size={14} /> {user.email}
                     </div>
                     {user.phone && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
@@ -129,13 +129,13 @@ const UserTable = ({ users, loading, canEdit, onEdit, onDelete }) => {
                         onClick={() => onEdit(user)}
                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                     >
-                        <Edit size={18} />
+                        <Pencil size={18} />
                     </button>
                     <button
                         onClick={() => onDelete(user.id)}
                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
-                        <Trash2 size={18} />
+                        <Trash size={18} />
                     </button>
                 </div>
             )

@@ -1,9 +1,16 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Outfit', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
 
 @layer base {
   body {
     @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors;
+    font-family: var(--font-sans);
   }
 }

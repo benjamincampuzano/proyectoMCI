@@ -3,7 +3,7 @@ import api from '../../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from "../../context/AuthContext";
 import * as XLSX from 'xlsx';
-import { Download, Users, BookOpen, UserCheck, TrendingUp } from 'lucide-react';
+import { Download, Users, BookOpen, UserCheck, TrendUpIcon } from '@phosphor-icons/react';
 import { Button } from '../ui';
 
 const SchoolLeaderStats = () => {
@@ -97,7 +97,7 @@ const SchoolLeaderStats = () => {
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border-l-4 border-yellow-500 flex items-center">
                     <div className="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 mr-4">
-                        <TrendingUp size={24} />
+                        <TrendUpIcon size={24} />
                     </div>
                     <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">% Asistencia Global</p>

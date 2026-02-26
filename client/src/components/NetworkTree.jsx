@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, UserCheck, UserPlus, UserMinus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Users, UserCheck, UserPlus, UserMinus, CaretDown, CaretRight } from '@phosphor-icons/react';
 import AddUserModal from './AddUserModal';
 import RemoveUserDialog from './RemoveUserDialog';
 
@@ -208,7 +208,7 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
                     >
                         {hasChildren ? (
                             <div className="text-gray-500 flex-shrink-0">
-                                {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                {isExpanded ? <CaretDown className="w-4 h-4" /> : <CaretRight className="w-4 h-4" />}
                             </div>
                         ) : (
                             // Spacer for alignment if no children

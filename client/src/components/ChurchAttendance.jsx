@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Check, X } from 'lucide-react';
+import { Calendar, Check, X } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 

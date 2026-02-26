@@ -486,7 +486,7 @@ const getUserActivityList = async (req, res) => {
             // Prayer of Three logic
             const activeOracion = u.oracionesMiembro.find(om => {
                 const group = om.oracionDeTres;
-                return group.estado === 'ACTIVO' && group.createdAt >= threeMonthsAgo;
+                return group && group.estado === 'ACTIVO' && group.createdAt >= threeMonthsAgo;
             });
 
             // Attendance counters

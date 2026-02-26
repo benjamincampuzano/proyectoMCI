@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Eye, EyeOff, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Lock, Eye, EyeSlash, CheckCircle, XCircle, Warning } from '@phosphor-icons/react';
 
 const validatePassword = (password, email = '', fullName = '') => {
     const requirements = [];

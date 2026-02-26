@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { Plus, Calendar, Users, Trash2, Edit } from 'lucide-react';
+import { Plus, Calendar, Users, Trash, Pen, List, SquaresFourIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from "../../context/AuthContext";
 import ClassMatrix from './ClassMatrix';
@@ -22,6 +22,7 @@ const CourseManagement = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCourse, setEditingCourse] = useState(null);
+    const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
 
     // Form State
     const [formData, setFormData] = useState({
@@ -29,8 +30,8 @@ const CourseManagement = () => {
         description: '',
         startDate: '',
         endDate: '',
-        professorId: '',
-        auxiliarId: '',
+        professorId: null,
+        auxiliarId: null,
         nivel: '1',
         seccion: 'A'
     });
@@ -76,7 +77,7 @@ const CourseManagement = () => {
                 auxiliarIds: formData.auxiliarId ? [parseInt(formData.auxiliarId)] : []
             });
             setShowCreateModal(false);
-            setFormData({ ...formData, name: '', description: '', professorId: '', auxiliarId: '', startDate: '', endDate: '' });
+            setFormData({ ...formData, name: '', description: '', professorId: null, auxiliarId: null, startDate: '', endDate: '' });
             fetchCourses();
         } catch (error) {
             toast.error('Error creating course');
@@ -91,8 +92,8 @@ const CourseManagement = () => {
             description: course.description || '',
             startDate: course.startDate ? course.startDate.split('T')[0] : '',
             endDate: course.endDate ? course.endDate.split('T')[0] : '',
-            professorId: course.professor?.id || '',
-            auxiliarId: course.auxiliaries?.[0]?.id || '',
+            professorId: course.professor?.id || null,
+            auxiliarId: course.auxiliaries?.[0]?.id || null,
             nivel: '1',
             seccion: 'A'
         });
@@ -133,73 +134,183 @@ const CourseManagement = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Escuelas de Discipulado</h2>
-                {hasAnyRole(['ADMIN']) && (
-                    <Button
-                        onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
-                        variant="primary"
-                        icon={Plus}
-                        className="bg-purple-600 hover:bg-purple-700"
-                    >
-                        Nueva Clase
-                    </Button>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {courses.map(course => (
-                    <div
-                        key={course.id}
-                        onClick={() => setSelectedCourseId(course.id)}
-                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedCourseId(course.id)}
-                        role="button"
-                        tabIndex={0}
-                        className="bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700 relative group"
-                    >
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                            {hasAnyRole(['ADMIN']) && (
-                                <div className="flex space-x-2">
-                                    <Button
-                                        onClick={(e) => openEditModal(e, course)}
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                                        title="Editar"
-                                    >
-                                        <Edit size={18} />
-                                    </Button>
-                                    <Button
-                                        onClick={(e) => handleDelete(e, course.id)}
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                        title="Eliminar"
-                                    >
-                                        <Trash2 size={18} />
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                        <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mb-2 inline-block">
-                            {course._count?.enrollments || 0} Estudiantes
-                        </span>
-                        <p className="text-gray-500 text-sm mb-4 line-clamp-2">{course.description}</p>
-
-                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                            <div className="flex items-center">
-                                <Users size={16} className="mr-2" />
-                                <span>Prof: {course.professor?.fullName || 'N/A'}</span>
-                            </div>
-                            <div className="flex items-center">
-                                <Calendar size={16} className="mr-2" />
-                                <span>
-                                    {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
-                                </span>
-                            </div>
-                        </div>
+                <div className="flex items-center gap-2">
+                    <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                        <button
+                            onClick={() => setViewMode('table')}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                                viewMode === 'table'
+                                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                            }`}
+                            title="Vista de tabla"
+                        >
+                            <List size={18} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('cards')}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                                viewMode === 'cards'
+                                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                            }`}
+                            title="Vista de tarjetas"
+                        >
+                            <SquaresFourIcon size={18} />
+                        </button>
                     </div>
-                ))}
+                    {hasAnyRole(['ADMIN']) && (
+                        <Button
+                            onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
+                            variant="primary"
+                            icon={Plus}
+                            className="bg-purple-600 hover:bg-purple-700"
+                        >
+                            Nueva Clase
+                        </Button>
+                    )}
+                </div>
             </div>
+
+            {viewMode === 'cards' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {courses.map(course => (
+                        <div
+                            key={course.id}
+                            onClick={() => setSelectedCourseId(course.id)}
+                            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedCourseId(course.id)}
+                            role="button"
+                            tabIndex={0}
+                            className="bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700 relative group"
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
+                                {hasAnyRole(['ADMIN']) && (
+                                    <div className="flex space-x-2">
+                                        <Button
+                                            onClick={(e) => openEditModal(e, course)}
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                            title="Editar"
+                                        >
+                                            <Pen size={18} />
+                                        </Button>
+                                        <Button
+                                            onClick={(e) => handleDelete(e, course.id)}
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                            title="Eliminar"
+                                        >
+                                            <Trash size={18} />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mb-2 inline-block">
+                                {course._count?.enrollments || 0} Estudiantes
+                            </span>
+                            <p className="text-gray-500 text-sm mb-4 line-clamp-2">{course.description}</p>
+
+                            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                <div className="flex items-center">
+                                    <Users size={16} className="mr-2" />
+                                    <span>Prof: {course.professor?.fullName || 'N/A'}</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <Calendar size={16} className="mr-2" />
+                                    <span>
+                                        {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-900/50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Nombre
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Profesor
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Fecha Inicio
+                                </th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Estudiantes
+                                </th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {courses.map(course => (
+                                <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600" onClick={() => setSelectedCourseId(course.id)}>
+                                                {course.name}
+                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{course.description}</p>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {course.professor?.fullName || 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                                            {course._count?.enrollments || 0}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                onClick={() => setSelectedCourseId(course.id)}
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-blue-600 hover:text-blue-800"
+                                            >
+                                                Ver
+                                            </Button>
+                                            {hasAnyRole(['ADMIN']) && (
+                                                <>
+                                                    <Button
+                                                        onClick={(e) => openEditModal(e, course)}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-amber-600 hover:text-amber-800"
+                                                    >
+                                                        Editar
+                                                    </Button>
+                                                    <Button
+                                                        onClick={(e) => handleDelete(e, course.id)}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-red-500 hover:text-red-700"
+                                                        icon={Trash}
+                                                    >
+                                                        Eliminar
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {/* Create/Edit Modal */}
             {(showCreateModal || showEditModal) && (
@@ -276,7 +387,7 @@ const CourseManagement = () => {
                                             .then(res => res.data);
                                     }}
                                     selectedValue={formData.professorId}
-                                    onSelect={(user) => setFormData({ ...formData, professorId: user?.id || '' })}
+                                    onSelect={(user) => setFormData({ ...formData, professorId: user?.id || null })}
                                     placeholder="Seleccionar Profesor (Líder de 12)..."
                                     labelKey="fullName"
                                 />
@@ -291,7 +402,7 @@ const CourseManagement = () => {
                                             .then(res => res.data);
                                     }}
                                     selectedValue={formData.auxiliarId}
-                                    onSelect={(user) => setFormData({ ...formData, auxiliarId: user?.id || '' })}
+                                    onSelect={(user) => setFormData({ ...formData, auxiliarId: user?.id || null })}
                                     placeholder="Seleccionar Auxiliar (Líder de Célula)..."
                                     labelKey="fullName"
                                 />

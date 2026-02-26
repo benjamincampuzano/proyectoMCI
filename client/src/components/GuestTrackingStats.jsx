@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Phone, Home, Calendar, Filter, BarChart2, PhoneCall, Handshake } from 'lucide-react';
+import { Users, Phone, House, Calendar, FunnelIcon, ChartBarIcon, PhoneDisconnect, Handshake } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const GuestTrackingStats = () => {
@@ -46,11 +46,11 @@ const GuestTrackingStats = () => {
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <BarChart2 className="w-6 h-6 text-blue-600" />
+                        <ChartBarIcon className="w-6 h-6 text-blue-600" />
                         Reporte de Seguimiento
                     </h2>
                     <div className="flex items-center gap-3">
-                        <Filter className="w-5 h-5 text-gray-400" />
+                        <FunnelIcon className="w-5 h-5 text-gray-400" />
                         <input
                             type="date"
                             value={startDate}
@@ -84,7 +84,7 @@ const GuestTrackingStats = () => {
                     <div className="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl border border-green-100 dark:border-green-800 shadow-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
-                                <PhoneCall size={20} />
+                                <Phone size={20} />
                             </div>
                             <span className="text-sm font-bold text-green-800 dark:text-green-200 uppercase tracking-tight">Con Llamada</span>
                         </div>
@@ -120,7 +120,7 @@ const GuestTrackingStats = () => {
                     <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                                <Home size={20} />
+                                <House size={20} />
                             </div>
                             <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Sin Visita</span>
                         </div>

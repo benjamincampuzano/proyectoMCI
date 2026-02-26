@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, DollarSign, XCircle, Trash2, FileText, Users, Edit2, Download } from 'lucide-react';
+import { ArrowLeft, UserPlus, MoneyIcon, XCircle, Trash, FileTextIcon, Users, Pen, MicrosoftExcelLogoIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import * as XLSX from 'xlsx';
@@ -260,7 +260,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                             }`}
                     >
-                        <FileText size={16} className="mr-2" />
+                        <FileTextIcon size={16} className="mr-2" />
                         Reporte Financiero
                     </button>
                 </div>
@@ -298,7 +298,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 onClick={handleExportToExcel}
                                 className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                             >
-                                <Download size={20} className="mr-2" />
+                                <MicrosoftExcelLogoIcon size={20} className="mr-2" />
                                 Exportar Excel
                             </button>
                         )}
@@ -307,7 +307,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 onClick={openEditModal}
                                 className="flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
                             >
-                                <Edit2 size={20} className="mr-2" />
+                                <Pen size={20} className="mr-2" />
                                 Editar Convención
                             </button>
                         )}
@@ -397,7 +397,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
                                                         title="Agregar Abono"
                                                     >
-                                                        <DollarSign size={16} className="mr-1" />
+                                                        <MoneyIcon size={16} className="mr-1" />
                                                         Abonar
                                                     </button>
                                                 )}
@@ -407,7 +407,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
                                                         title="Eliminar Registro"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Trash size={16} />
                                                     </button>
                                                 )}
                                             </td>

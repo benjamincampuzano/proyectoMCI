@@ -489,18 +489,19 @@ const updateCell = async (req, res) => {
     }
 };
 
-// Unassign member from cell
 const unassignMember = async (req, res) => {
     try {
         const { userId } = req.body;
+        const { memberId } = req.params;
+        const targetUserId = userId || memberId;
         const { id: currentUserId } = req.user;
 
         await prisma.user.update({
-            where: { id: parseInt(userId) },
+            where: { id: parseInt(targetUserId) },
             data: { cellId: null }
         });
 
-        await logActivity(currentUserId, 'UPDATE', 'USER', parseInt(userId), { action: 'UNASSIGN_CELL' }, req.ip, req.headers['user-agent']);
+        await logActivity(currentUserId, 'UPDATE', 'USER', parseInt(targetUserId), { action: 'UNASSIGN_CELL' }, req.ip, req.headers['user-agent']);
 
         res.json({ message: 'Miembro desvinculado correctamente' });
     } catch (error) {

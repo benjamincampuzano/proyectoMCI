@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Target, Plus, Clock, CheckCircle2, XCircle, Edit2, Trash2, FileText, TrendingUp, TrendingDown, Minus, LayoutGrid, List, Calendar } from 'lucide-react';
+import { Target, Plus, Clock, CheckCircle, XCircle, Pen, Trash, FileTextIcon, TrendUp, TrendDown, Minus, SquaresFour, List, Calendar } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import GoalForm from '../components/GoalForm';
@@ -22,7 +22,7 @@ const getGoalStatus = (goal, percent) => {
 
     const isPastDeadline = deadline && new Date() > deadline;
 
-    if (isMet) return { label: 'CUMPLIÓ', color: 'green', icon: CheckCircle2 };
+    if (isMet) return { label: 'CUMPLIÓ', color: 'green', icon: CheckCircle };
     if (isPastDeadline) return { label: 'NO CUMPLIÓ', color: 'red', icon: XCircle };
     return { label: 'EN PROGRESO', color: 'blue', icon: Clock };
 };
@@ -364,14 +364,14 @@ const Metas = () => {
                                 className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                 title="Editar"
                             >
-                                <Edit2 size={16} />
+                                <Pen size={16} />
                             </button>
                             <button
                                 onClick={() => handleDelete(goal.id)}
                                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                 title="Eliminar"
                             >
-                                <Trash2 size={16} />
+                                <Trash size={16} />
                             </button>
                         </div>
                     )}
@@ -411,7 +411,7 @@ const Metas = () => {
                         title="Cumplidas"
                         value={stats.cumplidas}
                         subtitle={`${stats.porcentajeGeneral}% del total`}
-                        icon={CheckCircle2}
+                        icon={CheckCircle}
                         color="green"
                     />
                     <StatCard
@@ -495,7 +495,7 @@ const Metas = () => {
                             }`}
                             title="Vista de tarjetas"
                         >
-                            <LayoutGrid size={18} />
+                            <SquaresFour size={18} />
                         </button>
                         <button
                             onClick={() => setViewMode('table')}
@@ -522,7 +522,7 @@ const Metas = () => {
                         ) : goals.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16">
                                 <div className="bg-gray-50 dark:bg-gray-800/50 w-20 h-20 rounded-full flex items-center justify-center mb-4 text-gray-400">
-                                    <FileText size={32} />
+                                    <FileTextIcon size={32} />
                                 </div>
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sin metas registradas</h3>
                                 <p className="text-gray-500 text-sm mt-1">No hay datos para mostrar en este momento.</p>
@@ -565,7 +565,7 @@ const Metas = () => {
                                 <tr>
                                     <td colSpan={isEditor ? 8 : 7} className="p-16 text-center">
                                         <div className="bg-gray-50 dark:bg-gray-800/50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                                            <FileText size={32} />
+                                            <FileTextIcon size={32} />
                                         </div>
                                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sin metas registradas</h3>
                                         <p className="text-gray-500 text-sm mt-1">No hay datos para mostrar en este momento.</p>

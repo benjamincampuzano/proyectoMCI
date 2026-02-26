@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, Filter, DollarSign, Users, CreditCard } from 'lucide-react';
+import { Download, FunnelIcon , CurrencyDollar, Users, CreditCard } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 
 const EncuentrosReport = ({ encuentros }) => {
@@ -114,7 +114,7 @@ const EncuentrosReport = ({ encuentros }) => {
                             </h3>
                         </div>
                         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                            <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <MoneyIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
                     </div>
                 </div>
@@ -142,7 +142,7 @@ const EncuentrosReport = ({ encuentros }) => {
                             </h3>
                         </div>
                         <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                            <DollarSign className="w-5 h-5 text-red-600 dark:text-red-400" />
+                            <MoneyIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
                         </div>
                     </div>
                 </div>

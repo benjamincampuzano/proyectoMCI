@@ -1,4 +1,4 @@
-import { Calendar, DollarSign, Users, Edit2, Trash2, UserCheck } from 'lucide-react';
+import { Calendar, CurrencyDollar, Users, Pen, Trash, UserCheck } from '@phosphor-icons/react';
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(amount);
@@ -24,7 +24,7 @@ const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify })
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {conventions.length === 0 ? (
                             <tr>
-                                <td colSpan="7" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                     No hay convenciones registradas.
                                 </td>
                             </tr>
@@ -56,6 +56,9 @@ const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify })
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className="text-sm font-medium text-gray-900 dark:text-white">{conv.coordinator?.fullName || 'Sin Asignar'}</span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         <span className="text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(conv.cost)}</span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -65,13 +68,13 @@ const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify })
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center justify-end gap-2">
                                             <button
-                                                onClick={() => onSelect(conv)}
+                                                onClick={() => onSelect(conv.id)}
                                                 className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                                                 title="Ver detalles"
                                             >
-                                                <Edit2 size={16} />
+                                                <Pen size={16} />
                                             </button>
                                             {canModify && (
                                                 <button
@@ -79,7 +82,7 @@ const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify })
                                                     className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                                                     title="Eliminar"
                                                 >
-                                                    <Trash2 size={16} />
+                                                    <Trash size={16} />
                                                 </button>
                                             )}
                                         </div>

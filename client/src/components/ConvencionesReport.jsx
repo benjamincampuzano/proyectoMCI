@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Download, Filter, DollarSign, Users, CreditCard } from 'lucide-react';
+import { MicrosoftExcelLogoIcon, FunnelIcon, MoneyIcon, Users, CreditCard } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 
 const ConvencionesReport = ({ conventions }) => {
@@ -82,7 +82,7 @@ const ConvencionesReport = ({ conventions }) => {
             {/* Filter Section - Simplified for now */}
             <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-4 text-gray-700 dark:text-gray-300 font-medium">
-                    <Filter size={20} />
+                    <FunnelIcon size={20} />
                     <span>Filtros</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -121,7 +121,7 @@ const ConvencionesReport = ({ conventions }) => {
                             </h3>
                         </div>
                         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                            <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <MoneyIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
                     </div>
                 </div>
@@ -149,7 +149,7 @@ const ConvencionesReport = ({ conventions }) => {
                             </h3>
                         </div>
                         <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                            <DollarSign className="w-5 h-5 text-red-600 dark:text-red-400" />
+                            <MoneyIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
                         </div>
                     </div>
                 </div>
@@ -180,7 +180,7 @@ const ConvencionesReport = ({ conventions }) => {
                         onClick={handleExport}
                         className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
                     >
-                        <Download size={18} />
+                        <MicrosoftExcelLogoIcon size={18} />
                         Exportar CSV
                     </button>
                 )}

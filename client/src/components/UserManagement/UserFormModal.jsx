@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader } from 'lucide-react';
+import { Spinner } from '@phosphor-icons/react';
 import ActionModal from '../ActionModal';
 import UserFormFields from './UserFormFields';
 import PropTypes from 'prop-types';

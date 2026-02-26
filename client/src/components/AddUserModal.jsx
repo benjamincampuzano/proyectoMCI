@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Search, UserPlus, Loader2 } from 'lucide-react';
+import { X, MagnifyingGlass, UserPlus, Spinner } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
@@ -30,8 +30,8 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
         } else {
             const term = searchTerm.toLowerCase();
             const filtered = availableUsers.filter(user =>
-                user.fullName.toLowerCase().includes(term) ||
-                user.email.toLowerCase().includes(term) ||
+                (user.fullName && user.fullName.toLowerCase().includes(term)) ||
+                (user.email && user.email.toLowerCase().includes(term)) ||
                 (user.phone && user.phone.includes(term))
             );
             setFilteredUsers(filtered);
@@ -121,7 +121,7 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                 {/* Search Bar */}
                 <div className="p-4 border-b">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
                             type="text"
                             placeholder="Buscar por nombre, email o teléfono..."
@@ -137,7 +137,7 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                 <div className="flex-1 overflow-y-auto p-4">
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
-                            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                            <Spinner className="w-8 h-8 text-blue-600 animate-spin" />
                             <span className="ml-3 text-gray-600">Cargando usuarios...</span>
                         </div>
                     ) : error ? (
@@ -225,7 +225,7 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                         >
                             {submitting ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <Spinner className="w-4 h-4 animate-spin" />
                                     Agregando...
                                 </>
                             ) : (

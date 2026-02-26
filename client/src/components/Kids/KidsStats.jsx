@@ -3,7 +3,7 @@ import api from '../../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from "../../context/AuthContext";
 import * as XLSX from 'xlsx';
-import { Download, Users, BookOpen, UserCheck, TrendingUp } from 'lucide-react';
+import { Download, Users, BookOpen, UserCheck, TrendUp } from '@phosphor-icons/react';
 import { Button } from '../ui';
 
 const KidsStats = () => {
@@ -105,7 +105,7 @@ const KidsStats = () => {
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                            <TrendingUp size={20} />
+                            <TrendUp size={20} />
                         </div>
                         <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">% Asistencia</span>
                     </div>

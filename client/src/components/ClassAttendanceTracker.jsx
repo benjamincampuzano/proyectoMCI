@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardText } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Loader2, X } from 'lucide-react';
+import { MagnifyingGlassIcon, SpinnerIcon, X } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 
 /**
@@ -27,6 +27,7 @@ const AsyncSearchSelect = ({
     className = "",
     disabled = false
 }) => {
+    const effectiveSelectedValue = typeof selectedValue === 'number' ? null : selectedValue;
     const [searchTerm, setSearchTerm] = useState('');
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -89,7 +90,7 @@ const AsyncSearchSelect = ({
     };
 
     // Determine if we have a valid selection to show
-    const isSelected = selectedValue !== null && selectedValue !== undefined && selectedValue !== '';
+    const isSelected = effectiveSelectedValue !== null && effectiveSelectedValue !== undefined && effectiveSelectedValue !== '';
 
     // If selectedValue is an ID but we don't have the full object, the parent should handle display
     // OR we can display "Selected" if we don't know the label. 
@@ -119,13 +120,13 @@ const AsyncSearchSelect = ({
                 {/* Search Input when Open or Not Selected */}
                 {(!isSelected || isOpen) ? (
                     <div className="flex items-center flex-1 min-w-0 gap-2">
-                        <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="bg-transparent border-none focus:outline-none w-full text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400"
-                            placeholder={isSelected ? getLabel(selectedValue) : placeholder} // Show label as placeholder when editing/searching
+                            placeholder={isSelected ? getLabel(effectiveSelectedValue) : placeholder} // Show label as placeholder when editing/searching
                             disabled={disabled}
                             autoFocus={isOpen}
                         />
@@ -133,9 +134,9 @@ const AsyncSearchSelect = ({
                 ) : (
                     /* Selected Item Display */
                     <div className="flex items-center flex-1 min-w-0">
-                        {renderSelected ? renderSelected(selectedValue) : (
+                        {renderSelected ? renderSelected(effectiveSelectedValue) : (
                             <span className="text-sm text-gray-900 dark:text-gray-100 truncate block">
-                                {getLabel(selectedValue)}
+                                {getLabel(effectiveSelectedValue)}
                             </span>
                         )}
                     </div>
@@ -143,7 +144,7 @@ const AsyncSearchSelect = ({
 
                 {/* Actions: Clear or Loading */}
                 <div className="flex items-center gap-1 ml-2">
-                    {loading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                    {loading && <SpinnerIcon className="w-4 h-4 animate-spin text-gray-400" />}
                     {isSelected && !disabled && !loading && (
                         <button
                             type="button"
@@ -194,7 +195,7 @@ const AsyncSearchSelect = ({
 AsyncSearchSelect.propTypes = {
     fetchItems: PropTypes.func.isRequired,
     onSelect: PropTypes.func.isRequired,
-    selectedValue: PropTypes.object,
+    selectedValue: PropTypes.oneOfType([PropTypes.object, PropTypes.number]),
     placeholder: PropTypes.string,
     labelKey: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
     valueKey: PropTypes.string,

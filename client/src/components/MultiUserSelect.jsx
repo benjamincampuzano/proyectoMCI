@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, X, UserPlus } from 'lucide-react';
+import { MagnifyingGlassIcon, X, UserPlusIcon} from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccionar usuarios...", roleFilter }) => {
@@ -133,7 +133,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white cursor-pointer flex items-center justify-between hover:border-blue-500 transition-colors"
             >
                 <span className="text-gray-400">{placeholder}</span>
-                <UserPlus size={20} className="text-gray-400" />
+                <UserPlusIcon size={20} className="text-gray-400" />
             </div>
 
             {/* Dropdown */}
@@ -141,7 +141,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
                 <div className="absolute z-50 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
                     <div className="p-2 border-b border-gray-700">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 type="text"
                                 value={searchTerm}

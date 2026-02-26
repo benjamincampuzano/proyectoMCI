@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users } from 'lucide-react';
+import { Users } from '@phosphor-icons/react';
 import TabNavigator from '../components/TabNavigator';
 import GuestRegistrationForm from '../components/GuestRegistrationForm';
 import GuestList from '../components/GuestList';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { Save, UserPlus, Trash2, BookOpen, ExternalLink } from 'lucide-react';
+import { FloppyDisk, UserPlus, Trash, BookOpen, ArrowSquareOut } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import ClassMaterialManager from './ClassMaterialManager';
 import { AsyncSearchSelect, Button } from '../ui';
@@ -16,7 +16,7 @@ const ClassMatrix = ({ courseId }) => {
 
     // Enrollment Form
     const [enrollForm, setEnrollForm] = useState({
-        studentId: '',
+        studentId: null,
         assignedAuxiliarId: ''
     });
 
@@ -67,7 +67,7 @@ const ClassMatrix = ({ courseId }) => {
                 assignedAuxiliarId: enrollForm.assignedAuxiliarId
             });
             setShowEnrollModal(false);
-            setEnrollForm({ studentId: '', assignedAuxiliarId: '' });
+            setEnrollForm({ studentId: null, assignedAuxiliarId: '' });
             fetchMatrix();
         } catch (err) {
             toast.error('Error enrolling student: ' + (err.response?.data?.error || 'Unknown error'));
@@ -260,7 +260,7 @@ const ClassMatrix = ({ courseId }) => {
                                                 className="text-red-500 hover:text-red-700 hover:bg-red-50"
                                                 title="Eliminar Estudiante"
                                             >
-                                                <Trash2 size={16} />
+                                                <Trash size={16} />
                                             </Button>
                                         )}
                                     </td>
@@ -288,7 +288,7 @@ const ClassMatrix = ({ courseId }) => {
                                             .then(res => res.data.filter(u => !matrix.map(row => row.studentId).includes(u.id)));
                                     }}
                                     selectedValue={enrollForm.studentId}
-                                    onSelect={(user) => setEnrollForm({ ...enrollForm, studentId: user?.id || '' })}
+                                    onSelect={(user) => setEnrollForm({ ...enrollForm, studentId: user?.id || null })}
                                     placeholder="Buscar estudiante por nombre..."
                                     labelKey="fullName"
                                 />

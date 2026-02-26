@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Download, Users, TrendingUp, UserCheck, Loader } from 'lucide-react';
+import { Calendar, Download, Users, TrendUpIcon, UserCheck, SpinnerIcon } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
@@ -159,7 +159,7 @@ const GuestStats = () => {
 
                 {loading ? (
                     <div className="flex justify-center items-center py-12">
-                        <Loader size={32} className="animate-spin text-blue-500" />
+                        <SpinnerIcon size={32} className="animate-spin text-blue-500" />
                     </div>
                 ) : stats ? (
                     <>
@@ -180,7 +180,7 @@ const GuestStats = () => {
                             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                        <TrendingUp className="text-purple-600 dark:text-purple-400" size={20} />
+                                        <TrendUpIcon className="text-purple-600 dark:text-purple-400" size={20} />
                                     </div>
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400 text-sm">Pr. Mensual</p>
@@ -192,7 +192,7 @@ const GuestStats = () => {
                             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                        <TrendingUp className="text-blue-600 dark:text-blue-400" size={20} />
+                                        <TrendUpIcon className="text-blue-600 dark:text-blue-400" size={20} />
                                     </div>
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400 text-sm">Nuevos</p>
@@ -216,7 +216,7 @@ const GuestStats = () => {
                             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                        <TrendingUp className="text-purple-600 dark:text-purple-400" size={20} />
+                                        <TrendUpIcon className="text-purple-600 dark:text-purple-400" size={20} />
                                     </div>
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400 text-sm">Tasa Conversión</p>

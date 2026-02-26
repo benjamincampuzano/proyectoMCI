@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 
 const DataTable = ({
     columns = [],
@@ -86,14 +86,14 @@ const DataTable = ({
                             disabled={pagination.page <= 1}
                             className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ChevronLeft size={20} />
+                            <CaretLeft size={20} />
                         </button>
                         <button
                             onClick={pagination.onNext}
                             disabled={pagination.page >= pagination.pages}
                             className="p-2 border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         >
-                            <ChevronRight size={20} />
+                            <CaretRight size={20} />
                         </button>
                     </div>
                 </div>

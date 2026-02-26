@@ -35,4 +35,7 @@ router.delete('/remove/:userId', removeUserFromNetwork);
 // Get aggregated activity list for network
 router.get('/activity-list', getUserActivityList);
 
+// Catch-all for network (if needed, but keep specific routes first)
+router.get('/:userId', getNetwork);
+
 module.exports = router;

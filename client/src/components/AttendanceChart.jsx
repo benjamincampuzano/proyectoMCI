@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import useAttendance from '../hooks/useAttendance';
-import { Calendar, TrendingUp } from 'lucide-react';
+import { Calendar, TrendUp } from '@phosphor-icons/react';
 
 const AttendanceChart = () => {
     const {
@@ -96,7 +96,7 @@ const AttendanceChart = () => {
                 <div className="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl border border-green-100 dark:border-green-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
-                            <TrendingUp size={20} />
+                            <TrendUp size={20} />
                         </div>
                         <span className="text-sm font-bold text-green-800 dark:text-green-200 uppercase tracking-tight">Total Asistencias</span>
                     </div>
@@ -108,7 +108,7 @@ const AttendanceChart = () => {
                 <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                            <TrendingUp size={20} />
+                            <TrendUp size={20} />
                         </div>
                         <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Total Ausencias</span>
                     </div>
@@ -120,7 +120,7 @@ const AttendanceChart = () => {
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                            <TrendingUp size={20} />
+                            <TrendUp size={20} />
                         </div>
                         <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Registros</span>
                     </div>
@@ -132,7 +132,7 @@ const AttendanceChart = () => {
                 <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
-                            <TrendingUp size={20} />
+                            <TrendUp size={20} />
                         </div>
                         <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Tasa de Asistencia</span>
                     </div>

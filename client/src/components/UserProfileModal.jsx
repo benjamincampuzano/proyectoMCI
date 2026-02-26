@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Save, Loader, Check, X as XIcon } from 'lucide-react';
+import { X, FloppyDisk, Spinner, Check } from '@phosphor-icons/react';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -320,10 +320,10 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                             className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                         >
                             {loading ? (
-                                <Loader size={20} className="animate-spin" />
+                                <Spinner size={20} className="animate-spin" />
                             ) : (
                                 <>
-                                    <Save size={20} />
+                                    <FloppyDisk size={20} />
                                     <span>Guardar Cambios</span>
                                 </>
                             )}
@@ -413,10 +413,10 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                                         className="flex-1 flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                                     >
                                         {loading ? (
-                                            <Loader size={20} className="animate-spin" />
+                                            <Spinner size={20} className="animate-spin" />
                                         ) : (
                                             <>
-                                                <Save size={20} />
+                                                <FloppyDisk size={20} />
                                                 <span>Cambiar</span>
                                             </>
                                         )}

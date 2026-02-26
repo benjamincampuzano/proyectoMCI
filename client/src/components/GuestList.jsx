@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Filter, Edit2, Trash2, UserPlus, Loader, X, Save, UserCheck } from 'lucide-react';
+import { SpinnerIcon, MagnifyingGlass, Funnel, PencilIcon, Trash, UserPlus, Spinner, X, FloppyDiskIcon, UserCheckIcon } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import { AsyncSearchSelect, Button } from './ui';
@@ -178,7 +178,7 @@ const GuestList = ({ refreshTrigger }) => {
             {/* Filtros */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     <input
                         type="text"
                         value={searchTerm}
@@ -210,7 +210,7 @@ const GuestList = ({ refreshTrigger }) => {
                                 .then(res => res.data)
                         }
                         selectedValue={invitedByFilter}
-                        onSelect={(user) => setInvitedByFilter(user?.id || null)}
+                        onSelect={(user) => setInvitedByFilter(user || null)}
                         placeholder="Invitado por..."
                         labelKey="fullName"
                         renderItem={(user) => (
@@ -231,7 +231,7 @@ const GuestList = ({ refreshTrigger }) => {
                             }).then(res => res.data);
                         }}
                         selectedValue={liderDoceFilter}
-                        onSelect={(user) => setLiderDoceFilter(user?.id || null)}
+                        onSelect={(user) => setLiderDoceFilter(user || null)}
                         placeholder={currentUser?.roles?.includes('PASTOR') ? "Líder de Célula..." : "Ministerio de..."}
                         labelKey="fullName"
                         renderItem={(user) => (
@@ -246,7 +246,7 @@ const GuestList = ({ refreshTrigger }) => {
 
             <Button
                 onClick={handleSearch}
-                icon={Filter}
+                icon={Funnel}
                 className="mb-6"
             >
                 Aplicar Filtros
@@ -269,7 +269,7 @@ const GuestList = ({ refreshTrigger }) => {
                         {loading ? (
                             <tr>
                                 <td colSpan="5" className="px-4 py-8 text-center text-gray-400">
-                                    <Loader size={24} className="animate-spin mx-auto" />
+                                    <SpinnerIcon size={24} className="animate-spin mx-auto" />
                                 </td>
                             </tr>
                         ) : guests.length === 0 ? (
@@ -403,7 +403,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                         className="p-1 text-green-400 hover:text-green-300"
                                                         title="Guardar"
                                                     >
-                                                        <Save size={18} />
+                                                        <FloppyDiskIcon size={18} />
                                                     </button>
                                                     <button
                                                         onClick={() => setEditingGuest(null)}
@@ -419,12 +419,14 @@ const GuestList = ({ refreshTrigger }) => {
                                                         onClick={() => setEditingGuest({
                                                             ...guest,
                                                             invitedById: guest.invitedBy?.id,
-                                                            assignedToId: guest.assignedTo?.id
+                                                            assignedToId: guest.assignedTo?.id,
+                                                            invitedBy: typeof guest.invitedBy === 'object' ? guest.invitedBy : null,
+                                                            assignedTo: typeof guest.assignedTo === 'object' ? guest.assignedTo : null
                                                         })}
                                                         className="p-1 text-blue-400 hover:text-blue-300"
                                                         title="Editar"
                                                     >
-                                                        <Edit2 size={18} />
+                                                        <PencilIcon size={18} />
                                                     </button>
                                                     {canDelete(guest) && (
                                                         <button
@@ -432,7 +434,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                             className="p-1 text-red-400 hover:text-red-300"
                                                             title="Eliminar"
                                                         >
-                                                            <Trash2 size={18} />
+                                                            <Trash size={18} />
                                                         </button>
                                                     )}
                                                     <button
@@ -440,7 +442,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                         className="p-1 text-green-400 hover:text-green-300"
                                                         title="Convertir a Discípulo"
                                                     >
-                                                        <UserCheck size={18} />
+                                                        <UserCheckIcon size={18} />
                                                     </button>
                                                 </>
                                             )}
@@ -463,7 +465,7 @@ const GuestList = ({ refreshTrigger }) => {
                     >
                         {loading ? (
                             <>
-                                <Loader size={18} className="animate-spin mr-2" />
+                                <SpinnerIcon size={18} className="animate-spin mr-2" />
                                 Cargando...
                             </>
                         ) : (

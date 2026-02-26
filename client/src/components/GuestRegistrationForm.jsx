@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Loader, X } from 'lucide-react';
+import { FloppyDiskIcon, Spinner, X } from '@phosphor-icons/react';
 import { AsyncSearchSelect } from './ui';
 import api from '../utils/api';
 
@@ -341,7 +341,7 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                             <Loader size={20} className="animate-spin" />
                         ) : (
                             <>
-                                <Save size={20} />
+                                <FloppyDiskIcon size={20} />
                                 <span>Registrar Invitado</span>
                             </>
                         )}

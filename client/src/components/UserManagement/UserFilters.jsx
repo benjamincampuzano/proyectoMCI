@@ -1,4 +1,4 @@
-import { Search, Filter } from 'lucide-react';
+import { FileSearchIcon,MagnifyingGlass, Funnel } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 
 const UserFilters = ({
@@ -15,7 +15,7 @@ const UserFilters = ({
     return (
         <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-row flex-wrap items-center gap-4">
             <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <FileSearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                     type="text"
                     placeholder="Buscar por nombre o email..."
@@ -25,7 +25,7 @@ const UserFilters = ({
                 />
             </div>
             <div className="relative min-w-[200px]">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Funnel className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <select
                     className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-gray-900 dark:text-white"
                     value={roleFilter}
@@ -38,7 +38,7 @@ const UserFilters = ({
                 </select>
             </div>
             <div className="relative min-w-[150px]">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Funnel className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <select
                     className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-gray-900 dark:text-white"
                     value={sexFilter}
@@ -50,7 +50,7 @@ const UserFilters = ({
                 </select>
             </div>
             <div className="relative min-w-[200px]">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Funnel className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <select
                     className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-gray-900 dark:text-white"
                     value={liderDoceFilter}

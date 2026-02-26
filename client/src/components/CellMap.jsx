@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { Users, Clock, MapPin } from 'lucide-react';
+import { Users, Clock, MapPin } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 
 // Fix for default marker icons in Leaflet with React

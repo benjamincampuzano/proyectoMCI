@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserPlus, X, Check } from 'lucide-react';
+import { Users, UserPlus, X, Check } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const NetworkAssignment = () => {

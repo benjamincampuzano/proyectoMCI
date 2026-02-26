@@ -39,8 +39,8 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
             params.append('limit', pagination.limit);
 
             if (statusFilter) params.append('status', statusFilter);
-            if (invitedByFilter) params.append('invitedById', invitedByFilter);
-            if (liderDoceFilter) params.append('liderDoceId', liderDoceFilter);
+            if (invitedByFilter && invitedByFilter.id !== undefined) params.append('invitedById', invitedByFilter.id);
+            if (liderDoceFilter && liderDoceFilter.id !== undefined) params.append('liderDoceId', liderDoceFilter.id);
             if (searchTerm) params.append('search', searchTerm);
 
             const res = await api.get('/guests', {

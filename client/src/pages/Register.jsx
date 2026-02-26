@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Lock, Phone, MapPin, Calendar, ChevronDown, Check, Loader, Shield, X, Eye, EyeOff } from 'lucide-react';
+import { User, Calendar, Check, Shield, X, Eye, EyeSlash, Plus, Envelope, ArrowsClockwiseIcon } from '@phosphor-icons/react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import { DATA_POLICY_URL } from '../constants/policies';
 import toast from 'react-hot-toast';
 import logo from '../assets/logo.jpg';
+import { LockIcon, EyeIcon, EyeClosedIcon } from '@phosphor-icons/react';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -16,7 +17,7 @@ const Register = () => {
         birthDate: '',
         email: '',
         password: '',
-        sex: 'HOMBRE',
+        sex: '',
         phone: '',
         address: '',
         city: '',
@@ -25,16 +26,34 @@ const Register = () => {
         liderDoceId: '',
         dataPolicyAccepted: false,
         dataTreatmentAuthorized: false,
-        minorConsentAuthorized: false
+        minorConsentAuthorized: false,
+        captchaAnswer: ''
     });
     const [lideresDoce, setLideresDoce] = useState([]);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [captcha, setCaptcha] = useState({ num1: 0, num2: 0, operator: '+' });
     const { register } = useAuth();
     const navigate = useNavigate();
 
+    // Generate random captcha
+    const generateCaptcha = () => {
+        const operators = ['+', '-'];
+        const operator = operators[Math.floor(Math.random() * operators.length)];
+        let num1 = Math.floor(Math.random() * 9) + 1;
+        let num2 = Math.floor(Math.random() * 8) + 1;
+        
+        // Ensure subtraction doesn't result in negative
+        if (operator === '-' && num2 > num1) {
+            [num1, num2] = [num2, num1];
+        }
+        
+        setCaptcha({ num1, num2, operator });
+        setFormData({ ...formData, captchaAnswer: '' });
+    };
+
     // Fetch public leaders (LIDER_DOCE) for the dropdown
-    useState(() => {
+    useEffect(() => {
         const fetchLeaders = async () => {
             try {
                 const response = await api.get('/auth/leaders');
@@ -44,6 +63,7 @@ const Register = () => {
             }
         };
         fetchLeaders();
+        generateCaptcha();
     }, []);
 
     const calculateAge = (birthDate) => {
@@ -67,6 +87,18 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        // Verify captcha
+        const expectedAnswer = captcha.operator === '+' 
+            ? captcha.num1 + captcha.num2 
+            : captcha.num1 - captcha.num2;
+        
+        if (parseInt(formData.captchaAnswer) !== expectedAnswer) {
+            setError('Por favor resuelve correctamente el captcha');
+            generateCaptcha();
+            return;
+        }
+
         const validation = validatePassword(formData.password, { email: formData.email, fullName: formData.fullName });
         if (!validation.isValid) {
             setError(validation.message);
@@ -78,11 +110,12 @@ const Register = () => {
             navigate('/');
         } else {
             setError(result.message);
+            generateCaptcha();
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="min-h-[100dvh] bg-gray-900 flex items-center justify-center p-4">
             <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md md:max-w-4xl border border-gray-700 max-h-[90vh] overflow-y-auto">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-bold text-white">Crear Cuenta</h2>
@@ -107,6 +140,7 @@ const Register = () => {
                                         value={formData.documentType}
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        required
                                     >
                                         <option value="">Seleccionar...</option>
                                         <option value="RC">RC</option>
@@ -126,6 +160,7 @@ const Register = () => {
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                         placeholder="12345678"
+                                        required
                                     />
                                 </div>
                             </div>
@@ -154,20 +189,21 @@ const Register = () => {
                                     value={formData.birthDate}
                                     onChange={handleChange}
                                     className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    required
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
+                                    <Envelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                                     <input
                                         type="email"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        placeholder="tu@email.com"
+                                        placeholder="tu_email@email.com"
                                         required
                                     />
                                 </div>
@@ -179,7 +215,7 @@ const Register = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Contraseña</label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
+                                    <LockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         name="password"
@@ -194,7 +230,7 @@ const Register = () => {
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                                     >
-                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        {showPassword ? <EyeClosedIcon size={20} /> : <EyeIcon size={20} />}
                                     </button>
                                 </div>
                                 {formData.password && (
@@ -228,6 +264,7 @@ const Register = () => {
                                         value={formData.sex}
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        required
                                     >
                                         <option value="HOMBRE">Hombre</option>
                                         <option value="MUJER">Mujer</option>
@@ -242,6 +279,7 @@ const Register = () => {
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                         placeholder="Teléfono"
+                                        required
                                     />
                                 </div>
                             </div>
@@ -256,6 +294,7 @@ const Register = () => {
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                         placeholder="Dirección"
+                                        required
                                     />
                                 </div>
                                 <div>
@@ -266,7 +305,8 @@ const Register = () => {
                                         value={formData.city}
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        placeholder="Ciudad"
+                                        placeholder="Manizales"
+                                        required
                                     />
                                 </div>
                             </div>
@@ -279,6 +319,7 @@ const Register = () => {
                                         value={formData.maritalStatus}
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        required
                                     >
                                         <option value="">Seleccione...</option>
                                         <option value="SOLTERO">Soltero/a</option>
@@ -296,12 +337,14 @@ const Register = () => {
                                         value={formData.network}
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        required
                                     >
                                         <option value="">Seleccione...</option>
                                         <option value="MUJERES">Mujeres</option>
                                         <option value="HOMBRES">Hombres</option>
-                                        <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
+                                        <option value="KIDS">Kids (5 a 10 años)</option>
                                         <option value="ROCAS">Rocas (11 a 13 años)</option>
+                                        <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
                                     </select>
                                 </div>
                             </div>
@@ -313,6 +356,7 @@ const Register = () => {
                                     value={formData.liderDoceId}
                                     onChange={handleChange}
                                     className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    required
                                 >
                                     <option value="">-- Selecciona tu líder --</option>
                                     {lideresDoce.map(leader => (
@@ -323,6 +367,36 @@ const Register = () => {
                                 </select>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Captcha */}
+                    <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-700/50">
+                        <label className="block text-sm font-medium text-gray-400 mb-3">Verificación de Seguridad</label>
+                        <div className="flex items-center gap-3">
+                            <div className="bg-gray-800/50 px-3 py-2 rounded-lg border border-gray-600/50">
+                                <span className="text-white font-medium text-sm">
+                                    {captcha.num1} {captcha.operator} {captcha.num2} = ?
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={generateCaptcha}
+                                className="p-2 text-gray-500 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+                                title="Generar nuevo captcha"
+                            >
+                                <ArrowsClockwiseIcon size={16} />
+                            </button>
+                            <input
+                                type="text"
+                                name="captchaAnswer"
+                                value={formData.captchaAnswer}
+                                onChange={handleChange}
+                                placeholder="Respuesta"
+                                className="flex-1 bg-gray-800/50 border border-gray-600/50 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                                required
+                            />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Resuelve la operación para continuar</p>
                     </div>
 
                     {/* Data Authorization Checks */}

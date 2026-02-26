@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, DollarSign, CheckCircle, XCircle, Trash2, Calendar, BookOpen, FileText, Edit2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, MoneyIcon, CheckCircle, XCircle, Trash, Calendar, BookOpen, PenIcon, FileTextIcon  } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -267,7 +267,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         onClick={openEditModal}
                         className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
-                        <Edit2 size={20} />
+                        <PenIcon  size={20} />
                         <span>Editar Encuentro</span>
                     </button>
                 )}
@@ -325,7 +325,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                             }`}
                     >
-                        <FileText size={18} className="mr-2" />
+                        <FileTextIcon  size={18} className="mr-2" />
                         Reporte Financiero
                     </button>
                 </nav>
@@ -420,7 +420,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"
                                                         title="Abonar"
                                                     >
-                                                        <DollarSign size={16} className="mr-1" />
+                                                        <MoneyIcon size={16} className="mr-1" />
                                                         Abonar
                                                     </button>
                                                 )}
@@ -442,7 +442,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                                 className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
                                                                 title="Eliminar Registro"
                                                             >
-                                                                <Trash2 size={16} />
+                                                                <Trash size={16} />
                                                             </button>
                                                         )}
                                                     </>

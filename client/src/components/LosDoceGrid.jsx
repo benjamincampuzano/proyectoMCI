@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, ChevronRight } from 'lucide-react';
+import { Users, CaretRight } from '@phosphor-icons/react';
 
 const LosDoceGrid = React.memo(({ losDoce, onSelectLeader }) => {
     const [selectedId, setSelectedId] = useState(null);
@@ -57,7 +57,7 @@ const LosDoceGrid = React.memo(({ losDoce, onSelectLeader }) => {
                                         : 'Líder 12'}
                             </span>
                         </div>
-                        <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-transform ${selectedId === leader.id ? 'text-blue-500 transform rotate-90' : 'text-gray-400'}`} />
+                        <CaretRight className={`w-4 h-4 flex-shrink-0 transition-transform ${selectedId === leader.id ? 'text-blue-500 transform rotate-90' : 'text-gray-400'}`} />
                     </div>
                 </div>
             ))}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Trash2, ExternalLink, Loader, Shield } from 'lucide-react';
+import { FileTextIcon, Plus, Trash, ArrowSquareOut, Spinner, ShieldCheck, LinkIcon } from '@phosphor-icons/react';
 import { PageHeader, Button } from '../components/ui';
 import ActionModal from '../components/ActionModal';
 import api from '../utils/api';
@@ -61,7 +61,7 @@ const LegalDocuments = () => {
             <PageHeader
                 title="Documentos Legales"
                 description="Sección de políticas y autorizaciones para el tratamiento de datos personales."
-                icon={Shield}
+                icon={ShieldCheck}
                 action={isAdmin() && (
                     <Button
                         variant="primary"
@@ -82,13 +82,13 @@ const LegalDocuments = () => {
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                    <Loader className="animate-spin text-blue-500" size={40} />
+                    <Spinner className="animate-spin text-blue-500" size={40} />
                     <p className="text-gray-500 dark:text-gray-400 animate-pulse">Cargando documentos...</p>
                 </div>
             ) : documents.length === 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 border border-gray-200 dark:border-gray-700 text-center space-y-4 shadow-sm">
                     <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto text-gray-400">
-                        <FileText size={32} />
+                        <FileTextIcon size={32} />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">No hay documentos cargados</h3>
                     <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
@@ -109,14 +109,14 @@ const LegalDocuments = () => {
                                         className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                         title="Eliminar documento"
                                     >
-                                        <Trash2 size={18} />
+                                        <Trash size={18} />
                                     </button>
                                 )}
                             </div>
 
                             <div className="flex flex-col h-full space-y-4">
                                 <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-                                    <FileText size={24} />
+                                    <FileTextIcon size={24} />
                                 </div>
                                 <div className="space-y-1">
                                     <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
@@ -133,7 +133,7 @@ const LegalDocuments = () => {
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium hover:underline text-sm"
                                     >
-                                        <ExternalLink size={16} />
+                                        <LinkIcon size={16} />
                                         Ver Documento
                                     </a>
                                 </div>
@@ -189,7 +189,7 @@ const LegalDocuments = () => {
                         >
                             {submitting ? (
                                 <div className="flex items-center gap-2">
-                                    <Loader className="animate-spin" size={18} />
+                                    <Spinner className="animate-spin" size={18} />
                                     <span>Subiendo...</span>
                                 </div>
                             ) : 'Agregar Documento'}

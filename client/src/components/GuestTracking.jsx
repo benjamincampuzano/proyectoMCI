@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone, Home, User, MessageSquare, MessageCircle, AlertCircle, Plus, History, X, Clock, CheckCircle2 } from 'lucide-react';
+import { Phone, House, User, WhatsappLogoIcon,ChatCircle, ChatCircleDots, Warning, Plus, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -143,12 +143,12 @@ const GuestTracking = () => {
                                                         className="ml-2 p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                                                         title="Enviar WhatsApp"
                                                     >
-                                                        <MessageCircle className="w-4 h-4" />
+                                                        <WhatsappLogoIcon className="w-4 h-4" />
                                                     </a>
                                                 )}
                                             </div>
                                             <div className="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-300">
-                                                <Home className="w-4 h-4 mr-2 text-gray-400" />
+                                                <House className="w-4 h-4 mr-2 text-gray-400" />
                                                 {guest.address || 'N/A'}
                                             </div>
                                         </td>
@@ -158,7 +158,7 @@ const GuestTracking = () => {
                                                 {guest.invitedBy?.fullName}
                                             </div>
                                             <div className="flex items-start mt-1 text-sm text-gray-500 dark:text-gray-400 italic">
-                                                <MessageSquare className="w-4 h-4 mr-2 mt-0.5 text-gray-400" />
+                                                <HandsPrayingIcon className="w-4 h-4 mr-2 mt-0.5 text-gray-400" />
                                                 {guest.prayerRequest || 'Sin petición'}
                                             </div>
                                         </td>
@@ -216,7 +216,7 @@ const GuestTracking = () => {
                                                 className="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                                 title="Ver historial"
                                             >
-                                                <History className="w-5 h-5" />
+                                                <ClockCounterClockwiseIcon className="w-5 h-5" />
                                             </button>
                                         </td>
                                     </tr>
@@ -275,7 +275,7 @@ const GuestTracking = () => {
                                 onClick={handleAction}
                                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm flex items-center gap-2"
                             >
-                                <CheckCircle2 className="w-4 h-4" />
+                                <CheckCircle className="w-4 h-4" />
                                 Guardar Registro
                             </button>
                         </div>
@@ -331,7 +331,7 @@ const GuestTracking = () => {
                             {/* Visits History */}
                             <div>
                                 <h4 className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-                                    <Home className="w-4 h-4 text-blue-500" />
+                                    <House className="w-4 h-4 text-blue-500" />
                                     Visitas Realizadas ({selectedGuest.visits?.length || 0})
                                 </h4>
                                 <div className="space-y-4">

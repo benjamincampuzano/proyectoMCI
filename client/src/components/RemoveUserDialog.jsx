@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, AlertTriangle, Loader2, UserMinus } from 'lucide-react';
+import { X, Warning, Spinner, UserMinus, WarningIcon} from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
@@ -48,7 +48,7 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b">
                     <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        <AlertTriangle className="w-6 h-6 text-orange-600" />
+                        <WarningIcon className="w-6 h-6 text-orange-600" />
                         Confirmar Eliminación
                     </h2>
                     <button
@@ -87,7 +87,7 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
                     {/* Warning */}
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
                         <div className="flex gap-3">
-                            <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                            <WarningIcon className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-orange-800">
                                 <p className="font-semibold mb-1">Importante:</p>
                                 <p>

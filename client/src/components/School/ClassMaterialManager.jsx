@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { X, FileText, Video, HelpCircle, Save, Plus, Trash } from 'lucide-react';
+import { X, File, Video, Question, FloppyDisk, Plus, Trash } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { Button } from '../ui';
 
@@ -83,7 +83,7 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose }) => {
                     {/* Description */}
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <FileText size={16} className="text-blue-500" />
+                            <FileTextIcon size={16} className="text-blue-500" />
                             Descripción / Guía de la Clase
                         </label>
                         <textarea
@@ -97,7 +97,7 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose }) => {
 
                     {/* Links Section */}
                     {[
-                        { label: 'Documentos (URLs)', field: 'documents', icon: <FileText size={16} />, color: 'text-orange-500', placeholder: 'https://docs.google.com/...' },
+                        { label: 'Documentos (URLs)', field: 'documents', icon: <FileTextIcon size={16} />, color: 'text-orange-500', placeholder: 'https://docs.google.com/...' },
                         { label: 'Videos (YouTube/Vimeo)', field: 'videoLinks', icon: <Video size={16} />, color: 'text-red-500', placeholder: 'https://youtube.com/watch?v=...' },
                         { label: 'Cuestionarios (Forms/Quiz)', field: 'quizLinks', icon: <HelpCircle size={16} />, color: 'text-purple-500', placeholder: 'https://forms.gle/...' }
                     ].map((section) => (

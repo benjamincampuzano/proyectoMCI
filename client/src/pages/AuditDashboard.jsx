@@ -3,10 +3,9 @@ import {
     LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
     Legend, ResponsiveContainer, BarChart, Bar, Cell as ReCell, PieChart, Pie
 } from 'recharts';
-import {
-    Activity, User, Calendar, Filter, Search, Download, Trash2,
-    Edit, PlusCircle, LogIn, ChevronLeft, ChevronRight, Shield
-} from 'lucide-react';
+import {User, Calendar, FunnelIcon, MagnifyingGlassIcon, Download, Trash,
+    Pen, PlusCircle, CaretCircleDownIcon, ShieldCheck, SignInIcon, PulseIcon, BarbellIcon
+} from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import useAuditDashboard from '../hooks/useAuditDashboard';
 import DataTable from '../components/DataTable';
@@ -170,11 +169,11 @@ const AuditDashboard = () => {
 
     const getActionIcon = (action) => {
         switch (action) {
-            case 'LOGIN': return <LogIn className="text-blue-500" size={18} />;
+            case 'LOGIN': return <SignInIcon className="text-blue-500" size={18} />;
             case 'CREATE': return <PlusCircle className="text-green-500" size={18} />;
-            case 'UPDATE': return <Edit className="text-amber-500" size={18} />;
-            case 'DELETE': return <Trash2 className="text-red-500" size={18} />;
-            default: return <Activity className="text-gray-500" size={18} />;
+            case 'UPDATE': return <Pen className="text-amber-500" size={18} />;
+            case 'DELETE': return <Trash className="text-red-500" size={18} />;
+            default: return <BarbellIcon className="text-gray-500" size={18} />;
         }
     };
 
@@ -286,7 +285,7 @@ const AuditDashboard = () => {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                        <Activity className="text-blue-600" size={32} />
+                        <PulseIcon className="text-blue-600" size={32} />
                         Panel de Auditoría
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-2">
@@ -501,7 +500,7 @@ const AuditDashboard = () => {
                                 onClick={() => setSelectedLog(null)}
                                 className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
                             >
-                                <ChevronRight className="rotate-90" size={20} />
+                                <CaretCircleDownIcon size={20} />
                             </button>
                         </div>
 
@@ -611,7 +610,7 @@ const AuditDashboard = () => {
             {/* Database Tools Section - Admin Only */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                 <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center gap-2">
-                    <Shield size={20} className="text-purple-600" />
+                    <ShieldCheck size={20} className="text-purple-600" />
                     Herramientas de Base de Datos
                 </h3>
 
@@ -637,7 +636,7 @@ const AuditDashboard = () => {
                     {/* Restore Section */}
                     <div className="p-4 border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 rounded-xl">
                         <h4 className="font-medium text-red-800 dark:text-red-300 mb-2 flex items-center gap-2">
-                            <Activity size={18} />
+                            <BarbellIcon size={18} />
                             Restaurar Base de Datos
                         </h4>
                         <p className="text-sm text-red-600 dark:text-red-400 mb-4">

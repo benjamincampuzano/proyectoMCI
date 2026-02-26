@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, Search, CheckCircle, Circle, AlertCircle } from 'lucide-react';
+import { TrendUp, MagnifyingGlass, CheckCircle, Circle, Warning } from '@phosphor-icons/react';
 import api from '../utils/api';
 import { AsyncSearchSelect } from './ui';
 

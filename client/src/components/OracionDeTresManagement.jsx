@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, Calendar, Phone, CheckCircle, Clock, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Users, Calendar, Phone, CheckCircle, Clock, Pen, Trash, X } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -160,14 +160,14 @@ const OracionDeTresManagement = () => {
                                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                         title="Editar Grupo"
                                     >
-                                        <Edit2 size={20} />
+                                        <Pen size={20} />
                                     </button>
                                     <button
                                         onClick={() => handleDeleteGroup(selectedGroup.id)}
                                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                         title="Eliminar Grupo"
                                     >
-                                        <Trash2 size={20} />
+                                        <Trash size={20} />
                                     </button>
                                 </>
                             )}

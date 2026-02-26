@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Save, UserPlus, Trash2, X, AlertCircle } from 'lucide-react';
+import { FloppyDisk, UserPlus, Trash, X, Warning, Pen } from '@phosphor-icons/react';
 import { AsyncSearchSelect, Button } from '../ui';
 
 const CLASSES_COUNT = 12;
@@ -220,7 +220,7 @@ const KidsClassMatrix = ({ courseId }) => {
                                         size="icon"
                                         className="text-red-500 hover:text-red-700"
                                     >
-                                        <Trash2 size={16} />
+                                        <Trash size={16} />
                                     </Button>
                                 </td>
                             </tr>

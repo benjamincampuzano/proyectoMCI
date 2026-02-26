@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Save, AlertCircle } from 'lucide-react';
+import { X, FloppyDisk, Warning } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
@@ -235,7 +235,7 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
                                 <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
                             ) : (
                                 <>
-                                    <Save size={20} />
+                                    <FloppyDisk size={20} />
                                     {initialData ? 'Actualizar Meta' : 'Establecer Objetivo'}
                                 </>
                             )}

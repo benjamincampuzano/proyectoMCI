@@ -54,7 +54,7 @@ const UserManagementRoute = ({ children }) => {
 };
 
 const PageLoader = () => (
-  <div className="flex items-center justify-center h-screen">
+  <div className="flex items-center justify-center min-h-[100dvh]">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
   </div>
 );
@@ -100,7 +100,7 @@ const RouteTransitionHandler = () => {
   return null;
 };
 
-import { Toaster } from 'react-hot-toast';
+// import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
@@ -111,7 +111,7 @@ function App() {
             <ConnectivityHandler />
             <RouteTransitionHandler />
             <LoadingOverlay />
-            <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+            {/* <Toaster position="top-right" toastOptions={{ duration: 4000 }} /> */}
             <Suspense fallback={<TransitionLoader />}>
               <Routes>
                 <Route path="/setup" element={<SetupWizard />} />

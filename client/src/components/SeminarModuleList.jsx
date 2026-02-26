@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, BookOpen } from 'lucide-react';
+import { Plus, Pen, Trash, BookOpen } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -210,14 +210,14 @@ const SeminarModuleList = () => {
                                     onClick={() => handleEdit(module)}
                                     className="p-1 text-blue-600 hover:bg-blue-50 rounded"
                                 >
-                                    <Edit2 className="w-4 h-4" />
+                                    <Pen className="w-4 h-4" />
                                 </button>
                                 {canDelete && (
                                     <button
                                         onClick={() => handleDelete(module.id)}
                                         className="p-1 text-red-600 hover:bg-red-50 rounded"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash className="w-4 h-4" />
                                     </button>
                                 )}
                             </div>

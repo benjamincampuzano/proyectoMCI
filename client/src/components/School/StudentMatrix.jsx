@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Filter, CheckCircle, XCircle, Clock, Users, BookOpen } from 'lucide-react';
+import { MagnifyingGlassIcon, Funnel, CheckCircle, XCircle, Clock, Users, BookOpen } from '@phosphor-icons/react';
 import { Button, Input, AsyncSearchSelect } from '../ui';
 
 const SCHOOL_LEVELS = [
@@ -18,7 +18,7 @@ const StudentMatrix = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedLeader, setSelectedLeader] = useState('');
+    const [selectedLeader, setSelectedLeader] = useState(null);
     const [selectedLevel, setSelectedLevel] = useState('');
 
     useEffect(() => {
@@ -116,7 +116,7 @@ const StudentMatrix = () => {
                             Buscar Estudiante
                         </label>
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                             <Input
                                 placeholder="Buscar por nombre..."
                                 value={searchTerm}
@@ -137,7 +137,7 @@ const StudentMatrix = () => {
                                     .then(res => res.data);
                             }}
                             selectedValue={selectedLeader}
-                            onSelect={(user) => setSelectedLeader(user?.id || '')}
+                            onSelect={(user) => setSelectedLeader(user?.id || null)}
                             placeholder="Todos los líderes..."
                             labelKey="fullName"
                         />

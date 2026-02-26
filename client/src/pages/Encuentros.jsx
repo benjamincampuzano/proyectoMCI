@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, Users, DollarSign, ChevronRight, Trash2, UserCheck, LayoutGrid, List, FileText } from 'lucide-react';
+import { Plus, Calendar, Users, MoneyIcon, CaretRight, Trash, UserCheck, SquaresFour, List, FileTextIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import EncuentroDetails from '../components/EncuentroDetails';
@@ -181,7 +181,7 @@ const Encuentros = () => {
                                                         className="p-1 text-gray-400 hover:text-red-500 transition-colors z-10"
                                                         title="Eliminar Encuentro"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Trash size={16} />
                                                     </button>
                                                 )}
                                             </div>
@@ -207,7 +207,7 @@ const Encuentros = () => {
                                                 {enc._count?.registrations || enc.registrations?.length || 0} Inscritos
                                             </div>
                                             <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <DollarSign size={16} className="mr-2 text-orange-500" />
+                                                <MoneyIcon size={16} className="mr-2 text-orange-500" />
                                                 {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(enc.cost)}
                                             </div>
                                             <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
@@ -309,7 +309,7 @@ const Encuentros = () => {
                                 }`}
                             title="Vista de tarjetas"
                         >
-                            <LayoutGrid size={18} />
+                            <SquaresFour size={18} />
                         </button>
                         <button
                             onClick={() => setViewMode('table')}
@@ -332,7 +332,7 @@ const Encuentros = () => {
                                     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                         >
-                            <FileText size={16} />
+                            <FileTextIcon size={16} />
                             Ver Reporte
                         </button>
                     )}

@@ -5,7 +5,7 @@ import api from '../utils/api';
 import NetworkTree from '../components/NetworkTree';
 import UserActivityList from '../components/UserActivityList';
 import { PageHeader, Button } from '../components/ui';
-import { RefreshCw, Users, Calendar, UserPlus, Phone, ChevronDown } from 'lucide-react';
+import { ArrowsClockwise, Users, Calendar, CaretDown } from '@phosphor-icons/react';
 
 const ConsolidatedStatsReport = lazy(() => import('../components/ConsolidatedStatsReport'));
 
@@ -73,10 +73,14 @@ const Home = () => {
             setNetworkLoading(true);
             setSelectedLeader(leader);
             setError(null);
-            const response = await api.get(`/network/network/${leader.id}`);
+            const response = await api.get(`/network/${leader.id}`);
             setNetwork(response.data);
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            if (err.response?.status === 404) {
+                setError('Líder no encontrado o red no disponible');
+            } else {
+                setError(err.response?.data?.error || err.message);
+            }
         } finally {
             setNetworkLoading(false);
         }
@@ -106,7 +110,7 @@ const Home = () => {
                                 <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
                                     Pastores
                                 </h2>
-                                <Button variant="ghost" size="sm" icon={RefreshCw} onClick={fetchPastores}>
+                                <Button variant="ghost" size="sm" icon={ArrowsClockwise} onClick={fetchPastores}>
                                     Actualizar
                                 </Button>
                             </div>
@@ -124,7 +128,7 @@ const Home = () => {
                                 <span className="text-gray-700 dark:text-gray-300">
                                     Red de: {selectedLeader?.fullName || 'Seleccionar'}
                                 </span>
-                                <ChevronDown className="w-4 h-4" />
+                                <CaretDown className="w-4 h-4" />
                             </button>
                             {showNetworkSelector && (
                                 <div className="absolute top-full mt-1 left-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[200px]">
@@ -146,9 +150,9 @@ const Home = () => {
                     )}
 
                     {networkLoading ? (
-                        <div className="flex items-center justify-center h-[300px] bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="flex items-center justify-center h-[300px] bg-gray-50 dark:bg-gray-800 rounded-2xl">
                             <div className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                <ArrowsClockwise className="w-5 h-5 animate-spin" />
                                 Cargando red de discipulado...
                             </div>
                         </div>
@@ -221,37 +225,37 @@ const Home = () => {
         };
 
         return (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" weight="duotone" />
                         </div>
                         <div>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Total Miembros</p>
-                            <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.total}</p>
+                            <p className="text-2xl font-semibold text-gray-800 dark:text-white">{stats.total}</p>
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                            <Calendar className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                            <Calendar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" weight="duotone" />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Células</p>
-                            <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.cells}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Celulas</p>
+                            <p className="text-2xl font-semibold text-gray-800 dark:text-white">{stats.cells}</p>
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                            <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        <div className="p-2.5 bg-violet-50 dark:bg-violet-900/20 rounded-xl">
+                            <Users className="w-5 h-5 text-violet-600 dark:text-violet-400" weight="duotone" />
                         </div>
                         <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Líderes</p>
-                            <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.leaders}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Lideres</p>
+                            <p className="text-2xl font-semibold text-gray-800 dark:text-white">{stats.leaders}</p>
                         </div>
                     </div>
                 </div>
@@ -291,13 +295,13 @@ const Home = () => {
 
             {/* Quick Actions FAB */}
             {canViewNetwork && (
-                <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-2">
+                <div className="fixed bottom-8 right-8 z-40 flex flex-col gap-3">
                     <Button
                         variant="primary"
                         size="sm"
-                        icon={RefreshCw}
+                        icon={ArrowsClockwise}
                         onClick={refreshNetwork}
-                        className="shadow-lg"
+                        className="shadow-xl"
                     >
                         Actualizar
                     </Button>
@@ -319,7 +323,7 @@ const Home = () => {
                             `}
                         >
                             <span className="flex items-center gap-2">
-                                <Users className="w-5 h-5" />
+                                <Users className="w-5 h-5" weight="duotone" />
                                 Red de Personas
                             </span>
                         </button>
@@ -336,7 +340,7 @@ const Home = () => {
                             `}
                         >
                             <span className="flex items-center gap-2">
-                                <Calendar className="w-5 h-5" />
+                                <Calendar className="w-5 h-5" weight="duotone" />
                                 Actividad y Ministerio
                             </span>
                         </button>
@@ -353,7 +357,7 @@ const Home = () => {
                             `}
                         >
                             <span className="flex items-center gap-2">
-                                <RefreshCw className="w-5 h-5" />
+                                <ArrowsClockwise className="w-5 h-5" weight="duotone" />
                                 Informe General
                             </span>
                         </button>

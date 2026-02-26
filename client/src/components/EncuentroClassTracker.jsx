@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, X, UserPlus } from 'lucide-react';
+import { Check, X, UserPlus } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';

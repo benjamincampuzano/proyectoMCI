@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Settings, Users, LogOut, Shield } from 'lucide-react';
+import { User, Gear, Users, SignOut, ShieldCheck } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 import { DATA_POLICY_URL } from '../constants/policies';
@@ -62,7 +62,7 @@ const UserMenu = ({ onOpenProfile }) => {
                         onClick={() => handleMenuItemClick(onOpenProfile)}
                         className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                     >
-                        <Settings size={18} className="text-gray-500 dark:text-gray-400" />
+                        <Gear size={18} className="text-gray-500 dark:text-gray-400" />
                         <span className="text-sm text-gray-700 dark:text-gray-200">Mi Perfil</span>
                     </button>
 
@@ -72,7 +72,7 @@ const UserMenu = ({ onOpenProfile }) => {
                         rel="noopener noreferrer"
                         className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                     >
-                        <Shield size={18} className="text-gray-500 dark:text-gray-400" />
+                        <ShieldCheck size={18} className="text-gray-500 dark:text-gray-400" />
                         <span className="text-sm text-gray-700 dark:text-gray-200">Política de Datos</span>
                     </a>
 
@@ -101,7 +101,7 @@ const UserMenu = ({ onOpenProfile }) => {
                             onClick={() => handleMenuItemClick(logout)}
                             className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
                         >
-                            <LogOut size={18} className="text-red-500 dark:text-red-400" />
+                            <SignOut size={18} className="text-red-500 dark:text-red-400" />
                             <span className="text-sm text-red-600 dark:text-red-400">Cerrar Sesión</span>
                         </button>
                     </div>

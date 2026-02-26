@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle, Clock, Edit2, Trash2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Pen, Trash } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 
 // Mapeos de colores estáticos para Tailwind
@@ -40,7 +40,7 @@ const getGoalStatus = (goal, percent) => {
 
     const isPastDeadline = deadline && new Date() > deadline;
 
-    if (isMet) return { label: 'CUMPLIÓ', color: 'green', icon: CheckCircle2 };
+    if (isMet) return { label: 'CUMPLIÓ', color: 'green', icon: CheckCircle };
     if (isPastDeadline) return { label: 'NO CUMPLIÓ', color: 'red', icon: XCircle };
     return { label: 'EN PROGRESO', color: 'blue', icon: Clock };
 };
@@ -124,14 +124,14 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
                             className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                             title="Editar"
                         >
-                            <Edit2 size={16} />
+                            <Pen size={16} />
                         </button>
                         <button
                             onClick={() => onDelete(goal.id)}
                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             title="Eliminar"
                         >
-                            <Trash2 size={16} />
+                            <Trash size={16} />
                         </button>
                     </div>
                 </td>

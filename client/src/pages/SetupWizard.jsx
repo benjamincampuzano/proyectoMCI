@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, User, Phone, MapPin, ShieldCheck, ArrowRight, Check, X as XIcon } from 'lucide-react';
+import { Lock, User, Phone, MapPin, ShieldCheck, ArrowRight, Check, X as XIcon, Envelope } from '@phosphor-icons/react';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 
 const SetupWizard = () => {
@@ -58,7 +58,7 @@ const SetupWizard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="min-h-[100dvh] bg-gray-900 flex items-center justify-center p-4">
             <div className="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-2xl md:max-w-4xl border border-gray-700">
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600/20 text-blue-500 rounded-full mb-4">
@@ -155,7 +155,7 @@ const SetupWizard = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Email del Administrador</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
+                                    <Envelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                                     <input
                                         name="email"
                                         type="email"

@@ -28,7 +28,7 @@ const register = async (req, res) => {
                     profile: {
                         create: {
                             fullName,
-                            sex,
+                            ...(sex && (sex === 'HOMBRE' || sex === 'MUJER') ? { sex } : {}),
                             address,
                             city,
                             documentType,

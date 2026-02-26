@@ -2,22 +2,23 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
     Users,
     Calendar,
-    CheckCircle2,
+    CheckCircle,
     Clock,
     BookOpen,
-    Home,
+    House,
     Heart,
-    ChevronRight,
-    Search,
+    CaretRight,
+    MagnifyingGlass,
     Info,
-    PhoneCall,
+    PhoneDisconnect,
     MapPin,
-    Trophy,
+    Medal,
     GraduationCap,
-    Filter,
-    RefreshCw,
-    X
-} from 'lucide-react';
+    Funnel,
+    ArrowsClockwise,
+    X,
+    PhoneCall
+} from '@phosphor-icons/react';
 import api from '../utils/api';
 import Table from './ui/Table';
 import { formatDistanceToNow } from 'date-fns';
@@ -26,7 +27,7 @@ import { Button } from './ui';
 
 const ROLES = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'MIEMBRO'];
 const ASISTENCIA_TIPOS = [
-    { key: 'iglesia', label: 'Iglesia', icon: Home },
+    { key: 'iglesia', label: 'Iglesia', icon: House },
     { key: 'celula', label: 'Célula', icon: Heart },
     { key: 'escuela', label: 'Escuela', icon: BookOpen },
     { key: 'encuentro', label: 'Encuentro', icon: GraduationCap },
@@ -168,7 +169,7 @@ const UserActivityList = () => {
                     ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
                     }`}>
-                    <CheckCircle2 size={14} className={active ? 'animate-pulse' : ''} />
+                    <CheckCircle size={14} className={active ? 'animate-pulse' : ''} />
                     <span className="text-xs font-bold font-mono">{active ? '3 de 3' : 'Sin Grupo'}</span>
                 </div>
             )
@@ -180,7 +181,7 @@ const UserActivityList = () => {
                 <div className="grid grid-cols-5 gap-2 min-w-[200px]">
                     <div className="flex flex-col items-center group relative cursor-default" title="Iglesia">
                         <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded group-hover:scale-110 transition-transform">
-                            <Home size={14} />
+                            <House size={14} />
                         </div>
                         <span className="text-[10px] font-bold mt-1">{asistencias.iglesia}</span>
                     </div>
@@ -312,7 +313,7 @@ const UserActivityList = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                     <div>
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <Trophy className="text-amber-500" size={24} />
+                            <Medal className="text-amber-500" size={24} />
                             Reporte del Ministerio
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Seguimiento en tiempo real de progresos y asistencias</p>
@@ -322,12 +323,12 @@ const UserActivityList = () => {
                         <Button 
                             variant={showFilters ? "primary" : "outline"} 
                             size="sm" 
-                            icon={Filter}
+                            icon={Funnel}
                             onClick={() => setShowFilters(!showFilters)}
                         >
                             Filtros {hasActiveFilters && `(${Object.values(filters).filter(v => v !== '').length + (searchTerm ? 1 : 0)})`}
                         </Button>
-                        <Button variant="ghost" size="sm" icon={RefreshCw} onClick={fetchActivityData}>
+                        <Button variant="ghost" size="sm" icon={ArrowsClockwise} onClick={fetchActivityData}>
                             Actualizar
                         </Button>
                     </div>
@@ -336,7 +337,7 @@ const UserActivityList = () => {
                 {/* Panel de búsqueda y filtros rápidos */}
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                        <Search size={18} />
+                        <MagnifyingGlass size={18} />
                     </div>
                     <input
                         type="text"
@@ -483,7 +484,7 @@ const UserActivityList = () => {
                         )}
                     </span>
                     <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                        <div className="flex items-center gap-1"><Home size={10} /> IG: Iglesia</div>
+                        <div className="flex items-center gap-1"><House size={10} /> IG: Iglesia</div>
                         <div className="flex items-center gap-1"><Heart size={10} /> CE: Célula</div>
                         <div className="flex items-center gap-1"><BookOpen size={10} /> ES: Escuela</div>
                         <div className="flex items-center gap-1"><GraduationCap size={10} /> EN: Encuentro</div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Check, X, Users, Map as MapIcon, MapPin, Clock, Info } from 'lucide-react';
+import { Calendar, Check, X, Users, MapPin, Clock, Info, List, SquaresFourIcon, } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import useCellAttendance from '../hooks/useCellAttendance';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +20,7 @@ const CellAttendance = () => {
         saveAttendance,
     } = useCellAttendance();
     const [showMap, setShowMap] = useState(false);
+    const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
     const { user, isAdmin, hasAnyRole } = useAuth();
 
     // Check if user is a standard member (DISCIPULO or MIEMBRO) without administrative roles
@@ -67,7 +68,7 @@ const CellAttendance = () => {
             <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                        <MapIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <MapPin className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
                         <h3 className="font-bold text-gray-800 dark:text-white">Georreferenciación</h3>
@@ -114,13 +115,39 @@ const CellAttendance = () => {
                         className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     />
                 </div>
-                <button
-                    onClick={handleSubmit}
-                    disabled={saving || !selectedCell || !canEdit}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-                >
-                    {saving ? 'Guardando...' : (!canEdit ? 'Solo Lectura' : 'Guardar Asistencia')}
-                </button>
+                <div className="flex items-center gap-2">
+                    <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                        <button
+                            onClick={() => setViewMode('table')}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                                viewMode === 'table'
+                                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                            }`}
+                            title="Vista de tabla"
+                        >
+                            <List size={18} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('cards')}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                                viewMode === 'cards'
+                                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                            }`}
+                            title="Vista de tarjetas"
+                        >
+                            <SquaresFourIcon size={18} />
+                        </button>
+                    </div>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={saving || !selectedCell || !canEdit}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                    >
+                        {saving ? 'Guardando...' : (!canEdit ? 'Solo Lectura' : 'Guardar Asistencia')}
+                    </button>
+                </div>
             </div>
 
             {/* Cell Basic Info Section */}
@@ -166,7 +193,7 @@ const CellAttendance = () => {
 
             {loading ? (
                 <div className="text-center py-8">Cargando Discípulos...</div>
-            ) : (
+            ) : viewMode === 'table' ? (
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-900/50">
@@ -233,6 +260,68 @@ const CellAttendance = () => {
                             })}
                         </tbody>
                     </table>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {members.map((member) => {
+                        const status = attendances[member.id]; // undefined, 'PRESENTE', 'AUSENTE'
+
+                        return (
+                            <div key={member.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                                            {member.fullName}
+                                        </h3>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            {member.email}
+                                        </p>
+                                    </div>
+                                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                        status === 'PRESENTE' 
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                            : status === 'AUSENTE'
+                                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                                    }`}>
+                                        {status === 'PRESENTE' ? 'Presente' : status === 'AUSENTE' ? 'Ausente' : 'Sin registrar'}
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => toggleAttendance(member.id, 'PRESENTE')}
+                                        disabled={!canEdit}
+                                        className={`
+                                          flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm
+                                          ${status === 'PRESENTE'
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 ring-2 ring-green-500'
+                                                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                            }
+                                            ${!canEdit ? 'cursor-not-allowed opacity-80' : ''}
+                                        `}
+                                    >
+                                        <Check className="w-4 h-4" />
+                                        Presente
+                                    </button>
+                                    <button
+                                        onClick={() => toggleAttendance(member.id, 'AUSENTE')}
+                                        disabled={!canEdit}
+                                        className={`
+                                          flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm
+                                          ${status === 'AUSENTE'
+                                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 ring-2 ring-red-500'
+                                                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                            }
+                                            ${!canEdit ? 'cursor-not-allowed opacity-80' : ''}
+                                        `}
+                                    >
+                                        <X className="w-4 h-4" />
+                                        Ausente
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

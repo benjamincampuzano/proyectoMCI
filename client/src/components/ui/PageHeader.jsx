@@ -1,11 +1,11 @@
 const PageHeader = ({ title, description, action }) => (
-    <div className="flex justify-between items-center mb-6">
+    <div className="flex justify-between items-end mb-8">
         <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-gray-900 dark:text-white mb-2">
                 {title}
             </h1>
             {description && (
-                <p className="text-gray-500 dark:text-gray-400">{description}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-base">{description}</p>
             )}
         </div>
         {action}
