@@ -14,7 +14,7 @@ export default defineConfig({
           vendor: ['react', 'react-dom', 'react-router-dom'],
           charts: ['recharts'],
           maps: ['leaflet', 'react-leaflet'],
-          utils: ['xlsx', 'exceljs']
+          utils: ['xlsx']
         }
       }
     }

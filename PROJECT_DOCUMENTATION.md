@@ -14,7 +14,7 @@ Este documento proporciona una visión general técnica y funcional del sistema 
     *   `axios` (Peticiones HTTP)
     *   `date-fns` (Manejo de fechas)
     *   `lodash` (Utilidades varias)
-    *   `xlsx` / `exceljs` (Exportación de datos)
+    *   `xlsx` (Exportación de datos)
 *   **Visualización:**
     *   `recharts` (Gráficos y estadísticas)
     *   `leaflet` / `react-leaflet` (Mapas)
