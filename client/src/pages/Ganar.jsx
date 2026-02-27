@@ -20,9 +20,11 @@ const Ganar = () => {
 
     const GuestListTab = () => (
         <>
-            {showRegistration && (
-                <GuestRegistrationForm onGuestCreated={handleGuestCreated} />
-            )}
+            <GuestRegistrationForm 
+                isOpen={showRegistration}
+                onClose={() => setShowRegistration(false)}
+                onGuestCreated={handleGuestCreated} 
+            />
             <GuestList refreshTrigger={refreshTrigger} />
         </>
     );

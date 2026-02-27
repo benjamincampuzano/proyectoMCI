@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Warning, Spinner, UserMinus, WarningIcon} from '@phosphor-icons/react';
+import { X, Warning, Spinner, UserMinus } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
@@ -43,17 +43,17 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
     if (!isOpen || !user) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b">
-                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        <WarningIcon className="w-6 h-6 text-orange-600" />
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Warning className="w-6 h-6 text-orange-600" />
                         Confirmar Eliminación
                     </h2>
                     <button
                         onClick={handleClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                         disabled={submitting}
                     >
                         <X className="w-5 h-5" />
@@ -63,14 +63,14 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
                 {/* Content */}
                 <div className="p-6">
                     <div className="mb-4">
-                        <p className="text-gray-700 mb-4">
+                        <p className="text-gray-700 dark:text-gray-300 mb-4">
                             ¿Estás seguro de que deseas remover a este usuario de la red?
                         </p>
 
                         {/* User Info */}
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <h3 className="font-semibold text-gray-800">{user.fullName}</h3>
-                            <p className="text-sm text-gray-600">{user.email}</p>
+                        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">{user.fullName}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
                             <span className={`
                                 inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full
                                 ${user.roles?.includes('ADMIN') ? 'bg-red-100 text-red-800' :
@@ -85,10 +85,10 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
                     </div>
 
                     {/* Warning */}
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-4">
                         <div className="flex gap-3">
-                            <WarningIcon className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm text-orange-800">
+                            <Warning className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-orange-800 dark:text-orange-300">
                                 <p className="font-semibold mb-1">Importante:</p>
                                 <p>
                                     El usuario será removido de esta red. Si el usuario tiene discípulos,
@@ -107,11 +107,11 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t bg-gray-50">
+                <div className="p-6 border-t bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                     <div className="flex justify-end gap-3">
                         <button
                             onClick={handleClose}
-                            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             disabled={submitting}
                         >
                             Cancelar
@@ -123,7 +123,7 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
                         >
                             {submitting ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <Spinner className="w-4 h-4 animate-spin" />
                                     Removiendo...
                                 </>
                             ) : (

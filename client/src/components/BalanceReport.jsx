@@ -9,19 +9,28 @@ const BalanceReport = ({ data, title }) => {
     const [filterCelula, setFilterCelula] = useState('');
 
     // Extract unique filter options
-    const pastors = useMemo(() => [...new Set(data.map(item => item.pastorName).filter(n => n !== 'N/A'))].sort(), [data]);
-    const doces = useMemo(() => [...new Set(data.map(item => item.liderDoceName).filter(n => n !== 'N/A'))].sort(), [data]);
-    const celulas = useMemo(() => [...new Set(data.map(item => item.liderCelulaName).filter(n => n !== 'N/A'))].sort(), [data]);
+    const pastors = useMemo(() => [...new Set(data.map(item => item.pastorName || item.pastor).filter(n => n && n !== 'N/A' && n !== ''))].sort(), [data]);
+    const doces = useMemo(() => [...new Set(data.map(item => item.liderDoceName || item.liderDoce || item.doceName).filter(n => n && n !== 'N/A' && n !== ''))].sort(), [data]);
+    const celulas = useMemo(() => [...new Set(data.map(item => item.liderCelulaName || item.liderCelula || item.celulaName).filter(n => n && n !== 'N/A' && n !== ''))].sort(), [data]);
 
-    // Apply filters
     // Apply filters
     const filteredData = useMemo(() => {
         return data.filter(item => {
-            return (
-                (filterPastor === '' || item.pastorName === filterPastor) &&
-                (filterDoce === '' || item.liderDoceName === filterDoce) &&
-                (filterCelula === '' || item.liderCelulaName === filterCelula)
-            );
+            const pastorMatch = filterPastor === '' || 
+                (item.pastorName === filterPastor) || 
+                (item.pastor === filterPastor);
+            
+            const doceMatch = filterDoce === '' || 
+                (item.liderDoceName === filterDoce) || 
+                (item.liderDoce === filterDoce) || 
+                (item.doceName === filterDoce);
+            
+            const celulaMatch = filterCelula === '' || 
+                (item.liderCelulaName === filterCelula) || 
+                (item.liderCelula === filterCelula) || 
+                (item.celulaName === filterCelula);
+            
+            return pastorMatch && doceMatch && celulaMatch;
         });
     }, [data, filterPastor, filterDoce, filterCelula]);
 
@@ -108,50 +117,48 @@ const BalanceReport = ({ data, title }) => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Esperado</p>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-                                ${totals.cost.toLocaleString()}
-                            </h3>
+                        		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                                <MoneyIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Esperado</span>
                         </div>
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                            <MoneyIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">${totals.cost.toLocaleString()}</span>
+                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Dinero Esperado</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-purple-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                                <MoneyIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Total Recaudado</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">${totals.paid.toLocaleString()}</span>
+                            </div>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Dinero Recaudado</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                                <MoneyIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Saldo Pendiente</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">${totals.balance.toLocaleString()}</span>
+                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Dinero Pendiente</span>
                         </div>
                     </div>
                 </div>
-
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Recaudado</p>
-                            <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
-                                ${totals.paid.toLocaleString()}
-                            </h3>
-                        </div>
-                        <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                            <HandCoinsIcon className="w-5 h-5 text-green-600 dark:text-green-400" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Saldo Pendiente</p>
-                            <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">
-                                ${totals.balance.toLocaleString()}
-                            </h3>
-                        </div>
-                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                            <CreditCardIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Table Header & Export */}
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -198,10 +205,10 @@ const BalanceReport = ({ data, title }) => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="text-xs text-gray-600 dark:text-gray-300">
-                                            <span className="font-semibold">12:</span> {item.liderDoceName}
+                                            <span className="font-semibold">12:</span> {item.liderDoceName || item.liderDoce || item.doceName || 'N/A'}
                                         </div>
                                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                                            <span className="font-semibold">Célula:</span> {item.liderCelulaName}
+                                            <span className="font-semibold">Célula:</span> {item.liderCelulaName || item.liderCelula || item.celulaName || 'N/A'}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-right text-sm text-gray-900 dark:text-white">

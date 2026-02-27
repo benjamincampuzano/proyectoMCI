@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, Users, MoneyIcon, CaretRight, Trash, UserCheck, SquaresFour, List, FileTextIcon } from '@phosphor-icons/react';
+import { Plus, Calendar, Users, MoneyIcon, CaretRight, Trash, UserCheck, SquaresFour, List, FileTextIcon, TrendUpIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import ConventionDetails from '../components/ConventionDetails';
@@ -15,7 +15,7 @@ const Convenciones = () => {
     const [loading, setLoading] = useState(true);
     const [selectedConvention, setSelectedConvention] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
+    const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
 
     // Create Form State
@@ -273,30 +273,62 @@ const Convenciones = () => {
 
             {/* Estadísticas Resumidas */}
             {!showReport && conventions.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Convenciones</p>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stats.total}</p>
+            		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                                <Users size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Convenciones</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{stats.total}</span>
+                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad de Personas</span>
+                        </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Inscritos</p>
-                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{stats.inscritos}</p>
+
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                                <MoneyIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{stats.inscritos}</span>
+                            </div>
+                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Total Inscritos</span>
+                        </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Recaudado</p>
-                        <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                            ${stats.recaudado.toLocaleString()}
-                        </p>
+
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                                <MoneyIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">${stats.recaudado.toLocaleString()}</span>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Dinero Recaudado</span>
+                        </div>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pendiente</p>
-                        <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-                            ${stats.pendiente.toLocaleString()}
-                        </p>
+
+                    <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                                <MoneyIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">${stats.pendiente.toLocaleString()}</span>
+                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Pendiente por Recaudar</span>
+                        </div>
                     </div>
                 </div>
             )}
-
             {/* Toggle de Vista y Reporte */}
             {!showReport && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">

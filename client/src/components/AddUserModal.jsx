@@ -96,22 +96,22 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b">
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <UserPlus className="w-6 h-6 text-blue-600" />
                             Agregar Usuario a la Red
                         </h2>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             Agregar a la red de: <span className="font-semibold">{leaderName}</span>
                         </p>
                     </div>
                     <button
                         onClick={handleClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                         disabled={submitting}
                     >
                         <X className="w-6 h-6" />
@@ -119,7 +119,7 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                 </div>
 
                 {/* Search Bar */}
-                <div className="p-4 border-b">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                     <div className="relative">
                         <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
@@ -127,7 +127,7 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                             placeholder="Buscar por nombre, email o teléfono..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             disabled={loading || submitting}
                         />
                     </div>
@@ -138,7 +138,7 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Spinner className="w-8 h-8 text-blue-600 animate-spin" />
-                            <span className="ml-3 text-gray-600">Cargando usuarios...</span>
+                            <span className="ml-3 text-gray-600 dark:text-gray-400">Cargando usuarios...</span>
                         </div>
                     ) : error ? (
                         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -146,7 +146,7 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                         </div>
                     ) : filteredUsers.length === 0 ? (
                         <div className="text-center py-12">
-                            <p className="text-gray-500">
+                            <p className="text-gray-500 dark:text-gray-400">
                                 {searchTerm ? 'No se encontraron usuarios con ese criterio' : 'No hay usuarios disponibles para agregar'}
                             </p>
                         </div>
@@ -169,10 +169,10 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
-                                            <h3 className="font-semibold text-gray-800">{user.fullName}</h3>
-                                            <p className="text-sm text-gray-600">{user.email}</p>
+                                            <h3 className="font-semibold text-gray-900 dark:text-white">{user.fullName}</h3>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
                                             {user.phone && (
-                                                <p className="text-sm text-gray-500">{user.phone}</p>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">{user.phone}</p>
                                             )}
                                             {(user.pastorId || user.liderDoceId || user.liderCelulaId) && (
                                                 <div className="text-xs text-orange-600 mt-1">
@@ -209,11 +209,11 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t bg-gray-50">
+                <div className="p-6 border-t bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                     <div className="flex justify-end gap-3">
                         <button
                             onClick={handleClose}
-                            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             disabled={submitting}
                         >
                             Cancelar

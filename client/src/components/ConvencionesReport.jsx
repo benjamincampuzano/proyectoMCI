@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { MicrosoftExcelLogoIcon, FunnelIcon, MoneyIcon, Users, CreditCard } from '@phosphor-icons/react';
+import { MicrosoftExcelLogoIcon, FunnelIcon, MoneyIcon, Users, CreditCard, TrendUpIcon, TrendDownIcon,UserCheck } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 
 const ConvencionesReport = ({ conventions }) => {
@@ -111,64 +111,61 @@ const ConvencionesReport = ({ conventions }) => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Convenciones</p>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-                                {filteredData.length}
-                            </h3>
+            		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                                <Users size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Convenciones</span>
                         </div>
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                            <MoneyIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{filteredData.length}</span>
+                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad de Convenciones Creadas</span>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                                <UserCheck size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{filteredData.reduce((acc, conv) => acc + (conv.registeredCount || 0), 0).toLocaleString()}</span>
+                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Total de Consolidados</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                                <TrendUpIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Total Recaudado</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">${totals.paid.toLocaleString()}</span>
+                            </div>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Recaudo Total</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                                <TrendDownIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Total Pendiente</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">${totals.balance.toLocaleString()}</span>
+                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Pendiente por Recaudar</span>
                         </div>
                     </div>
                 </div>
-
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Recaudado</p>
-                            <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
-                                ${totals.paid.toLocaleString()}
-                            </h3>
-                        </div>
-                        <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                            <CreditCard className="w-5 h-5 text-green-600 dark:text-green-400" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Pendiente</p>
-                            <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">
-                                ${totals.balance.toLocaleString()}
-                            </h3>
-                        </div>
-                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                            <MoneyIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Inscritos</p>
-                            <h3 className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-                                {filteredData.reduce((acc, conv) => acc + (conv.registeredCount || 0), 0).toLocaleString()}
-                            </h3>
-                        </div>
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Table Header & Export */}
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">

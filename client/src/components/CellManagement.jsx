@@ -370,13 +370,42 @@ const CellManagement = () => {
                 </div>
             )}
 
-            {/* Create/Edit Form */}
+            {/* Create/Edit Form Modal */}
             {showCreateForm && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
-                        {isEditing ? 'Editar Célula' : 'Nueva Célula'}
-                    </h3>
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                        {/* Header */}
+                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                {isEditing ? 'Editar Célula' : 'Nueva Célula'}
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowCreateForm(false);
+                                    setIsEditing(false);
+                                    setEditingCellId(null);
+                                    setFormData({
+                                        name: '',
+                                        leaderId: '',
+                                        hostId: '',
+                                        liderDoceId: '',
+                                        address: '',
+                                        city: '',
+                                        dayOfWeek: 'Viernes',
+                                        time: '19:00',
+                                        cellType: 'ABIERTA'
+                                    });
+                                }}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de la Célula</label>
                             <input
@@ -495,18 +524,47 @@ const CellManagement = () => {
                             />
                         </div>
 
-                        <div className="md:col-span-2 pt-4">
-                            <Button
-                                type="submit"
-                                disabled={loading}
-                                variant="success"
-                                className="w-full"
-                            >
-                                {loading ? (isEditing ? 'Actualizando...' : 'Creando...') : (isEditing ? 'Actualizar Célula' : 'Guardar Célula')}
-                            </Button>
-                        </div>
+                        {/* The submit button is now in the modal footer */}
                     </form>
                 </div>
+
+                {/* Footer */}
+                <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                    <div className="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setShowCreateForm(false);
+                                setIsEditing(false);
+                                setEditingCellId(null);
+                                setFormData({
+                                    name: '',
+                                    leaderId: '',
+                                    hostId: '',
+                                    liderDoceId: '',
+                                    address: '',
+                                    city: '',
+                                    dayOfWeek: 'Viernes',
+                                    time: '19:00',
+                                    cellType: 'ABIERTA'
+                                });
+                            }}
+                            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <Button
+                            type="submit"
+                            disabled={loading}
+                            variant="success"
+                            className="w-full"
+                        >
+                            {loading ? (isEditing ? 'Actualizando...' : 'Creando...') : (isEditing ? 'Actualizar Célula' : 'Guardar Célula')}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
             )}
 
             <div className="flex flex-col md:flex-row gap-4 items-center">

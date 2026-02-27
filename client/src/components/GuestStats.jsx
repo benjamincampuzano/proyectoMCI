@@ -47,8 +47,23 @@ const GuestStats = () => {
         }
     };
 
+    const calculateMonthlyAverage = () => {
+        if (!stats || !stats.totalGuests || !startDate || !endDate) return 0;
+        
+        // Calculate the number of days in the date range
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        
+        // Calculate months (approximately 30.44 days per month)
+        const months = daysDiff / 30.44;
+        
+        if (months === 0) return 0;
+        
+        return Math.round(stats.totalGuests / months * 10) / 10; // Round to 1 decimal place
+    };
+
     const exportToExcel = () => {
-        if (!stats) return;
 
         // Create workbook
         const wb = XLSX.utils.book_new();
@@ -163,68 +178,62 @@ const GuestStats = () => {
                     </div>
                 ) : stats ? (
                     <>
-                        {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                        <Users className="text-blue-600 dark:text-blue-400" size={20} />
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Total Invitados</p>
-                                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.totalGuests}</p>
-                                    </div>
-                                </div>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                                <Users size={20} />
                             </div>
-
-                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                        <TrendUpIcon className="text-purple-600 dark:text-purple-400" size={20} />
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Pr. Mensual</p>
-                                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.monthlyAverage || 0}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                        <TrendUpIcon className="text-blue-600 dark:text-blue-400" size={20} />
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Nuevos</p>
-                                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.byStatus.NUEVO || 0}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                        <UserCheck className="text-green-600 dark:text-green-400" size={20} />
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Consolidados</p>
-                                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.byStatus.GANADO || 0}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                                        <TrendUpIcon className="text-purple-600 dark:text-purple-400" size={20} />
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Tasa Conversión</p>
-                                        <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.conversionRate}%</p>
-                                    </div>
-                                </div>
-                            </div>
+                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Invitados</span>
                         </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{stats.totalGuests}</span>
+                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Invitados en General</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                                <TrendUpIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Promedio Mensual</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{calculateMonthlyAverage()*100}%</span>
+                            </div>
+                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Promedio de Invitados</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-5 rounded-xl border border-yellow-100 dark:border-yellow-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-yellow-100 dark:bg-yellow-800 rounded-lg text-yellow-600 dark:text-yellow-300">
+                                <TrendUpIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-yellow-800 dark:text-yellow-200 uppercase tracking-tight">Nuevos</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-yellow-900 dark:text-white">{stats.byStatus.NUEVO || 0}</span>
+                            <span className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mt-1">Invitados Nuevos</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                                <UserCheck size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Consolidados</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">{stats.byStatus.GANADO || 0}</span>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Total de Consolidados</span>
+                        </div>
+                    </div>
+                </div>
 
                         {/* Charts */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

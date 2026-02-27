@@ -274,27 +274,48 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             </div>
 
             {/* Stats Dashboard */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Participantes</h3>
-                    <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mt-2">
-                        {encuentro.registrations ? encuentro.registrations.length : 0}
-                    </p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Recaudado</h3>
-                    <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-                        {formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (reg.totalPaid || 0), 0) || 0)}
-                    </p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-                    <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Por Cobrar</h3>
-                    <p className="text-3xl font-bold text-orange-500 dark:text-orange-400 mt-2">
-                        {formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (reg.balance || 0), 0) || 0)}
-                    </p>
-                </div>
-            </div>
+                        		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                                <MoneyIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Inscritos</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white"> {encuentro.registrations ? encuentro.registrations.length : 0}</span>
+                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad Inscritos</span>
+                        </div>
+                    </div>
 
+                    <div className="bg-purple-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                                <MoneyIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">{formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (reg.totalPaid || 0), 0) || 0)}</span>
+                            </div>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Dinero Recaudado</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                                <MoneyIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente por Cobrar</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">{formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (reg.balance || 0), 0) || 0)}</span>
+                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Dinero Pendiente</span>
+                        </div>
+                    </div>
+                </div>
             {/* Tabs */}
             <div className="border-b border-gray-200 dark:border-gray-700">
                 <nav className="-mb-px flex space-x-8 overflow-x-auto">

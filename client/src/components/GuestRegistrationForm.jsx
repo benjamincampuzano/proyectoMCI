@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { FloppyDiskIcon, Spinner, X } from '@phosphor-icons/react';
+import { FloppyDiskIcon, Spinner, X, UserPlus } from '@phosphor-icons/react';
 import { AsyncSearchSelect } from './ui';
 import api from '../utils/api';
 
-const GuestRegistrationForm = ({ onGuestCreated }) => {
+const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
     const [formData, setFormData] = useState({
         documentType: '',
         documentNumber: '',
@@ -109,26 +109,58 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
     // PASTOR no puede crear invitados - mostrar mensaje informativo
     if (currentUser?.roles?.includes('PASTOR')) {
         return (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Registrar Nuevo Invitado</h2>
-                <div className="bg-blue-900/20 border border-blue-500 text-blue-300 px-4 py-3 rounded">
-                    <p className="font-semibold mb-2">Información</p>
-                    <p>Los usuarios con rol PASTOR no pueden crear invitados directamente.</p>
-                    <p className="mt-2">Los invitados deben ser creados por:</p>
-                    <ul className="list-disc list-inside ml-4 mt-1">
-                        <li>LIDER_DOCE</li>
-                        <li>LIDER_CELULA</li>
-                        <li>DISCIPULO</li>
-                    </ul>
-                    <p className="mt-2 text-sm">Puede ver todos los invitados de su red en la lista de invitados.</p>
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
+                    <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Registrar Nuevo Invitado</h3>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        >
+                            <X size={24} />
+                        </button>
+                    </div>
+                    <div className="p-6">
+                        <div className="bg-blue-900/20 border border-blue-500 text-blue-300 px-4 py-3 rounded">
+                            <p className="font-semibold mb-2">Información</p>
+                            <p>Los usuarios con rol PASTOR no pueden crear invitados directamente.</p>
+                            <p className="mt-2">Los invitados deben ser creados por:</p>
+                            <ul className="list-disc list-inside ml-4 mt-1">
+                                <li>LIDER_DOCE</li>
+                                <li>LIDER_CELULA</li>
+                                <li>DISCIPULO</li>
+                            </ul>
+                            <p className="mt-2 text-sm">Puede ver todos los invitados de su red en la lista de invitados.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
+    if (!isOpen) return null;
+
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Registrar Nuevo Invitado</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                {/* Header */}
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <UserPlus className="w-6 h-6 text-blue-600" />
+                        Registrar Nuevo Invitado
+                    </h3>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6">
 
             {error && (
                 <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
@@ -331,32 +363,37 @@ const GuestRegistrationForm = ({ onGuestCreated }) => {
                     </label>
                 </div>
 
-                <div className="flex space-x-3">
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex-1 flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                        {loading ? (
-                            <Loader size={20} className="animate-spin" />
-                        ) : (
-                            <>
-                                <FloppyDiskIcon size={20} />
-                                <span>Registrar Invitado</span>
-                            </>
-                        )}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleReset}
-                        className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-white px-6 py-3 rounded-lg transition-colors border border-gray-200 dark:border-gray-600"
-                    >
-                        <X size={20} />
-                        <span>Limpiar</span>
-                    </button>
+            </form>
                 </div>
-            </form >
-        </div >
+
+                {/* Footer */}
+                <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                    <div className="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            {loading ? (
+                                <Spinner size={20} className="animate-spin" />
+                            ) : (
+                                <>
+                                    <FloppyDiskIcon size={20} />
+                                    <span>Registrar Invitado</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
