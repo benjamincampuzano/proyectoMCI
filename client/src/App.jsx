@@ -9,7 +9,7 @@ import ConnectivityHandler from './components/ConnectivityHandler';
 import LoadingOverlay from './components/LoadingOverlay';
 import TransitionLoader from './components/TransitionLoader';
 import ChangePasswordModal from './components/ChangePasswordModal';
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 // Lazy load pages
 const Login = lazy(() => import('./pages/Login'));
@@ -112,6 +112,7 @@ function App() {
             <ConnectivityHandler />
             <RouteTransitionHandler />
             <LoadingOverlay />
+            <Analytics />
             {/* <Toaster position="top-right" toastOptions={{ duration: 4000 }} /> */}
             <Suspense fallback={<TransitionLoader />}>
               <Routes>
