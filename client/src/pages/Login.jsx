@@ -22,12 +22,12 @@ const Login = () => {
         const operator = operators[Math.floor(Math.random() * operators.length)];
         let num1 = Math.floor(Math.random() * 9) + 1;
         let num2 = Math.floor(Math.random() * 8) + 1;
-        
+
         // Ensure subtraction doesn't result in negative
         if (operator === '-' && num2 > num1) {
             [num1, num2] = [num2, num1];
         }
-        
+
         setCaptcha({ num1, num2, operator });
         setCaptchaAnswer('');
     };
@@ -41,10 +41,10 @@ const Login = () => {
         setError('');
 
         // Verify captcha
-        const expectedAnswer = captcha.operator === '+' 
-            ? captcha.num1 + captcha.num2 
+        const expectedAnswer = captcha.operator === '+'
+            ? captcha.num1 + captcha.num2
             : captcha.num1 - captcha.num2;
-        
+
         if (parseInt(captchaAnswer) !== expectedAnswer) {
             setError('❌ Captcha incorrecto. Por favor resuelve la operación correctamente.');
             generateCaptcha();
@@ -77,7 +77,7 @@ const Login = () => {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-800 via-gray-950 to-gray-950"></div>
             <div className="absolute top-1/4 -left-32 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
             <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl"></div>
-            
+
             <div className="relative bg-gray-900/80 backdrop-blur-xl p-10 rounded-[2rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] border border-gray-800/50 w-full max-w-md">
                 <div className="text-center mb-8">
                     <div className="w-20 h-20 mx-auto mb-6 rounded-2xl overflow-hidden shadow-lg border border-gray-700">
