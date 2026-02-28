@@ -119,12 +119,32 @@ const restoreBackup = async (req, res) => {
 
             return res.status(200).json({ message: "Base de datos restaurada exitosamente" });
         } catch (execError) {
-            console.error("Error al ejecutar pg_restore:", execError.message);
-            if (execError.stderr) console.error("Detalle stderr:", execError.stderr.toString());
+            console.error("❌ Error al ejecutar pg_restore:");
+            console.error("Comando ejecutado:", cmd);
+            console.error("Mensaje de error:", execError.message);
 
-            return res.status(500).json({ 
+            if (execError.stderr) {
+                console.error("Stderr detallado:", execError.stderr.toString());
+            }
+
+            if (execError.stdout) {
+                console.error("Stdout:", execError.stdout.toString());
+            }
+
+            // Verificar si el ejecutable existe
+            const pgRestorePath = findPgExecutable('pg_restore');
+            console.error("Ruta de pg_restore utilizada:", pgRestorePath);
+            console.error("¿pg_restore existe?", fs.existsSync(pgRestorePath));
+
+            // Verificar conexión a la base de datos
+            console.error("DATABASE_URL configurada:", !!DATABASE_URL);
+
+            return res.status(500).json({
                 error: "Error al restaurar la base de datos.",
-                details: execError.stderr ? execError.stderr.toString() : execError.message
+                details: execError.stderr ? execError.stderr.toString() : execError.message,
+                command: cmd,
+                pgRestorePath: pgRestorePath,
+                fileExists: fs.existsSync(filePath)
             });
         }
     } catch (error) {
