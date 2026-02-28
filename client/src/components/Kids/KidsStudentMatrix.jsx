@@ -32,7 +32,7 @@ const KidsStudentMatrix = () => {
         try {
             setLoading(true);
             const res = await api.get('/kids/student-matrix');
-            setStudents(res.data);
+            setStudents(res.data.filter(student => student.enrollments && student.enrollments.length > 0));
         } catch (error) {
             console.error('Error fetching student matrix:', error);
         } finally {

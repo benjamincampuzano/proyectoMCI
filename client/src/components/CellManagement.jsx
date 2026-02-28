@@ -264,8 +264,8 @@ const CellManagement = () => {
                                 hostId: '',
                                 liderDoceId: '',
                                 address: '',
-                                city: '',
-                                dayOfWeek: 'Viernes',
+                                city: 'Manizales',
+                                dayOfWeek: 'Lunes',
                                 time: '19:00',
                                 cellType: 'ABIERTA'
                             });
@@ -314,10 +314,28 @@ const CellManagement = () => {
                                 <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Asignar Discípulo</h4>
                                 <div className="flex gap-2">
                                     <AsyncSearchSelect
-                                        fetchItems={(term) =>
-                                            api.get('/users/search', { params: { search: term } })
-                                                .then(res => res.data)
-                                        }
+                                        fetchItems={async (term) => {
+                                            // Get users from my network
+                                            const networkResponse = await api.get('/users/my-network/all');
+                                            const networkUsers = networkResponse.data;
+
+                                            // Filter out administrators and pastors
+                                            const filteredUsers = networkUsers.filter(user =>
+                                                !user.roles.includes('ADMIN') &&
+                                                !user.roles.includes('PASTOR')
+                                            );
+
+                                            // Filter by search term if provided
+                                            if (term && term.length > 0) {
+                                                const searchTerm = term.toLowerCase();
+                                                return filteredUsers.filter(user =>
+                                                    user.fullName.toLowerCase().includes(searchTerm) ||
+                                                    user.email.toLowerCase().includes(searchTerm)
+                                                );
+                                            }
+
+                                            return filteredUsers;
+                                        }}
                                         selectedValue={selectedMember}
                                         onSelect={setSelectedMember}
                                         labelKey="fullName"
@@ -405,164 +423,163 @@ const CellManagement = () => {
 
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto p-6">
-                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de la Célula</label>
-                            <input
-                                type="text"
-                                required
-                                value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                placeholder="Ej: Célula Centro"
-                            />
+                            <form id="cell-form" onSubmit={handleSubmit} className="space-y-4">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de la Célula</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.name}
+                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        placeholder="Ej: Célula Centro"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Célula</label>
+                                    <select
+                                        required
+                                        value={formData.cellType}
+                                        onChange={e => setFormData({ ...formData, cellType: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    >
+                                        <option value="ABIERTA">Abierta</option>
+                                        <option value="CERRADA">Cerrada</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Líder 12</label>
+                                    <select
+                                        value={formData.liderDoceId}
+                                        onChange={e => setFormData({ ...formData, liderDoceId: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        disabled={currentUser?.roles?.includes('LIDER_DOCE')}
+                                    >
+                                        <option value="">Sin Líder 12</option>
+                                        {eligibleDoceLeaders.map(l => (
+                                            <option key={l.id} value={l.id}>{l.fullName}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Líder de la Célula</label>
+                                    <select
+                                        required
+                                        value={formData.leaderId}
+                                        onChange={e => setFormData({ ...formData, leaderId: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        disabled={currentUser?.roles?.includes('PASTOR')}
+                                    >
+                                        <option value="">Seleccionar Líder</option>
+                                        {eligibleLeaders.map(l => (
+                                            <option key={l.id} value={l.id}>{l.fullName} ({l.role})</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Anfitrión</label>
+                                    <select
+                                        value={formData.hostId}
+                                        onChange={e => setFormData({ ...formData, hostId: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        disabled={!formData.leaderId}
+                                    >
+                                        <option value="">Sin anfitrión</option>
+                                        {eligibleHosts.map(h => (
+                                            <option key={h.id} value={h.id}>{h.fullName} ({h.role})</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Día</label>
+                                    <select
+                                        required
+                                        value={formData.dayOfWeek}
+                                        onChange={e => setFormData({ ...formData, dayOfWeek: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    >
+                                        {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(d => (
+                                            <option key={d} value={d}>{d}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hora</label>
+                                    <input
+                                        type="time"
+                                        required
+                                        value={formData.time}
+                                        onChange={e => setFormData({ ...formData, time: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ciudad</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.city}
+                                        onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.address}
+                                        onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
+                            </form>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Célula</label>
-                            <select
-                                required
-                                value={formData.cellType}
-                                onChange={e => setFormData({ ...formData, cellType: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            >
-                                <option value="ABIERTA">Abierta</option>
-                                <option value="CERRADA">Cerrada</option>
-                            </select>
+                        {/* Footer */}
+                        <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowCreateForm(false);
+                                        setIsEditing(false);
+                                        setEditingCellId(null);
+                                        setFormData({
+                                            name: '',
+                                            leaderId: '',
+                                            hostId: '',
+                                            liderDoceId: '',
+                                            address: '',
+                                            city: '',
+                                            dayOfWeek: 'Viernes',
+                                            time: '19:00',
+                                            cellType: 'ABIERTA'
+                                        });
+                                    }}
+                                    className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <Button
+                                    type="submit"
+                                    form="cell-form"
+                                    disabled={loading}
+                                    variant="success"
+                                    className="w-full"
+                                >
+                                    {loading ? (isEditing ? 'Actualizando...' : 'Creando...') : (isEditing ? 'Actualizar Célula' : 'Guardar Célula')}
+                                </Button>
+                            </div>
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Líder 12</label>
-                            <select
-                                value={formData.liderDoceId}
-                                onChange={e => setFormData({ ...formData, liderDoceId: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                disabled={currentUser?.roles?.includes('LIDER_DOCE')}
-                            >
-                                <option value="">Sin Líder 12</option>
-                                {eligibleDoceLeaders.map(l => (
-                                    <option key={l.id} value={l.id}>{l.fullName}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Líder de la Célula</label>
-                            <select
-                                required
-                                value={formData.leaderId}
-                                onChange={e => setFormData({ ...formData, leaderId: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                disabled={currentUser?.roles?.includes('PASTOR')}
-                            >
-                                <option value="">Seleccionar Líder</option>
-                                {eligibleLeaders.map(l => (
-                                    <option key={l.id} value={l.id}>{l.fullName} ({l.role})</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Anfitrión</label>
-                            <select
-                                value={formData.hostId}
-                                onChange={e => setFormData({ ...formData, hostId: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                disabled={!formData.leaderId}
-                            >
-                                <option value="">Sin anfitrión</option>
-                                {eligibleHosts.map(h => (
-                                    <option key={h.id} value={h.id}>{h.fullName} ({h.role})</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Día</label>
-                            <select
-                                required
-                                value={formData.dayOfWeek}
-                                onChange={e => setFormData({ ...formData, dayOfWeek: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            >
-                                {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(d => (
-                                    <option key={d} value={d}>{d}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hora</label>
-                            <input
-                                type="time"
-                                required
-                                value={formData.time}
-                                onChange={e => setFormData({ ...formData, time: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ciudad</label>
-                            <input
-                                type="text"
-                                required
-                                value={formData.city}
-                                onChange={e => setFormData({ ...formData, city: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
-                            <input
-                                type="text"
-                                required
-                                value={formData.address}
-                                onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
-                        </div>
-
-                        {/* The submit button is now in the modal footer */}
-                    </form>
-                </div>
-
-                {/* Footer */}
-                <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                    <div className="flex justify-end gap-3">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setShowCreateForm(false);
-                                setIsEditing(false);
-                                setEditingCellId(null);
-                                setFormData({
-                                    name: '',
-                                    leaderId: '',
-                                    hostId: '',
-                                    liderDoceId: '',
-                                    address: '',
-                                    city: '',
-                                    dayOfWeek: 'Viernes',
-                                    time: '19:00',
-                                    cellType: 'ABIERTA'
-                                });
-                            }}
-                            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <Button
-                            type="submit"
-                            disabled={loading}
-                            variant="success"
-                            className="w-full"
-                        >
-                            {loading ? (isEditing ? 'Actualizando...' : 'Creando...') : (isEditing ? 'Actualizar Célula' : 'Guardar Célula')}
-                        </Button>
-                    </div>
-                </div>
             </div>
         </div>
             )}

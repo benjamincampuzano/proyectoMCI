@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Eye, EyeSlash, CheckCircle, XCircle, Warning } from '@phosphor-icons/react';
+import { Lock, Eye, EyeClosedIcon, CheckCircle, XCircle, WarningIcon } from '@phosphor-icons/react';
 
 const validatePassword = (password, email = '', fullName = '') => {
     const requirements = [];
@@ -115,7 +115,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
                 <div className="p-6 border-b border-gray-700">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-yellow-500/20 rounded-lg">
-                            <AlertTriangle className="w-6 h-6 text-yellow-500" />
+                            <WarningIcon className="w-6 h-6 text-yellow-500" />
                         </div>
                         <div>
                             <h2 className="text-xl font-bold text-white">Cambio de Contraseña Requerido</h2>
@@ -150,7 +150,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
                                 onClick={() => setShowCurrent(!showCurrent)}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                             >
-                                {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showCurrent ? <Eye size={18} /> : <EyeClosedIcon size={18} />}
                             </button>
                         </div>
                     </div>
@@ -174,7 +174,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
                                 onClick={() => setShowNew(!showNew)}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                             >
-                                {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showNew ? <Eye size={18} /> : <EyeClosedIcon size={18} />}
                             </button>
                         </div>
                     </div>
@@ -198,7 +198,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
                                 onClick={() => setShowConfirm(!showConfirm)}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                             >
-                                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showConfirm ? <Eye size={18} /> : <EyeClosedIcon size={18} />}
                             </button>
                         </div>
                     </div>

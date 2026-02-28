@@ -22,13 +22,24 @@ const Home = () => {
     const [showNetworkSelector, setShowNetworkSelector] = useState(false);
 
     useEffect(() => {
+        console.log('Home useEffect triggered, user:', user);
+        console.log('User roles:', user?.roles);
+        console.log('isSuperAdmin():', isSuperAdmin());
+        console.log('hasAnyRole([PASTOR]):', hasAnyRole(['PASTOR']));
+        
         if (isSuperAdmin()) {
+            console.log('Fetching pastores (SuperAdmin)');
             fetchPastores();
         } else if (hasAnyRole(['PASTOR'])) {
-            fetchLideresDoce(user.id);
-        } else if (hasAnyRole(['LIDER_DOCE'])) {
+            console.log('Auto-selecting pastor (PASTOR)');
             handleSelectLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
+            setLoading(false); // Add this line to fix loading state
+        } else if (hasAnyRole(['LIDER_DOCE'])) {
+            console.log('Auto-selecting leader (LIDER_DOCE)');
+            handleSelectLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
+            setLoading(false); // Add this line to fix loading state
         } else if (hasAnyRole(['LIDER_CELULA', 'DISCIPULO'])) {
+            console.log('Auto-selecting leader (LIDER_CELULA/DISCIPULO)');
             let leaderId = user.id;
             if (hasRole('DISCIPULO')) {
                 leaderId = user.liderCelulaId || user.liderDoceId || user.pastorId || user.id;
@@ -36,6 +47,7 @@ const Home = () => {
             handleSelectLeader({ id: leaderId, fullName: user.fullName, roles: user.roles });
             setLoading(false);
         } else {
+            console.log('No matching role, setting loading to false');
             setLoading(false);
         }
     }, [user]);
@@ -43,26 +55,34 @@ const Home = () => {
     const fetchPastores = async () => {
         try {
             setLoading(true);
+            console.log('Fetching pastores...');
             const response = await api.get('/network/pastores');
+            console.log('Pastores response:', response.data);
             setPastores(response.data);
         } catch (err) {
+            console.error('Error fetching pastores:', err);
             setError(err.response?.data?.message || err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchLideresDoce = async (pastorId) => {
+    const fetchLideresDoce = async () => {
         try {
             setLoading(true);
+            console.log('Fetching lideres doce...');
             const response = await api.get('/network/los-doce');
+            console.log('Lideres doce response:', response.data);
             setLideresDoce(response.data);
             if (response.data.length > 0) {
+                console.log('Auto-selecting first leader:', response.data[0]);
                 handleSelectLeader({ id: response.data[0].id, fullName: response.data[0].fullName, roles: ['LIDER_DOCE'] });
             } else {
+                console.log('No lideres doce found');
                 setLoading(false);
             }
         } catch (err) {
+            console.error('Error fetching lideres doce:', err);
             setError(err.response?.data?.message || err.message);
             setLoading(false);
         }
@@ -73,9 +93,12 @@ const Home = () => {
             setNetworkLoading(true);
             setSelectedLeader(leader);
             setError(null);
+            console.log('Fetching network for leader:', leader);
             const response = await api.get(`/network/${leader.id}`);
+            console.log('Network API response:', response.data);
             setNetwork(response.data);
         } catch (err) {
+            console.error('Error fetching network:', err);
             if (err.response?.status === 404) {
                 setError('Líder no encontrado o red no disponible');
             } else {
@@ -94,6 +117,39 @@ const Home = () => {
         }
     };
 
+    const renderQuickStats = () => {
+        // Enhanced debugging to see complete data structure
+        console.log('Complete network data:', JSON.stringify(network, null, 2));
+        console.log('Network type:', typeof network);
+        console.log('Network keys:', network ? Object.keys(network) : 'null');
+        
+        // Try different possible field names for the data
+        const stats = {
+            total: network?.totalMembers || network?.memberCount || network?.members?.length || network?.total || 0,
+            cells: network?.cells?.length || network?.cellCount || network?.celulas?.length || network?.cells_count || 0,
+            leaders: network?.children?.length || network?.leaders?.length || network?.lideres?.length || network?.leaders_count || 0
+        };
+
+        console.log('Calculated stats:', stats);
+        console.log('Total members sources:', {
+            totalMembers: network?.totalMembers,
+            memberCount: network?.memberCount,
+            membersLength: network?.members?.length,
+            total: network?.total
+        });
+        console.log('Cells sources:', {
+            cellsLength: network?.cells?.length,
+            cellCount: network?.cellCount,
+            celulasLength: network?.celulas?.length,
+            cells_count: network?.cells_count
+        });
+        console.log('Leaders sources:', {
+            childrenLength: network?.children?.length,
+            leadersLength: network?.leaders?.length,
+            lideresLength: network?.lideres?.length,
+            leaders_count: network?.leaders_count
+        });
+    };
     const canViewNetwork = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO']);
     const canViewReport = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
     const isAdminOrPastor = isSuperAdmin() || hasAnyRole(['PASTOR']);
@@ -211,56 +267,6 @@ const Home = () => {
                 </div>
             );
         }
-
-        return null;
-    };
-
-    const renderQuickStats = () => {
-        if (!network) return null;
-        
-        const stats = {
-            total: network.totalMembers || 0,
-            cells: network.cells?.length || 0,
-            leaders: network.children?.length || 0
-        };
-
-        return (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                            <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" weight="duotone" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Total Miembros</p>
-                            <p className="text-2xl font-semibold text-gray-800 dark:text-white">{stats.total}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
-                            <Calendar className="w-5 h-5 text-emerald-600 dark:text-emerald-400" weight="duotone" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Celulas</p>
-                            <p className="text-2xl font-semibold text-gray-800 dark:text-white">{stats.cells}</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-violet-50 dark:bg-violet-900/20 rounded-xl">
-                            <Users className="w-5 h-5 text-violet-600 dark:text-violet-400" weight="duotone" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Lideres</p>
-                            <p className="text-2xl font-semibold text-gray-800 dark:text-white">{stats.leaders}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
     };
 
     if (loading) {

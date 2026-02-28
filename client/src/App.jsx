@@ -9,7 +9,6 @@ import ConnectivityHandler from './components/ConnectivityHandler';
 import LoadingOverlay from './components/LoadingOverlay';
 import TransitionLoader from './components/TransitionLoader';
 import ChangePasswordModal from './components/ChangePasswordModal';
-import { Analytics } from "@vercel/analytics/next"
 
 // Lazy load pages
 const Login = lazy(() => import('./pages/Login'));

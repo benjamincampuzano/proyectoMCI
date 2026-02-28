@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Users } from '@phosphor-icons/react';
+import { useAuth } from '../context/AuthContext';
 import TabNavigator from '../components/TabNavigator';
 import GuestRegistrationForm from '../components/GuestRegistrationForm';
 import GuestList from '../components/GuestList';
@@ -9,8 +10,12 @@ import { PageHeader, Button } from '../components/ui';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 
 const Ganar = () => {
+    const { user, hasRole } = useAuth();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showRegistration, setShowRegistration] = useState(false);
+
+    // Check if user is pastor
+    const isPastor = hasRole(ROLES.PASTOR);
 
     const handleGuestCreated = () => {
         // Trigger refresh of guest list and hide form
@@ -20,11 +25,14 @@ const Ganar = () => {
 
     const GuestListTab = () => (
         <>
-            <GuestRegistrationForm 
-                isOpen={showRegistration}
-                onClose={() => setShowRegistration(false)}
-                onGuestCreated={handleGuestCreated} 
-            />
+            {/* Only show registration form for non-pastor roles */}
+            {!isPastor && (
+                <GuestRegistrationForm 
+                    isOpen={showRegistration}
+                    onClose={() => setShowRegistration(false)}
+                    onGuestCreated={handleGuestCreated} 
+                />
+            )}
             <GuestList refreshTrigger={refreshTrigger} />
         </>
     );
@@ -54,10 +62,12 @@ const Ganar = () => {
                 description="Registro y seguimiento de invitados"
                 action={activeTab === 'list' && (
                     <Button
-                        variant={showRegistration ? 'error' : 'primary'}
-                        onClick={() => setShowRegistration(!showRegistration)}
+                        variant={isPastor ? 'outline' : (showRegistration ? 'error' : 'primary')}
+                        onClick={() => !isPastor && setShowRegistration(!showRegistration)}
+                        disabled={isPastor}
+                        className={isPastor ? 'opacity-50 cursor-not-allowed' : ''}
                     >
-                        {showRegistration ? 'Cancelar Registro' : 'Registrar Nuevo Invitado'}
+                        {isPastor ? 'Registro no disponible para Pastores' : (showRegistration ? 'Cancelar Registro' : 'Registrar Nuevo Invitado')}
                     </Button>
                 )}
             />

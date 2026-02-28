@@ -22,14 +22,14 @@ router.put('/profile', authenticate, updateProfile);
 router.put('/password', authenticate, changePassword);
 
 // Dedicated search endpoint for internal leaders (Must be before /:id)
-// Allows ADMIN, PASTOR, LIDER_DOCE (excludes LIDER_CELULA per user request)
+// Allows ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA
 router.get('/search', authenticate, (req, res, next) => {
     // Custom inline middleware for specific role check
     const roles = req.user.roles || [];
-    if (roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
+    if (roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
         next();
     } else {
-        res.status(403).json({ message: 'Access denied. Requires leadership role (Pastor/Doce).' });
+        res.status(403).json({ message: 'Access denied. Requires leadership role.' });
     }
 }, searchUsers);
 

@@ -67,7 +67,7 @@ const EncuentroTable = ({ encuentros, onSelect, onDelete, canModify }) => {
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
-                                                onClick={() => onSelect(enc)}
+                                                onClick={() => onSelect(enc.id)}
                                                 className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                                                 title="Ver detalles"
                                             >

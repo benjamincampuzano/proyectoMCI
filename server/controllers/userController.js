@@ -802,7 +802,7 @@ const searchPublicUsers = async (req, res) => {
 // Internal search for coordinators (Pastors/Doce)
 const searchUsers = async (req, res) => {
     try {
-        const { search, role } = req.query;
+        const { search, role, excludeRoles } = req.query;
         // Basic check: current user must be at least LIDER_DOCE, PASTOR, or ADMIN (enforced by route middleware)
 
         const where = {};
@@ -818,6 +818,16 @@ const searchUsers = async (req, res) => {
             where.roles = {
                 some: {
                     role: { name: role }
+                }
+            };
+        }
+
+        if (excludeRoles) {
+            const rolesToExclude = excludeRoles.split(',');
+            where.roles = {
+                ...where.roles,
+                none: {
+                    role: { name: { in: rolesToExclude } }
                 }
             };
         }

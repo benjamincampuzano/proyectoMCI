@@ -140,35 +140,21 @@ const getEligibleLeaders = async (req, res) => {
         const userId = parseInt(id);
         let where = {};
 
-        if (roles.includes('ADMIN')) {
-            where = {
-                roles: {
-                    some: {
-                        role: {
-                            name: { in: ['LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'] }
-                        }
-                    },
-                    none: {
-                        role: { name: 'ADMIN' }
+        // Apply network filtering for ALL users, regardless of role
+        const networkIds = await getUserNetwork(userId);
+        where = {
+            id: { in: [...networkIds, userId] },
+            roles: {
+                some: {
+                    role: {
+                        name: { in: ['LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'] }
                     }
+                },
+                none: {
+                    role: { name: 'ADMIN' }
                 }
-            };
-        } else {
-            const networkIds = await getUserNetwork(userId);
-            where = {
-                id: { in: [...networkIds, userId] },
-                roles: {
-                    some: {
-                        role: {
-                            name: { in: ['LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'] }
-                        }
-                    },
-                    none: {
-                        role: { name: 'ADMIN' }
-                    }
-                }
-            };
-        }
+            }
+        };
 
         const leaders = await prisma.user.findMany({
             where,
@@ -190,18 +176,25 @@ const getEligibleLeaders = async (req, res) => {
     }
 };
 
-// Get Eligible Hosts (Network of a specific leader)
+// Get Eligible Hosts (Network of a specific leader, but also restricted to current user's network)
 const getEligibleHosts = async (req, res) => {
     try {
         const { leaderId } = req.query;
+        const { id: currentUserId } = req.user;
         if (!leaderId) return res.json([]);
 
-        // Host can be the leader himself OR his network
-        const networkIds = await getUserNetwork(parseInt(leaderId));
-        const ids = [parseInt(leaderId), ...networkIds];
+        // Get current user's network
+        const currentUserNetwork = await getUserNetwork(parseInt(currentUserId));
+
+        // Host can be the leader himself OR his network, but must also be in current user's network
+        const leaderNetworkIds = await getUserNetwork(parseInt(leaderId));
+        const ids = [parseInt(leaderId), ...leaderNetworkIds];
+
+        // Only include users that are both in the leader's network AND in the current user's network
+        const validIds = ids.filter(id => currentUserNetwork.includes(id) || id === parseInt(currentUserId));
 
         const where = {
-            id: { in: ids },
+            id: { in: validIds },
             roles: {
                 none: {
                     role: { name: 'ADMIN' }
@@ -514,18 +507,19 @@ const unassignMember = async (req, res) => {
 const getEligibleDoceLeaders = async (req, res) => {
     try {
         const { roles, id } = req.user;
+        const userId = parseInt(id);
         let where = {};
 
-        if (roles.includes('PASTOR')) {
-            // Requirement: PASTOR selects from other Pastors (historical rule)
-            where.roles = { some: { role: { name: 'PASTOR' } } };
-        } else if (roles.includes('LIDER_DOCE')) {
-            where.id = parseInt(id);
-        } else if (roles.includes('ADMIN')) {
-            where.roles = { some: { role: { name: 'LIDER_DOCE' } } };
-        } else {
-            return res.json([]);
-        }
+        // Apply network filtering for ALL users, regardless of role
+        const networkIds = await getUserNetwork(userId);
+        where = {
+            id: { in: [...networkIds, userId] },
+            roles: {
+                some: {
+                    role: { name: 'LIDER_DOCE' }
+                }
+            }
+        };
 
         const leaders = await prisma.user.findMany({
             where,
