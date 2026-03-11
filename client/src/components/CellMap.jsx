@@ -41,9 +41,6 @@ const CellMap = ({ cells = [] }) => {
     const georeferencedCells = cells.filter(c => c.latitude !== null && c.longitude !== null && !isNaN(c.latitude) && !isNaN(c.longitude));
 
     useEffect(() => {
-        console.log('CellMap debugging: received', cells.length, 'cells');
-        console.log('CellMap debugging: georeferenced', georeferencedCells.length, 'cells');
-
         if (georeferencedCells.length > 0) {
             const avgLat = georeferencedCells.reduce((sum, c) => sum + parseFloat(c.latitude), 0) / georeferencedCells.length;
             const avgLon = georeferencedCells.reduce((sum, c) => sum + parseFloat(c.longitude), 0) / georeferencedCells.length;

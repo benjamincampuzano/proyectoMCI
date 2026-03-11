@@ -9,12 +9,15 @@ import {User, Calendar, FunnelIcon, MagnifyingGlassIcon, Download, Trash,
 import toast from 'react-hot-toast';
 import useAuditDashboard from '../hooks/useAuditDashboard';
 import DataTable from '../components/DataTable';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 const AuditDashboard = () => {
     const { logs, stats, loading, pagination, filters, setFilters, handleFilterChange } = useAuditDashboard();
     const [selectedLog, setSelectedLog] = useState(null); // Modal state
+    const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
+    const [pendingRestoreFile, setPendingRestoreFile] = useState(null);
     const memoizedStats = useMemo(() => stats, [stats]);
 
     const handleDownloadBackup = async (event) => {
@@ -92,25 +95,18 @@ const AuditDashboard = () => {
             return;
         }
 
-        const formData = new FormData();
-        formData.append('backupFile', file);
+        // Mostrar modal de confirmación en lugar de window.confirm
+        setPendingRestoreFile(file);
+        setShowRestoreConfirm(true);
+        event.target.value = '';
+    };
 
-        // Mostrar confirmación más detallada
-        const confirmMessage = `⚠️ ADVERTENCIA CRÍTICA ⚠️\n\n` +
-            `Estás a punto de restaurar la base de datos completa desde el archivo:\n` +
-            `📁 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)\n\n` +
-            `🚨 ESTA ACCIÓN ELIMINARÁ TODOS LOS DATOS ACTUALES\n` +
-            `🚨 NO SE PUEDE DESHACER\n` +
-            `🚨 LA APLICACIÓN SE RECARGARÁ AUTOMÁTICAMENTE\n\n` +
-            `¿Estás absolutamente seguro de continuar?`;
-
-        if (!window.confirm(confirmMessage)) {
-            event.target.value = '';
-            return;
-        }
+    const performRestoreBackup = async () => {
+        const file = pendingRestoreFile;
+        if (!file) return;
 
         // Referencia al botón de restauración
-        const restoreButton = event.target.closest('div').querySelector('button');
+        const restoreButton = document.querySelector('input[type="file"]').closest('div').querySelector('button');
         const originalText = restoreButton ? restoreButton.innerHTML : '';
 
         try {
@@ -126,7 +122,11 @@ const AuditDashboard = () => {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
-                body: formData
+                body: (() => {
+                    const formData = new FormData();
+                    formData.append('backupFile', file);
+                    return formData;
+                })()
             });
 
             const data = await response.json();
@@ -151,10 +151,8 @@ const AuditDashboard = () => {
                 restoreButton.innerHTML = originalText;
                 restoreButton.disabled = false;
             }
+            setPendingRestoreFile(null);
         }
-
-        // Reset input
-        event.target.value = '';
     };
 
     const formatDate = (dateStr) => {
@@ -222,7 +220,7 @@ const AuditDashboard = () => {
         'Usuario': 'Participante',
         'Evento': 'Evento',
         'Invitado': 'Nombre del Invitado',
-        'Encuentro': 'Nombre del Encuentro',
+        'Encuentro': 'Palabra Rhema',
         'type': 'Tipo',
         'targetValue': 'Objetivo',
         'userId': 'ID Usuario',
@@ -653,9 +651,7 @@ const AuditDashboard = () => {
                             />
                             <button
                                 onClick={() => {
-                                    if (window.confirm('⚠️ ADVERTENCIA CRÍTICA ⚠️\n\nAl restaurar una copia de seguridad, SE PERDERÁN TODOS LOS DATOS ACTUALES y serán reemplazados por los del archivo.\n\nEsta acción NO se puede deshacer.\n\n¿Estás absolutamente seguro de continuar?')) {
-                                        document.getElementById('backupUpload').click();
-                                    }
+                                    document.getElementById('backupUpload').click();
                                 }}
                                 className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                             >
@@ -669,6 +665,56 @@ const AuditDashboard = () => {
                 </div>
             </div>
         </div>
+
+        {/* Confirmation Modal for Restore Backup */}
+        <ConfirmationModal
+            isOpen={showRestoreConfirm}
+            onClose={() => {
+                setShowRestoreConfirm(false);
+                setPendingRestoreFile(null);
+            }}
+            onConfirm={performRestoreBackup}
+            title="⚠️ Restaurar Copia de Seguridad"
+            message="Estás a punto de restaurar la base de datos completa"
+            confirmText="Restaurar Base de Datos"
+            confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+        >
+            {pendingRestoreFile && (
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                    <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Archivo:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{pendingRestoreFile.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Tamaño:</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{(pendingRestoreFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                <div className="flex items-start gap-3">
+                    <div className="text-red-600 dark:text-red-400 mt-0.5">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                            ⚠️ PELIGRO: Acción Destructiva
+                        </h4>
+                        <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                            <li>• Se eliminarán TODOS los datos actuales</li>
+                            <li>• Los datos serán reemplazados por el archivo de respaldo</li>
+                            <li>• La aplicación se recargará automáticamente</li>
+                            <li>• Esta acción NO se puede deshacer</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </ConfirmationModal>
     );
 };
 

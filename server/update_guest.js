@@ -9,7 +9,6 @@ async function updateGuest() {
     });
     
     if (!guest) {
-      console.log('No se encontró el invitado "Benjamin Campuzano"');
       return;
     }
     
@@ -21,11 +20,6 @@ async function updateGuest() {
         assignedTo: { select: { profile: { select: { fullName: true } } } }
       }
     });
-    
-    console.log('Invitado actualizado:');
-    console.log('Nombre:', updated.name);
-    console.log('assignedToId:', updated.assignedToId);
-    console.log('Asignado a:', updated.assignedTo?.profile?.fullName);
     
   } catch (error) {
     console.error('Error:', error.message);

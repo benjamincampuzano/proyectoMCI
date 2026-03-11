@@ -4,26 +4,57 @@ const axios = require('axios');
 const { logActivity } = require('../utils/auditLogger');
 const { getUserNetwork } = require('../utils/networkUtils');
 
-// Helper for Geocoding (Nominatim OpenStreetMap)
+// Helper for Geocoding (Nominatim OpenStreetMap with improved Colombian address handling)
 const getCoordinates = async (address, city) => {
     try {
-        const query = `${address}, ${city}, Colombia`;
-        const encodedQuery = encodeURIComponent(query);
-        const url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1`;
+        // Try multiple query formats for better results with Colombian addresses
+        const queries = [
+            `${address}, ${city}, Caldas, Colombia`,
+            `${address}, ${city}, Colombia`,
+            `${city}, ${address}, Colombia`,
+            `${address}, ${city}`
+        ];
 
-        // User-Agent is required by Nominatim
-        const response = await axios.get(url, {
-            headers: { 'User-Agent': 'IglesiaApp/1.0 (admin@iglesia.com)' }
-        });
+        for (const query of queries) {
+            try {
+                const encodedQuery = encodeURIComponent(query);
+                const url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=5&countrycodes=co&addressdetails=1`;
 
-        if (response.data && response.data.length > 0) {
-            console.log(`Geocoding successful for ${query}:`, response.data[0].lat, response.data[0].lon);
-            return {
-                lat: parseFloat(response.data[0].lat),
-                lon: parseFloat(response.data[0].lon)
-            };
+                // User-Agent is required by Nominatim
+                const response = await axios.get(url, {
+                    headers: { 'User-Agent': 'IglesiaApp/1.0 (admin@iglesia.com)' },
+                    timeout: 5000 // 5 second timeout
+                });
+
+                if (response.data && response.data.length > 0) {
+                    // Filter results to prioritize those with better accuracy
+                    let bestResult = response.data[0];
+
+                    // Look for results that have city/state information
+                    for (const result of response.data) {
+                        if (result.address && (result.address.city || result.address.town || result.address.state)) {
+                            bestResult = result;
+                            break;
+                        }
+                    }
+
+                    // Validate coordinates are reasonable for Colombia
+                    const lat = parseFloat(bestResult.lat);
+                    const lon = parseFloat(bestResult.lon);
+
+                    // Colombian coordinates roughly: lat 4.2°N to 13.5°N, lon 66.8°W to 81.7°W
+                    if (lat >= -4.5 && lat <= 14 && lon >= -82 && lon <= -66) {
+                        return { lat, lon };
+                    }
+                }
+            } catch (error) {
+                // Continue to next query format if this one fails
+                console.warn(`Geocoding attempt failed for query: ${query}`, error.message);
+                continue;
+            }
         }
-        console.warn(`Geocoding failed for ${query}: No results`);
+
+        console.warn(`Geocoding failed for all queries with address: ${address}, city: ${city}`);
         return { lat: null, lon: null };
     } catch (error) {
         console.error('Geocoding error:', error.message);
@@ -36,7 +67,7 @@ const getCoordinates = async (address, city) => {
 // Create a new cell
 const createCell = async (req, res) => {
     try {
-        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType } = req.body;
+        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType, latitude, longitude } = req.body;
         const requestedLeaderId = parseInt(leaderId);
         const requestedHostId = hostId ? parseInt(hostId) : null;
         const requestedLiderDoceId = liderDoceId ? parseInt(liderDoceId) : null;
@@ -51,7 +82,7 @@ const createCell = async (req, res) => {
             return res.status(403).json({ error: 'Not authorized to create cells' });
         }
 
-        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN')) {
             const networkIds = await getUserNetwork(id);
             if (!networkIds.includes(requestedLeaderId) && requestedLeaderId !== parseInt(id)) {
                 return res.status(400).json({ error: 'Leader not in your network' });
@@ -72,8 +103,16 @@ const createCell = async (req, res) => {
             return res.status(400).json({ error: 'Rol de líder no apto para célula ABIERTA' });
         }
 
-        // Geocoding
-        const coords = await getCoordinates(address, city);
+        // Use provided coordinates if available, otherwise geocode
+        let finalLat = latitude ? parseFloat(latitude) : null;
+        let finalLon = longitude ? parseFloat(longitude) : null;
+
+        // Only geocode if coordinates are not provided
+        if (finalLat === null || finalLon === null) {
+            const coords = await getCoordinates(address, city);
+            finalLat = coords.lat;
+            finalLon = coords.lon;
+        }
 
         const newCell = await prisma.cell.create({
             data: {
@@ -83,8 +122,8 @@ const createCell = async (req, res) => {
                 liderDoceId: requestedLiderDoceId,
                 address,
                 city,
-                latitude: coords.lat,
-                longitude: coords.lon,
+                latitude: finalLat,
+                longitude: finalLon,
                 dayOfWeek,
                 time,
                 cellType: cellType || 'ABIERTA'
@@ -133,17 +172,39 @@ const assignMember = async (req, res) => {
     }
 };
 
-// Get Eligible Leaders (LIDER_CELULA in network)
+// Get Eligible Leaders (LIDER_CELULA in network, optionally filtered by LIDER_DOCE)
 const getEligibleLeaders = async (req, res) => {
     try {
         const { roles, id } = req.user;
         const userId = parseInt(id);
+        const { liderDoceId } = req.query;
         let where = {};
 
-        // Apply network filtering for ALL users, regardless of role
-        const networkIds = await getUserNetwork(userId);
+        let baseIds = [];
+
+        // If liderDoceId is provided, get leaders from that LIDER_DOCE's network
+        if (liderDoceId) {
+            const liderDoceNetwork = await getUserNetwork(parseInt(liderDoceId));
+            baseIds = [parseInt(liderDoceId), ...liderDoceNetwork];
+
+            // For non-admin users, intersect with their network for security
+            if (!roles.includes('ADMIN')) {
+                const userNetwork = await getUserNetwork(userId);
+                baseIds = baseIds.filter(id => userNetwork.includes(id) || id === userId);
+            }
+        } else {
+            // No liderDoceId provided - use original logic
+            if (roles.includes('ADMIN')) {
+                // ADMIN sees all leaders
+                baseIds = null; // No ID filtering for ADMIN
+            } else {
+                // Non-admin users see leaders in their network
+                const networkIds = await getUserNetwork(userId);
+                baseIds = [...networkIds, userId];
+            }
+        }
+
         where = {
-            id: { in: [...networkIds, userId] },
             roles: {
                 some: {
                     role: {
@@ -155,6 +216,11 @@ const getEligibleLeaders = async (req, res) => {
                 }
             }
         };
+
+        // Apply ID filtering if baseIds is set
+        if (baseIds && baseIds.length > 0) {
+            where.id = { in: baseIds };
+        }
 
         const leaders = await prisma.user.findMany({
             where,
@@ -176,40 +242,52 @@ const getEligibleLeaders = async (req, res) => {
     }
 };
 
-// Get Eligible Hosts (Network of a specific leader, but also restricted to current user's network)
+// Get Eligible Hosts (LIDER_DOCE, LIDER_CELULA, or DISCIPULO from the LIDER_DOCE's network)
 const getEligibleHosts = async (req, res) => {
     try {
-        const { leaderId } = req.query;
-        const { id: currentUserId } = req.user;
-        if (!leaderId) return res.json([]);
+        const { liderDoceId } = req.query;
+        const { id: currentUserId, roles } = req.user;
+        
+        // If no liderDoceId, return empty
+        if (!liderDoceId) return res.json([]);
 
-        // Get current user's network
-        const currentUserNetwork = await getUserNetwork(parseInt(currentUserId));
+        // Get the LIDER_DOCE's network (includes all LIDER_CELULA and DISCIPULO)
+        const liderDoceNetwork = await getUserNetwork(parseInt(liderDoceId));
+        
+        // Start with the LIDER_DOCE themselves
+        let ids = [parseInt(liderDoceId)];
+        
+        // Add all users from LIDER_DOCE's network
+        if (liderDoceNetwork && liderDoceNetwork.length > 0) {
+            ids = [...ids, ...liderDoceNetwork];
+        }
 
-        // Host can be the leader himself OR his network, but must also be in current user's network
-        const leaderNetworkIds = await getUserNetwork(parseInt(leaderId));
-        const ids = [parseInt(leaderId), ...leaderNetworkIds];
+        // For non-admin users, filter by their network
+        if (!roles.includes('ADMIN')) {
+            const currentUserNetwork = await getUserNetwork(parseInt(currentUserId));
+            const allValidIds = [...currentUserNetwork, parseInt(currentUserId)];
+            ids = ids.filter(id => allValidIds.includes(id));
+        }
 
-        // Only include users that are both in the leader's network AND in the current user's network
-        const validIds = ids.filter(id => currentUserNetwork.includes(id) || id === parseInt(currentUserId));
+        // If no valid IDs, at least return the LIDER_DOCE themselves
+        if (ids.length === 0) {
+            ids = [parseInt(liderDoceId)];
+        }
 
+        // Filter by roles: LIDER_DOCE, LIDER_CELULA, or DISCIPULO
         const where = {
-            id: { in: validIds },
+            id: { in: ids },
+            OR: [
+                { roles: { some: { role: { name: 'LIDER_DOCE' } } } },
+                { roles: { some: { role: { name: 'LIDER_CELULA' } } } },
+                { roles: { some: { role: { name: 'DISCIPULO' } } } }
+            ],
             roles: {
                 none: {
                     role: { name: 'ADMIN' }
                 }
             }
         };
-
-        // PASTOR requirement: only LIDER_DOCE can be hosts in their network cells
-        if (req.user.roles.includes('PASTOR') && !req.user.roles.includes('ADMIN')) {
-            where.roles = {
-                some: {
-                    role: { name: 'LIDER_DOCE' }
-                }
-            };
-        }
 
         const hosts = await prisma.user.findMany({
             where,
@@ -222,11 +300,12 @@ const getEligibleHosts = async (req, res) => {
         const formatted = hosts.map(h => ({
             id: h.id,
             fullName: h.profile.fullName,
-            roles: h.roles.map(r => r.role.name)
+            role: h.roles.map(r => r.role.name).find(r => r !== 'ADMIN') || 'Usuario'
         }));
 
         res.json(formatted);
     } catch (error) {
+        console.error('Error in getEligibleHosts:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -351,7 +430,7 @@ const deleteCell = async (req, res) => {
         }
 
         // If LIDER_DOCE or PASTOR, verify cell is in their network
-        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN')) {
             // Check if cell leader is in their network or is themselves
             const networkIds = await getUserNetwork(userId);
             if (!networkIds.includes(cell.leaderId) && cell.leaderId !== userId) {
@@ -429,7 +508,7 @@ const updateCell = async (req, res) => {
     try {
         const { id } = req.params;
         const cellId = parseInt(id);
-        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType } = req.body;
+        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType, latitude, longitude } = req.body;
 
         const { roles, id: userId } = req.user;
 
@@ -443,7 +522,7 @@ const updateCell = async (req, res) => {
         }
 
         // Permission check
-        if (!roles.includes('ADMIN') && !roles.includes('ADMIN')) {
+        if (!roles.includes('ADMIN')) {
             const networkIds = await getUserNetwork(userId);
             if (!networkIds.includes(existingCell.leaderId) && existingCell.leaderId !== userId) {
                 return res.status(403).json({ error: 'No autorizado para editar esta célula' });
@@ -461,8 +540,11 @@ const updateCell = async (req, res) => {
         if (time) data.time = time;
         if (cellType) data.cellType = cellType;
 
-        // Geocoding if address or city changed
-        if ((address && address !== existingCell.address) || (city && city !== existingCell.city)) {
+        // Use provided coordinates if available, otherwise geocode if address/city changed
+        if (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null) {
+            data.latitude = parseFloat(latitude);
+            data.longitude = parseFloat(longitude);
+        } else if ((address && address !== existingCell.address) || (city && city !== existingCell.city)) {
             const coords = await getCoordinates(address || existingCell.address, city || existingCell.city);
             data.latitude = coords.lat;
             data.longitude = coords.lon;
@@ -510,16 +592,27 @@ const getEligibleDoceLeaders = async (req, res) => {
         const userId = parseInt(id);
         let where = {};
 
-        // Apply network filtering for ALL users, regardless of role
-        const networkIds = await getUserNetwork(userId);
-        where = {
-            id: { in: [...networkIds, userId] },
-            roles: {
-                some: {
-                    role: { name: 'LIDER_DOCE' }
+        // If user is ADMIN, show all LIDER_DOCE, otherwise filter by network
+        if (roles.includes('ADMIN')) {
+            where = {
+                roles: {
+                    some: {
+                        role: { name: 'LIDER_DOCE' }
+                    }
                 }
-            }
-        };
+            };
+        } else {
+            // Apply network filtering for non-admin users
+            const networkIds = await getUserNetwork(userId);
+            where = {
+                id: { in: [...networkIds, userId] },
+                roles: {
+                    some: {
+                        role: { name: 'LIDER_DOCE' }
+                    }
+                }
+            };
+        }
 
         const leaders = await prisma.user.findMany({
             where,

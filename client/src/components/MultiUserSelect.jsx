@@ -97,7 +97,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
     return (
         <div className="relative" ref={dropdownRef}>
             {label && (
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {label}
                 </label>
             )}
@@ -108,7 +108,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
                     {selectedUsers.map(user => (
                         <div
                             key={user.id}
-                            className="flex items-center space-x-2 bg-blue-600 text-white px-3 py-1 rounded-full text-sm"
+                            className="flex items-center space-x-2 bg-blue-100 dark:bg-blue-600 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm"
                         >
                             <span>{user.fullName}</span>
                             <button
@@ -130,16 +130,16 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
                 tabIndex={0}
                 aria-expanded={isOpen}
                 aria-haspopup="listbox"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white cursor-pointer flex items-center justify-between hover:border-blue-500 transition-colors"
+                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white cursor-pointer flex items-center justify-between hover:border-blue-500 transition-colors"
             >
-                <span className="text-gray-400">{placeholder}</span>
-                <UserPlusIcon size={20} className="text-gray-400" />
+                <span className="text-gray-500 dark:text-gray-400">{placeholder}</span>
+                <UserPlusIcon size={20} className="text-gray-500 dark:text-gray-400" />
             </div>
 
             {/* Dropdown */}
             {isOpen && (
-                <div className="absolute z-50 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
-                    <div className="p-2 border-b border-gray-700">
+                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg max-h-64 overflow-hidden flex flex-col">
+                    <div className="p-2 border-b border-gray-200 dark:border-gray-700">
                         <div className="relative">
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                             <input
@@ -147,7 +147,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Buscar..."
-                                className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:border-blue-500"
                                 onClick={(e) => e.stopPropagation()}
                             />
                         </div>
@@ -155,9 +155,9 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
 
                     <div className="overflow-y-auto">
                         {loading ? (
-                            <div className="p-4 text-center text-gray-400">Cargando...</div>
+                            <div className="p-4 text-center text-gray-500 dark:text-gray-400">Cargando...</div>
                         ) : users.length === 0 ? (
-                            <div className="p-4 text-center text-gray-400">No se encontraron usuarios</div>
+                            <div className="p-4 text-center text-gray-500 dark:text-gray-400">No se encontraron usuarios</div>
                         ) : (
                             users.map((user) => (
                                 <div
@@ -166,11 +166,11 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
                                     onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelect(user)}
                                     role="option"
                                     tabIndex={0}
-                                    className="px-4 py-3 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0"
+                                    className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
                                 >
-                                    <p className="text-sm font-medium text-white">{user.fullName}</p>
-                                    <p className="text-xs text-gray-400">{user.email}</p>
-                                    <p className="text-xs text-blue-400 mt-1">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user.fullName}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                                         {Array.isArray(user.roles) ? user.roles.join(', ').replace(/_/g, ' ') : (typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : (Array.isArray(user.role) ? user.role.join(', ').replace(/_/g, ' ') : 'Usuario'))}
                                     </p>
                                 </div>

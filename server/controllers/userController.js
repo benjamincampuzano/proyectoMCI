@@ -483,7 +483,7 @@ const createUser = async (req, res) => {
 
         if (generateTempPassword) {
             // Generar una contraseña temporal segura
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*+';
             let tempPass = '';
             // Al menos 8 caracteres
             for (let i = 0; i < 8; i++) {
@@ -493,7 +493,7 @@ const createUser = async (req, res) => {
             if (!/[A-Z]/.test(tempPass)) tempPass = 'A' + tempPass.slice(1);
             if (!/[a-z]/.test(tempPass)) tempPass = 'a' + tempPass.slice(1);
             if (!/\d/.test(tempPass)) tempPass = '1' + tempPass.slice(1);
-            if (!/[!@#$%^&*]/.test(tempPass)) tempPass = '!' + tempPass.slice(1);
+            if (!/[!@#$%^&*+]/.test(tempPass)) tempPass = '!' + tempPass.slice(1);
 
             finalPassword = tempPass;
             shouldChangePassword = true;

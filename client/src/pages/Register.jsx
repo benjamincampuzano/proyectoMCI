@@ -128,11 +128,11 @@ const Register = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                         {/* Left Column */}
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-2">Tipo de Documento</label>
                                     <select
@@ -142,7 +142,7 @@ const Register = () => {
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                         required
                                     >
-                                        <option value="">Seleccionar...</option>
+                                        <option value="">Tipo Documento</option>
                                         <option value="RC">RC</option>
                                         <option value="TI">TI</option>
                                         <option value="CC">CC</option>
@@ -180,8 +180,7 @@ const Register = () => {
                                     />
                                 </div>
                             </div>
-
-                            <div>
+                                                        <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Fecha de Nacimiento</label>
                                 <input
                                     type="date"
@@ -192,7 +191,6 @@ const Register = () => {
                                     required
                                 />
                             </div>
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
                                 <div className="relative">
@@ -208,10 +206,6 @@ const Register = () => {
                                     />
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Right Column */}
-                        <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Contraseña</label>
                                 <div className="relative">
@@ -230,7 +224,7 @@ const Register = () => {
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                                     >
-                                        {showPassword ? <EyeClosedIcon size={20} /> : <EyeIcon size={20} />}
+                                        {showPassword ? <EyeIcon size={20} /> : <EyeClosedIcon size={20} />}
                                     </button>
                                 </div>
                                 {formData.password && (
@@ -255,6 +249,10 @@ const Register = () => {
                                     </div>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Right Column */}
+                        <div className="space-y-4">
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -266,68 +264,9 @@ const Register = () => {
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                         required
                                     >
+                                        <option value="">Seleccione...</option>
                                         <option value="HOMBRE">Hombre</option>
                                         <option value="MUJER">Mujer</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Teléfono</label>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        placeholder="Teléfono"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Dirección</label>
-                                    <input
-                                        type="text"
-                                        name="address"
-                                        value={formData.address}
-                                        onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        placeholder="Dirección"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Ciudad</label>
-                                    <input
-                                        type="text"
-                                        name="city"
-                                        value={formData.city}
-                                        onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        placeholder="Manizales"
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Estado Civil</label>
-                                    <select
-                                        name="maritalStatus"
-                                        value={formData.maritalStatus}
-                                        onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        required
-                                    >
-                                        <option value="">Seleccione...</option>
-                                        <option value="SOLTERO">Soltero/a</option>
-                                        <option value="CASADO">Casado/a</option>
-                                        <option value="DIVORCIADO">Divorciado/a</option>
-                                        <option value="VIUDO">Viudo/a</option>
-                                        <option value="UNION_LIBRE">Unión de hecho/libre</option>
-                                        <option value="SEPARADO">Separado/a</option>
                                     </select>
                                 </div>
                                 <div>
@@ -347,8 +286,61 @@ const Register = () => {
                                         <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
                                     </select>
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Teléfono</label>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        placeholder="Teléfono"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Estado Civil</label>
+                                    <select
+                                        name="maritalStatus"
+                                        value={formData.maritalStatus}
+                                        onChange={handleChange}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        required
+                                    >
+                                        <option value="">Seleccione...</option>
+                                        <option value="SOLTERO">Soltero/a</option>
+                                        <option value="CASADO">Casado/a</option>
+                                        <option value="DIVORCIADO">Divorciado/a</option>
+                                        <option value="VIUDO">Viudo/a</option>
+                                        <option value="UNION_LIBRE">Unión de hecho/libre</option>
+                                        <option value="SEPARADO">Separado/a</option>
+                                    </select>
+                                </div>
                             </div>
-
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Dirección</label>
+                                <input
+                                    type="text"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    placeholder="Dirección"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Ciudad</label>
+                                <input
+                                    type="text"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    placeholder="Manizales"
+                                    required
+                                />
+                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Líder de Los Doce</label>
                                 <select
@@ -358,7 +350,7 @@ const Register = () => {
                                     className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                     required
                                 >
-                                    <option value="">-- Selecciona tu líder --</option>
+                                    <option value="">-- Selecciona tu líder de Doce --</option>
                                     {lideresDoce.map(leader => (
                                         <option key={leader.id} value={leader.id}>
                                             {leader.fullName}

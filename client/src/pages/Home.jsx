@@ -166,9 +166,6 @@ const Home = () => {
                                 <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
                                     Pastores
                                 </h2>
-                                <Button variant="ghost" size="sm" icon={ArrowsClockwise} onClick={fetchPastores}>
-                                    Actualizar
-                                </Button>
                             </div>
                             <LosDoceGrid losDoce={pastores} onSelectLeader={handleSelectLeader} />
                         </div>

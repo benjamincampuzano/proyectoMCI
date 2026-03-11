@@ -203,9 +203,9 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl h-[95vh] flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <UserPlus className="w-6 h-6 text-blue-600" />
                         Registrar Nuevo Invitado
@@ -220,9 +220,8 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                 </div>
 
                 {/* Content */}
-                <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
+                <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
                     <div className="flex-1 overflow-y-auto p-6">
-
                         {error && (
                             <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
                                 {error}
@@ -234,8 +233,8 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                             </div>
                         )}
 
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {/* Hidden Document Type Field */}
                                 <input
                                     type="hidden"
@@ -256,6 +255,20 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                                         type="text"
                                         name="name"
                                         value={formData.name}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Teléfono <span className="text-red-400">*</span>
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        value={formData.phone}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                         required
@@ -290,23 +303,9 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                                         <option value="MUJER">Mujer</option>
                                     </select>
                                 </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Teléfono <span className="text-red-400">*</span>
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                        required
-                                    />
-                                </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Dirección
@@ -334,7 +333,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                                 </div>
                             </div>
 
-                            {currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE'].includes(r)) && (
+                            {currentUser?.roles?.some((r) => ['ADMIN', 'LIDER_DOCE'].includes(r)) && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Invitado Por <span className="text-red-400">*</span>
@@ -342,7 +341,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                                     <AsyncSearchSelect
                                         fetchItems={(term) =>
                                             api.get('/users/search', { params: { search: term } })
-                                                .then(res => res.data)
+                                                .then((res) => res.data)
                                         }
                                         selectedValue={formData.invitedBy}
                                         onSelect={(user) => setFormData({ ...formData, invitedById: user?.id, invitedBy: user })}
@@ -424,9 +423,9 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                         </div>
                     </div>
 
-                    {/* Footer */}
-                    <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                        <div className="flex justify-end gap-3">
+                    {/* Footer - Fixed at bottom outside scroll area */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                        <div className="p-6 flex justify-end gap-3">
                             <button
                                 type="button"
                                 onClick={onClose}

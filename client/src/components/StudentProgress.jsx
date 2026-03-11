@@ -56,7 +56,7 @@ const StudentProgress = () => {
 
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-center gap-3">
-                    <AlertCircle className="w-5 h-5" />
+                    <WarningIcon className="w-5 h-5" />
                     <p>{error}</p>
                 </div>
             )}

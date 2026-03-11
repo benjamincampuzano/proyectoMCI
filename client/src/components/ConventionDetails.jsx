@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { AsyncSearchSelect } from './ui';
 import MultiUserSelect from './MultiUserSelect';
 import BalanceReport from './BalanceReport';
+import ConfirmationModal from './ConfirmationModal';
 
 const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const { user, hasAnyRole } = useAuth();
@@ -24,9 +25,12 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const [selectedRegistration, setSelectedRegistration] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    // History Modal State
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [selectedHistoryRegistration, setSelectedHistoryRegistration] = useState(null);
+
+    // Delete Confirmation Modal State
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [registrationToDelete, setRegistrationToDelete] = useState(null);
 
     // Edit Modal State
     const [showEditModal, setShowEditModal] = useState(false);
@@ -193,12 +197,17 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     };
 
     const handleDelete = async (registrationId) => {
-        if (!window.confirm('¿Estás seguro de que deseas eliminar este registro? Esta acción también eliminará todos los abonos asociados.')) {
-            return;
-        }
+        // Find the registration to show details in the confirmation modal
+        const registration = convention.registrations.find(r => r.id === registrationId);
+        setRegistrationToDelete(registration);
+        setShowDeleteConfirm(true);
+    };
+
+    const performDelete = async () => {
+        if (!registrationToDelete) return;
 
         try {
-            await api.delete(`/convenciones/registrations/${registrationId}`);
+            await api.delete(`/convenciones/registrations/${registrationToDelete.id}`);
             onRefresh();
             if (activeTab === 'report') fetchReport();
         } catch (error) {
@@ -807,6 +816,63 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                     </div>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                onClose={() => {
+                    setShowDeleteConfirm(false);
+                    setRegistrationToDelete(null);
+                }}
+                onConfirm={performDelete}
+                title="Eliminar Registro"
+                message="¿Estás seguro de que deseas eliminar este registro?"
+                confirmText="Eliminar Registro"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {registrationToDelete && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Asistente:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{registrationToDelete.user.fullName}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Total a Pagar:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(registrationToDelete.finalCost)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Abonado:</span>
+                                <span className="font-medium text-green-600 dark:text-green-400">{formatCurrency(registrationToDelete.totalPaid)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Saldo Pendiente:</span>
+                                <span className="font-medium text-red-600 dark:text-red-400">{formatCurrency(registrationToDelete.balance)}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <div className="text-red-600 dark:text-red-400 mt-0.5">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                                ⚠️ Acción Irreversible
+                            </h4>
+                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                                <li>• Se eliminará el registro de la convención</li>
+                                <li>• Se perderán todos los abonos asociados</li>
+                                <li>• No se puede deshacer esta acción</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </ConfirmationModal>
         </div>
     );
 };

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, Users, MoneyIcon, CaretRight, Trash, UserCheck, SquaresFour, List, FileTextIcon, TrendUpIcon } from '@phosphor-icons/react';
+import { Plus, Calendar, Users,UserIcon, MoneyIcon, CaretRight, Trash, UserCheck, SquaresFour, List, FileTextIcon, TrendUpIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import ConventionDetails from '../components/ConventionDetails';
@@ -8,6 +8,7 @@ import ConvencionTable from '../components/ConvencionTable';
 import ConvencionesReport from '../components/ConvencionesReport';
 import ActionModal from '../components/ActionModal';
 import { Button, Modal, Skeleton, PageHeader, AsyncSearchSelect } from '../components/ui';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const Convenciones = () => {
     const { user, hasAnyRole } = useAuth();
@@ -17,6 +18,10 @@ const Convenciones = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
+
+    // Delete Confirmation Modal State
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [conventionToDelete, setConventionToDelete] = useState(null);
 
     // Create Form State
     const [formData, setFormData] = useState({
@@ -87,11 +92,17 @@ const Convenciones = () => {
 
     const handleDelete = async (e, id) => {
         e.stopPropagation();
-        if (!window.confirm('¿Estás seguro de eliminar esta convención? Se eliminarán todos los registros y pagos asociados.')) {
-            return;
-        }
+        // Find the convention to show details in the confirmation modal
+        const convention = conventions.find(c => c.id === id);
+        setConventionToDelete(convention);
+        setShowDeleteConfirm(true);
+    };
+
+    const performDelete = async () => {
+        if (!conventionToDelete) return;
+
         try {
-            await api.delete(`/convenciones/${id}`);
+            await api.delete(`/convenciones/${conventionToDelete.id}`);
             fetchConventions();
         } catch (error) {
             console.error('Error deleting convention:', error);
@@ -290,7 +301,7 @@ const Convenciones = () => {
                     <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
-                                <MoneyIcon size={20} />
+                                <UserIcon size={20} />
                             </div>
                             <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
                         </div>
@@ -511,7 +522,7 @@ const Convenciones = () => {
                     </Modal.Footer>
                 </form>
             </Modal>
-        </div >
+        </div>
     );
 };
 

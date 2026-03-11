@@ -134,8 +134,16 @@ const useUserManagement = () => {
         }
     }, [editingUser, fetchUsers]);
 
-    const handleDeleteUser = useCallback(async (userId) => {
+    const handleDeleteUser = useCallback(async (userId, confirmCallback) => {
+        // If confirmCallback is provided, call it to trigger confirmation
+        if (confirmCallback) {
+            confirmCallback(userId);
+            return;
+        }
+
+        // Fallback to window.confirm if no confirmCallback provided (backward compatibility)
         if (!window.confirm('¿Eliminar este usuario?')) return;
+
         try {
             await api.delete(`/users/${userId}`);
             setSuccess('Usuario eliminado');

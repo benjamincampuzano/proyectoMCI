@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { FloppyDisk, UserPlus, Trash, X, Warning, Pen } from '@phosphor-icons/react';
+import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningIcon } from '@phosphor-icons/react';
 import { AsyncSearchSelect, Button } from '../ui';
+import ConfirmationModal from '../ConfirmationModal';
 
 const CLASSES_COUNT = 12;
 
@@ -32,6 +33,10 @@ const KidsClassMatrix = ({ courseId }) => {
     const [showEnrollModal, setShowEnrollModal] = useState(false);
     const [selectedStudentId, setSelectedStudentId] = useState('');
     const [selectedStudent, setSelectedStudent] = useState(null);
+
+    // Unenrollment Confirmation Modal State
+    const [showUnenrollConfirm, setShowUnenrollConfirm] = useState(false);
+    const [enrollmentToUnenroll, setEnrollmentToUnenroll] = useState(null);
 
     useEffect(() => {
         fetchMatrix();
@@ -117,9 +122,17 @@ const KidsClassMatrix = ({ courseId }) => {
     };
 
     const handleUnenroll = async (enrollmentId) => {
-        if (!window.confirm('¿Desinscribir a este estudiante?')) return;
+        // Find the enrollment to show details in the confirmation modal
+        const enrollment = matrix.find(m => m.enrollmentId === enrollmentId);
+        setEnrollmentToUnenroll(enrollment);
+        setShowUnenrollConfirm(true);
+    };
+
+    const performUnenroll = async () => {
+        if (!enrollmentToUnenroll) return;
+
         try {
-            await api.delete(`/kids/enrollments/${enrollmentId}`);
+            await api.delete(`/kids/enrollments/${enrollmentToUnenroll.enrollmentId}`);
             toast.success('Estudiante desinscrito');
             fetchMatrix();
         } catch (error) {
@@ -272,7 +285,7 @@ const KidsClassMatrix = ({ courseId }) => {
                                     if (age !== null && categoryConfig && (age < categoryConfig.minAge || age > categoryConfig.maxAge)) {
                                         return (
                                             <div className="mt-2 flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-                                                <AlertCircle size={16} />
+                                                <WarningIcon size={16} />
                                                 <span>La edad no corresponde a esta categoría</span>
                                             </div>
                                         );
@@ -304,6 +317,58 @@ const KidsClassMatrix = ({ courseId }) => {
                     </div>
                 </div>
             )}
+
+            {/* Unenrollment Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showUnenrollConfirm}
+                onClose={() => {
+                    setShowUnenrollConfirm(false);
+                    setEnrollmentToUnenroll(null);
+                }}
+                onConfirm={performUnenroll}
+                title="Desinscribir Estudiante"
+                message="¿Estás seguro de desinscribir a este estudiante?"
+                confirmText="Desinscribir"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {enrollmentToUnenroll && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Estudiante:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{enrollmentToUnenroll.studentName}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Acudiente:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{enrollmentToUnenroll.responsibleName || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Asistencia:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{calculateAttendance(enrollmentToUnenroll.classAttendances)}%</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <div className="text-red-600 dark:text-red-400 mt-0.5">
+                            <WarningIcon size={20} />
+                        </div>
+                        <div>
+                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                                ⚠️ Acción Irreversible
+                            </h4>
+                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                                <li>• Se eliminará la inscripción del estudiante</li>
+                                <li>• Se perderán todos los registros de asistencia</li>
+                                <li>• Se perderán todas las calificaciones</li>
+                                <li>• No se puede deshacer esta acción</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </ConfirmationModal>
         </div>
     );
 };

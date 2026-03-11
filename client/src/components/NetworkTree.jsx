@@ -41,48 +41,81 @@ const NetworkTree = ({ network, currentUser, onNetworkChange }) => {
                 </h2>
 
                 {/* Leadership Context for the root user */}
-                {(network.pastor || network.liderDoce || network.liderCelula) && (
-                    <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3 ml-1">
-                            Jerarquía de Liderazgo
-                        </h4>
-                        <div className="flex flex-wrap gap-4">
-                            {network.pastor && (
-                                <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-                                    <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-                                        <Users className="w-4 h-4" />
+                {(() => {
+                    // Don't show for ADMIN or PASTOR
+                    if (!currentUser || currentUser.roles?.includes('ADMIN') || currentUser.roles?.includes('PASTOR')) {
+                        return null;
+                    }
+
+                    // Determine what leaders to show based on user role
+                    const userRoles = currentUser.roles || [];
+                    let showPastor = false;
+                    let showLiderDoce = false;
+                    let showLiderCelula = false;
+
+                    if (userRoles.includes('LIDER_DOCE')) {
+                        showPastor = true;
+                    } else if (userRoles.includes('LIDER_CELULA')) {
+                        showPastor = true;
+                        showLiderDoce = true;
+                    } else if (userRoles.includes('DISCIPULO')) {
+                        showPastor = true;
+                        showLiderDoce = true;
+                        showLiderCelula = true;
+                    }
+
+                    // Check if there's anything to show
+                    const hasVisibleLeaders = (showPastor && network.pastor && network.pastor.id !== network.id) ||
+                                             (showLiderDoce && network.liderDoce && network.liderDoce.id !== network.id) ||
+                                             (showLiderCelula && network.liderCelula && network.liderCelula.id !== network.id);
+
+                    if (!hasVisibleLeaders) {
+                        return null;
+                    }
+
+                    return (
+                        <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3 ml-1">
+                                Jerarquía de Liderazgo
+                            </h4>
+                            <div className="flex flex-wrap gap-4">
+                                {showPastor && network.pastor && network.pastor.id !== network.id && (
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                                        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                                            <Users className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase leading-none mb-0.5">Pastor</p>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.pastor.fullName}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase leading-none mb-0.5">Pastor</p>
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.pastor.fullName}</p>
+                                )}
+                                {showLiderDoce && network.liderDoce && network.liderDoce.id !== network.id && (
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                                            <Users className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase leading-none mb-0.5">Líder Los Doce</p>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.liderDoce.fullName}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                            {network.liderDoce && (
-                                <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-                                    <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                                        <Users className="w-4 h-4" />
+                                )}
+                                {showLiderCelula && network.liderCelula && network.liderCelula.id !== network.id && (
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                            <Users className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase leading-none mb-0.5">Líder Célula</p>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.liderCelula.fullName}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase leading-none mb-0.5">Líder Los Doce</p>
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.liderDoce.fullName}</p>
-                                    </div>
-                                </div>
-                            )}
-                            {network.liderCelula && (
-                                <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                        <Users className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase leading-none mb-0.5">Líder Célula</p>
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.liderCelula.fullName}</p>
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
 
                 <NetworkNode
                     node={network}

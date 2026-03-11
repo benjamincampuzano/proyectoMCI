@@ -156,13 +156,13 @@ const login = async (req, res) => {
 
 const getPublicLeaders = async (req, res) => {
     try {
-        // Fetch users who have specific hierarchy roles or system roles
+        // Fetch users who have LIDER_DOCE role only (for security in registration)
         const leaders = await prisma.user.findMany({
             where: {
                 roles: {
                     some: {
                         role: {
-                            name: { in: ['PASTOR', 'LIDER_DOCE', 'ADMIN'] }
+                            name: 'LIDER_DOCE'
                         }
                     }
                 }

@@ -1,5 +1,6 @@
-import { CheckCircle, XCircle, Clock, Pen, Trash } from '@phosphor-icons/react';
+import { CheckCircle, XCircle, Clock, Pen, Trash, X, WarningIcon } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
+import { useState } from 'react';
 
 // Mapeos de colores estáticos para Tailwind
 const COLOR_CLASSES = {
@@ -53,6 +54,7 @@ const getDeadlineText = (goal) => {
 };
 
 const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const percent = Math.min(Math.round((goal.currentValue / goal.targetValue) * 100), 100);
     const status = getGoalStatus(goal, percent);
     const StatusIcon = status.icon;
@@ -64,7 +66,8 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
     else if (goal.convention) goalName = `Convención: ${goal.convention.theme}`;
 
     return (
-        <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0">
+        <>
+            <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0">
             <td className="p-4">
                 <div className="flex flex-col">
                     <span className="font-bold text-gray-900 dark:text-gray-100">
@@ -127,7 +130,7 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
                             <Pen size={16} />
                         </button>
                         <button
-                            onClick={() => onDelete(goal.id)}
+                            onClick={() => setShowDeleteConfirm(true)}
                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             title="Eliminar"
                         >
@@ -137,6 +140,66 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
                 </td>
             )}
         </tr>
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-full">
+                            <WarningIcon size={24} className="text-red-600 dark:text-red-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                Confirmar Eliminación
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                ¿Estás seguro de eliminar esta meta?
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-6">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Meta:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{goalName}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Responsable:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{goal.user?.profile?.fullName || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Objetivo:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{goal.targetValue}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center">
+                        Esta acción no se puede deshacer. Se perderán todos los datos asociados a esta meta.
+                    </p>
+
+                    <div className="flex justify-end gap-3">
+                        <button
+                            onClick={() => setShowDeleteConfirm(false)}
+                            className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() => {
+                                onDelete(goal.id);
+                                setShowDeleteConfirm(false);
+                            }}
+                            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+                        >
+                            Eliminar Meta
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 

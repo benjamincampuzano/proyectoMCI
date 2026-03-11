@@ -50,8 +50,6 @@ const downloadBackup = async (req, res) => {
 
         const filePath = path.join(backupsDir, fileName);
 
-        console.log("📦 Iniciando backup PostgreSQL...");
-
         const pgDumpPath = findPgExecutable('pg_dump');
         // Usamos comillas para manejar espacios en rutas y URLs
         const cmd = `"${pgDumpPath}" "${DATABASE_URL}" -Fc -f "${filePath}"`;
@@ -59,7 +57,6 @@ const downloadBackup = async (req, res) => {
         try {
             // No usamos { stdio: "inherit" } para poder capturar el error si ocurre
             execSync(cmd, { stdio: "pipe" });
-            console.log("✅ Backup completado:", filePath);
 
             // Enviar el archivo al cliente
             res.download(filePath, fileName, (err) => {
@@ -102,15 +99,11 @@ const restoreBackup = async (req, res) => {
 
         const filePath = req.file.path;
 
-        console.log("♻️ Restaurando backup...");
-        console.log("📌 Archivo:", filePath);
-
         const pgRestorePath = findPgExecutable('pg_restore');
         const cmd = `"${pgRestorePath}" --clean --if-exists --no-owner --dbname="${DATABASE_URL}" "${filePath}"`;
 
         try {
             execSync(cmd, { stdio: "pipe" });
-            console.log("✅ Restore completado con éxito.");
 
             // Eliminar el archivo temporal
             fs.unlink(filePath, (unlinkErr) => {

@@ -11,9 +11,9 @@ const ActionModal = ({
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full overflow-hidden ${containerClassName}`}
+            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full h-[95vh] overflow-hidden flex flex-col ${containerClassName}`}
             >
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h3>
                     <button
                         type="button"
@@ -23,7 +23,7 @@ const ActionModal = ({
                         <X size={24} />
                     </button>
                 </div>
-                <div className="max-h-[85vh] overflow-y-auto">
+                <div className="flex-1 overflow-y-auto">
                     {children}
                 </div>
             </div>

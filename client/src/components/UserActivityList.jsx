@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
     Users,
     Calendar,
-    CheckCircle,
     Clock,
     BookOpen,
     House,
@@ -48,7 +47,6 @@ const UserActivityList = () => {
         minCelula: '',
         minEscuela: '',
         ultimoAcceso: '',
-        tieneOracionDeTres: '',
         tieneCelula: ''
     });
 
@@ -104,16 +102,12 @@ const UserActivityList = () => {
                 }
             }
 
-            // Filtro por oración de tres
-            const matchesOracionDeTres = filters.tieneOracionDeTres === '' || 
-                (filters.tieneOracionDeTres === 'true' ? item.isOracionDeTres : !item.isOracionDeTres);
-
             // Filtro por célula
             const matchesCelulaMember = filters.tieneCelula === '' || 
                 (filters.tieneCelula === 'true' ? item.celula?.nombre : !item.celula?.nombre);
 
             return matchesSearch && matchesRole && matchesIglesia && matchesCelula && 
-                   matchesEscuela && matchesUltimoAcceso && matchesOracionDeTres && matchesCelulaMember;
+                   matchesEscuela && matchesUltimoAcceso && matchesCelulaMember;
         });
     }, [data, searchTerm, filters]);
 
@@ -124,7 +118,6 @@ const UserActivityList = () => {
             minCelula: '',
             minEscuela: '',
             ultimoAcceso: '',
-            tieneOracionDeTres: '',
             tieneCelula: ''
         });
         setSearchTerm('');
@@ -162,15 +155,16 @@ const UserActivityList = () => {
             )
         },
         {
-            header: 'Oración de 3',
-            key: 'isOracionDeTres',
-            render: (active) => (
-                <div className={`flex items-center space-x-2 px-3 py-1 rounded-full w-fit ${active
-                    ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
-                    }`}>
-                    <CheckCircle size={14} className={active ? 'animate-pulse' : ''} />
-                    <span className="text-xs font-bold font-mono">{active ? '3 de 3' : 'Sin Grupo'}</span>
+            header: 'Líder de 12',
+            key: 'liderDoce',
+            render: (liderName) => (
+                <div className="flex items-center space-x-2">
+                    <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
+                        <Medal size={14} />
+                    </div>
+                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                        {liderName || 'N/A'}
+                    </span>
                 </div>
             )
         },
@@ -440,19 +434,6 @@ const UserActivityList = () => {
                                 </select>
                             </div>
 
-                            {/* Filtro oración de tres */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Oración de 3</label>
-                                <select
-                                    value={filters.tieneOracionDeTres}
-                                    onChange={(e) => setFilters({...filters, tieneOracionDeTres: e.target.value})}
-                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
-                                >
-                                    <option value="">Cualquiera</option>
-                                    <option value="true">Con grupo</option>
-                                    <option value="false">Sin grupo</option>
-                                </select>
-                            </div>
                         </div>
                     </div>
                 )}

@@ -104,14 +104,12 @@ const Metas = () => {
     const isEditor = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_GOALS);
 
     const handleDelete = async (id) => {
-        if (window.confirm('¿Estás seguro de que deseas eliminar esta meta?')) {
-            try {
-                await api.delete(`/metas/${id}`);
-                await fetchGoals();
-            } catch (error) {
-                console.error('Error deleting goal:', error);
-                toast.error('Error al eliminar la meta');
-            }
+        try {
+            await api.delete(`/metas/${id}`);
+            await fetchGoals();
+        } catch (error) {
+            console.error('Error deleting goal:', error);
+            toast.error('Error al eliminar la meta');
         }
     };
 

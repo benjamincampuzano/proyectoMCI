@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone, House, User, WhatsappLogoIcon,ChatCircle, ChatCircleDots, Warning, Plus, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon } from '@phosphor-icons/react';
+import { Phone, House, User, WhatsappLogoIcon,ChatCircle, ChatCircleDots, WarningCircleIcon, Plus, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -123,7 +123,7 @@ const GuestTracking = () => {
                                             <div className="mt-1 flex flex-wrap gap-1">
                                                 {alerts.map((alert, idx) => (
                                                     <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                                        <AlertCircle className="w-3 h-3 mr-1" />
+                                                        <WarningCircleIcon className="w-3 h-3 mr-1" />
                                                         {alert.message}
                                                     </span>
                                                 ))}

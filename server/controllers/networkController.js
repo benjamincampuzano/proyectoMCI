@@ -440,6 +440,15 @@ const getUserActivityList = async (req, res) => {
                     }
                 },
                 cell: { select: { name: true } },
+                parents: {
+                    include: {
+                        parent: {
+                            include: {
+                                profile: { select: { fullName: true } }
+                            }
+                        }
+                    }
+                },
                 oracionesMiembro: {
                     include: {
                         oracionDeTres: true
@@ -483,11 +492,6 @@ const getUserActivityList = async (req, res) => {
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
         const activityList = users.map(u => {
-            // Prayer of Three logic
-            const activeOracion = u.oracionesMiembro.find(om => {
-                const group = om.oracionDeTres;
-                return group && group.estado === 'ACTIVO' && group.createdAt >= threeMonthsAgo;
-            });
 
             // Attendance counters
             const churchCount = u.churchAttendances.length;
@@ -519,13 +523,25 @@ const getUserActivityList = async (req, res) => {
                 };
             });
 
+            // Lider de 12 logic
+            const userRoles = u.roles.map(r => r.role.name);
+            const isLiderDoce = userRoles.includes('LIDER_DOCE');
+            
+            let liderDoceName = 'N/A';
+            if (isLiderDoce) {
+                const pastorParent = u.parents.find(p => p.role === 'PASTOR');
+                liderDoceName = pastorParent?.parent?.profile?.fullName || 'N/A';
+            } else {
+                const liderDoceParent = u.parents.find(p => p.role === 'LIDER_DOCE');
+                liderDoceName = liderDoceParent?.parent?.profile?.fullName || 'N/A';
+            }
+
             return {
                 id: u.id,
                 fullName: u.profile?.fullName || 'Sin Nombre',
-                roles: u.roles.map(r => r.role.name),
+                roles: userRoles,
                 invitadosCount: u._count.invitedGuests,
-                isOracionDeTres: !!activeOracion,
-                oracionDeTresCount: activeOracion ? 3 : 0, // Request says "verificar si esta dentro de una oracion de 3 o no"
+                liderDoce: liderDoceName,
                 asistencias: {
                     iglesia: churchCount,
                     celula: cellCount,

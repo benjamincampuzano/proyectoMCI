@@ -5,6 +5,7 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import MultiUserSelect from './MultiUserSelect';
 import { Button } from './ui';
+import ConfirmationModal from './ConfirmationModal';
 
 const OracionDeTresManagement = () => {
     const { user, hasRole, hasAnyRole } = useAuth();
@@ -14,6 +15,10 @@ const OracionDeTresManagement = () => {
     const [editingGroup, setEditingGroup] = useState(null);
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    // Delete Confirmation Modal State
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [groupToDelete, setGroupToDelete] = useState(null);
 
     useEffect(() => {
         fetchGroups();
@@ -56,12 +61,17 @@ const OracionDeTresManagement = () => {
     };
 
     const handleDeleteGroup = async (groupId) => {
-        if (!window.confirm('¿Estás seguro de que deseas eliminar este grupo de oración? Esta acción no se puede deshacer.')) {
-            return;
-        }
+        // Find the group to show details in the confirmation modal
+        const group = groups.find(g => g.id === groupId);
+        setGroupToDelete(group);
+        setShowDeleteConfirm(true);
+    };
+
+    const performDelete = async () => {
+        if (!groupToDelete) return;
 
         try {
-            await api.delete(`/oracion-de-tres/${groupId}`);
+            await api.delete(`/oracion-de-tres/${groupToDelete.id}`);
             setSelectedGroup(null);
             setRefreshTrigger(prev => prev + 1);
         } catch (error) {
@@ -147,7 +157,7 @@ const OracionDeTresManagement = () => {
                     <div className="flex justify-between items-start mb-8">
                         <div>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Detalles del Grupo #{selectedGroup.id}</h3>
-                            <p className="text-gray-500">Líder responsable: {selectedGroup.liderDoce?.profile?.fullName}</p>
+                            <p className="text-gray-500 dark:text-gray-400">Líder responsable: {selectedGroup.liderDoce?.profile?.fullName}</p>
                         </div>
                         <div className="flex items-center gap-4">
                             {(hasRole('ADMIN') || selectedGroup.liderDoceId === user.id) && (
@@ -157,21 +167,21 @@ const OracionDeTresManagement = () => {
                                             setEditingGroup(selectedGroup);
                                             setShowModal(true);
                                         }}
-                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                         title="Editar Grupo"
                                     >
                                         <Pen size={20} />
                                     </button>
                                     <button
                                         onClick={() => handleDeleteGroup(selectedGroup.id)}
-                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                         title="Eliminar Grupo"
                                     >
                                         <Trash size={20} />
                                     </button>
                                 </>
                             )}
-                            <button onClick={() => setSelectedGroup(null)} className="p-2 text-gray-400 hover:text-gray-600">
+                            <button onClick={() => setSelectedGroup(null)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                                 <X size={24} />
                             </button>
                         </div>
@@ -181,7 +191,7 @@ const OracionDeTresManagement = () => {
                         <div className="space-y-8">
                             <div>
                                 <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Users size={20} className="text-blue-500" />
+                                    <Users size={20} className="text-blue-500 dark:text-blue-400" />
                                     Miembros (3 Discípulos)
                                 </h4>
                                 <div className="space-y-3">
@@ -196,7 +206,7 @@ const OracionDeTresManagement = () => {
 
                             <div>
                                 <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                    <Phone size={20} className="text-green-500" />
+                                    <Phone size={20} className="text-green-500 dark:text-green-400" />
                                     Personas Objetivo (3)
                                 </h4>
                                 <div className="space-y-3">
@@ -247,13 +257,14 @@ const OracionDeTresManagement = () => {
                                                 type="date"
                                                 name="fecha"
                                                 required
-                                                className="p-2 rounded border bg-white dark:bg-gray-800 text-sm"
+                                                defaultValue={new Date().toISOString().split('T')[0]}
+                                                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                             <input
                                                 type="time"
                                                 name="hora"
                                                 required
-                                                className="p-2 rounded border bg-white dark:bg-gray-800 text-sm"
+                                                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         </div>
                                         <Button type="submit" className="w-full" size="sm">
@@ -277,6 +288,64 @@ const OracionDeTresManagement = () => {
                     initialData={editingGroup}
                 />
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                onClose={() => {
+                    setShowDeleteConfirm(false);
+                    setGroupToDelete(null);
+                }}
+                onConfirm={performDelete}
+                title="Eliminar Grupo de Oración"
+                message="¿Estás seguro de eliminar este grupo de oración?"
+                confirmText="Eliminar Grupo"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {groupToDelete && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Grupo:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">#{groupToDelete.id}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Estado:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{groupToDelete.estado}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Líder:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{groupToDelete.liderDoce?.profile?.fullName || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Reuniones:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{groupToDelete._count.reuniones}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <div className="text-red-600 dark:text-red-400 mt-0.5">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                                ⚠️ Acción Irreversible
+                            </h4>
+                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                                <li>• Se eliminará el grupo de oración completo</li>
+                                <li>• Se perderán todos los registros de reuniones</li>
+                                <li>• Se perderán todas las personas objetivo</li>
+                                <li>• No se puede deshacer esta acción</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </ConfirmationModal>
         </div>
     );
 };
@@ -342,14 +411,14 @@ const GroupModal = ({ onClose, onSubmit, initialData }) => {
                     </div>
 
                     <div>
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Discípulos (Selecciona 3)</label>
                         <MultiUserSelect
-                            label="Discípulos (Selecciona 3)"
-                            roleFilter="DISCIPULO"
                             value={miembros}
                             onChange={(ids) => {
                                 if (ids.length <= 3) setMiembros(ids);
                             }}
                             placeholder="Buscar discípulos..."
+                            roleFilter="DISCIPULO"
                         />
                         <p className="text-xs text-blue-500 mt-1">{miembros.length} de 3 seleccionados</p>
                     </div>
@@ -362,14 +431,14 @@ const GroupModal = ({ onClose, onSubmit, initialData }) => {
                                     placeholder="Nombre completo"
                                     value={p.nombre}
                                     onChange={(e) => handlePersonChange(i, 'nombre', e.target.value)}
-                                    className="p-2 rounded border bg-white dark:bg-gray-800 text-sm"
+                                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 />
                                 <input
                                     placeholder="Teléfono"
                                     value={p.telefono}
                                     onChange={(e) => handlePersonChange(i, 'telefono', e.target.value)}
-                                    className="p-2 rounded border bg-white dark:bg-gray-800 text-sm"
+                                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 />
                             </div>

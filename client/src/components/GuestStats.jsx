@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Download, Users, TrendUpIcon, UserCheck, SpinnerIcon } from '@phosphor-icons/react';
+import { MicrosoftExcelLogoIcon, SpinnerIcon,Users, PhoneOutgoingIcon, UserCheck, HouseLineIcon, UserPlusIcon } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
@@ -166,7 +166,7 @@ const GuestStats = () => {
                             disabled={!stats || loading}
                             className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-1.5 rounded-lg transition-colors text-sm"
                         >
-                            <Download size={16} />
+                            <MicrosoftExcelLogoIcon size={16} />
                             <span>Exportar</span>
                         </button>
                     )}
@@ -179,7 +179,7 @@ const GuestStats = () => {
                 ) : stats ? (
                     <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
@@ -193,31 +193,42 @@ const GuestStats = () => {
                         </div>
                     </div>
 
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
-                                <TrendUpIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Promedio Mensual</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{calculateMonthlyAverage()*100}%</span>
-                            </div>
-                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Promedio de Invitados</span>
-                        </div>
-                    </div>
-
                     <div className="bg-yellow-50 dark:bg-yellow-900/20 p-5 rounded-xl border border-yellow-100 dark:border-yellow-800 shadow-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-yellow-100 dark:bg-yellow-800 rounded-lg text-yellow-600 dark:text-yellow-300">
-                                <TrendUpIcon size={20} />
+                                <UserPlusIcon size={20} />
                             </div>
                             <span className="text-sm font-bold text-yellow-800 dark:text-yellow-200 uppercase tracking-tight">Nuevos</span>
                         </div>
                         <div className="flex flex-col">
                             <span className="text-3xl font-extrabold text-yellow-900 dark:text-white">{stats.byStatus.NUEVO || 0}</span>
                             <span className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mt-1">Invitados Nuevos</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                                <PhoneOutgoingIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Llamados</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{stats.byStatus.CONTACTADO || 0}</span>
+                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Invitados Llamados</span>
+                        </div>
+                    </div>
+
+                    <div className="bg--50 dark:bg-lime-900/20 p-5 rounded-xl border border-lime-100 dark:border-lime-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-lime-100 dark:bg-lime-800 rounded-lg text-lime-600 dark:text-lime-300">
+                                <HouseLineIcon size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-lime-800 dark:text-lime-200 uppercase tracking-tight">Visitado</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-lime-900 dark:text-white">{stats.byStatus.CONSOLIDADO || 0}</span>
+                            <span className="text-xs text-lime-600 dark:text-lime-400 font-medium mt-1">Invitados Visitados</span>
                         </div>
                     </div>
 

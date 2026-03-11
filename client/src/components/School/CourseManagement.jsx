@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from "../../context/AuthContext";
 import ClassMatrix from './ClassMatrix';
 import { AsyncSearchSelect, Button } from '../ui';
+import ConfirmationModal from '../ConfirmationModal';
 
 const SCHOOL_LEVELS = [
     { nivel: '1', seccion: 'A', name: 'Pastoreados en su amor', moduleNumber: 1 },
@@ -23,6 +24,10 @@ const CourseManagement = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCourse, setEditingCourse] = useState(null);
     const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
+
+    // Delete Confirmation Modal State
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [courseToDelete, setCourseToDelete] = useState(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -54,9 +59,17 @@ const CourseManagement = () => {
 
     const handleDelete = async (e, id) => {
         e.stopPropagation();
-        if (!window.confirm('¿Estás seguro de eliminar esta clase? Se perderán todas las inscripciones y notas.')) return;
+        // Find the course to show details in the confirmation modal
+        const course = courses.find(c => c.id === id);
+        setCourseToDelete(course);
+        setShowDeleteConfirm(true);
+    };
+
+    const performDelete = async () => {
+        if (!courseToDelete) return;
+
         try {
-            await api.delete(`/school/modules/${id}`);
+            await api.delete(`/school/modules/${courseToDelete.id}`);
             fetchCourses();
         } catch (error) {
             toast.error('Error, No se puede eliminar la clase porque existen estudiantes inscritos y notas asociadas. Primero debe desvincular a todos los estudiantes.');
@@ -74,7 +87,8 @@ const CourseManagement = () => {
                 ...formData,
                 name: finalName,
                 moduleId: modId,
-                auxiliarIds: formData.auxiliarId ? [parseInt(formData.auxiliarId)] : []
+                professorId: formData.professorId?.id,
+                auxiliarIds: formData.auxiliarId ? [parseInt(formData.auxiliarId?.id)] : []
             });
             setShowCreateModal(false);
             setFormData({ ...formData, name: '', description: '', professorId: null, auxiliarId: null, startDate: '', endDate: '' });
@@ -92,8 +106,8 @@ const CourseManagement = () => {
             description: course.description || '',
             startDate: course.startDate ? course.startDate.split('T')[0] : '',
             endDate: course.endDate ? course.endDate.split('T')[0] : '',
-            professorId: course.professor?.id || null,
-            auxiliarId: course.auxiliaries?.[0]?.id || null,
+            professorId: course.professor || null,
+            auxiliarId: course.auxiliaries?.[0] || null,
             nivel: '1',
             seccion: 'A'
         });
@@ -105,7 +119,8 @@ const CourseManagement = () => {
         try {
             await api.put(`/school/modules/${editingCourse.id}`, {
                 ...formData,
-                auxiliarIds: formData.auxiliarId ? [parseInt(formData.auxiliarId)] : []
+                profesorId: formData.professorId?.id,
+                auxiliarIds: formData.auxiliarId ? [parseInt(formData.auxiliarId?.id)] : []
             });
             setShowEditModal(false);
             setEditingCourse(null);
@@ -216,7 +231,7 @@ const CourseManagement = () => {
                             <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                                 <div className="flex items-center">
                                     <Users size={16} className="mr-2" />
-                                    <span>Prof: {course.professor?.fullName || 'N/A'}</span>
+                                    <span>Prof: {course.professor?.fullName || 'N/A'} - Aux: {course.auxiliaries?.[0]?.fullName || 'N/A'}</span>
                                 </div>
                                 <div className="flex items-center">
                                     <Calendar size={16} className="mr-2" />
@@ -237,7 +252,7 @@ const CourseManagement = () => {
                                     Nombre
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Profesor
+                                    Profesor/Auxiliar
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Fecha Inicio
@@ -262,7 +277,7 @@ const CourseManagement = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {course.professor?.fullName || 'N/A'}
+                                        {course.professor?.fullName || 'N/A'} / {course.auxiliaries?.[0]?.fullName || 'N/A'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
@@ -315,11 +330,15 @@ const CourseManagement = () => {
             {/* Create/Edit Modal */}
             {(showCreateModal || showEditModal) && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 transition-all">
-                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full p-8">
-                        <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white border-b pb-2">
-                            {showEditModal ? 'Editar Clase' : 'Nueva Clase'}
-                        </h3>
-                        <form onSubmit={showEditModal ? handleUpdate : handleCreate} className="space-y-5">
+                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full h-[95vh] overflow-hidden flex flex-col">
+                        <div className="p-8 flex-shrink-0">
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white border-b pb-2">
+                                {showEditModal ? 'Editar Clase' : 'Nueva Clase'}
+                            </h3>
+                        </div>
+
+                        <form onSubmit={showEditModal ? handleUpdate : handleCreate} className="flex-1 flex flex-col overflow-hidden">
+                            <div className="flex-1 overflow-y-auto p-8 space-y-5">
 
                             {/* Nivel/Seccion Selection only for Create */}
                             {!showEditModal && (
@@ -387,7 +406,7 @@ const CourseManagement = () => {
                                             .then(res => res.data);
                                     }}
                                     selectedValue={formData.professorId}
-                                    onSelect={(user) => setFormData({ ...formData, professorId: user?.id || null })}
+                                    onSelect={(user) => setFormData({ ...formData, professorId: user })}
                                     placeholder="Seleccionar Profesor (Líder de 12)..."
                                     labelKey="fullName"
                                 />
@@ -402,20 +421,79 @@ const CourseManagement = () => {
                                             .then(res => res.data);
                                     }}
                                     selectedValue={formData.auxiliarId}
-                                    onSelect={(user) => setFormData({ ...formData, auxiliarId: user?.id || null })}
+                                    onSelect={(user) => setFormData({ ...formData, auxiliarId: user })}
                                     placeholder="Seleccionar Auxiliar (Líder de Célula)..."
                                     labelKey="fullName"
                                 />
                             </div>
 
-                            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                <Button type="button" onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} variant="secondary">Cancelar</Button>
-                                <Button type="submit" className="bg-gradient-to-r from-purple-600 to-blue-600">{showEditModal ? 'Guardar Cambios' : 'Crear Clase'}</Button>
+                            </div>
+
+                            {/* Submit Buttons - Fixed at bottom outside scroll area */}
+                            <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                                <div className="p-8 flex justify-end space-x-3">
+                                    <Button type="button" onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} variant="secondary">Cancelar</Button>
+                                    <Button type="submit" className="bg-gradient-to-r from-purple-600 to-blue-600">{showEditModal ? 'Guardar Cambios' : 'Crear Clase'}</Button>
+                                </div>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                onClose={() => {
+                    setShowDeleteConfirm(false);
+                    setCourseToDelete(null);
+                }}
+                onConfirm={performDelete}
+                title="Eliminar Clase"
+                message="¿Estás seguro de eliminar esta clase?"
+                confirmText="Eliminar Clase"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {courseToDelete && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Clase:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{courseToDelete.name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Profesor:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{courseToDelete.professor?.fullName || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Estudiantes:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{courseToDelete._count?.enrollments || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <div className="text-red-600 dark:text-red-400 mt-0.5">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                                ⚠️ Acción Irreversible
+                            </h4>
+                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                                <li>• Se eliminará la clase completamente</li>
+                                <li>• Se perderán todas las inscripciones</li>
+                                <li>• Se perderán todas las calificaciones y asistencia</li>
+                                <li>• No se puede deshacer esta acción</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </ConfirmationModal>
         </div>
     );
 };
