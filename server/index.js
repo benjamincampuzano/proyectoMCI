@@ -85,8 +85,8 @@ app.use("/api/kids", kidsRoutes);
 /* ✅ Healthcheck */
 app.get("/", (req, res) => {
   res.json({
-    message: "API is running...",
-    status: "healthy",
+    message: "API esta corriendo correctamente...",
+    status: "Saludable",
     timestamp: new Date().toISOString()
   });
 });
