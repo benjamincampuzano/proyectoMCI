@@ -664,7 +664,6 @@ const AuditDashboard = () => {
                     </div>
                 </div>
             </div>
-        </div>
 
         {/* Confirmation Modal for Restore Backup */}
         <ConfirmationModal
@@ -715,7 +714,8 @@ const AuditDashboard = () => {
                 </div>
             </div>
         </ConfirmationModal>
-    );
+    </div>
+);
 };
 
 export default AuditDashboard;
