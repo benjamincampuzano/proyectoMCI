@@ -65,7 +65,7 @@ const SetupWizard = () => {
                         <ShieldCheck size={32} />
                     </div>
                     <h2 className="text-3xl font-bold text-white">Configuración Inicial</h2>
-                    <p className="text-gray-400 mt-2">Vamos a crear la cuenta del Administrador Principal para comenzar</p>
+                    <p className="text-gray-400 mt-2">Crea la cuenta del Administrador Principal para comenzar</p>
                 </div>
 
                 {error && (
@@ -104,7 +104,7 @@ const SetupWizard = () => {
                                         value={formData.documentNumber}
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        placeholder="1234567890"
+                                        placeholder="12345678"
                                     />
                                 </div>
                             </div>
@@ -119,67 +119,12 @@ const SetupWizard = () => {
                                         value={formData.fullName}
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        placeholder="Administrador"
+                                        placeholder="Ej: Juan Pérez"
                                         required
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Email del Administrador</label>
-                                    <div className="relative">
-                                        <Envelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
-                                        <input
-                                            name="email"
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                            className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                            placeholder="adminiglesia@iglesia.com"
-                                            required
-                                        />
-                                    </div>
-                                </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Contraseña</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
-                                        <input
-                                            name="password"
-                                            type="password"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                            placeholder="***********"
-                                            required
-                                        />
-                                    </div>
-                                    {formData.password && (
-                                        <div className="mt-2 space-y-2">
-                                            <div className="flex gap-1">
-                                                {[...Array(4)].map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={`h-1 flex-1 rounded-full transition-colors ${i < getPasswordStrength(formData.password)
-                                                            ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'][getPasswordStrength(formData.password) - 1]
-                                                            : 'bg-gray-700'
-                                                            }`}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2 text-[10px]">
-                                                <Requirement label="8+ caracteres" met={formData.password.length >= 8} />
-                                                <Requirement label="Mayúscula/Minúscula" met={/[A-Z]/.test(formData.password) && /[a-z]/.test(formData.password)} />
-                                                <Requirement label="Número" met={/\d/.test(formData.password)} />
-                                                <Requirement label="Símbolo" met={/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)} />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Right Column */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Fecha de Nacimiento</label>
                                 <input
@@ -203,6 +148,62 @@ const SetupWizard = () => {
                                     <option value="MUJER">Mujer</option>
                                 </select>
                             </div>
+                        </div>
+
+                        {/* Right Column */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Email del Administrador</label>
+                                <div className="relative">
+                                    <Envelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
+                                    <input
+                                        name="email"
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        placeholder="admin@iglesia.com"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Contraseña</label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
+                                    <input
+                                        name="password"
+                                        type="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        placeholder="••••••••"
+                                        required
+                                    />
+                                </div>
+                                {formData.password && (
+                                    <div className="mt-2 space-y-2">
+                                        <div className="flex gap-1">
+                                            {[...Array(4)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className={`h-1 flex-1 rounded-full transition-colors ${i < getPasswordStrength(formData.password)
+                                                        ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'][getPasswordStrength(formData.password) - 1]
+                                                        : 'bg-gray-700'
+                                                        }`}
+                                                />
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                            <Requirement label="8+ caracteres" met={formData.password.length >= 8} />
+                                            <Requirement label="Mayúscula/Minúscula" met={/[A-Z]/.test(formData.password) && /[a-z]/.test(formData.password)} />
+                                            <Requirement label="Número" met={/\d/.test(formData.password)} />
+                                            <Requirement label="Símbolo" met={/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)} />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Teléfono</label>
@@ -214,7 +215,7 @@ const SetupWizard = () => {
                                         value={formData.phone}
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        placeholder="312 345 6789"
+                                        placeholder="+123456789"
                                     />
                                 </div>
                             </div>
@@ -230,7 +231,7 @@ const SetupWizard = () => {
                                             value={formData.address}
                                             onChange={handleChange}
                                             className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                            placeholder="Calle 1"
+                                            placeholder="Calle 123..."
                                         />
                                     </div>
                                 </div>
@@ -245,7 +246,7 @@ const SetupWizard = () => {
                                             value={formData.city}
                                             onChange={handleChange}
                                             className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                            placeholder="Manizales"
+                                            placeholder="Bogotá"
                                         />
                                     </div>
                                 </div>
