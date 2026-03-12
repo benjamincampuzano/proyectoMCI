@@ -5,6 +5,7 @@ nixPkgs = ["nodejs_20"]
 cmds = [
   "cd server && npm install --legacy-peer-deps",
   "cd server && npx prisma generate"
+  "cd server && npx prisma db push --accept-data-loss"
 ]
 
 [start]
