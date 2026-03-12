@@ -15,21 +15,26 @@ app.use(helmet({
 app.use(compression());
 
 /* ✅ CORS dinámico */
+
 const allowedOrigins = [
   "http://localhost:5173",
   "https://proyecto-mci.vercel.app",
   process.env.FRONTEND_URL
 ].filter(Boolean).map(url => url.replace(/\/$/, ''));
-
 app.use(
   cors({
     origin: (origin, callback) => {
       // Permitir peticiones sin origen (como apps móviles o curl)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== "production") {
+
+      const isAllowed = allowedOrigins.includes(origin);
+      // Nueva lógica: Permitir cualquier URL que termine en .vercel.app
+      const isVercel = origin.endsWith('.vercel.app');
+      if (isAllowed || isVercel || process.env.NODE_ENV !== "production") {
         callback(null, true);
       } else {
         const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+        console.error(`❌ CORS BLOCKED: ${origin}`); // Agregamos log para depurar
         callback(new Error(msg));
       }
     },
