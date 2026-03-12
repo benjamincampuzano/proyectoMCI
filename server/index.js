@@ -27,9 +27,10 @@ app.use(
       // Permitir peticiones sin origen (como apps móviles o curl)
       if (!origin) return callback(null, true);
 
-      const isAllowed = allowedOrigins.includes(origin);
-      // Nueva lógica: Permitir cualquier URL que termine en .vercel.app
-      const isVercel = origin.endsWith('.vercel.app');
+      const cleanOrigin = origin.replace(/\/$/, '');
+      const isAllowed = allowedOrigins.includes(cleanOrigin);
+      const isVercel = cleanOrigin.endsWith('.vercel.app');
+
       if (isAllowed || isVercel || process.env.NODE_ENV !== "production") {
         callback(null, true);
       } else {
