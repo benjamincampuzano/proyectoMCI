@@ -7,7 +7,7 @@
     "server": "cd server && npm start",
     "client": "cd client && npm run dev",
     "install:all": "npm install && cd client && npm install && cd server && npm install",
-    "migrate": "cd server && npx prisma generate deploy",
+    "migrate": "cd server && npx prisma generate && npx prisma migrate deploy",
     "backup": "node scripts/backup-db.js",
     "restore": "node scripts/restore-db.js"
   },
