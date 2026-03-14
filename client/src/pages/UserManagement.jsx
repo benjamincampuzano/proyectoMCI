@@ -34,6 +34,7 @@ const UserManagement = () => {
         handleDeleteUser,
         canEdit,
         isAdmin,
+        getAssignableRoles,
     } = useUserManagement();
 
     // Validate password in real-time
@@ -138,6 +139,7 @@ const UserManagement = () => {
                 isAdmin={isAdmin}
                 validatePasswordRealTime={validatePasswordRealTime}
                 calculateAge={calculateAge}
+                assignableRoles={getAssignableRoles()}
             />
 
             {editingUser && (
@@ -156,6 +158,7 @@ const UserManagement = () => {
                     isAdmin={isAdmin}
                     validatePasswordRealTime={validatePasswordRealTime}
                     calculateAge={calculateAge}
+                assignableRoles={getAssignableRoles()}
                 />
             )}
         </div>

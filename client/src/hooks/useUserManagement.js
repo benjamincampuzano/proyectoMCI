@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const useUserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -26,7 +27,7 @@ const useUserManagement = () => {
     })();
 
     const [formData, setFormData] = useState({
-        documentType: '',
+        documentType: 'CC',
         documentNumber: '',
         fullName: '',
         birthDate: '',
@@ -36,8 +37,8 @@ const useUserManagement = () => {
         sex: 'HOMBRE',
         phone: '',
         address: '',
-        city: '',
-        maritalStatus: '',
+        city: 'Manizales',
+        maritalStatus: 'SOLTERO',
         network: '',
         pastorId: '',
         liderDoceId: '',
@@ -54,6 +55,7 @@ const useUserManagement = () => {
             setUsers(response.data);
         } catch (err) {
             setError('Error al cargar usuarios');
+            toast.error('Error al cargar la lista de usuarios');
         } finally {
             setLoading(false);
         }
@@ -64,7 +66,7 @@ const useUserManagement = () => {
     }, [fetchUsers]);
 
     const handleCreateUser = useCallback(async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setSubmitting(true);
         setError('');
         try {
@@ -79,22 +81,26 @@ const useUserManagement = () => {
             if (payload.liderCelulaId) payload.liderCelulaId = parseInt(payload.liderCelulaId);
             else delete payload.liderCelulaId;
 
-            Object.keys(payload).forEach(key => payload[key] === '' && delete payload[key]);
+            // No eliminamos campos vacíos si queremos que sean requeridos y tratados como tales
+            // Object.keys(payload).forEach(key => payload[key] === '' && delete payload[key]);
 
             await api.post('/users', payload);
             setSuccess('Usuario creado exitosamente');
+            toast.success('¡Usuario creado correctamente!');
             setShowCreateForm(false);
             setFormData({
-                documentType: '', documentNumber: '', fullName: '', birthDate: '',
+                documentType: 'CC', documentNumber: '', fullName: '', birthDate: '',
                 email: '', password: '', role: 'DISCIPULO',
-                sex: 'HOMBRE', phone: '', address: '', city: '',
-                maritalStatus: '', network: '',
+                sex: 'HOMBRE', phone: '', address: '', city: 'Manizales',
+                maritalStatus: 'SOLTERO', network: '',
                 pastorId: '', liderDoceId: '', liderCelulaId: '',
                 dataPolicyAccepted: false, dataTreatmentAuthorized: false, minorConsentAuthorized: false
             });
             fetchUsers();
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al crear usuario');
+            const msg = err.response?.data?.message || 'Error al crear usuario';
+            setError(msg);
+            toast.error(msg, { duration: 5000 });
         } finally {
             setSubmitting(false);
         }
@@ -113,6 +119,8 @@ const useUserManagement = () => {
                 phone: editingUser.phone,
                 address: editingUser.address,
                 city: editingUser.city,
+                documentType: editingUser.documentType,
+                documentNumber: editingUser.documentNumber,
                 maritalStatus: editingUser.maritalStatus || null,
                 network: editingUser.network || null,
                 pastorId: editingUser.pastorId ? parseInt(editingUser.pastorId) : null,
@@ -125,31 +133,34 @@ const useUserManagement = () => {
             };
             await api.put(`/users/${userId}`, payload);
             setSuccess('Usuario actualizado');
+            toast.success('¡Perfil actualizado con éxito!');
             setEditingUser(null);
             fetchUsers();
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al actualizar');
+            const msg = err.response?.data?.message || 'Error al actualizar';
+            setError(msg);
+            toast.error(msg, { duration: 5000 });
         } finally {
             setSubmitting(false);
         }
     }, [editingUser, fetchUsers]);
 
     const handleDeleteUser = useCallback(async (userId, confirmCallback) => {
-        // If confirmCallback is provided, call it to trigger confirmation
         if (confirmCallback) {
             confirmCallback(userId);
             return;
         }
 
-        // Fallback to window.confirm if no confirmCallback provided (backward compatibility)
         if (!window.confirm('¿Eliminar este usuario?')) return;
 
         try {
             await api.delete(`/users/${userId}`);
-            setSuccess('Usuario eliminado');
+            toast.success('Usuario eliminado permanentemente');
             fetchUsers();
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al eliminar');
+            const msg = err.response?.data?.message || 'Error al eliminar';
+            setError(msg);
+            toast.error(msg);
         }
     }, [fetchUsers]);
 

@@ -14,13 +14,15 @@ const UserFormFields = ({
     passwordErrors,
     setPasswordErrors,
     validatePasswordRealTime,
-    calculateAge
+    calculateAge,
+    assignableRoles = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO']
 }) => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Tipo de Documento</label>
                 <select
+                    required
                     className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     value={formData.documentType}
                     onChange={e => setFormData({ ...formData, documentType: e.target.value })}
@@ -37,6 +39,7 @@ const UserFormFields = ({
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Número de Documento</label>
                 <input
+                    required
                     type="text"
                     className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     value={formData.documentNumber || ''}
@@ -51,6 +54,7 @@ const UserFormFields = ({
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Fecha de Nacimiento</label>
                 <input
+                    required
                     type="date"
                     className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     value={formData.birthDate || ''}
@@ -82,7 +86,7 @@ const UserFormFields = ({
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                         >
-                            {showPassword ? <EyeIcon size={20} /> : <EyeClosedIcon  size={20} />}
+                            {showPassword ? <EyeIcon size={20} /> : <EyeClosedIcon size={20} />}
                         </button>
                     </div>
                     {passwordErrors.length > 0 && (
@@ -100,6 +104,7 @@ const UserFormFields = ({
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Estado Civil</label>
                 <select
+                    required
                     className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     value={formData.maritalStatus || ''}
                     onChange={e => setFormData({ ...formData, maritalStatus: e.target.value })}
@@ -116,6 +121,7 @@ const UserFormFields = ({
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">RED</label>
                 <select
+                    required
                     className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     value={formData.network || ''}
                     onChange={e => setFormData({ ...formData, network: e.target.value })}
@@ -130,34 +136,37 @@ const UserFormFields = ({
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
                 <select
+                    required
                     className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     value={formData.role}
                     onChange={e => setFormData({ ...formData, role: e.target.value, pastorId: '', liderDoceId: '', liderCelulaId: '' })}
                 >
                     {/* getAssignableRoles logic would be outside or passed in */}
-                    {['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'].map(r => (
+                    {assignableRoles.map(r => (
                         <option key={r} value={r}>{r.replace('_', ' ')}</option>
                     ))}
                 </select>
             </div>
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Sexo</label>
-                <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.sex} onChange={e => setFormData({ ...formData, sex: e.target.value })}>
+                <select required className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.sex} onChange={e => setFormData({ ...formData, sex: e.target.value })}>
+                    <option value="">Seleccione...</option>
                     <option value="HOMBRE">Hombre</option>
                     <option value="MUJER">Mujer</option>
                 </select>
             </div>
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Teléfono</label>
-                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                <input required type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
             </div>
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dirección</label>
-                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.address || ''} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                <input required type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.address || ''} onChange={e => setFormData({ ...formData, address: e.target.value })} />
             </div>
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ciudad</label>
                 <input
+                    required
                     type="text"
                     className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     value={formData.city || ''}
@@ -176,7 +185,7 @@ const UserFormFields = ({
             {formData.role === 'LIDER_DOCE' && (
                 <div className="md:col-span-2">
                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Pastor</label>
-                    <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.pastorId} onChange={e => setFormData({ ...formData, pastorId: e.target.value })}>
+                    <select required className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.pastorId} onChange={e => setFormData({ ...formData, pastorId: e.target.value })}>
                         <option value="">-- Sin Asignar --</option>
                         {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
                     </select>
@@ -187,7 +196,7 @@ const UserFormFields = ({
                 <>
                     <div>
                         <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Líder 12</label>
-                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderDoceId} onChange={e => setFormData({ ...formData, liderDoceId: e.target.value })}>
+                        <select required className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderDoceId} onChange={e => setFormData({ ...formData, liderDoceId: e.target.value })}>
                             <option value="">-- Sin Asignar --</option>
                             {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
                         </select>
@@ -206,14 +215,14 @@ const UserFormFields = ({
                 <>
                     <div>
                         <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12</label>
-                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderDoceId} onChange={e => setFormData({ ...formData, liderDoceId: e.target.value, liderCelulaId: '' })}>
+                        <select required className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderDoceId} onChange={e => setFormData({ ...formData, liderDoceId: e.target.value, liderCelulaId: '' })}>
                             <option value="">-- Sin Asignar --</option>
                             {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
                         </select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula</label>
-                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderCelulaId} onChange={e => setFormData({ ...formData, liderCelulaId: e.target.value })}>
+                        <select required className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderCelulaId} onChange={e => setFormData({ ...formData, liderCelulaId: e.target.value })}>
                             <option value="">-- Sin Asignar --</option>
                             {lideresCelula
                                 .filter(lc => !formData.liderDoceId || lc.liderDoceId === parseInt(formData.liderDoceId))
@@ -294,6 +303,7 @@ UserFormFields.propTypes = {
     setPasswordErrors: PropTypes.func,
     validatePasswordRealTime: PropTypes.func.isRequired,
     calculateAge: PropTypes.func.isRequired,
+    assignableRoles: PropTypes.array,
 };
 
 export default UserFormFields;

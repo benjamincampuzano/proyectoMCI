@@ -57,10 +57,10 @@ const getProfile = async (req, res) => {
 
         res.status(200).json({
             user: {
+                ...user.profile,
                 id: user.id,
                 email: user.email,
                 phone: user.phone,
-                ...user.profile,
                 roles: user.roles.map(r => r.role.name),
                 hierarchy: user.parents.map(p => ({
                     parentId: p.parentId,
@@ -352,7 +352,20 @@ const updateUser = async (req, res) => {
         if (email) {
             const existingUser = await prisma.user.findUnique({ where: { email } });
             if (existingUser && existingUser.id !== userId) {
-                return res.status(400).json({ message: 'Email already in use' });
+                return res.status(400).json({ message: 'El correo electrónico ya está en uso por otro usuario.' });
+            }
+        }
+
+        if (documentType && documentNumber) {
+            const existingProfile = await prisma.userProfile.findFirst({
+                where: {
+                    documentType,
+                    documentNumber,
+                    userId: { not: userId }
+                }
+            });
+            if (existingProfile) {
+                return res.status(400).json({ message: 'Ya existe un usuario registrado con este tipo y número de documento.' });
             }
         }
 
