@@ -28,6 +28,7 @@ const SetupWizard = lazy(() => import('./pages/SetupWizard'));
 const Metas = lazy(() => import('./pages/Metas'));
 const PublicGuestRegistration = lazy(() => import('./pages/PublicGuestRegistration'));
 const LegalDocuments = lazy(() => import('./pages/LegalDocuments'));
+const News = lazy(() => import('./pages/News'));
 
 // Placeholder components for now
 
@@ -42,6 +43,13 @@ const AdminRoute = ({ children }) => {
   const { user, loading, isAdmin } = useAuth();
   if (loading) return <div>Loading...</div>;
   const authorized = isAdmin();
+  return user && authorized ? children : <Navigate to="/" />;
+};
+
+const NewsAdminRoute = ({ children }) => {
+  const { user, loading, hasAnyRole } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  const authorized = hasAnyRole(['ADMIN', 'PASTOR']);
   return user && authorized ? children : <Navigate to="/" />;
 };
 
@@ -133,6 +141,7 @@ function App() {
                   <Route path="usuarios" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
                   <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
                   <Route path="documentos-legales" element={<LegalDocuments />} />
+                  <Route path="noticias" element={<NewsAdminRoute><News /></NewsAdminRoute>} />
                 </Route>
               </Routes>
             </Suspense>

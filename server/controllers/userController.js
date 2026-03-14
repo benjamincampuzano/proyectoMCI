@@ -61,6 +61,7 @@ const getProfile = async (req, res) => {
                 id: user.id,
                 email: user.email,
                 phone: user.phone,
+                showNewsPopup: user.showNewsPopup,
                 roles: user.roles.map(r => r.role.name),
                 hierarchy: user.parents.map(p => ({
                     parentId: p.parentId,
@@ -870,6 +871,24 @@ const searchUsers = async (req, res) => {
     }
 };
 
+// Toggle Initial News Pop-up
+const toggleNewsPopup = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { showNewsPopup } = req.body;
+
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data: { showNewsPopup }
+        });
+
+        res.json({ showNewsPopup: user.showNewsPopup });
+    } catch (error) {
+        console.error('Error toggling news popup:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     getProfile,
     updateProfile,
@@ -882,5 +901,6 @@ module.exports = {
     assignLeader,
     getMyNetwork,
     searchPublicUsers,
-    searchUsers
+    searchUsers,
+    toggleNewsPopup
 };

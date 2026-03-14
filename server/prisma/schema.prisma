@@ -22,46 +22,55 @@ model UserHierarchy {
 }
 
 model User {
-  id                      Int                      @id @default(autoincrement())
-  email                   String                   @unique
-  phone                   String?                  @unique
-  password                String
-  isActive                Boolean                  @default(true)
-  isDeleted               Boolean                  @default(false)
-  cellId                  Int?
-  createdAt               DateTime                 @default(now()) @db.Timestamptz(6)
-  updatedAt               DateTime                 @updatedAt @db.Timestamptz(6)
-  mustChangePassword      Boolean                  @default(false)
-  auditLogs               AuditLog[]
-  hostedCells             Cell[]                   @relation("CellHost")
-  ledCells                Cell[]                   @relation("CellLeader")
-  doceNetworkCells        Cell[]                   @relation("CellLiderDoce")
-  cellAttendances         CellAttendance[]
-  churchAttendances       ChurchAttendance[]
-  classAttendances        ClassAttendance[]
-  coordinatedConventions  Convention[]             @relation("ConventionCoordinator")
-  conventionLeaderships   ConventionLeader[]
-  registeredConventions   ConventionRegistration[] @relation("ConventionRegistrar")
-  conventionRegistrations ConventionRegistration[]
-  coordinatedEncuentros   Encuentro[]              @relation("EncuentroCoordinator")
-  encuentroLeaderships    EncuentroLeader[]
-  encuentroRegistrations  EncuentroRegistration[]
-  goals                   Goal[]                   @relation("UserGoals")
-  assignedGuests          Guest[]                  @relation("AssignedTo")
-  invitedGuests           Guest[]                  @relation("InvitedBy")
-  guestCalls              GuestCall[]
-  guestVisits             GuestVisit[]
-  oracionesLed            OracionDeTres[]          @relation("LiderDoceOracion")
-  oracionesMiembro        OracionDeTresMiembro[]
-  guidedEnrollments       SeminarEnrollment[]      @relation("AssignedAuxiliar")
-  seminarEnrollments      SeminarEnrollment[]
-  professedModules        SeminarModule[]          @relation("ModuleProfessor")
-  cell                    Cell?                    @relation("CellMembers", fields: [cellId], references: [id])
-  parents                 UserHierarchy[]          @relation("HierarchyChild")
-  children                UserHierarchy[]          @relation("HierarchyParent")
-  profile                 UserProfile?
-  roles                   UserRole[]
-  auxiliaryModules        SeminarModule[]          @relation("ModuleAuxiliaries")
+  id                                                          Int                      @id @default(autoincrement())
+  email                                                       String                   @unique
+  phone                                                       String?                  @unique
+  password                                                    String
+  isActive                                                    Boolean                  @default(true)
+  isDeleted                                                   Boolean                  @default(false)
+  cellId                                                      Int?
+  createdAt                                                   DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt                                                   DateTime                 @updatedAt @db.Timestamptz(6)
+  mustChangePassword                                          Boolean                  @default(false)
+  kidsGroupId                                                 Int?
+  auditLogs                                                   AuditLog[]
+  hostedCells                                                 Cell[]                   @relation("CellHost")
+  ledCells                                                    Cell[]                   @relation("CellLeader")
+  doceNetworkCells                                            Cell[]                   @relation("CellLiderDoce")
+  cellAttendances                                             CellAttendance[]
+  churchAttendances                                           ChurchAttendance[]
+  classAttendances                                            ClassAttendance[]
+  coordinatedConventions                                      Convention[]             @relation("ConventionCoordinator")
+  conventionLeaderships                                       ConventionLeader[]
+  registeredConventions                                       ConventionRegistration[] @relation("ConventionRegistrar")
+  conventionRegistrations                                     ConventionRegistration[]
+  coordinatedEncuentros                                       Encuentro[]              @relation("EncuentroCoordinator")
+  encuentroLeaderships                                        EncuentroLeader[]
+  encuentroRegistrations                                      EncuentroRegistration[]
+  goals                                                       Goal[]                   @relation("UserGoals")
+  assignedGuests                                              Guest[]                  @relation("AssignedTo")
+  invitedGuests                                               Guest[]                  @relation("InvitedBy")
+  guestCalls                                                  GuestCall[]
+  guestVisits                                                 GuestVisit[]
+  KidAttendance                                               KidAttendance[]
+  KidsGroup_KidsGroup_auxiliaryIdToUser                       KidsGroup[]              @relation("KidsGroup_auxiliaryIdToUser")
+  KidsGroup_KidsGroup_professorIdToUser                       KidsGroup[]              @relation("KidsGroup_professorIdToUser")
+  oracionesLed                                                OracionDeTres[]          @relation("LiderDoceOracion")
+  oracionesMiembro                                            OracionDeTresMiembro[]
+  ResponsibleRelation_ResponsibleRelation_responsibleIdToUser ResponsibleRelation[]    @relation("ResponsibleRelation_responsibleIdToUser")
+  ResponsibleRelation_ResponsibleRelation_userIdToUser        ResponsibleRelation[]    @relation("ResponsibleRelation_userIdToUser")
+  guidedEnrollments                                           SeminarEnrollment[]      @relation("AssignedAuxiliar")
+  seminarEnrollments                                          SeminarEnrollment[]
+  professedModules                                            SeminarModule[]          @relation("ModuleProfessor")
+  cell                                                        Cell?                    @relation("CellMembers", fields: [cellId], references: [id])
+  KidsGroup_User_kidsGroupIdToKidsGroup                       KidsGroup?               @relation("User_kidsGroupIdToKidsGroup", fields: [kidsGroupId], references: [id])
+  parents                                                     UserHierarchy[]          @relation("HierarchyChild")
+  children                                                    UserHierarchy[]          @relation("HierarchyParent")
+  profile                                                     UserProfile?
+  roles                                                       UserRole[]
+  auxiliaryModules                                            SeminarModule[]          @relation("ModuleAuxiliaries")
+  showNewsPopup                                               Boolean                  @default(true)
+  authoredNews                                                News[]                   @relation("NewsAuthor")
 
   @@index([email])
   @@index([createdAt])
@@ -453,12 +462,6 @@ model EncuentroPayment {
   registration   EncuentroRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
 }
 
-enum EncuentroPaymentType {
-  ENCUENTRO
-  TRANSPORT
-  ACCOMMODATION
-}
-
 model EncuentroClassAttendance {
   id             Int                   @id @default(autoincrement())
   registrationId Int
@@ -560,6 +563,58 @@ model LegalDocument {
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
 
+model KidAttendance {
+  id        Int              @id @default(autoincrement())
+  date      DateTime         @db.Timestamptz(6)
+  userId    Int
+  groupId   Int
+  status    AttendanceStatus @default(PRESENTE)
+  notes     String?
+  createdAt DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime         @db.Timestamptz(6)
+  KidsGroup KidsGroup        @relation(fields: [groupId], references: [id])
+  User      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([date, userId])
+  @@index([date])
+  @@index([groupId])
+}
+
+model KidsGroup {
+  id                               Int             @id @default(autoincrement())
+  name                             String          @unique
+  minAge                           Int
+  maxAge                           Int
+  professorId                      Int?
+  auxiliaryId                      Int?
+  createdAt                        DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt                        DateTime        @db.Timestamptz(6)
+  KidAttendance                    KidAttendance[]
+  User_KidsGroup_auxiliaryIdToUser User?           @relation("KidsGroup_auxiliaryIdToUser", fields: [auxiliaryId], references: [id])
+  User_KidsGroup_professorIdToUser User?           @relation("KidsGroup_professorIdToUser", fields: [professorId], references: [id])
+  User_User_kidsGroupIdToKidsGroup User[]          @relation("User_kidsGroupIdToKidsGroup")
+
+  @@index([name])
+}
+
+model ResponsibleRelation {
+  id                                           Int      @id @default(autoincrement())
+  userId                                       Int
+  responsibleId                                Int
+  relationship                                 String?
+  createdAt                                    DateTime @default(now()) @db.Timestamptz(6)
+  User_ResponsibleRelation_responsibleIdToUser User     @relation("ResponsibleRelation_responsibleIdToUser", fields: [responsibleId], references: [id], onDelete: Cascade)
+  User_ResponsibleRelation_userIdToUser        User     @relation("ResponsibleRelation_userIdToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, responsibleId])
+}
+
+enum EncuentroPaymentType {
+  ENCUENTRO
+  TRANSPORT
+  ACCOMMODATION
+}
+
 enum HierarchyRole {
   PASTOR
   LIDER_DOCE
@@ -598,6 +653,7 @@ enum EntityType {
   KIDS_GROUP
   KID
   KID_ATTENDANCE
+  NEWS
 }
 
 enum ResourceType {
@@ -700,4 +756,19 @@ enum GoalType {
 enum OracionDeTresStatus {
   ACTIVO
   FINALIZADO
+}
+
+model News {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  imageUrl  String?
+  isActive  Boolean  @default(true)
+  authorId  Int
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  author    User     @relation("NewsAuthor", fields: [authorId], references: [id])
+
+  @@index([isActive])
+  @@index([createdAt])
 }

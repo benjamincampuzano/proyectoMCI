@@ -93,7 +93,8 @@ const register = async (req, res) => {
                 address: user.profile.address,
                 city: user.profile.city,
                 sex: user.profile.sex,
-                mustChangePassword: user.mustChangePassword
+                mustChangePassword: user.mustChangePassword,
+                showNewsPopup: user.showNewsPopup
             }
         });
     } catch (error) {
@@ -145,7 +146,8 @@ const login = async (req, res) => {
                 address: user.profile.address,
                 city: user.profile.city,
                 sex: user.profile.sex,
-                mustChangePassword: user.mustChangePassword
+                mustChangePassword: user.mustChangePassword,
+                showNewsPopup: user.showNewsPopup
             }
         });
     } catch (error) {
@@ -267,7 +269,8 @@ const registerSetup = async (req, res) => {
                 id: user.id,
                 email: user.email,
                 fullName: user.profile.fullName,
-                roles
+                roles,
+                showNewsPopup: user.showNewsPopup
             },
         });
     } catch (err) {

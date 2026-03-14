@@ -10,7 +10,8 @@ const {
     deleteUser,
     assignLeader,
     getMyNetwork,
-    searchUsers // Added
+    searchUsers, // Added
+    toggleNewsPopup
 } = require('../controllers/userController');
 const { authenticate, isAdmin, authorize } = require('../middleware/auth');
 
@@ -20,6 +21,7 @@ const router = express.Router();
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfile);
 router.put('/password', authenticate, changePassword);
+router.put('/toggle-news-popup', authenticate, toggleNewsPopup);
 
 // Dedicated search endpoint for internal leaders (Must be before /:id)
 // Allows ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA

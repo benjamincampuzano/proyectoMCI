@@ -6,6 +6,16 @@ const compression = require("compression");
 
 dotenv.config();
 
+// Desactivar logs en consola por petición del usuario para evitar fugas de información
+if (process.env.NODE_ENV === 'production' || true) {
+  const noop = () => {};
+  console.log = noop;
+  console.debug = noop;
+  console.info = noop;
+  // console.warn = noop; // Mantener advertencias para monitoreo interno
+  // console.error = noop; // Mantener errores para monitoreo interno
+}
+
 const app = express();
 
 /* ✅ Middleware base */
@@ -49,11 +59,6 @@ app.use(
 /* ✅ JSON parser */
 app.use(express.json());
 
-/* ✅ Request logger */
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
 
 /* ✅ Routes */
 const authRoutes = require("./routes/authRoutes");
@@ -71,6 +76,7 @@ const goalRoutes = require("./routes/goalRoutes");
 const oracionDeTresRoutes = require("./routes/oracionDeTresRoutes");
 const legalDocumentRoutes = require("./routes/legalDocumentRoutes");
 const kidsRoutes = require("./routes/kidsRoutes");
+const newsRoutes = require("./routes/newsRoutes");
 
 /* ✅ API endpoints */
 app.use("/api/auth", authRoutes);
@@ -88,6 +94,7 @@ app.use("/api/metas", goalRoutes);
 app.use("/api/oracion-de-tres", oracionDeTresRoutes);
 app.use("/api/legal-documents", legalDocumentRoutes);
 app.use("/api/kids", kidsRoutes);
+app.use("/api/news", newsRoutes);
 
 /* ✅ Healthcheck */
 app.get("/", (req, res) => {
@@ -112,5 +119,4 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
 });

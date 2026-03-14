@@ -69,6 +69,7 @@ export const AuthProvider = ({ children }) => {
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);
+            sessionStorage.removeItem('newsPopupDismissed');
             return { success: true, mustChangePassword: res.data.user?.mustChangePassword || false };
         } catch (error) {
             return { success: false, message: error.response?.data?.message || 'Login failed' };
@@ -120,6 +121,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
+        sessionStorage.removeItem('newsPopupDismissed');
     };
 
     const updateProfile = (updatedUser) => {
