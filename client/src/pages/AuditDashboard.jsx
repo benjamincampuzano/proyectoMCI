@@ -3,7 +3,8 @@ import {
     LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
     Legend, ResponsiveContainer, BarChart, Bar, Cell as ReCell, PieChart, Pie
 } from 'recharts';
-import {User, Calendar, FunnelIcon, MagnifyingGlassIcon, Download, Trash,
+import {
+    User, Calendar, FunnelIcon, MagnifyingGlassIcon, Download, Trash,
     Pen, PlusCircle, CaretCircleDownIcon, ShieldCheck, SignInIcon, PulseIcon, BarbellIcon
 } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
@@ -18,6 +19,9 @@ const AuditDashboard = () => {
     const [selectedLog, setSelectedLog] = useState(null); // Modal state
     const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
     const [pendingRestoreFile, setPendingRestoreFile] = useState(null);
+    const [isRestoring, setIsRestoring] = useState(false);
+    const [restoreProgress, setRestoreProgress] = useState(0);
+    const [restoreStatus, setRestoreStatus] = useState('');
     const memoizedStats = useMemo(() => stats, [stats]);
 
     const handleDownloadBackup = async (event) => {
@@ -105,17 +109,20 @@ const AuditDashboard = () => {
         const file = pendingRestoreFile;
         if (!file) return;
 
-        // Referencia al botón de restauración
-        const restoreButton = document.querySelector('input[type="file"]').closest('div').querySelector('button');
-        const originalText = restoreButton ? restoreButton.innerHTML : '';
+        setIsRestoring(true);
+        setRestoreProgress(0);
+        setRestoreStatus('Iniciando proceso de restauración...');
+
+        // Simular progreso inicial ya que el fetch no da progreso de subida por defecto sin XHR
+        const progressInterval = setInterval(() => {
+            setRestoreProgress(prev => {
+                if (prev < 90) return prev + Math.random() * 5;
+                return prev;
+            });
+        }, 800);
 
         try {
-            // Mostrar indicador de carga
-            if (restoreButton) {
-                restoreButton.innerHTML = '<span class="animate-spin">⏳</span> Restaurando...';
-                restoreButton.disabled = true;
-            }
-
+            setRestoreStatus('Subiendo archivo y procesando base de datos...');
             const baseURL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
             const response = await fetch(`${baseURL}/api/audit/restore`, {
                 method: 'POST',
@@ -131,27 +138,39 @@ const AuditDashboard = () => {
 
             const data = await response.json();
 
+            clearInterval(progressInterval);
+
             if (!response.ok) {
                 throw new Error(data.error || 'Error al restaurar el backup');
             }
 
-            toast.success('✅ Restauración completada exitosamente.\n\nLa aplicación se recargará en 3 segundos...');
+            setRestoreProgress(100);
+            setRestoreStatus('¡Restauración exitosa! Reiniciando sistema...');
+            toast.success('✅ Restauración completada exitosamente.');
 
-            // Recargar después de un breve delay
-            setTimeout(() => {
-                window.location.reload();
-            }, 3000);
+            // Esperar a que termine la cuenta regresiva antes de que la función retorne
+            // para que el ConfirmationModal no se cierre automáticamente
+            await new Promise((resolve) => {
+                let secondsLeft = 3;
+                const reloadInterval = setInterval(() => {
+                    secondsLeft -= 1;
+                    if (secondsLeft <= 0) {
+                        clearInterval(reloadInterval);
+                        window.location.reload();
+                        resolve();
+                    } else {
+                        setRestoreStatus(`La aplicación se recargará en ${secondsLeft} segundos...`);
+                    }
+                }, 1000);
+            });
 
         } catch (error) {
+            clearInterval(progressInterval);
             console.error('Error restoring backup:', error);
             toast.error(`❌ Error crítico: ${error.message}\n\nLa base de datos no fue modificada.`);
-        } finally {
-            // Restaurar botón si no se recarga
-            if (restoreButton && originalText) {
-                restoreButton.innerHTML = originalText;
-                restoreButton.disabled = false;
-            }
+            setIsRestoring(false);
             setPendingRestoreFile(null);
+            setShowRestoreConfirm(false);
         }
     };
 
@@ -665,56 +684,80 @@ const AuditDashboard = () => {
                 </div>
             </div>
 
-        {/* Confirmation Modal for Restore Backup */}
-        <ConfirmationModal
-            isOpen={showRestoreConfirm}
-            onClose={() => {
-                setShowRestoreConfirm(false);
-                setPendingRestoreFile(null);
-            }}
-            onConfirm={performRestoreBackup}
-            title="⚠️ Restaurar Copia de Seguridad"
-            message="Estás a punto de restaurar la base de datos completa"
-            confirmText="Restaurar Base de Datos"
-            confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
-        >
-            {pendingRestoreFile && (
-                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
-                    <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Archivo:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{pendingRestoreFile.name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600 dark:text-gray-400">Tamaño:</span>
-                            <span className="font-medium text-gray-900 dark:text-white">{(pendingRestoreFile.size / 1024 / 1024).toFixed(2)} MB</span>
+            {/* Confirmation Modal for Restore Backup */}
+            <ConfirmationModal
+                isOpen={showRestoreConfirm}
+                onClose={() => {
+                    setShowRestoreConfirm(false);
+                    setPendingRestoreFile(null);
+                }}
+                onConfirm={performRestoreBackup}
+                title={isRestoring ? "Restaurando Base de Datos..." : "⚠️ Restaurar Copia de Seguridad"}
+                message={isRestoring ? "Por favor espere a que el proceso finalice." : "Estás a punto de restaurar la base de datos completa"}
+                confirmText="Restaurar Base de Datos"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {pendingRestoreFile && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Archivo:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{pendingRestoreFile.name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Tamaño:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{(pendingRestoreFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
-                <div className="flex items-start gap-3">
-                    <div className="text-red-600 dark:text-red-400 mt-0.5">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
+                {isRestoring ? (
+                    <div className="py-6 space-y-4">
+                        <div className="flex justify-between items-end mb-1">
+                            <span className="text-sm font-medium text-blue-700 dark:text-blue-400 animate-pulse">
+                                {restoreStatus}
+                            </span>
+                            <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                                {Math.round(restoreProgress)}%
+                            </span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden shadow-inner">
+                            <div
+                                className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 h-full transition-all duration-300 ease-out relative"
+                                style={{ width: `${restoreProgress}%` }}
+                            >
+                                <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-shimmer"></div>
+                            </div>
+                        </div>
+                        <p className="text-xs text-center text-gray-400 italic">
+                            No cierre ni recargue esta ventana hasta finalizar.
+                        </p>
                     </div>
-                    <div>
-                        <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
-                            ⚠️ PELIGRO: Acción Destructiva
-                        </h4>
-                        <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
-                            <li>• Se eliminarán TODOS los datos actuales</li>
-                            <li>• Los datos serán reemplazados por el archivo de respaldo</li>
-                            <li>• La aplicación se recargará automáticamente</li>
-                            <li>• Esta acción NO se puede deshacer</li>
-                        </ul>
+                ) : (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                        <div className="flex items-start gap-3">
+                            <div className="text-red-600 dark:text-red-400 mt-0.5">
+                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                                    ⚠️ PELIGRO: Acción Destructiva
+                                </h4>
+                                <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                                    <li>• Se eliminarán TODOS los datos actuales</li>
+                                    <li>• Los datos serán reemplazados por el archivo de respaldo</li>
+                                    <li>• La aplicación se recargará automáticamente</li>
+                                    <li>• Esta acción NO se puede deshacer</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
+            )}
         </ConfirmationModal>
-    </div>
+    </div >
 );
 };
 

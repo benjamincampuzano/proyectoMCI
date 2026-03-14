@@ -14,3 +14,12 @@
     font-family: var(--font-sans);
   }
 }
+@layer utilities {
+  @keyframes shimmer {
+    from { background-position: 0 0; }
+    to { background-position: 1rem 0; }
+  }
+  .animate-shimmer {
+    animation: shimmer 1s linear infinite;
+  }
+}
