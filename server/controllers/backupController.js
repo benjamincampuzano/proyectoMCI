@@ -1,4 +1,4 @@
-const { execSync } = require("child_process");
+const { execSync, execFileSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 require("dotenv").config();
@@ -51,13 +51,14 @@ const downloadBackup = async (req, res) => {
         const filePath = path.join(backupsDir, fileName);
 
         const pgDumpPath = findPgExecutable('pg_dump');
-        // Usamos comillas para manejar espacios en rutas y URLs
-        const cmd = `"${pgDumpPath}" "${DATABASE_URL}" -Fc -f "${filePath}"`;
 
         try {
-            // No usamos { stdio: "inherit" } para poder capturar el error si ocurre
-            execSync(cmd, { stdio: "pipe" });
+            // Usamos execFileSync para evitar problemas con comillas y espacios en Windows/Linux
+            execFileSync(pgDumpPath, [DATABASE_URL, "-Fc", "-f", filePath]);
 
+            // Exponer el header Content-Disposition para que el frontend pueda leer el nombre del archivo
+            res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+            
             // Enviar el archivo al cliente
             res.download(filePath, fileName, (err) => {
                 if (err) {
@@ -98,12 +99,17 @@ const restoreBackup = async (req, res) => {
         }
 
         const filePath = req.file.path;
-
         const pgRestorePath = findPgExecutable('pg_restore');
-        const cmd = `"${pgRestorePath}" --clean --if-exists --no-owner --dbname="${DATABASE_URL}" "${filePath}"`;
 
         try {
-            execSync(cmd, { stdio: "pipe" });
+            // execFileSync evita problemas de la shell con símbolos y espacios
+            execFileSync(pgRestorePath, [
+                "--clean",
+                "--if-exists",
+                "--no-owner",
+                "--dbname=" + DATABASE_URL,
+                filePath
+            ]);
 
             // Eliminar el archivo temporal
             fs.unlink(filePath, (unlinkErr) => {
@@ -113,7 +119,6 @@ const restoreBackup = async (req, res) => {
             return res.status(200).json({ message: "Base de datos restaurada exitosamente" });
         } catch (execError) {
             console.error("❌ Error al ejecutar pg_restore:");
-            console.error("Comando ejecutado:", cmd);
             console.error("Mensaje de error:", execError.message);
 
             if (execError.stderr) {
@@ -125,17 +130,12 @@ const restoreBackup = async (req, res) => {
             }
 
             // Verificar si el ejecutable existe
-            const pgRestorePath = findPgExecutable('pg_restore');
             console.error("Ruta de pg_restore utilizada:", pgRestorePath);
             console.error("¿pg_restore existe?", fs.existsSync(pgRestorePath));
-
-            // Verificar conexión a la base de datos
-            console.error("DATABASE_URL configurada:", !!DATABASE_URL);
 
             return res.status(500).json({
                 error: "Error al restaurar la base de datos.",
                 details: execError.stderr ? execError.stderr.toString() : execError.message,
-                command: cmd,
                 pgRestorePath: pgRestorePath,
                 fileExists: fs.existsSync(filePath)
             });
