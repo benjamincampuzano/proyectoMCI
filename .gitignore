@@ -37,3 +37,4 @@ backup/
 .claude/
 .gemini/
 BBDD_Prueba.md
+seedUsersFromBBDD.js
