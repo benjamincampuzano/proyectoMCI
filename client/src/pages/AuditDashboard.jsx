@@ -24,17 +24,22 @@ const AuditDashboard = () => {
     const [restoreStatus, setRestoreStatus] = useState('');
     const memoizedStats = useMemo(() => stats, [stats]);
 
-    const handleDownloadBackup = async (event) => {
+    const handleDownloadBackup = async (event, format = 'dump') => {
         try {
             // Mostrar indicador de carga
             const button = event.target;
             const originalText = button.innerHTML;
-            button.innerHTML = '<span class="animate-spin">⏳</span> Creando backup...';
+            const formatText = format === 'sql' ? 'SQL' : '.dump';
+            button.innerHTML = `<span class="animate-spin">⏳</span> Creando backup ${formatText}...`;
             button.disabled = true;
 
             // Llamar al endpoint profesional de backup PostgreSQL
             const baseURL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-            const response = await fetch(`${baseURL}/api/audit/backup`, {
+            const url = format === 'sql' 
+                ? `${baseURL}/api/audit/backup?format=sql`
+                : `${baseURL}/api/audit/backup`;
+                
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -48,7 +53,7 @@ const AuditDashboard = () => {
 
             // Obtener el nombre del archivo desde los headers o usar uno predeterminado
             const contentDisposition = response.headers.get('content-disposition');
-            let fileName = `backup_postgres_${new Date().toISOString().replace(/[:.]/g, '-')}.dump`;
+            let fileName = `backup_postgres_${new Date().toISOString().replace(/[:.]/g, '-')}.${format}`;
 
             if (contentDisposition) {
                 const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
@@ -58,16 +63,19 @@ const AuditDashboard = () => {
             }
 
             const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
+            const url_window = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
+            a.href = url_window;
             a.download = fileName;
             document.body.appendChild(a);
             a.click();
             a.remove();
-            window.URL.revokeObjectURL(url);
+            window.URL.revokeObjectURL(url_window);
 
-            toast.success('✅ Backup de PostgreSQL descargado exitosamente');
+            const formatMessage = format === 'sql' 
+                ? '✅ Backup SQL (compatible con Railway) descargado exitosamente'
+                : '✅ Backup de PostgreSQL descargado exitosamente';
+            toast.success(formatMessage);
         } catch (error) {
             console.error('Error downloading backup:', error);
             toast.error(`❌ Error: ${error.message}`);
@@ -84,9 +92,9 @@ const AuditDashboard = () => {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Validar que sea un archivo .dump de PostgreSQL
-        if (!file.name.endsWith('.dump')) {
-            toast.error('❌ Error: Solo se permiten archivos de backup de PostgreSQL (.dump)');
+        // Validar que sea un archivo de backup válido (.dump o .sql)
+        if (!file.name.endsWith('.dump') && !file.name.endsWith('.sql')) {
+            toast.error('❌ Error: Solo se permiten archivos de backup de PostgreSQL (.dump o .sql)');
             event.target.value = '';
             return;
         }
@@ -97,6 +105,14 @@ const AuditDashboard = () => {
             toast.error('❌ Error: El archivo es demasiado grande. Máximo permitido: 100MB');
             event.target.value = '';
             return;
+        }
+
+        // Mostrar información sobre el formato
+        const isSqlFormat = file.name.endsWith('.sql');
+        if (isSqlFormat) {
+            toast.success('✅ Archivo SQL detectado - Compatible con Railway');
+        } else {
+            toast.info('ℹ️ Archivo .dump detectado - Requiere herramientas PostgreSQL');
         }
 
         // Mostrar modal de confirmación en lugar de window.confirm
@@ -641,13 +657,25 @@ const AuditDashboard = () => {
                         <p className="text-sm text-blue-600 dark:text-blue-400 mb-4">
                             Descarga una copia completa de la base de datos
                         </p>
-                        <button
-                            onClick={handleDownloadBackup}
-                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                        >
-                            <Download size={18} />
-                            Descargar Backup
-                        </button>
+                        <div className="space-y-2">
+                            <button
+                                onClick={(e) => handleDownloadBackup(e, 'sql')}
+                                className="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Download size={18} />
+                                Descargar Backup SQL (Railway)
+                            </button>
+                            <button
+                                onClick={(e) => handleDownloadBackup(e, 'dump')}
+                                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Download size={18} />
+                                Descargar Backup .dump (Local)
+                            </button>
+                        </div>
+                        <p className="text-xs text-blue-500 dark:text-blue-400 mt-2">
+                            💡 Usa SQL para Railway, .dump para desarrollo local
+                        </p>
                     </div>
 
                     {/* Restore Section */}
@@ -664,7 +692,7 @@ const AuditDashboard = () => {
                             <input
                                 type="file"
                                 id="backupUpload"
-                                accept=".dump"
+                                accept=".dump,.sql"
                                 className="hidden"
                                 onChange={handleRestoreBackup}
                             />

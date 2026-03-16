@@ -36,3 +36,4 @@ backup/
 *.dump
 .claude/
 .gemini/
+BBDD_Prueba.md
