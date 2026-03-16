@@ -19,8 +19,22 @@ const SetupWizard = () => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { setup, isInitialized } = useAuth();
+    const { setup, isInitialized, loading: authLoading } = useAuth();
     const navigate = useNavigate();
+
+    // If system is already initialized, redirect immediately
+    if (!authLoading && isInitialized) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // Show loading while checking initialization status
+    if (authLoading) {
+        return (
+            <div className="min-h-[100dvh] bg-gray-900 flex items-center justify-center p-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
 
     useEffect(() => {
         if (isInitialized) {

@@ -24,20 +24,15 @@ const AuditDashboard = () => {
     const [restoreStatus, setRestoreStatus] = useState('');
     const memoizedStats = useMemo(() => stats, [stats]);
 
-    const handleDownloadBackup = async (event, format = 'dump') => {
+    const handleDownloadBackup = async (event) => {
         try {
-            // Mostrar indicador de carga
             const button = event.target;
             const originalText = button.innerHTML;
-            const formatText = format === 'sql' ? 'SQL' : '.dump';
-            button.innerHTML = `<span class="animate-spin">⏳</span> Creando backup ${formatText}...`;
+            button.innerHTML = `<span class="animate-spin">⏳</span> Creando backup SQL...`;
             button.disabled = true;
 
-            // Llamar al endpoint profesional de backup PostgreSQL
             const baseURL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-            const url = format === 'sql' 
-                ? `${baseURL}/api/audit/backup?format=sql`
-                : `${baseURL}/api/audit/backup`;
+            const url = `${baseURL}/api/audit/backup`;
                 
             const response = await fetch(url, {
                 method: 'GET',
@@ -51,9 +46,8 @@ const AuditDashboard = () => {
                 throw new Error(errorData.error || 'Error al descargar el backup');
             }
 
-            // Obtener el nombre del archivo desde los headers o usar uno predeterminado
             const contentDisposition = response.headers.get('content-disposition');
-            let fileName = `backup_postgres_${new Date().toISOString().replace(/[:.]/g, '-')}.${format}`;
+            let fileName = `backup_${new Date().toISOString().replace(/[:.]/g, '-')}.sql`;
 
             if (contentDisposition) {
                 const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
@@ -72,15 +66,11 @@ const AuditDashboard = () => {
             a.remove();
             window.URL.revokeObjectURL(url_window);
 
-            const formatMessage = format === 'sql' 
-                ? '✅ Backup SQL (compatible con Railway) descargado exitosamente'
-                : '✅ Backup de PostgreSQL descargado exitosamente';
-            toast.success(formatMessage);
+            toast.success('✅ Backup SQL descargado - Compatible con cualquier PostgreSQL');
         } catch (error) {
             console.error('Error downloading backup:', error);
             toast.error(`❌ Error: ${error.message}`);
         } finally {
-            // Restaurar botón
             if (button) {
                 button.innerHTML = originalText;
                 button.disabled = false;
@@ -92,30 +82,21 @@ const AuditDashboard = () => {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Validar que sea un archivo de backup válido (.dump o .sql)
-        if (!file.name.endsWith('.dump') && !file.name.endsWith('.sql')) {
-            toast.error('❌ Error: Solo se permiten archivos de backup de PostgreSQL (.dump o .sql)');
+        if (!file.name.toLowerCase().endsWith('.sql')) {
+            toast.error('❌ Error: Solo se permiten archivos de backup SQL (.sql)');
             event.target.value = '';
             return;
         }
 
-        // Validar tamaño máximo (ej. 100MB)
-        const maxSize = 100 * 1024 * 1024; // 100MB
+        const maxSize = 100 * 1024 * 1024;
         if (file.size > maxSize) {
             toast.error('❌ Error: El archivo es demasiado grande. Máximo permitido: 100MB');
             event.target.value = '';
             return;
         }
 
-        // Mostrar información sobre el formato
-        const isSqlFormat = file.name.endsWith('.sql');
-        if (isSqlFormat) {
-            toast.success('✅ Archivo SQL detectado - Compatible con Railway');
-        } else {
-            toast.info('ℹ️ Archivo .dump detectado - Requiere herramientas PostgreSQL');
-        }
+        toast.success('✅ Archivo SQL detectado - Iniciando restauración...');
 
-        // Mostrar modal de confirmación en lugar de window.confirm
         setPendingRestoreFile(file);
         setShowRestoreConfirm(true);
         event.target.value = '';
@@ -659,22 +640,15 @@ const AuditDashboard = () => {
                         </p>
                         <div className="space-y-2">
                             <button
-                                onClick={(e) => handleDownloadBackup(e, 'sql')}
+                                onClick={handleDownloadBackup}
                                 className="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                             >
                                 <Download size={18} />
-                                Descargar Backup SQL (Railway)
-                            </button>
-                            <button
-                                onClick={(e) => handleDownloadBackup(e, 'dump')}
-                                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Download size={18} />
-                                Descargar Backup .dump (Local)
+                                Descargar Backup SQL
                             </button>
                         </div>
                         <p className="text-xs text-blue-500 dark:text-blue-400 mt-2">
-                            💡 Usa SQL para Railway, .dump para desarrollo local
+                            Compatible con cualquier PostgreSQL (Local, Railway, Nube)
                         </p>
                     </div>
 
@@ -692,7 +666,7 @@ const AuditDashboard = () => {
                             <input
                                 type="file"
                                 id="backupUpload"
-                                accept=".dump,.sql"
+                                accept=".sql"
                                 className="hidden"
                                 onChange={handleRestoreBackup}
                             />
