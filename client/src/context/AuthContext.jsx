@@ -20,7 +20,7 @@ const normalizeUserRoles = (u) => {
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [isInitialized, setIsInitialized] = useState(true);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         const checkInit = async () => {
