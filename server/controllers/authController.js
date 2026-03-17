@@ -106,6 +106,8 @@ const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        console.log('Login attempt:', { email, passwordLength: password?.length });
+
         const user = await prisma.user.findUnique({
             where: { email },
             include: {
@@ -115,10 +117,19 @@ const login = async (req, res) => {
         });
 
         if (!user) {
+            console.log('User not found:', email);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        console.log('User found:', { 
+            userId: user.id, 
+            email: user.email, 
+            mustChangePassword: user.mustChangePassword 
+        });
+
         const isMatch = await bcrypt.compare(password, user.password);
+        console.log('Password match:', isMatch);
+
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
@@ -133,6 +144,8 @@ const login = async (req, res) => {
 
         // Update last login (we don't have lastLogin field in User anymore, choosing to ignore or add to profile if needed)
         // For now, removing it as it's not in the new schema
+
+        console.log('Login successful for:', email);
 
         res.status(200).json({
             token,
@@ -149,7 +162,7 @@ const login = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
+        console.error('Login error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -341,6 +354,12 @@ const forcePasswordChange = async (req, res) => {
         const { userId } = req.params;
         const { newTempPassword } = req.body;
 
+        console.log('Backend: Recibida solicitud de reseteo:', {
+            userId,
+            newTempPassword,
+            requestingUser: req.user
+        });
+
         // Validate the temporary password
         const user = await prisma.user.findUnique({
             where: { id: parseInt(userId) },
@@ -362,6 +381,8 @@ const forcePasswordChange = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(newTempPassword, 10);
 
+        console.log('Backend: Contraseña hasheada correctamente');
+
         await prisma.user.update({
             where: { id: parseInt(userId) },
             data: {
@@ -369,6 +390,8 @@ const forcePasswordChange = async (req, res) => {
                 mustChangePassword: true
             }
         });
+
+        console.log('Backend: Usuario actualizado exitosamente');
 
         await logActivity(req.user.userId, 'UPDATE', 'USER', parseInt(userId), { message: 'Reinicio de contraseña por administrador' }, req.ip, req.headers['user-agent']);
 

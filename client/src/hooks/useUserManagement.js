@@ -14,6 +14,7 @@ const useUserManagement = () => {
     const [editingUser, setEditingUser] = useState(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [passwordResetUser, setPasswordResetUser] = useState(null);
     const auth = useAuth();
     const currentUser = auth.user;
 
@@ -157,6 +158,26 @@ const useUserManagement = () => {
         }
     }, [fetchUsers]);
 
+    const handlePasswordReset = useCallback(async (user, tempPassword) => {
+        setSubmitting(true);
+        setError('');
+        setSuccess('');
+        
+        try {
+            const response = await api.post(`/auth/force-password-change/${user.id}`, {
+                newTempPassword: tempPassword
+            });
+            
+            setSuccess(`Contraseña de ${user.fullName} reseteada exitosamente. Contraseña temporal: ${tempPassword}`);
+            setPasswordResetUser(null);
+            fetchUsers();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Error al resetear contraseña');
+        } finally {
+            setSubmitting(false);
+        }
+    }, [fetchUsers]);
+
     const pastores = users.filter(u => u.roles?.includes('PASTOR'));
     const lideresDoce = users.filter(u => u.roles?.includes('LIDER_DOCE'));
     const lideresCelula = users.filter(u => u.roles?.includes('LIDER_CELULA'));
@@ -217,6 +238,9 @@ const useUserManagement = () => {
         handleCreateUser,
         handleUpdateUser,
         handleDeleteUser,
+        handlePasswordReset,
+        passwordResetUser,
+        setPasswordResetUser,
         getAssignableRoles,
         canEdit,
         isAdmin: isUserAdmin,

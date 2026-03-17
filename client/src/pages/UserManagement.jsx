@@ -4,6 +4,7 @@ import { PageHeader, Button } from '../components/ui';
 import UserFilters from '../components/UserManagement/UserFilters';
 import UserTable from '../components/UserManagement/UserTable';
 import UserFormModal from '../components/UserManagement/UserFormModal';
+import PasswordResetModal from '../components/UserManagement/PasswordResetModal';
 
 const UserManagement = () => {
     const {
@@ -32,6 +33,9 @@ const UserManagement = () => {
         handleCreateUser,
         handleUpdateUser,
         handleDeleteUser,
+        handlePasswordReset,
+        passwordResetUser,
+        setPasswordResetUser,
         canEdit,
         isAdmin,
     } = useUserManagement();
@@ -121,6 +125,7 @@ const UserManagement = () => {
                     role: user.roles?.[0] || 'DISCIPULO'
                 })}
                 onDelete={handleDeleteUser}
+                onResetPassword={setPasswordResetUser}
             />
 
             <UserFormModal
@@ -158,6 +163,14 @@ const UserManagement = () => {
                     calculateAge={calculateAge}
                 />
             )}
+
+            <PasswordResetModal
+                isOpen={!!passwordResetUser}
+                onClose={() => setPasswordResetUser(null)}
+                user={passwordResetUser}
+                onConfirm={handlePasswordReset}
+                submitting={submitting}
+            />
         </div>
     );
 };

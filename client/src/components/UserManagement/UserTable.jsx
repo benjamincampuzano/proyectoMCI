@@ -1,4 +1,4 @@
-import { EnvelopeOpen, Phone, MapPin, Pencil, Trash} from '@phosphor-icons/react';
+import { EnvelopeOpen, Phone, MapPin, Pencil, Trash, Key } from '@phosphor-icons/react';
 import DataTable from '../DataTable';
 import PropTypes from 'prop-types';
 
@@ -14,7 +14,7 @@ const calculateAge = (birthDate) => {
     return age;
 };
 
-const UserTable = ({ users, loading, canEdit, onEdit, onDelete }) => {
+const UserTable = ({ users, loading, canEdit, onEdit, onDelete, onResetPassword }) => {
     const columns = [
         {
             key: 'user',
@@ -128,12 +128,21 @@ const UserTable = ({ users, loading, canEdit, onEdit, onDelete }) => {
                     <button
                         onClick={() => onEdit(user)}
                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                        title="Editar usuario"
                     >
                         <Pencil size={18} />
                     </button>
                     <button
+                        onClick={() => onResetPassword(user)}
+                        className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
+                        title="Resetear contraseña"
+                    >
+                        <Key size={18} />
+                    </button>
+                    <button
                         onClick={() => onDelete(user.id)}
                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        title="Eliminar usuario"
                     >
                         <Trash size={18} />
                     </button>
@@ -159,6 +168,7 @@ UserTable.propTypes = {
     canEdit: PropTypes.bool.isRequired,
     onEdit: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
+    onResetPassword: PropTypes.func.isRequired,
 };
 
 export default UserTable;
