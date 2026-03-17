@@ -42,6 +42,7 @@ const useUserManagement = () => {
         pastorId: '',
         liderDoceId: '',
         liderCelulaId: '',
+        isCoordinator: false,
         dataPolicyAccepted: false,
         dataTreatmentAuthorized: false,
         minorConsentAuthorized: false
@@ -78,6 +79,8 @@ const useUserManagement = () => {
 
             if (payload.liderCelulaId) payload.liderCelulaId = parseInt(payload.liderCelulaId);
             else delete payload.liderCelulaId;
+
+            if (payload.isCoordinator !== undefined) payload.isCoordinator = !!payload.isCoordinator;
 
             Object.keys(payload).forEach(key => payload[key] === '' && delete payload[key]);
 
@@ -118,6 +121,7 @@ const useUserManagement = () => {
                 pastorId: editingUser.pastorId ? parseInt(editingUser.pastorId) : null,
                 liderDoceId: editingUser.liderDoceId ? parseInt(editingUser.liderDoceId) : null,
                 liderCelulaId: editingUser.liderCelulaId ? parseInt(editingUser.liderCelulaId) : null,
+                isCoordinator: editingUser.isCoordinator || false,
                 birthDate: editingUser.birthDate,
                 dataPolicyAccepted: editingUser.dataPolicyAccepted,
                 dataTreatmentAuthorized: editingUser.dataTreatmentAuthorized,

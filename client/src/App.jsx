@@ -34,8 +34,9 @@ const LegalDocuments = lazy(() => import('./pages/LegalDocuments'));
 const PrivateRoute = ({ children }) => {
   const { user, loading, isInitialized } = useAuth();
   if (loading) return <div>Loading...</div>;
-  if (!isInitialized) return <Navigate to="/setup" />;
-  return user ? children : <Navigate to="/login" />;
+  if (!user && !isInitialized) return <Navigate to="/setup" />;
+  if (!user && isInitialized) return <Navigate to="/login" />;
+  return children;
 };
 
 const AdminRoute = ({ children }) => {

@@ -8,7 +8,8 @@ import ConfirmationModal from '../ConfirmationModal';
 const CLASSES_COUNT = 12;
 
 const CATEGORY_INFO = {
-    'KIDS': { label: 'Kids', minAge: 5, maxAge: 10 },
+    'KIDS': { label: 'Kids', minAge: 5, maxAge: 7 },
+    'TEENS': { label: 'Teens', minAge: 8, maxAge: 10 },
     'ROCAS': { label: 'Rocas', minAge: 11, maxAge: 13 },
     'JOVENES': { label: 'Jóvenes', minAge: 14, maxAge: 99 }
 };

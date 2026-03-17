@@ -62,9 +62,11 @@ model User {
   profile                 UserProfile?
   roles                   UserRole[]
   auxiliaryModules        SeminarModule[]          @relation("ModuleAuxiliaries")
+  isCoordinator           Boolean                  @default(false)
 
   @@index([email])
   @@index([createdAt])
+  @@index([isCoordinator])
 }
 
 model UserProfile {
@@ -634,6 +636,7 @@ enum Network {
   HOMBRES
   JOVENES
   KIDS
+  TEENS
   ROCAS
 }
 

@@ -77,6 +77,69 @@ const generateSqlBackup = async (databaseUrl, filePath) => {
     }
 };
 
+const getTableDependencies = async (client) => {
+    const dependencies = {};
+    
+    // Obtener todas las foreign keys
+    const fkResult = await client.query(`
+        SELECT 
+            tc.table_name, 
+            kcu.column_name, 
+            ccu.table_name AS foreign_table_name,
+            ccu.column_name AS foreign_column_name 
+        FROM information_schema.table_constraints AS tc 
+        JOIN information_schema.key_column_usage AS kcu
+            ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+        JOIN information_schema.constraint_column_usage AS ccu
+            ON ccu.constraint_name = tc.constraint_name
+            AND ccu.table_schema = tc.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY' 
+            AND tc.table_schema = 'public'
+    `);
+    
+    // Mapear dependencias
+    fkResult.rows.forEach(row => {
+        if (!dependencies[row.table_name]) {
+            dependencies[row.table_name] = [];
+        }
+        dependencies[row.table_name].push(row.foreign_table_name);
+    });
+    
+    return dependencies;
+};
+
+const topologicalSort = (tables, dependencies) => {
+    const sorted = [];
+    const visited = new Set();
+    const visiting = new Set();
+    
+    const visit = (table) => {
+        if (visiting.has(table)) {
+            throw new Error(`Ciclo detectado en dependencias de tablas: ${table}`);
+        }
+        if (visited.has(table)) {
+            return;
+        }
+        
+        visiting.add(table);
+        
+        const deps = dependencies[table] || [];
+        deps.forEach(dep => {
+            if (tables.includes(dep)) {
+                visit(dep);
+            }
+        });
+        
+        visiting.delete(table);
+        visited.add(table);
+        sorted.push(table);
+    };
+    
+    tables.forEach(table => visit(table));
+    return sorted;
+};
+
 const generateSqlBackupWithNodeClient = async (databaseUrl, filePath) => {
     const client = new Client({
         connectionString: databaseUrl,
@@ -101,23 +164,12 @@ const generateSqlBackupWithNodeClient = async (databaseUrl, filePath) => {
         sqlContent += "-- Fecha: " + new Date().toISOString() + "\n";
         sqlContent += "-- Formato: SQL plano compatible con PostgreSQL\n\n";
         
+        // Agregar comandos para deshabilitar foreign keys
+        sqlContent += "-- Deshabilitar foreign keys para evitar problemas de dependencias\n";
+        sqlContent += "SET session_replication_role = replica;\n\n";
+        
         for (const table of tables) {
             console.log(`📝 Procesando tabla: ${table}`);
-            
-            const createResult = await client.query(`
-                SELECT pg_get_constraintdef(conid) as constraint_def,
-                       pg_get_indexdef(idxid) as index_def
-                FROM (
-                    SELECT conid, conname, pg_get_constraintdef(conid) 
-                    FROM pg_constraint 
-                    WHERE contype = 'f' AND conrelid = $1::regclass
-                ) AS fk
-                JOIN (
-                    SELECT indexrelid, indexrelname, pg_get_indexdef(indexrelid) 
-                    FROM pg_index 
-                    WHERE indrelid = $1::regclass AND indisprimary
-                ) AS pk ON 1=1
-            `, [table]).catch(() => ({ rows: [] }));
             
             const createTableResult = await client.query(`
                 SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
@@ -139,10 +191,10 @@ const generateSqlBackupWithNodeClient = async (databaseUrl, filePath) => {
                     return def;
                 });
                 
-                sqlContent += `DROP TABLE IF EXISTS ${table} CASCADE;\n`;
-                sqlContent += `CREATE TABLE ${table} (\n  ${columns.join(',\n  ')}\n);\n\n`;
+                sqlContent += `DROP TABLE IF EXISTS "${table}" CASCADE;\n`;
+                sqlContent += `CREATE TABLE "${table}" (\n  ${columns.join(',\n  ')}\n);\n\n`;
                 
-                const dataResult = await client.query(`SELECT * FROM ${table}`);
+                const dataResult = await client.query(`SELECT * FROM "${table}"`);
                 
                 if (dataResult.rows.length > 0) {
                     for (const row of dataResult.rows) {
@@ -156,13 +208,17 @@ const generateSqlBackupWithNodeClient = async (databaseUrl, filePath) => {
                             if (Buffer.isBuffer(val)) return `'\\x${val.toString('hex')}'`;
                             return `'${String(val).replace(/'/g, "''")}'`;
                         });
-                        sqlContent += `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${vals.join(', ')});\n`;
+                        sqlContent += `INSERT INTO "${table}" (${cols.join(', ')}) VALUES (${vals.join(', ')});\n`;
                     }
                 }
                 
                 sqlContent += "\n";
             }
         }
+        
+        // Reactivar foreign keys al final
+        sqlContent += "-- Reactivar foreign keys\n";
+        sqlContent += "SET session_replication_role = DEFAULT;\n\n";
         
         fs.writeFileSync(filePath, sqlContent, 'utf8');
         console.log(`✅ Backup SQL generado: ${filePath} (${fs.statSync(filePath).size} bytes)`);

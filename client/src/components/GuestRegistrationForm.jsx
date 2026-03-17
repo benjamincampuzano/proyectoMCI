@@ -12,6 +12,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
         sex: '',
         phone: '',
         address: '',
+        neighborhood: '',
         city: '',
         prayerRequest: '',
         invitedById: null,
@@ -126,6 +127,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                 sex: '',
                 phone: '',
                 address: '',
+                neighborhood: '',
                 city: '',
                 prayerRequest: '',
                 invitedById: null,
@@ -154,6 +156,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
             sex: '',
             phone: '',
             address: '',
+            neighborhood: '',
             city: '',
             prayerRequest: '',
             invitedById: null,
@@ -235,18 +238,6 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
 
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {/* Hidden Document Type Field */}
-                                <input
-                                    type="hidden"
-                                    name="documentType"
-                                    value="NO_SPECIFIED"
-                                />
-                                {/* Hidden Document Number Field */}
-                                <input
-                                    type="hidden"
-                                    name="documentNumber"
-                                    value="NO_SPECIFIED"
-                                />
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Nombre Completo <span className="text-red-400">*</span>
@@ -314,6 +305,19 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                                         type="text"
                                         name="address"
                                         value={formData.address}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Barrio
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="neighborhood"
+                                        value={formData.neighborhood}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     />

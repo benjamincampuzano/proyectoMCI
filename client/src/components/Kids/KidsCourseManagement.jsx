@@ -10,7 +10,8 @@ import KidsClassMatrix from './KidsClassMatrix';
 
 
 const CATEGORY_INFO = {
-    'KIDS': { label: 'Kids', color: 'pink', ageRange: '5-10 años' },
+    'KIDS': { label: 'Kids', color: 'pink', ageRange: '5-7 años' },
+    'TEENS': { label: 'Teens', color: 'yellow', ageRange: '8-10 años' },
     'ROCAS': { label: 'Rocas', color: 'orange', ageRange: '11-13 años' },
     'JOVENES': { label: 'Jóvenes', color: 'purple', ageRange: '14+ años' }
 };

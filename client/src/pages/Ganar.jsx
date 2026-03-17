@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import TabNavigator from '../components/TabNavigator';
@@ -8,37 +8,67 @@ import GuestStats from '../components/GuestStats';
 import OracionDeTresManagement from '../components/OracionDeTresManagement';
 import { PageHeader, Button } from '../components/ui';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
+import CoordinatorSelector from '../components/CoordinatorSelector';
+import api from '../utils/api';
 
 const Ganar = () => {
     const { user, hasRole } = useAuth();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showRegistration, setShowRegistration] = useState(false);
+    const [moduleCoordinator, setModuleCoordinator] = useState(null);
+
+    // Handler for coordinator changes
+    const handleCoordinatorChange = (newCoordinator) => {
+        setModuleCoordinator(newCoordinator);
+        setRefreshTrigger(prev => prev + 1); // Trigger refresh of components
+        
+        // After a short delay, refresh the coordinator data from server
+        if (newCoordinator) {
+            setTimeout(() => {
+                fetchCoordinator();
+            }, 500);
+        } else {
+            setTimeout(() => {
+                fetchCoordinator();
+            }, 500);
+        }
+    };
+
+    const fetchCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/ganar');
+            setModuleCoordinator(res.data);
+        } catch (error) {
+            console.error('Error fetching coordinator:', error);
+            // If the endpoint doesn't exist, try to find a coordinator by isCoordinator flag
+            try {
+                const coordinatorsRes = await api.get('/coordinators', {
+                    params: { module: 'ganar' }
+                });
+                const coordinators = coordinatorsRes.data;
+                if (coordinators && coordinators.length > 0) {
+                    // Find the first coordinator with LIDER_DOCE role and isCoordinator flag
+                    const liderDoceCoordinator = coordinators.find(c => c.role === 'LIDER_DOCE') || coordinators[0];
+                    setModuleCoordinator(liderDoceCoordinator);
+                } else {
+                    setModuleCoordinator(null);
+                }
+            } catch (fallbackError) {
+                console.error('Fallback coordinator fetch failed:', fallbackError);
+                setModuleCoordinator(null);
+            }
+        }
+    };
+
+    useEffect(() => {
+        fetchCoordinator();
+    }, []);
 
     // Check if user is pastor
     const isPastor = hasRole(ROLES.PASTOR);
 
-    const handleGuestCreated = () => {
-        // Trigger refresh of guest list and hide form
-        setRefreshTrigger(prev => prev + 1);
-        setShowRegistration(false);
-    };
-
-    const GuestListTab = () => (
-        <>
-            {/* Only show registration form for non-pastor roles */}
-            {!isPastor && (
-                <GuestRegistrationForm 
-                    isOpen={showRegistration}
-                    onClose={() => setShowRegistration(false)}
-                    onGuestCreated={handleGuestCreated} 
-                />
-            )}
-            <GuestList refreshTrigger={refreshTrigger} />
-        </>
-    );
-
     const tabs = [
-        { id: 'list', label: 'Lista de Invitados', component: GuestListTab },
+        { id: 'list', label: 'Lista de Invitados', component: GuestList },
         {
             id: 'stats',
             label: 'Estadísticas',
@@ -60,16 +90,26 @@ const Ganar = () => {
             <PageHeader
                 title="Ganar"
                 description="Registro y seguimiento de invitados"
-                action={activeTab === 'list' && (
-                    <Button
-                        variant={isPastor ? 'outline' : (showRegistration ? 'error' : 'primary')}
-                        onClick={() => !isPastor && setShowRegistration(!showRegistration)}
-                        disabled={isPastor}
-                        className={isPastor ? 'opacity-50 cursor-not-allowed' : ''}
-                    >
-                        {isPastor ? 'Registro no disponible para Pastores' : (showRegistration ? 'Cancelar Registro' : 'Registrar Nuevo Invitado')}
-                    </Button>
-                )}
+                action={
+                    <div className="flex items-center gap-4">
+                        <CoordinatorSelector 
+                            moduleCoordinator={moduleCoordinator}
+                            moduleName="Ganar"
+                            onCoordinatorChange={handleCoordinatorChange}
+                            disabled={!hasRole(ROLES.ADMIN)}
+                        />
+                        {activeTab === 'list' && (
+                            <Button
+                                variant={isPastor ? 'outline' : (showRegistration ? 'error' : 'primary')}
+                                onClick={() => !isPastor && setShowRegistration(!showRegistration)}
+                                disabled={isPastor}
+                                className={isPastor ? 'opacity-50 cursor-not-allowed' : ''}
+                            >
+                                {isPastor ? 'Registro no disponible para Pastores' : (showRegistration ? 'Cancelar Registro' : 'Registrar Nuevo Invitado')}
+                            </Button>
+                        )}
+                    </div>
+                }
             />
 
             <TabNavigator

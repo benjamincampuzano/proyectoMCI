@@ -10,15 +10,34 @@ import MultiUserSelect from '../components/MultiUserSelect';
 import { AsyncSearchSelect, PageHeader, Button } from '../components/ui';
 import ActionModal from '../components/ActionModal';
 import ConfirmationModal from '../components/ConfirmationModal';
+import CoordinatorSelector from '../components/CoordinatorSelector';
+import { ROLES } from '../constants/roles';
 
 const Encuentros = () => {
-    const { user, hasAnyRole } = useAuth();
+    const { user, hasAnyRole, isCoordinator } = useAuth();
     const [encuentros, setEncuentros] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedEncuentro, setSelectedEncuentro] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
+    const [moduleCoordinator, setModuleCoordinator] = useState(null);
+
+    // Handler for coordinator changes
+    const handleCoordinatorChange = (newCoordinator) => {
+        setModuleCoordinator(newCoordinator);
+        
+        // After a short delay, refresh the coordinator data from server
+        if (newCoordinator) {
+            setTimeout(() => {
+                fetchModuleCoordinator();
+            }, 500);
+        } else {
+            setTimeout(() => {
+                fetchModuleCoordinator();
+            }, 500);
+        }
+    };
 
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -37,9 +56,38 @@ const Encuentros = () => {
         coordinatorId: null
     });
 
+    const hasAdminOrCoordinator = hasAnyRole(['ADMIN']) || isCoordinator();
+
     useEffect(() => {
         fetchEncuentros();
+        fetchModuleCoordinator();
     }, []);
+
+    const fetchModuleCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/encuentros');
+            setModuleCoordinator(res.data);
+        } catch (error) {
+            console.error('Error fetching coordinator:', error);
+            // If the endpoint doesn't exist, try to find a coordinator by isCoordinator flag
+            try {
+                const coordinatorsRes = await api.get('/coordinators', {
+                    params: { module: 'encuentros' }
+                });
+                const coordinators = coordinatorsRes.data;
+                if (coordinators && coordinators.length > 0) {
+                    // Find the first coordinator with ADMIN role or the first one
+                    const adminCoordinator = coordinators.find(c => c.role === 'ADMIN') || coordinators[0];
+                    setModuleCoordinator(adminCoordinator);
+                } else {
+                    setModuleCoordinator(null);
+                }
+            } catch (fallbackError) {
+                console.error('Fallback coordinator fetch failed:', fallbackError);
+                setModuleCoordinator(null);
+            }
+        }
+    };
 
     const fetchEncuentros = async () => {
         setLoading(true);
@@ -142,8 +190,8 @@ const Encuentros = () => {
         };
     }, [encuentros]);
 
-    const canCreateOrDelete = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
-    const canViewReport = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
+    const canCreateOrDelete = hasAdminOrCoordinator;
+    const canViewReport = hasAdminOrCoordinator;
 
     // Renderizar contenido según vista
     const renderContent = () => {
@@ -272,16 +320,26 @@ const Encuentros = () => {
             <PageHeader
                 title="Encuentros"
                 description="Gestión de Encuentros (Pre y Pos encuentros)"
-                action={canCreateOrDelete && (
-                    <Button
-                        variant="primary"
-                        icon={Plus}
-                        onClick={() => setShowCreateModal(true)}
-                        className="shadow-lg shadow-blue-500/30"
-                    >
-                        Nuevo Encuentro
-                    </Button>
-                )}
+                action={
+                    <div className="flex items-center gap-4">
+                        <CoordinatorSelector 
+                            moduleCoordinator={moduleCoordinator}
+                            moduleName="Encuentros"
+                            onCoordinatorChange={handleCoordinatorChange}
+                            disabled={!hasAnyRole([ROLES.ADMIN])}
+                        />
+                        {canCreateOrDelete && (
+                            <Button
+                                variant="primary"
+                                icon={Plus}
+                                onClick={() => setShowCreateModal(true)}
+                                className="shadow-lg shadow-blue-500/30"
+                            >
+                                Nuevo Encuentro
+                            </Button>
+                        )}
+                    </div>
+                }
             />
 
             {/* Estadísticas Resumidas - Solo cuando no estamos en reporte */}

@@ -2,9 +2,10 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = require('../prisma/client');
 
 const CATEGORY_CONFIG = {
-    'KIDS': { label: 'Kids', minAge: 5, maxAge: 10 },
-    'ROCAS': { label: 'Rocas', minAge: 11, maxAge: 13 },
-    'JOVENES': { label: 'Jóvenes', minAge: 14, maxAge: 99 }
+    'KIDS': { label: 'Kids', minAge: 5, maxAge: 7 },
+    'TEENS': { label: 'Teens', minAge: 8, maxAge: 10 },
+    'ROCAS': { label: 'Rocas', minAge: 11, maxAge: 14 },
+    'JOVENES': { label: 'Jóvenes', minAge: 15, maxAge: 99 }
 };
 
 const calculateAge = (birthDate) => {
@@ -21,8 +22,9 @@ const calculateAge = (birthDate) => {
 
 const CATEGORY_MODULE_NUMBERS = {
     'KIDS': 101,
-    'ROCAS': 301,
-    'JOVENES': 501
+    'TEENS': 301,
+    'ROCAS': 501,
+    'JOVENES': 701
 };
 
 const createModule = async (req, res) => {
@@ -347,7 +349,7 @@ const getStudentMatrix = async (req, res) => {
     try {
         const users = await prisma.user.findMany({
             where: {
-                profile: { network: { in: ['KIDS', 'ROCAS', 'JOVENES'] } },
+                profile: { network: { in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES'] } },
                 isDeleted: false
             },
             select: {

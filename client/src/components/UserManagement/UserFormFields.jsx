@@ -59,7 +59,13 @@ const UserFormFields = ({
             </div>
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
-                <input required type="email" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                <input required
+                type="email"
+                className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                value={formData.email}
+                placeholder="tu_email@email.com"
+                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                />
             </div>
 
             {mode === 'create' && (
@@ -123,8 +129,10 @@ const UserFormFields = ({
                     <option value="">Seleccione...</option>
                     <option value="MUJERES">Mujeres</option>
                     <option value="HOMBRES">Hombres</option>
-                    <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
-                    <option value="ROCAS">Rocas (11 a 13 años)</option>
+                    <option value="KIDS">Kids (5 a 7 años)</option>
+                    <option value="TEENS">Teens (8 a 10 años)</option>
+                    <option value="ROCAS">Rocas (11 a 14 años)</option>
+                    <option value="JOVENES">Jovenes (15 años en adelante solteros)</option>
                 </select>
             </div>
             <div>
@@ -154,6 +162,10 @@ const UserFormFields = ({
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dirección</label>
                 <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.address || ''} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+            </div>
+            <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Barrio</label>
+                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.neighborhood || ''} onChange={e => setFormData({ ...formData, neighborhood: e.target.value })} />
             </div>
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ciudad</label>
@@ -221,6 +233,28 @@ const UserFormFields = ({
                         </select>
                     </div>
                 </>
+            )}
+
+            {/* Coordinator Toggle for LIDER_DOCE */}
+            {formData.role === 'LIDER_DOCE' && isAdmin && (
+                <div className="md:col-span-2">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                            checked={formData.isCoordinator || false}
+                            onChange={e => setFormData({ ...formData, isCoordinator: e.target.checked })}
+                        />
+                        <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                                Coordinador con permisos de ADMIN
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                Este usuario tendrá los mismos permisos que un ADMIN en todos los módulos
+                            </span>
+                        </div>
+                    </label>
+                </div>
             )}
 
             {/* Data Authorization Checks */}

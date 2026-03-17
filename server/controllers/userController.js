@@ -62,6 +62,7 @@ const getProfile = async (req, res) => {
                 phone: user.phone,
                 ...user.profile,
                 roles: user.roles.map(r => r.role.name),
+                isCoordinator: user.isCoordinator,
                 hierarchy: user.parents.map(p => ({
                     parentId: p.parentId,
                     parentName: p.parent.profile.fullName,
@@ -265,6 +266,7 @@ const getAllUsers = async (req, res) => {
             email: u.email,
             phone: u.phone,
             roles: u.roles.map(r => r.role.name),
+            isCoordinator: u.isCoordinator,
             pastorId: u.parents.find(p => p.role === 'PASTOR')?.parentId || null,
             liderDoceId: u.parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null,
             liderCelulaId: u.parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null,
@@ -307,6 +309,7 @@ const getUserById = async (req, res) => {
             email: user.email,
             phone: user.phone,
             roles: user.roles.map(r => r.role.name),
+            isCoordinator: user.isCoordinator,
             pastorId: user.parents.find(p => p.role === 'PASTOR')?.parentId || null,
             liderDoceId: user.parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null,
             liderCelulaId: user.parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null,
@@ -329,7 +332,7 @@ const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const userId = parseInt(id);
-        const { fullName, email, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, maritalStatus, network } = req.body;
+        const { fullName, email, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, maritalStatus, network, isCoordinator } = req.body;
 
         const userToUpdate = await prisma.user.findUnique({
             where: { id: userId },
@@ -370,6 +373,7 @@ const updateUser = async (req, res) => {
                 data: {
                     ...(email && { email }),
                     ...(phone && { phone }),
+                    ...(isCoordinator !== undefined && { isCoordinator }),
                     profile: {
                         update: {
                             ...(fullName && { fullName }),

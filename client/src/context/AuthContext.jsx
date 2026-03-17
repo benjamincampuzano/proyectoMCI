@@ -149,11 +149,15 @@ export const AuthProvider = ({ children }) => {
         return isAdmin();
     };
 
+    const isCoordinator = () => {
+        return user?.isCoordinator === true;
+    };
+
     return (
         <AuthContext.Provider value={{
             user, login, register, setup, logout, updateProfile,
             loading, isInitialized,
-            hasRole, hasAnyRole, isAdmin, isSuperAdmin,
+            hasRole, hasAnyRole, isAdmin, isSuperAdmin, isCoordinator,
             changePassword
         }}>
             {children}

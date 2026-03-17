@@ -6,13 +6,16 @@ import { useAuth } from '../context/AuthContext';
  * Replaces manual tab logic in Ganar, Consolidar, Discipular, Enviar
  */
 const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange = null }) => {
-  const { hasAnyRole } = useAuth();
+  const { hasAnyRole, isCoordinator } = useAuth();
   const [activeTabId, setActiveTabId] = useState(initialTabId);
 
   // Filter tabs based on user roles
   const allowedTabs = tabs.filter(tab => {
     if (!tab.roles || tab.roles.length === 0) return true;
-    return hasAnyRole(tab.roles);
+    // Check if user has required roles OR if tab allows coordinators
+    const hasRoleAccess = hasAnyRole(tab.roles);
+    const hasCoordinatorAccess = tab.requiresCoordinator && isCoordinator();
+    return hasRoleAccess || hasCoordinatorAccess;
   });
 
   // Set initial tab if not provided or if current tab is not allowed

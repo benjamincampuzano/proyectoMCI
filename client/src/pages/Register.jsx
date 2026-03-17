@@ -20,6 +20,7 @@ const Register = () => {
         sex: '',
         phone: '',
         address: '',
+        neighborhood: '',
         city: '',
         maritalStatus: '',
         network: '',
@@ -159,7 +160,7 @@ const Register = () => {
                                         value={formData.documentNumber}
                                         onChange={handleChange}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        placeholder="12345678"
+                                        placeholder="123456789"
                                         required
                                     />
                                 </div>
@@ -253,39 +254,7 @@ const Register = () => {
 
                         {/* Right Column */}
                         <div className="space-y-4">
-
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Sexo</label>
-                                    <select
-                                        name="sex"
-                                        value={formData.sex}
-                                        onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        required
-                                    >
-                                        <option value="">Seleccione...</option>
-                                        <option value="HOMBRE">Hombre</option>
-                                        <option value="MUJER">Mujer</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">RED</label>
-                                    <select
-                                        name="network"
-                                        value={formData.network}
-                                        onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        required
-                                    >
-                                        <option value="">Seleccione...</option>
-                                        <option value="MUJERES">Mujeres</option>
-                                        <option value="HOMBRES">Hombres</option>
-                                        <option value="KIDS">Kids (5 a 10 años)</option>
-                                        <option value="ROCAS">Rocas (11 a 13 años)</option>
-                                        <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
-                                    </select>
-                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-2">Teléfono</label>
                                     <input
@@ -316,6 +285,40 @@ const Register = () => {
                                         <option value="SEPARADO">Separado/a</option>
                                     </select>
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Sexo</label>
+                                    <select
+                                        name="sex"
+                                        value={formData.sex}
+                                        onChange={handleChange}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        required
+                                    >
+                                        <option value="">Seleccione...</option>
+                                        <option value="HOMBRE">Hombre</option>
+                                        <option value="MUJER">Mujer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">RED</label>
+                                    <select
+                                        name="network"
+                                        value={formData.network}
+                                        onChange={handleChange}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        required
+                                    >
+                                        <option value="">Seleccione...</option>
+                                        <option value="MUJERES">Mujeres</option>
+                                        <option value="HOMBRES">Hombres</option>
+                                        <option value="KIDS">Kids (5 a 7 años)</option>
+                                        <option value="TEENS">Teens (8 a 10 años)</option>
+                                        <option value="ROCAS">Rocas (11 a 14 años)</option>
+                                        <option value="JOVENES">Jovenes (15 años en adelante solteros)</option>
+                                    </select>
+                                </div>
+                                
+                                
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Dirección</label>
@@ -327,6 +330,17 @@ const Register = () => {
                                     className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                     placeholder="Dirección"
                                     required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">Barrio</label>
+                                <input
+                                    type="text"
+                                    name="neighborhood"
+                                    value={formData.neighborhood}
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    placeholder="Barrio"
                                 />
                             </div>
                             <div>
