@@ -21,6 +21,19 @@ model UserHierarchy {
   @@index([role])
 }
 
+model ModuleCoordinator {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  moduleName String
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleName])
+  @@index([moduleName])
+}
+
 model User {
   id                      Int                      @id @default(autoincrement())
   email                   String                   @unique
@@ -63,6 +76,7 @@ model User {
   roles                   UserRole[]
   auxiliaryModules        SeminarModule[]          @relation("ModuleAuxiliaries")
   isCoordinator           Boolean                  @default(false)
+  moduleCoordinations     ModuleCoordinator[]
 
   @@index([email])
   @@index([createdAt])

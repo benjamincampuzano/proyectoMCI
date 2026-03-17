@@ -4,7 +4,7 @@ const prisma = require('../prisma/client');
 
 /**
  * Get module coordinators
- * Returns users with isCoordinator flag set to true and LIDER_DOCE role
+ * Returns users assigned as coordinators for specific modules
  * Optionally filtered by module
  */
 const getModuleCoordinators = async (req, res) => {
@@ -12,7 +12,6 @@ const getModuleCoordinators = async (req, res) => {
         const { module } = req.query;
 
         const where = {
-            isCoordinator: true,
             isDeleted: false,
             roles: {
                 some: {
@@ -20,6 +19,15 @@ const getModuleCoordinators = async (req, res) => {
                 }
             }
         };
+
+        // If module is specified, filter by module coordinations
+        if (module) {
+            where.moduleCoordinations = {
+                some: {
+                    moduleName: module
+                }
+            };
+        }
 
         const coordinators = await prisma.user.findMany({
             where,
@@ -64,46 +72,42 @@ const getModuleCoordinators = async (req, res) => {
 
 /**
  * Get default coordinator for a module
- * Returns the first active coordinator (LIDER_DOCE role with isCoordinator flag)
+ * Returns first active coordinator for the specific module
  */
 const getDefaultModuleCoordinator = async (req, res) => {
     try {
         const { module } = req.params;
 
-        const coordinator = await prisma.user.findFirst({
+        const moduleCoordinator = await prisma.moduleCoordinator.findFirst({
             where: {
-                isCoordinator: true,
-                isDeleted: false,
-                roles: {
-                    some: {
-                        role: { name: 'LIDER_DOCE' }
-                    }
-                }
+                moduleName: module
             },
-            select: {
-                id: true,
-                email: true,
-                profile: {
+            include: {
+                user: {
                     select: {
-                        fullName: true
+                        id: true,
+                        email: true,
+                        profile: {
+                            select: {
+                                fullName: true
+                            }
+                        }
                     }
                 }
             },
             orderBy: {
-                profile: {
-                    fullName: 'asc'
-                }
+                createdAt: 'asc'
             }
         });
 
-        if (!coordinator) {
+        if (!moduleCoordinator) {
             return res.json(null);
         }
 
         res.json({
-            id: coordinator.id,
-            email: coordinator.email,
-            fullName: coordinator.profile?.fullName || 'Sin Nombre'
+            id: moduleCoordinator.user.id,
+            email: moduleCoordinator.user.email,
+            fullName: moduleCoordinator.user.profile?.fullName || 'Sin Nombre'
         });
     } catch (error) {
         console.error('Error fetching default coordinator:', error);
@@ -111,7 +115,89 @@ const getDefaultModuleCoordinator = async (req, res) => {
     }
 };
 
+/**
+ * Assign coordinator to a module
+ */
+const assignModuleCoordinator = async (req, res) => {
+    try {
+        const { module } = req.params;
+        const { userId } = req.body;
+
+        // Verify user is LIDER_DOCE
+        const user = await prisma.user.findFirst({
+            where: {
+                id: userId,
+                isDeleted: false,
+                roles: {
+                    some: {
+                        role: { name: 'LIDER_DOCE' }
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'User must be a LIDER_DOCE' });
+        }
+
+        // Remove existing coordinator for this module
+        await prisma.moduleCoordinator.deleteMany({
+            where: { moduleName: module }
+        });
+
+        // Assign new coordinator
+        const coordinator = await prisma.moduleCoordinator.create({
+            data: {
+                userId,
+                moduleName: module
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        profile: {
+                            select: {
+                                fullName: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        res.json({
+            id: coordinator.user.id,
+            email: coordinator.user.email,
+            fullName: coordinator.user.profile?.fullName || 'Sin Nombre'
+        });
+    } catch (error) {
+        console.error('Error assigning coordinator:', error);
+        res.status(500).json({ message: 'Server error assigning coordinator' });
+    }
+};
+
+/**
+ * Remove coordinator from a module
+ */
+const removeModuleCoordinator = async (req, res) => {
+    try {
+        const { module } = req.params;
+
+        await prisma.moduleCoordinator.deleteMany({
+            where: { moduleName: module }
+        });
+
+        res.json({ message: 'Coordinator removed successfully' });
+    } catch (error) {
+        console.error('Error removing coordinator:', error);
+        res.status(500).json({ message: 'Server error removing coordinator' });
+    }
+};
+
 module.exports = {
     getModuleCoordinators,
-    getDefaultModuleCoordinator
+    getDefaultModuleCoordinator,
+    assignModuleCoordinator,
+    removeModuleCoordinator
 };

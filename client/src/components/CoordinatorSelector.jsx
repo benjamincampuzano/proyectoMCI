@@ -36,19 +36,19 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
 
         setIsAssigning(true);
         try {
-            // Update user to set isCoordinator flag but keep LIDER_DOCE role
-            await api.put(`/users/${selectedCoordinator.id}`, {
-                isCoordinator: true
+            // Assign coordinator to specific module
+            const response = await api.post(`/coordinators/module/${moduleName.toLowerCase()}`, {
+                userId: selectedCoordinator.id
             });
 
             // Update the coordinator in parent component
-            onCoordinatorChange(selectedCoordinator);
+            onCoordinatorChange(response.data);
             setSelectedCoordinator(null);
             
             // Trigger a refresh of the parent component to ensure persistence
             setTimeout(() => {
                 onCoordinatorChange({
-                    ...selectedCoordinator,
+                    ...response.data,
                     role: 'LIDER_DOCE'
                 });
             }, 100);
@@ -64,10 +64,8 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
         if (!moduleCoordinator) return;
 
         try {
-            // Update user to remove isCoordinator flag but keep LIDER_DOCE role
-            await api.put(`/users/${moduleCoordinator.id}`, {
-                isCoordinator: false
-            });
+            // Remove coordinator from specific module
+            await api.delete(`/coordinators/module/${moduleName.toLowerCase()}`);
             
             // Clear coordinator state
             onCoordinatorChange(null);

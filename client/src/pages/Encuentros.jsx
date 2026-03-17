@@ -69,23 +69,7 @@ const Encuentros = () => {
             setModuleCoordinator(res.data);
         } catch (error) {
             console.error('Error fetching coordinator:', error);
-            // If the endpoint doesn't exist, try to find a coordinator by isCoordinator flag
-            try {
-                const coordinatorsRes = await api.get('/coordinators', {
-                    params: { module: 'encuentros' }
-                });
-                const coordinators = coordinatorsRes.data;
-                if (coordinators && coordinators.length > 0) {
-                    // Find the first coordinator with ADMIN role or the first one
-                    const adminCoordinator = coordinators.find(c => c.role === 'ADMIN') || coordinators[0];
-                    setModuleCoordinator(adminCoordinator);
-                } else {
-                    setModuleCoordinator(null);
-                }
-            } catch (fallbackError) {
-                console.error('Fallback coordinator fetch failed:', fallbackError);
-                setModuleCoordinator(null);
-            }
+            setModuleCoordinator(null);
         }
     };
 
