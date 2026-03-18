@@ -108,8 +108,24 @@ const Register = () => {
 
         const result = await register(formData);
         if (result.success) {
+            toast.success('¡Cuenta creada exitosamente!');
             navigate('/');
         } else {
+            // Handle specific error messages with better user experience
+            const errorMessage = result.message.toLowerCase();
+            
+            if (errorMessage.includes('teléfono') || errorMessage.includes('phone')) {
+                toast.error('El número de teléfono ya está registrado. Por favor usa otro número.');
+            } else if (errorMessage.includes('correo') || errorMessage.includes('email')) {
+                toast.error('El correo electrónico ya está registrado. Por favor usa otro correo.');
+            } else if (errorMessage.includes('documento')) {
+                toast.error('El número de documento ya está registrado. Por favor verifica tus datos.');
+            } else if (errorMessage.includes('nombre') || errorMessage.includes('fullname')) {
+                toast.error('El nombre ya está en uso. Por favor usa otro nombre.');
+            } else {
+                toast.error(errorMessage || 'Error al crear la cuenta. Por favor intenta nuevamente.');
+            }
+            
             setError(result.message);
             generateCaptcha();
         }

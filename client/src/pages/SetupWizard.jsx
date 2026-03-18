@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, User, Phone, MapPin, ShieldCheck, ArrowRight, Check, X as XIcon, Envelope } from '@phosphor-icons/react';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
+import toast from 'react-hot-toast';
 
 const SetupWizard = () => {
     const [formData, setFormData] = useState({
@@ -22,6 +23,17 @@ const SetupWizard = () => {
     const { setup, isInitialized, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
+    // Function to disable form when system is already initialized
+    const isFormDisabled = () => {
+        return authLoading || isInitialized;
+    };
+
+    useEffect(() => {
+        if (isInitialized) {
+            navigate('/login');
+        }
+    }, [isInitialized, navigate]);
+
     // If system is already initialized, redirect immediately
     if (!authLoading && isInitialized) {
         return <Navigate to="/login" replace />;
@@ -35,12 +47,6 @@ const SetupWizard = () => {
             </div>
         );
     }
-
-    useEffect(() => {
-        if (isInitialized) {
-            navigate('/login');
-        }
-    }, [isInitialized, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -60,8 +66,24 @@ const SetupWizard = () => {
 
         const result = await setup(formData);
         if (result.success) {
+            toast.success('¡Sistema configurado exitosamente!');
             navigate('/');
         } else {
+            // Handle specific error messages with better user experience
+            const errorMessage = result.message.toLowerCase();
+            
+            if (errorMessage.includes('teléfono') || errorMessage.includes('phone')) {
+                toast.error('El número de teléfono ya está registrado. Por favor usa otro número.');
+            } else if (errorMessage.includes('correo') || errorMessage.includes('email')) {
+                toast.error('El correo electrónico ya está registrado. Por favor usa otro correo.');
+            } else if (errorMessage.includes('documento')) {
+                toast.error('El número de documento ya está registrado. Por favor verifica tus datos.');
+            } else if (errorMessage.includes('nombre') || errorMessage.includes('fullname')) {
+                toast.error('El nombre ya está en uso. Por favor usa otro nombre.');
+            } else {
+                toast.error(errorMessage || 'Error al configurar el sistema. Por favor intenta nuevamente.');
+            }
+            
             setError(result.message);
             setLoading(false);
         }
@@ -82,6 +104,16 @@ const SetupWizard = () => {
                     <p className="text-gray-400 mt-2">Crea la cuenta del Administrador Principal para comenzar</p>
                 </div>
 
+                {isInitialized && (
+                    <div className="bg-yellow-500/10 border border-yellow-500 text-yellow-500 p-4 rounded mb-6 text-center">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                            <ShieldCheck size={20} />
+                            <span className="font-semibold">Sistema ya configurado</span>
+                        </div>
+                        <p className="text-sm">El sistema ya tiene usuarios registrados. Por favor, inicia sesión con tu cuenta existente.</p>
+                    </div>
+                )}
+
                 {error && (
                     <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-6 text-sm text-center">
                         {error}
@@ -99,7 +131,8 @@ const SetupWizard = () => {
                                         name="documentType"
                                         value={formData.documentType}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        disabled={isFormDisabled()}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <option value="">Seleccionar...</option>
                                         <option value="RC">RC</option>
@@ -117,7 +150,8 @@ const SetupWizard = () => {
                                         type="text"
                                         value={formData.documentNumber}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        disabled={isFormDisabled()}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         placeholder="12345678"
                                     />
                                 </div>
@@ -132,7 +166,8 @@ const SetupWizard = () => {
                                         type="text"
                                         value={formData.fullName}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        disabled={isFormDisabled()}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         placeholder="Ej: Juan Pérez"
                                         required
                                     />
@@ -146,7 +181,8 @@ const SetupWizard = () => {
                                     type="date"
                                     value={formData.birthDate}
                                     onChange={handleChange}
-                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    disabled={isFormDisabled()}
+                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -156,7 +192,8 @@ const SetupWizard = () => {
                                     name="sex"
                                     value={formData.sex}
                                     onChange={handleChange}
-                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors appearance-none"
+                                    disabled={isFormDisabled()}
+                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <option value="HOMBRE">Hombre</option>
                                     <option value="MUJER">Mujer</option>
@@ -175,7 +212,8 @@ const SetupWizard = () => {
                                         type="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        disabled={isFormDisabled()}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         placeholder="admin@iglesia.com"
                                         required
                                     />
@@ -191,7 +229,8 @@ const SetupWizard = () => {
                                         type="password"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        disabled={isFormDisabled()}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         placeholder="••••••••"
                                         required
                                     />
@@ -228,7 +267,8 @@ const SetupWizard = () => {
                                         type="text"
                                         value={formData.phone}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        disabled={isFormDisabled()}
+                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         placeholder="+123456789"
                                     />
                                 </div>
@@ -244,7 +284,8 @@ const SetupWizard = () => {
                                             type="text"
                                             value={formData.address}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                            disabled={isFormDisabled()}
+                                            className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             placeholder="Calle 123..."
                                         />
                                     </div>
@@ -259,7 +300,8 @@ const SetupWizard = () => {
                                             type="text"
                                             value={formData.city}
                                             onChange={handleChange}
-                                            className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                            disabled={isFormDisabled()}
+                                            className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             placeholder="Bogotá"
                                         />
                                     </div>
@@ -270,8 +312,8 @@ const SetupWizard = () => {
 
                     <button
                         type="submit"
-                        disabled={loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-bold py-4 rounded-lg transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 mt-8"
+                        disabled={loading || isFormDisabled()}
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-bold py-4 rounded-lg transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Configurando...' : (
                             <>

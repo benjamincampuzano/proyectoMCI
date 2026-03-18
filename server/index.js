@@ -49,11 +49,11 @@ app.use(
 /* ✅ JSON parser */
 app.use(express.json());
 
-/* ✅ Request logger */
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
+/* ✅ Request logger (commented out to reduce console noise) */
+// app.use((req, res, next) => {
+//   console.log(`${req.method} ${req.url}`);
+//   next();
+// });
 
 /* ✅ Routes */
 const authRoutes = require("./routes/authRoutes");
