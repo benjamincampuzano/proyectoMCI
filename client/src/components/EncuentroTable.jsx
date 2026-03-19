@@ -1,4 +1,4 @@
-import { Calendar, Users, PenIcon , Trash } from '@phosphor-icons/react';
+import { Calendar, Users, Pen , Trash } from '@phosphor-icons/react';
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(amount);
@@ -71,7 +71,7 @@ const EncuentroTable = ({ encuentros, onSelect, onDelete, canModify }) => {
                                                 className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                                                 title="Ver detalles"
                                             >
-                                                <PenIcon size={16} />
+                                                <Pen size={16} />
                                             </button>
                                             {canModify && (
                                                 <button

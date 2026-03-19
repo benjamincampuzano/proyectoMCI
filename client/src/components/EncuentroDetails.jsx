@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, MoneyIcon, CheckCircle, XCircle, Trash, Calendar, BookOpen, PenIcon, FileTextIcon  } from '@phosphor-icons/react';
+import { ArrowLeft, UserPlus, MoneyIcon, CheckCircle, XCircle, Trash, Calendar, BookOpen, Pen, FileTextIcon  } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -63,7 +63,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [paymentType, setPaymentType] = useState('ENCUENTRO');
     const [paymentNotes, setPaymentNotes] = useState('');
 
-    const canModify = user?.id === encuentro?.coordinatorId || user?.roles?.includes('ADMIN');
+    const canModify = parseInt(user?.id) === parseInt(encuentro?.coordinatorId) || user?.roles?.includes('ADMIN');
 
     useEffect(() => {
         if (activeTab === 'report' && encuentro) {
@@ -277,7 +277,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         onClick={openEditModal}
                         className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                     >
-                        <PenIcon  size={20} />
+                        <Pen  size={20} />
                         <span>Editar Encuentro</span>
                     </button>
                 )}

@@ -545,66 +545,66 @@ const Encuentros = () => {
                     </div>
                 </form>
             </ActionModal>
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                onClose={() => {
+                    setShowDeleteConfirm(false);
+                    setEncuentroToDelete(null);
+                }}
+                onConfirm={performDelete}
+                title="Eliminar Encuentro"
+                message="¿Estás seguro de eliminar este encuentro?"
+                confirmText="Eliminar Encuentro"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {encuentroToDelete && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Encuentro:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{encuentroToDelete.name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Tipo:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{encuentroToDelete.type}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Inscritos:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{encuentroToDelete._count?.registrations || encuentroToDelete.registrations?.length || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Coordinador:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{encuentroToDelete.coordinator?.fullName || 'Sin asignar'}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <div className="text-red-600 dark:text-red-400 mt-0.5">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                                ⚠️ Acción Irreversible
+                            </h4>
+                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                                <li>• Se eliminará el encuentro completo</li>
+                                <li>• Se perderán todos los registros de inscritos</li>
+                                <li>• Se perderán todos los pagos y abonos asociados</li>
+                                <li>• No se puede deshacer esta acción</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </ConfirmationModal>
         </div>
     );
-
-    {/* Delete Confirmation Modal */}
-    <ConfirmationModal
-        isOpen={showDeleteConfirm}
-        onClose={() => {
-            setShowDeleteConfirm(false);
-            setEncuentroToDelete(null);
-        }}
-        onConfirm={performDelete}
-        title="Eliminar Encuentro"
-        message="¿Estás seguro de eliminar este encuentro?"
-        confirmText="Eliminar Encuentro"
-        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
-    >
-        {encuentroToDelete && (
-            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
-                <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Encuentro:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{encuentroToDelete.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Tipo:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{encuentroToDelete.type}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Inscritos:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{encuentroToDelete._count?.registrations || encuentroToDelete.registrations?.length || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-400">Coordinador:</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{encuentroToDelete.coordinator?.fullName || 'Sin asignar'}</span>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
-            <div className="flex items-start gap-3">
-                <div className="text-red-600 dark:text-red-400 mt-0.5">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                </div>
-                <div>
-                    <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
-                        ⚠️ Acción Irreversible
-                    </h4>
-                    <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
-                        <li>• Se eliminará el encuentro completo</li>
-                        <li>• Se perderán todos los registros de inscritos</li>
-                        <li>• Se perderán todos los pagos y abonos asociados</li>
-                        <li>• No se puede deshacer esta acción</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </ConfirmationModal>
 };
 
 export default Encuentros;
