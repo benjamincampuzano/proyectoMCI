@@ -1,4 +1,4 @@
-import { UserCheck, Crown } from '@phosphor-icons/react';
+import { UserCheck, AngularLogoIcon } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 import { useAuth } from '../context/AuthContext';
 import { ROLES } from '../constants/roles';
@@ -14,7 +14,7 @@ const CoordinatorBadge = ({ moduleCoordinator, moduleName }) => {
 
     return (
         <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm">
-            <Crown size={16} className="text-purple-600 dark:text-purple-400" />
+            <AngularLogoIcon size={16} className="text-purple-600 dark:text-purple-400" />
             <div className="flex flex-col">
                 <span className="text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wide">
                     Coordinador {moduleName}

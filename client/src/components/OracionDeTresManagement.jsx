@@ -192,7 +192,7 @@ const OracionDeTresManagement = () => {
                             <div>
                                 <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
                                     <Users size={20} className="text-blue-500 dark:text-blue-400" />
-                                    Miembros (3 Discípulos)
+                                    Discípulos (3 Discípulos)
                                 </h4>
                                 <div className="space-y-3">
                                     {selectedGroup.miembros.map(m => (

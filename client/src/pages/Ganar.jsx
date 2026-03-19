@@ -122,6 +122,16 @@ const Ganar = () => {
                     }
                 }}
             />
+
+            {/* Guest Registration Modal */}
+            <GuestRegistrationForm
+                isOpen={showRegistration}
+                onClose={() => setShowRegistration(false)}
+                onGuestCreated={() => {
+                    setShowRegistration(false);
+                    setRefreshTrigger(prev => prev + 1);
+                }}
+            />
         </div>
     );
 };

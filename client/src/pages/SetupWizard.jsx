@@ -139,7 +139,7 @@ const SetupWizard = () => {
                                         <option value="TI">TI</option>
                                         <option value="CC">CC</option>
                                         <option value="CE">CE</option>
-                                        <option value="PP">PP</option>
+                                        <option value="PP">PPT</option>
                                         <option value="PEP">PEP</option>
                                     </select>
                                 </div>

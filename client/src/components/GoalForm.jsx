@@ -129,10 +129,9 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
                             disabled={fetching}
                         >
                             <option value="ENCUENTRO_REGISTRATIONS">Encuentro: Inscritos</option>
-                            <option value="ENCUENTRO_CONVERSIONS">Encuentro: Conversiones</option>
+                            <option value="ENCUENTRO_CONVERSIONS">Encuentro: Graduados U. de la Vida</option>
                             <option value="CONVENTION_REGISTRATIONS">Convención: Inscritos</option>
                             <option value="CELL_COUNT">Células: Cantidad</option>
-                            <option value="CELL_ATTENDANCE">Células: Asistencia</option>
                         </select>
                     </div>
 

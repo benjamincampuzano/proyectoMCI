@@ -24,7 +24,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from './ui';
 
-const ROLES = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'MIEMBRO'];
+const ROLES = ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'];
 const ASISTENCIA_TIPOS = [
     { key: 'iglesia', label: 'Iglesia', icon: House },
     { key: 'celula', label: 'Célula', icon: Heart },
@@ -42,12 +42,7 @@ const UserActivityList = () => {
     
     // Filtros
     const [filters, setFilters] = useState({
-        role: '',
-        minIglesia: '',
-        minCelula: '',
-        minEscuela: '',
-        ultimoAcceso: '',
-        tieneCelula: ''
+        role: ''
     });
 
     useEffect(() => {
@@ -76,49 +71,13 @@ const UserActivityList = () => {
             // Filtro por rol
             const matchesRole = !filters.role || item.roles.includes(filters.role);
 
-            // Filtro por mínimo de asistencia a iglesia
-            const matchesIglesia = !filters.minIglesia || 
-                item.asistencias.iglesia >= parseInt(filters.minIglesia);
-
-            // Filtro por mínimo de asistencia a célula
-            const matchesCelula = !filters.minCelula || 
-                item.asistencias.celula >= parseInt(filters.minCelula);
-
-            // Filtro por mínimo de asistencia a escuela
-            const matchesEscuela = !filters.minEscuela || 
-                item.asistencias.escuela >= parseInt(filters.minEscuela);
-
-            // Filtro por último acceso
-            let matchesUltimoAcceso = true;
-            if (filters.ultimoAcceso) {
-                if (!item.ultimoAcceso) {
-                    matchesUltimoAcceso = false;
-                } else {
-                    const daysDiff = Math.floor((new Date() - new Date(item.ultimoAcceso)) / (1000 * 60 * 60 * 24));
-                    if (filters.ultimoAcceso === '7') matchesUltimoAcceso = daysDiff <= 7;
-                    else if (filters.ultimoAcceso === '30') matchesUltimoAcceso = daysDiff <= 30;
-                    else if (filters.ultimoAcceso === '90') matchesUltimoAcceso = daysDiff <= 90;
-                    else if (filters.ultimoAcceso === 'never') matchesUltimoAcceso = !item.ultimoAcceso;
-                }
-            }
-
-            // Filtro por célula
-            const matchesCelulaMember = filters.tieneCelula === '' || 
-                (filters.tieneCelula === 'true' ? item.celula?.nombre : !item.celula?.nombre);
-
-            return matchesSearch && matchesRole && matchesIglesia && matchesCelula && 
-                   matchesEscuela && matchesUltimoAcceso && matchesCelulaMember;
+            return matchesSearch && matchesRole;
         });
     }, [data, searchTerm, filters]);
 
     const clearFilters = () => {
         setFilters({
-            role: '',
-            minIglesia: '',
-            minCelula: '',
-            minEscuela: '',
-            ultimoAcceso: '',
-            tieneCelula: ''
+            role: ''
         });
         setSearchTerm('');
     };
@@ -369,71 +328,6 @@ const UserActivityList = () => {
                                     ))}
                                 </select>
                             </div>
-
-                            {/* Filtro mínimo iglesia */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Mín. Iglesia</label>
-                                <select
-                                    value={filters.minIglesia}
-                                    onChange={(e) => setFilters({...filters, minIglesia: e.target.value})}
-                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
-                                >
-                                    <option value="">Cualquiera</option>
-                                    <option value="1">1+</option>
-                                    <option value="2">2+</option>
-                                    <option value="3">3+</option>
-                                    <option value="5">5+</option>
-                                    <option value="10">10+</option>
-                                </select>
-                            </div>
-
-                            {/* Filtro mínimo célula */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Mín. Célula</label>
-                                <select
-                                    value={filters.minCelula}
-                                    onChange={(e) => setFilters({...filters, minCelula: e.target.value})}
-                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
-                                >
-                                    <option value="">Cualquiera</option>
-                                    <option value="1">1+</option>
-                                    <option value="2">2+</option>
-                                    <option value="3">3+</option>
-                                    <option value="5">5+</option>
-                                </select>
-                            </div>
-
-                            {/* Filtro mínimo escuela */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Mín. Escuela</label>
-                                <select
-                                    value={filters.minEscuela}
-                                    onChange={(e) => setFilters({...filters, minEscuela: e.target.value})}
-                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
-                                >
-                                    <option value="">Cualquiera</option>
-                                    <option value="1">1+</option>
-                                    <option value="3">3+</option>
-                                    <option value="6">6+</option>
-                                </select>
-                            </div>
-
-                            {/* Filtro último acceso */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Último Acceso</label>
-                                <select
-                                    value={filters.ultimoAcceso}
-                                    onChange={(e) => setFilters({...filters, ultimoAcceso: e.target.value})}
-                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
-                                >
-                                    <option value="">Cualquiera</option>
-                                    <option value="7">Última semana</option>
-                                    <option value="30">Último mes</option>
-                                    <option value="90">Últimos 3 meses</option>
-                                    <option value="never">Nunca</option>
-                                </select>
-                            </div>
-
                         </div>
                     </div>
                 )}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FloppyDiskIcon, Spinner, X, UserPlus } from '@phosphor-icons/react';
+import { FloppyDiskIcon, SpinnerIcon, X, UserPlus } from '@phosphor-icons/react';
 import { AsyncSearchSelect } from './ui';
 import api from '../utils/api';
 
@@ -443,7 +443,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                                 className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
                             >
                                 {loading ? (
-                                    <Spinner size={20} className="animate-spin" />
+                                    <SpinnerIcon size={20} className="animate-spin" />
                                 ) : (
                                     <>
                                         <FloppyDiskIcon size={20} />

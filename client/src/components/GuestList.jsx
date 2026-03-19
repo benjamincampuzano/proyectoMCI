@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SpinnerIcon, MagnifyingGlass, Funnel, PencilIcon, Trash, UserPlus, Spinner, X, FloppyDiskIcon, UserCheckIcon } from '@phosphor-icons/react';
+import { SpinnerIcon, MagnifyingGlass, Funnel, PencilIcon, Trash, UserPlus, X, FloppyDiskIcon, UserCheckIcon } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import { AsyncSearchSelect, Button } from './ui';

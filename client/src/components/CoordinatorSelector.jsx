@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Crown, UserPlus, Shield } from '@phosphor-icons/react';
+import { AngularLogoIcon, UserPlus, Shield } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 import AsyncSearchSelect from './ui/AsyncSearchSelect';
 import { Button } from './ui';
@@ -92,7 +92,8 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
             </div>
             <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
                 <Shield size={12} />
-                <span>LIDER_DOCE</span>
+                <span>LIDER_DOCE❌ Invalido, intentalo nuevamente
+</span>
             </div>
         </div>
     );
@@ -100,55 +101,50 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
     // Custom render for selected user
     const renderSelectedUser = (user) => (
         <div className="flex items-center gap-2">
-            <Crown size={16} className="text-purple-600 dark:text-purple-400" />
+            <AngularLogoIcon size={16} className="text-purple-600 dark:text-purple-400" />
             <div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">
                     {user.fullName}
                 </div>
                 <div className="text-xs text-purple-600 dark:text-purple-400">
-                    Coordinador privilegios
+                    Coordinador
                 </div>
             </div>
         </div>
     );
 
-    if (disabled) {
-        return (
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <Crown size={16} className="text-gray-400" />
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Sin permisos para gestionar coordinadores
-                </span>
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-3">
-            {/* Current Coordinator Display */}
+            {/* Current Coordinator Display - Always visible */}
             {moduleCoordinator ? (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-lg shadow-sm">
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg shadow-sm ${
+                    disabled 
+                        ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600' 
+                        : 'bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-purple-200 dark:border-purple-800'
+                }`}>
                     {renderSelectedUser(moduleCoordinator)}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleRemoveCoordinator}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    >
-                        Remover
-                    </Button>
+                    {!disabled && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemoveCoordinator}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                            Remover
+                        </Button>
+                    )}
                 </div>
             ) : (
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
-                    <Crown size={16} className="text-gray-400" />
+                    <AngularLogoIcon size={16} className="text-gray-400" />
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                         Sin coordinador asignado
                     </span>
                 </div>
             )}
 
-            {/* Coordinator Selection */}
-            {!moduleCoordinator && (
+            {/* Coordinator Selection - Only for users with permissions */}
+            {!disabled && !moduleCoordinator && (
                 <div className="flex items-center gap-3">
                     <div className="flex-1 max-w-sm">
                         <AsyncSearchSelect
