@@ -345,7 +345,7 @@ const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const userId = parseInt(id);
-        const { fullName, email, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, maritalStatus, network, isCoordinator, spouseId } = req.body;
+        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, maritalStatus, network, isCoordinator, spouseId } = req.body;
 
         const userToUpdate = await prisma.user.findUnique({
             where: { id: userId },
@@ -394,6 +394,7 @@ const updateUser = async (req, res) => {
                             ...(sex && { sex }),
                             ...(address && { address }),
                             ...(city && { city }),
+                            ...(neighborhood !== undefined && { neighborhood }),
                             ...(latitude !== undefined && { latitude }),
                             ...(longitude !== undefined && { longitude }),
                             ...(documentType !== undefined && { documentType }),

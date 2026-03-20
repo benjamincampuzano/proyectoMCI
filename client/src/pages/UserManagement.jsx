@@ -38,6 +38,7 @@ const UserManagement = () => {
         passwordResetUser,
         setPasswordResetUser,
         canEdit,
+        canCreateUsers,
         isAdmin,
         getAssignableRoles,
     } = useUserManagement();
@@ -87,7 +88,7 @@ const UserManagement = () => {
                 title={<div className="flex items-center gap-3"><Users className="text-blue-600" size={32} />Gestión de Usuarios</div>}
                 description="Administra perfiles, roles y jerarquía de la iglesia."
                 action={
-                    canEdit && (
+                    canCreateUsers && (
                         <Button
                             onClick={() => setShowCreateForm(true)}
                             icon={UserPlus}

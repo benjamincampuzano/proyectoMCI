@@ -225,6 +225,13 @@ const useUserManagement = () => {
         return roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r));
     })();
 
+    const canCreateUsers = (() => {
+        if (!currentUser) return false;
+        // Check both roles array and single role property for backward compatibility
+        const roles = currentUser.roles || [currentUser.role];
+        return roles.some(r => ['ADMIN', 'LIDER_DOCE'].includes(r));
+    })();
+
     // isAdmin is now taken from useAuth()
 
     const getAssignableRoles = useCallback(() => {
@@ -268,6 +275,7 @@ const useUserManagement = () => {
         setPasswordResetUser,
         getAssignableRoles,
         canEdit,
+        canCreateUsers,
         isAdmin: isUserAdmin,
     };
 };

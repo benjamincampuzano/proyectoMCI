@@ -17,7 +17,7 @@ model UserHierarchy {
   child     User          @relation("HierarchyChild", fields: [childId], references: [id])
   parent    User          @relation("HierarchyParent", fields: [parentId], references: [id])
 
-  @@unique([parentId, childId])
+  @@unique([parentId, childId, role])
   @@index([role])
 }
 
@@ -45,6 +45,7 @@ model User {
   updatedAt               DateTime                 @updatedAt @db.Timestamptz(6)
   mustChangePassword      Boolean                  @default(false)
   isCoordinator           Boolean                  @default(false)
+  spouseId                Int?                     @unique
   auditLogs               AuditLog[]
   hostedCells             Cell[]                   @relation("CellHost")
   ledCells                Cell[]                   @relation("CellLeader")
@@ -71,15 +72,13 @@ model User {
   seminarEnrollments      SeminarEnrollment[]
   professedModules        SeminarModule[]          @relation("ModuleProfessor")
   cell                    Cell?                    @relation("CellMembers", fields: [cellId], references: [id])
+  spouse                  User?                    @relation("SpouseRelation", fields: [spouseId], references: [id])
+  spouseOf                User?                    @relation("SpouseRelation")
   parents                 UserHierarchy[]          @relation("HierarchyChild")
   children                UserHierarchy[]          @relation("HierarchyParent")
   profile                 UserProfile?
   roles                   UserRole[]
   ModuleAuxiliaries       ModuleAuxiliaries[]
-
-  spouseId                Int?                     @unique
-  spouse                  User?                    @relation("SpouseRelation", fields: [spouseId], references: [id])
-  spouseOf                User?                    @relation("SpouseRelation")
 
   @@index([email])
   @@index([createdAt])
@@ -103,6 +102,7 @@ model UserProfile {
   minorConsentAuthorized  Boolean        @default(false)
   maritalStatus           MaritalStatus?
   network                 Network?
+  neighborhood            String?
   user                    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([documentType, documentNumber])
