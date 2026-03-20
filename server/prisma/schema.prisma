@@ -78,7 +78,7 @@ model User {
   children                UserHierarchy[]          @relation("HierarchyParent")
   profile                 UserProfile?
   roles                   UserRole[]
-  ModuleAuxiliaries       ModuleAuxiliaries[]
+  auxiliaryModules        SeminarModule[]          @relation("ModuleAuxiliaries")
 
   @@index([email])
   @@index([createdAt])
@@ -273,7 +273,7 @@ model SeminarModule {
   materials         ClassMaterial[]
   enrollments       SeminarEnrollment[]
   professor         User?               @relation("ModuleProfessor", fields: [professorId], references: [id])
-  ModuleAuxiliaries ModuleAuxiliaries[]
+  auxiliaries       User[]              @relation("ModuleAuxiliaries")
 }
 
 model ClassMaterial {
@@ -587,16 +587,6 @@ model PasswordReset {
   @@index([token])
 }
 
-model ModuleAuxiliaries {
-  A             Int
-  B             Int
-  SeminarModule SeminarModule @relation(fields: [A], references: [id], onDelete: Cascade)
-  User          User          @relation(fields: [B], references: [id], onDelete: Cascade)
-
-  @@id([A, B], map: "_ModuleAuxiliaries_AB_pkey")
-  @@index([B], map: "_ModuleAuxiliaries_B_index")
-  @@map("_ModuleAuxiliaries")
-}
 
 enum EncuentroPaymentType {
   ENCUENTRO
