@@ -284,104 +284,122 @@ const Metas = () => {
     // Componente GroupedGoalCard para la vista de tarjetas agrupadas
     const GroupedGoalCard = ({ group }) => {
         const percent = group.targetTotal > 0 ? Math.min(Math.round((group.currentTotal / group.targetTotal) * 100), 100) : 0;
-        const timeRemaining = getTimeRemaining(group.leaders[0]); // Usar el primero para el plazo
+        const firstGoal = group.leaders[0];
         
         let goalName = '';
-        if (group.type.includes('CELL')) goalName = group.type === 'CELL_COUNT' ? 'Meta Células' : 'Asistencia Células';
-        else if (group.encuentro) goalName = `Encuentro: ${group.encuentro.name}`;
-        else if (group.convention) goalName = `Convención: ${group.convention.theme}`;
+        if (group.type === 'CELL_COUNT') goalName = 'Meta Células';
+        else if (group.type === 'CELL_ATTENDANCE') goalName = 'Asistencia Células';
+        else if (firstGoal.encuentro) goalName = `Encuentro: ${firstGoal.encuentro.name}`;
+        else if (firstGoal.convention) goalName = `Convención: ${firstGoal.convention.theme}`;
 
-        // Determinar color basado en progreso total
         let statusColor = 'blue';
         if (percent >= 100) statusColor = 'green';
         else if (percent < 50) statusColor = 'amber';
         const colors = COLOR_CLASSES[statusColor];
 
         return (
-            <div className="group relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300">
-                <div className={`h-1.5 bg-gradient-to-r ${colors.gradient}`}></div>
+            <div className="group relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+                <div className={`h-2 bg-gradient-to-r ${colors.gradient}`}></div>
                 
-                <div className="p-5">
-                    {/* Header con Contexto */}
-                    <div className="flex items-start justify-between mb-4">
+                <div className="p-6">
+                    <div className="flex items-start justify-between mb-5">
                         <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-900 dark:text-white truncate">{goalName}</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{group.type.replace(/_/g, ' ').toLowerCase()}</p>
+                            <h4 className="text-xl font-black text-gray-900 dark:text-white truncate">{goalName}</h4>
+                            <p className="text-[10px] uppercase tracking-widest font-black text-gray-400 mt-1">
+                                {group.type.replace(/_/g, ' ')}
+                            </p>
                         </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-gray-100 dark:bg-gray-800 text-gray-500">
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black bg-gray-50 dark:bg-gray-800 text-gray-500 border border-gray-100 dark:border-gray-700">
                             {group.leaders.length} {group.leaders.length === 1 ? 'LÍDER' : 'LÍDERES'}
                         </div>
                     </div>
 
-                    {/* Resumen de Progreso Grupal */}
-                    <div className="mb-6 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                        <div className="flex justify-between items-end mb-2">
+                    <div className="mb-8 p-5 rounded-2xl bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800 relative overflow-hidden">
+                        <div className="flex justify-between items-end mb-3">
                             <div>
-                                <p className="text-[10px] uppercase font-black text-gray-400 tracking-wider">Progreso Grupal</p>
-                                <p className="text-2xl font-black text-gray-900 dark:text-white">
-                                    {group.currentTotal} <span className="text-sm font-medium text-gray-400">/ {group.targetTotal}</span>
+                                <p className="text-[11px] font-black text-gray-400 uppercase tracking-tight mb-1">Impacto Grupal</p>
+                                <p className="text-3xl font-black text-gray-900 dark:text-white">
+                                    {group.currentTotal}<span className="text-sm font-medium text-gray-400 ml-1">/ {group.targetTotal}</span>
                                 </p>
                             </div>
-                            <span className={`text-lg font-black ${colors.text}`}>{percent}%</span>
+                            <div className="text-right">
+                                <span className={`text-4xl font-black italic tracking-tighter ${colors.text}`}>{percent}%</span>
+                            </div>
                         </div>
-                        <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
                             <div 
-                                className={`h-full ${colors.bg} transition-all duration-500`}
+                                className={`h-full ${colors.bg} transition-all duration-1000 ease-out shadow-lg shadow-current/20`}
                                 style={{ width: `${percent}%` }}
                             ></div>
                         </div>
                     </div>
 
-                    {/* Lista de Líderes Individuales */}
-                    <div className="space-y-4 mb-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                        <p className="text-[10px] uppercase font-black text-gray-400 tracking-wider">Desglose por Líder</p>
-                        {group.leaders.map(leader => {
-                            const leaderPercent = Math.min(Math.round((leader.currentValue / leader.targetValue) * 100), 100);
-                            let lColor = 'text-blue-500';
-                            if (leaderPercent >= 100) lColor = 'text-green-500';
-                            return (
-                                <div key={leader.id} className="group/leader">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate max-w-[120px]">
-                                            {leader.user?.profile?.fullName || 'N/A'}
-                                        </span>
-                                        <span className={`text-[10px] font-black ${lColor}`}>{leader.currentValue}/{leader.targetValue}</span>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between px-1">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Objetivos Individuales</span>
+                        </div>
+                        <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1 custom-scrollbar">
+                            {group.leaders.map(leader => {
+                                const leaderPercent = Math.min(Math.round((leader.currentValue / leader.targetValue) * 100), 100);
+                                const leaderName = leader.user?.profile?.fullName || 'N/A';
+                                return (
+                                    <div key={leader.id} className="group/leader flex flex-col gap-3 p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all hover:shadow-md">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-inner uppercase">
+                                                    {leaderName.charAt(0)}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-black text-gray-800 dark:text-white truncate">{leaderName}</p>
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        {leaderPercent >= 100 ? (
+                                                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-[9px] font-black uppercase">
+                                                                <CheckCircle size={10} weight="fill" /> Cumplida
+                                                            </span>
+                                                        ) : (
+                                                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase">
+                                                                <Clock size={10} weight="fill" /> En progreso
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="flex items-baseline justify-end gap-1">
+                                                    <span className="text-xl font-black text-gray-900 dark:text-white">{leader.currentValue}</span>
+                                                    <span className="text-[10px] font-bold text-gray-400">/ {leader.targetValue}</span>
+                                                </div>
+                                                <span className={`text-[12px] font-black ${leaderPercent >= 100 ? 'text-green-500' : 'text-blue-500'}`}>
+                                                    {leaderPercent}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full transition-all duration-1000 ease-out ${leaderPercent >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                                style={{ width: `${leaderPercent}%` }}
+                                            ></div>
+                                        </div>
                                     </div>
-                                    <div className="h-1 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                        <div 
-                                            className={`h-full ${leaderPercent >= 100 ? 'bg-green-500' : 'bg-blue-500'} transition-all`}
-                                            style={{ width: `${leaderPercent}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
 
-                    {/* Footer con fecha y acciones */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
-                        <div className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
-                            <Calendar size={12} />
-                            <span>{getDeadlineText(group.leaders[0])}</span>
+                    <div className="mt-8 flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-tighter">
+                            <Clock size={14} className="text-blue-500" />
+                            <span>Límite: {getDeadlineText(firstGoal)}</span>
                         </div>
                         <div className="flex gap-1">
                             {isEditor && (
-                                <>
-                                    <button
-                                        onClick={() => { setEditingGoal(group.leaders[0]); setShowGoalForm(true); }}
-                                        className="p-1.5 text-gray-400 hover:text-blue-500 rounded-md transition-colors"
-                                        title="Editar (primer líder)"
-                                    >
-                                        <Pen size={14} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(group.leaders[0].id)}
-                                        className="p-1.5 text-gray-400 hover:text-red-500 rounded-md transition-colors"
-                                        title="Eliminar (primer líder)"
-                                    >
-                                        <Trash size={14} />
-                                    </button>
-                                </>
+                                <button
+                                    onClick={() => { setEditingGoal(firstGoal); setShowGoalForm(true); }}
+                                    className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all"
+                                    title="Gestionar este grupo"
+                                >
+                                    <Pen size={16} />
+                                </button>
                             )}
                         </div>
                     </div>

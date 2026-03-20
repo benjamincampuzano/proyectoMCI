@@ -6,7 +6,7 @@ const { logActivity } = require('../utils/auditLogger');
 // Create or Update Goals (multiple users supported)
 const upsertGoal = async (req, res) => {
     try {
-        const { type, targetValue, encuentroId, conventionId, month, year, userId, userIds } = req.body;
+        const { type, targetValue, targetValues, encuentroId, conventionId, month, year, userId, userIds } = req.body;
         const currentUserId = req.user?.id;
 
         // Normalize users to an array
@@ -24,6 +24,9 @@ const upsertGoal = async (req, res) => {
         const results = [];
 
         for (const tid of targetUserIds) {
+            // Determine individual target value for this user
+            const individualTarget = (targetValues && targetValues[tid]) ? parseFloat(targetValues[tid]) : parseFloat(targetValue);
+
             // Find if goal already exists for this context
             const where = { type, userId: tid };
             if (encuentroId) where.encuentroId = parseInt(encuentroId);
@@ -38,14 +41,14 @@ const upsertGoal = async (req, res) => {
             if (existingGoal) {
                 goal = await prisma.goal.update({
                     where: { id: existingGoal.id },
-                    data: { targetValue: parseFloat(targetValue) }
+                    data: { targetValue: individualTarget }
                 });
                 action = 'UPDATE';
             } else {
                 goal = await prisma.goal.create({
                     data: {
                         type,
-                        targetValue: parseFloat(targetValue),
+                        targetValue: individualTarget,
                         encuentroId: encuentroId ? parseInt(encuentroId) : null,
                         conventionId: conventionId ? parseInt(conventionId) : null,
                         month: month !== undefined && month !== null ? parseInt(month) : null,
