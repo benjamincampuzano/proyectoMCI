@@ -3,63 +3,77 @@ const prisma = require('../prisma/client');
 const { getUserNetwork } = require('../utils/networkUtils');
 const { logActivity } = require('../utils/auditLogger');
 
-// Create or Update a Goal
+// Create or Update Goals (multiple users supported)
 const upsertGoal = async (req, res) => {
     try {
-        const { type, targetValue, encuentroId, conventionId, month, year, userId } = req.body;
+        const { type, targetValue, encuentroId, conventionId, month, year, userId, userIds } = req.body;
         const currentUserId = req.user?.id;
 
-        if (!userId) {
-            return res.status(400).json({ message: 'El Líder Responsable es obligatorio' });
+        // Normalize users to an array
+        let targetUserIds = [];
+        if (Array.isArray(userIds)) {
+            targetUserIds = userIds.map(id => parseInt(id));
+        } else if (userId) {
+            targetUserIds = [parseInt(userId)];
         }
 
-        // Find if goal already exists for this context
-        const where = { type, userId: parseInt(userId) };
-        if (encuentroId) where.encuentroId = parseInt(encuentroId);
-        if (conventionId) where.conventionId = parseInt(conventionId);
-        if (month !== undefined) where.month = parseInt(month);
-        if (year !== undefined) where.year = parseInt(year);
-
-        const existingGoal = await prisma.goal.findFirst({ where });
-
-        let goal;
-        let action = '';
-        if (existingGoal) {
-            goal = await prisma.goal.update({
-                where: { id: existingGoal.id },
-                data: { targetValue: parseFloat(targetValue) }
-            });
-            action = 'UPDATE';
-        } else {
-            goal = await prisma.goal.create({
-                data: {
-                    type,
-                    targetValue: parseFloat(targetValue),
-                    encuentroId: encuentroId ? parseInt(encuentroId) : null,
-                    conventionId: conventionId ? parseInt(conventionId) : null,
-                    month: month !== undefined ? parseInt(month) : null,
-                    year: year !== undefined ? parseInt(year) : null,
-                    userId: userId ? parseInt(userId) : null
-                }
-            });
-            action = 'CREATE';
+        if (targetUserIds.length === 0) {
+            return res.status(400).json({ message: 'Al menos un Líder Responsable es obligatorio' });
         }
 
-        if (currentUserId) {
-            // Fetch user name for audit log
-            const targetUser = await prisma.user.findUnique({
-                where: { id: goal.userId },
-                select: { profile: { select: { fullName: true } } }
-            });
+        const results = [];
 
-            await logActivity(currentUserId, action, 'GOAL', goal.id, {
-                type: goal.type,
-                targetValue: goal.targetValue,
-                responsable: targetUser?.profile?.fullName || `Usuario #${goal.userId}`
-            }, req.ip, req.headers['user-agent']);
+        for (const tid of targetUserIds) {
+            // Find if goal already exists for this context
+            const where = { type, userId: tid };
+            if (encuentroId) where.encuentroId = parseInt(encuentroId);
+            if (conventionId) where.conventionId = parseInt(conventionId);
+            if (month !== undefined && month !== null) where.month = parseInt(month);
+            if (year !== undefined && year !== null) where.year = parseInt(year);
+
+            const existingGoal = await prisma.goal.findFirst({ where });
+
+            let goal;
+            let action = '';
+            if (existingGoal) {
+                goal = await prisma.goal.update({
+                    where: { id: existingGoal.id },
+                    data: { targetValue: parseFloat(targetValue) }
+                });
+                action = 'UPDATE';
+            } else {
+                goal = await prisma.goal.create({
+                    data: {
+                        type,
+                        targetValue: parseFloat(targetValue),
+                        encuentroId: encuentroId ? parseInt(encuentroId) : null,
+                        conventionId: conventionId ? parseInt(conventionId) : null,
+                        month: month !== undefined && month !== null ? parseInt(month) : null,
+                        year: year !== undefined && year !== null ? parseInt(year) : null,
+                        userId: tid
+                    }
+                });
+                action = 'CREATE';
+            }
+
+            if (currentUserId) {
+                // Fetch user name for audit log
+                const targetUser = await prisma.user.findUnique({
+                    where: { id: tid },
+                    select: { profile: { select: { fullName: true } } }
+                });
+
+                await logActivity(currentUserId, action, 'GOAL', goal.id, {
+                    type: goal.type,
+                    targetValue: goal.targetValue,
+                    responsable: targetUser?.profile?.fullName || `Usuario #${tid}`
+                }, req.ip, req.headers['user-agent']);
+            }
+            results.push(goal);
         }
 
-        res.status(200).json(goal);
+        // Returns the last one created or the whole array
+        res.status(200).json(results.length === 1 ? results[0] : { goals: results, count: results.length });
     } catch (error) {
         console.error('Error upserting goal:', error);
         res.status(500).json({ message: 'Server error: ' + error.message });

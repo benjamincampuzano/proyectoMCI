@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Target, Plus, Clock, CheckCircle, XCircle, Pen, Trash, FileTextIcon, TrendUp, TrendDown, Minus, SquaresFour, List, Calendar } from '@phosphor-icons/react';
+import { Target, Plus, Clock, CheckCircle, XCircle, Pen, Trash, FileText, Minus, SquaresFour, List, Calendar } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import GoalForm from '../components/GoalForm';
@@ -177,7 +177,7 @@ const Metas = () => {
             enProgreso,
             noCumplidas,
             porcentajeGeneral: Math.round((cumplidas / goals.length) * 100),
-            promedioCumplimiento: Math.round(sumaPorcentajes / goals.length)
+            promedioCumplimiento: Math.round(sumaPorcentajes / (goals.length || 1))
         };
     }, [goals]);
 
@@ -204,26 +204,6 @@ const Metas = () => {
                         <Icon size={24} />
                     </div>
                 </div>
-                {trend !== undefined && (
-                    <div className="mt-3 flex items-center gap-1 text-xs font-medium">
-                        {trend > 0 ? (
-                            <>
-                                <TrendingUp size={14} />
-                                <span>+{trend}% vs período anterior</span>
-                            </>
-                        ) : trend < 0 ? (
-                            <>
-                                <TrendingDown size={14} />
-                                <span>{trend}% vs período anterior</span>
-                            </>
-                        ) : (
-                            <>
-                                <Minus size={14} />
-                                <span>Sin cambios</span>
-                            </>
-                        )}
-                    </div>
-                )}
             </div>
         );
     };
@@ -266,113 +246,145 @@ const Metas = () => {
         );
     };
 
-    // Componente GoalCard para la vista de tarjetas
-    const GoalCard = ({ goal }) => {
-        const percent = Math.min(Math.round((goal.currentValue / goal.targetValue) * 100), 100);
-        const status = getGoalStatus(goal, percent);
-        const StatusIcon = status.icon;
-        const timeRemaining = getTimeRemaining(goal);
-        const colors = COLOR_CLASSES[status.color];
+    // Agrupar metas por contexto (Tipo + Evento/Periodo)
+    const groupedGoals = useMemo(() => {
+        const groups = {};
 
+        goals.forEach(goal => {
+            const contextKey = [
+                goal.type,
+                goal.encuentroId || '',
+                goal.conventionId || '',
+                goal.month || '',
+                goal.year || ''
+            ].join('|');
+
+            if (!groups[contextKey]) {
+                groups[contextKey] = {
+                    id: contextKey,
+                    type: goal.type,
+                    encuentro: goal.encuentro,
+                    convention: goal.convention,
+                    month: goal.month,
+                    year: goal.year,
+                    leaders: [],
+                    targetTotal: 0,
+                    currentTotal: 0
+                };
+            }
+
+            groups[contextKey].leaders.push(goal);
+            groups[contextKey].targetTotal += goal.targetValue;
+            groups[contextKey].currentTotal += goal.currentValue;
+        });
+
+        return Object.values(groups);
+    }, [goals]);
+
+    // Componente GroupedGoalCard para la vista de tarjetas agrupadas
+    const GroupedGoalCard = ({ group }) => {
+        const percent = group.targetTotal > 0 ? Math.min(Math.round((group.currentTotal / group.targetTotal) * 100), 100) : 0;
+        const timeRemaining = getTimeRemaining(group.leaders[0]); // Usar el primero para el plazo
+        
         let goalName = '';
-        if (goal.type.includes('CELL')) goalName = goal.type === 'CELL_COUNT' ? 'Meta Células' : 'Asistencia Células';
-        else if (goal.encuentro) goalName = `Encuentro: ${goal.encuentro.name}`;
-        else if (goal.convention) goalName = `Convención: ${goal.convention.theme}`;
+        if (group.type.includes('CELL')) goalName = group.type === 'CELL_COUNT' ? 'Meta Células' : 'Asistencia Células';
+        else if (group.encuentro) goalName = `Encuentro: ${group.encuentro.name}`;
+        else if (group.convention) goalName = `Convención: ${group.convention.theme}`;
+
+        // Determinar color basado en progreso total
+        let statusColor = 'blue';
+        if (percent >= 100) statusColor = 'green';
+        else if (percent < 50) statusColor = 'amber';
+        const colors = COLOR_CLASSES[statusColor];
 
         return (
-            <div className="group relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
-                {/* Barra superior de color */}
+            <div className="group relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300">
                 <div className={`h-1.5 bg-gradient-to-r ${colors.gradient}`}></div>
                 
                 <div className="p-5">
-                    {/* Header con estado */}
+                    {/* Header con Contexto */}
                     <div className="flex items-start justify-between mb-4">
                         <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-900 dark:text-white truncate">{goal.user?.profile?.fullName || 'N/A'}</h4>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Líder 12</p>
+                            <h4 className="font-bold text-gray-900 dark:text-white truncate">{goalName}</h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{group.type.replace(/_/g, ' ').toLowerCase()}</p>
                         </div>
-                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${colors.bgLight} ${colors.textDark}`}>
-                            <StatusIcon size={12} />
-                            <span>{status.label}</span>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-gray-100 dark:bg-gray-800 text-gray-500">
+                            {group.leaders.length} {group.leaders.length === 1 ? 'LÍDER' : 'LÍDERES'}
                         </div>
                     </div>
 
-                    {/* Tipo de meta */}
-                    <div className="mb-4">
-                        <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">{goalName}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{goal.type.replace(/_/g, ' ').toLowerCase()}</p>
-                    </div>
-
-                    {/* Progreso circular */}
-                    <div className="flex items-center justify-center mb-4">
-                        <div className="relative">
-                            <svg width={100} height={100} className="transform -rotate-90">
-                                <circle
-                                    cx="50" cy="50" r="40"
-                                    strokeWidth="8"
-                                    className="stroke-gray-200 dark:stroke-gray-700 fill-none"
-                                />
-                                <circle
-                                    cx="50" cy="50" r="40"
-                                    strokeWidth="8"
-                                    className={`${colors.stroke} fill-none transition-all duration-1000 ease-out`}
-                                    style={{
-                                        strokeDasharray: 251.2,
-                                        strokeDashoffset: 251.2 - (251.2 * percent / 100),
-                                        strokeLinecap: 'round'
-                                    }}
-                                />
-                            </svg>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-2xl font-black text-gray-900 dark:text-white">{percent}%</span>
+                    {/* Resumen de Progreso Grupal */}
+                    <div className="mb-6 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                        <div className="flex justify-between items-end mb-2">
+                            <div>
+                                <p className="text-[10px] uppercase font-black text-gray-400 tracking-wider">Progreso Grupal</p>
+                                <p className="text-2xl font-black text-gray-900 dark:text-white">
+                                    {group.currentTotal} <span className="text-sm font-medium text-gray-400">/ {group.targetTotal}</span>
+                                </p>
                             </div>
+                            <span className={`text-lg font-black ${colors.text}`}>{percent}%</span>
+                        </div>
+                        <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div 
+                                className={`h-full ${colors.bg} transition-all duration-500`}
+                                style={{ width: `${percent}%` }}
+                            ></div>
                         </div>
                     </div>
 
-                    {/* Valores */}
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Objetivo</p>
-                            <p className="text-xl font-black text-gray-900 dark:text-white">{goal.targetValue}</p>
-                        </div>
-                        <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Actual</p>
-                            <p className="text-xl font-black text-gray-900 dark:text-white">{goal.currentValue}</p>
-                        </div>
+                    {/* Lista de Líderes Individuales */}
+                    <div className="space-y-4 mb-4 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                        <p className="text-[10px] uppercase font-black text-gray-400 tracking-wider">Desglose por Líder</p>
+                        {group.leaders.map(leader => {
+                            const leaderPercent = Math.min(Math.round((leader.currentValue / leader.targetValue) * 100), 100);
+                            let lColor = 'text-blue-500';
+                            if (leaderPercent >= 100) lColor = 'text-green-500';
+                            return (
+                                <div key={leader.id} className="group/leader">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate max-w-[120px]">
+                                            {leader.user?.profile?.fullName || 'N/A'}
+                                        </span>
+                                        <span className={`text-[10px] font-black ${lColor}`}>{leader.currentValue}/{leader.targetValue}</span>
+                                    </div>
+                                    <div className="h-1 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full ${leaderPercent >= 100 ? 'bg-green-500' : 'bg-blue-500'} transition-all`}
+                                            style={{ width: `${leaderPercent}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
 
-                    {/* Fecha y tiempo restante */}
-                    <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                    {/* Footer con fecha y acciones */}
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex items-center gap-1 text-[10px] font-medium text-gray-500">
                             <Calendar size={12} />
-                            <span>{getDeadlineText(goal)}</span>
+                            <span>{getDeadlineText(group.leaders[0])}</span>
                         </div>
-                        {timeRemaining && (
-                            <span className={`font-medium ${timeRemaining.urgent ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                                {timeRemaining.text}
-                            </span>
-                        )}
+                        <div className="flex gap-1">
+                            {isEditor && (
+                                <>
+                                    <button
+                                        onClick={() => { setEditingGoal(group.leaders[0]); setShowGoalForm(true); }}
+                                        className="p-1.5 text-gray-400 hover:text-blue-500 rounded-md transition-colors"
+                                        title="Editar (primer líder)"
+                                    >
+                                        <Pen size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(group.leaders[0].id)}
+                                        className="p-1.5 text-gray-400 hover:text-red-500 rounded-md transition-colors"
+                                        title="Eliminar (primer líder)"
+                                    >
+                                        <Trash size={14} />
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     </div>
-
-                    {/* Acciones */}
-                    {isEditor && (
-                        <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-                            <button
-                                onClick={() => { setEditingGoal(goal); setShowGoalForm(true); }}
-                                className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                title="Editar"
-                            >
-                                <Pen size={16} />
-                            </button>
-                            <button
-                                onClick={() => handleDelete(goal.id)}
-                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                title="Eliminar"
-                            >
-                                <Trash size={16} />
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
         );
@@ -399,7 +411,7 @@ const Metas = () => {
             {!loading && goals.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <StatCard
-                        title="Total Metas"
+                        title="Total Líderes con Metas"
                         value={stats.total}
                         subtitle="Objetivos activos"
                         icon={Target}
@@ -438,25 +450,25 @@ const Metas = () => {
                     <div className="flex items-center justify-between mb-4">
                         <div>
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Progreso General</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Metas cumplidas sobre el total</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Metas cumplidas sobre el total de líderes</p>
                         </div>
                         <div className="text-right">
                             <span className="text-3xl font-black text-gray-900 dark:text-white">{stats.porcentajeGeneral}%</span>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{stats.cumplidas} de {stats.total} metas</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{stats.cumplidas} de {stats.total} líderes</p>
                         </div>
                     </div>
                     <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex">
                         <div 
                             className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-1000 ease-out"
-                            style={{ width: `${(stats.cumplidas / stats.total) * 100}%` }}
+                            style={{ width: `${(stats.cumplidas / (stats.total || 1)) * 100}%` }}
                         ></div>
                         <div 
                             className="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-1000 ease-out"
-                            style={{ width: `${(stats.enProgreso / stats.total) * 100}%` }}
+                            style={{ width: `${(stats.enProgreso / (stats.total || 1)) * 100}%` }}
                         ></div>
                         <div 
                             className="h-full bg-gradient-to-r from-red-400 to-red-500 transition-all duration-1000 ease-out"
-                            style={{ width: `${(stats.noCumplidas / stats.total) * 100}%` }}
+                            style={{ width: `${(stats.noCumplidas / (stats.total || 1)) * 100}%` }}
                         ></div>
                     </div>
                     <div className="flex items-center justify-center gap-6 mt-4 text-xs font-medium">
@@ -482,7 +494,7 @@ const Metas = () => {
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <Target size={20} className="text-blue-500" />
-                        Lista de Metas
+                        Lista de Metas {viewMode === 'cards' && '(Agrupadas por Evento)'}
                     </h3>
                     <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
                         <button
@@ -491,7 +503,7 @@ const Metas = () => {
                                 ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' 
                                 : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                             }`}
-                            title="Vista de tarjetas"
+                            title="Vista de tarjetas agrupadas"
                         >
                             <SquaresFour size={18} />
                         </button>
@@ -501,7 +513,7 @@ const Metas = () => {
                                 ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' 
                                 : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                             }`}
-                            title="Vista de tabla"
+                            title="Vista de tabla individual"
                         >
                             <List size={18} />
                         </button>
@@ -510,25 +522,25 @@ const Metas = () => {
 
                 {/* Contenido según vista */}
                 {viewMode === 'cards' ? (
-                    // Vista de tarjetas
+                    // Vista de tarjetas agrupadas
                     <div className="p-6">
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-16">
                                 <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin mb-4"></div>
                                 <p className="text-gray-500 dark:text-gray-400 font-medium">Cargando metas...</p>
                             </div>
-                        ) : goals.length === 0 ? (
+                        ) : groupedGoals.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16">
                                 <div className="bg-gray-50 dark:bg-gray-800/50 w-20 h-20 rounded-full flex items-center justify-center mb-4 text-gray-400">
-                                    <FileTextIcon size={32} />
+                                    <FileText size={32} />
                                 </div>
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sin metas registradas</h3>
                                 <p className="text-gray-500 text-sm mt-1">No hay datos para mostrar en este momento.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {goals.map(goal => (
-                                    <GoalCard key={goal.id} goal={goal} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+                                {groupedGoals.map(group => (
+                                    <GroupedGoalCard key={group.id} group={group} />
                                 ))}
                             </div>
                         )}
@@ -563,7 +575,7 @@ const Metas = () => {
                                 <tr>
                                     <td colSpan={isEditor ? 8 : 7} className="p-16 text-center">
                                         <div className="bg-gray-50 dark:bg-gray-800/50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                                            <FileTextIcon size={32} />
+                                            <FileText size={32} />
                                         </div>
                                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Sin metas registradas</h3>
                                         <p className="text-gray-500 text-sm mt-1">No hay datos para mostrar en este momento.</p>

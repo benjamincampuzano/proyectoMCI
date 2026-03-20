@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, FloppyDisk, Warning } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
+import MultiUserSelect from './MultiUserSelect';
 
 const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
     const { hasAnyRole } = useAuth();
@@ -12,12 +13,11 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
         conventionId: '',
         month: new Date().getMonth() + 1,
         year: new Date().getFullYear(),
-        userId: ''
+        userIds: [] // Changed from userId: ''
     });
 
     const [encuentros, setEncuentros] = useState([]);
     const [convenciones, setConvenciones] = useState([]);
-    const [leaders, setLeaders] = useState([]);
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(false);
     const [error, setError] = useState('');
@@ -31,7 +31,7 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
                 targetValue: (initialData.targetValue ?? '').toString(),
                 encuentroId: (initialData.encuentroId ?? '').toString(),
                 conventionId: (initialData.conventionId ?? '').toString(),
-                userId: (initialData.userId ?? '').toString(),
+                userIds: initialData.userId ? [initialData.userId] : [], // Handle legacy/edit mode
                 month: initialData.month || new Date().getMonth() + 1,
                 year: initialData.year || new Date().getFullYear(),
                 type: initialData.type || 'ENCUENTRO_REGISTRATIONS'
@@ -43,22 +43,18 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
         const fetchData = async () => {
             try {
                 setFetching(true);
-                const [encRes, convRes, leadRes] = await Promise.all([
+                const [encRes, convRes] = await Promise.all([
                     api.get('/encuentros'),
-                    api.get('/convenciones'),
-                    api.get('/users?role=LIDER_DOCE')
+                    api.get('/convenciones')
                 ]);
 
                 setEncuentros(encRes.data);
                 setConvenciones(convRes.data);
-                setLeaders(leadRes.data);
             } catch (err) {
                 console.error('Error fetching form data:', err);
                 setError('Error al cargar la información necesaria para el formulario');
-                // Ensure arrays are initialized even on error
                 setEncuentros([]);
                 setConvenciones([]);
-                setLeaders([]);
             } finally {
                 setFetching(false);
             }
@@ -70,9 +66,9 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation: userId is mandatory
-        if (!formData.userId) {
-            setError('Por favor seleccione un Líder Responsable (Líder 12)');
+        // Validation: userIds is mandatory
+        if (!formData.userIds || formData.userIds.length === 0) {
+            setError('Por favor seleccione al menos un Líder Responsable');
             return;
         }
 
@@ -81,8 +77,15 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
 
         try {
             let response;
+            // If editing a single goal, we use PUT. If creating (possibly multiple), we use POST.
             if (initialData && initialData.id) {
-                response = await api.put(`/metas/${initialData.id}`, formData);
+                // If editing, we only edit the FIRST one or the specific one. 
+                // But GoalForm is reused, so if we came from a single goal edit, 
+                // initialData.id is present.
+                response = await api.put(`/metas/${initialData.id}`, {
+                    ...formData,
+                    userId: formData.userIds[0] // Backend PUT expect single userId
+                });
             } else {
                 response = await api.post('/metas', formData);
             }
@@ -115,7 +118,7 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
                     <div className="flex-1 overflow-y-auto p-6 space-y-5">
                     {error && (
                         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-2xl flex items-center gap-3 text-red-600 dark:text-red-400">
-                            <WarningIcon size={20} />
+                            <Warning size={20} />
                             <p className="text-sm font-medium">{error}</p>
                         </div>
                     )}
@@ -197,19 +200,14 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
 
                     {isPastorOrAdmin && (
                         <div className="space-y-2">
-                            <label className="text-[10px] uppercase tracking-widest font-black text-gray-400 text-blue-500">Líder Responsable (Líder 12) *</label>
-                            <select
-                                value={formData.userId}
-                                onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                                className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-2xl p-4 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 transition-all font-medium"
-                                required
-                            >
-                                <option value="">Seleccione un Líder...</option>
-                                {leaders.map(l => (
-                                    <option key={l.id} value={l.id}>{l.fullName || l.profile?.fullName || 'Sin Nombre'}</option>
-                                ))}
-                            </select>
-                            <p className="text-[10px] text-gray-500 px-1">La meta se calculará basándose en la red de este Líder 12.</p>
+                            <label className="text-[10px] uppercase tracking-widest font-black text-blue-500">Líderes Responsables (Líder 12) *</label>
+                            <MultiUserSelect
+                                value={formData.userIds}
+                                onChange={(ids) => setFormData({ ...formData, userIds: ids })}
+                                roleFilter="LIDER_DOCE"
+                                placeholder="Seleccione uno o más líderes..."
+                            />
+                            <p className="text-[10px] text-gray-500 px-1">La meta se calculará basándose en la red de cada Líder 12 seleccionado.</p>
                         </div>
                     )}
 
