@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, UserIcon,Users, MoneyIcon, CaretRight, Trash, UserCheck, SquaresFour, List, FileTextIcon, TrendUpIcon } from '@phosphor-icons/react';
+import { Plus, Calendar, UserIcon,Users, MoneyIcon, CaretRight, Trash, UserCheck, SquaresFour, List, FileTextIcon, TrendUpIcon, ArrowsClockwise } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import EncuentroDetails from '../components/EncuentroDetails';
@@ -325,6 +325,19 @@ const Encuentros = () => {
                     </div>
                 }
             />
+
+            {/* Floating Refresh Button */}
+            <div className="fixed bottom-8 right-8 z-40">
+                <Button
+                    variant="primary"
+                    size="sm"
+                    icon={ArrowsClockwise}
+                    onClick={() => window.location.reload()}
+                    className="shadow-xl"
+                >
+                    Actualizar
+                </Button>
+            </div>
 
             {/* Estadísticas Resumidas - Solo cuando no estamos en reporte */}
                         {!showReport && encuentros.length > 0 && (

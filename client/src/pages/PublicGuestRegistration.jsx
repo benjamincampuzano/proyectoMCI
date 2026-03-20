@@ -124,13 +124,9 @@ const PublicGuestRegistration = () => {
             return;
         }
 
-        console.log('Searching users with term:', term);
-        console.log('Using endpoint:', `${API_URL}/auth/public/users/search?search=${term}`);
         dispatch({ type: 'SET_SEARCH_LOADING', payload: true });
         try {
             const res = await axios.get(`${API_URL}/auth/public/users/search?search=${term}`);
-            console.log('Search response:', res);
-            console.log('Users found:', res.data);
             dispatch({ type: 'SET_FOUND_USERS', payload: res.data });
             dispatch({ type: 'SET_DROPDOWN_OPEN', payload: true });
         } catch (err) {
@@ -146,7 +142,6 @@ const PublicGuestRegistration = () => {
                     { id: 4, fullName: 'Discípulo' }
                 ].filter(user => user.fullName.toLowerCase().includes(term.toLowerCase()));
                 
-                console.log('Using fallback users:', fallbackUsers);
                 dispatch({ type: 'SET_FOUND_USERS', payload: fallbackUsers });
                 dispatch({ type: 'SET_DROPDOWN_OPEN', payload: true });
             } else {

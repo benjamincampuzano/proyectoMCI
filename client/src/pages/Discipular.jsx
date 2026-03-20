@@ -3,10 +3,11 @@ import TabNavigator from '../components/TabNavigator';
 import CourseManagement from '../components/School/CourseManagement';
 import SchoolLeaderStats from '../components/School/SchoolLeaderStats';
 import StudentMatrix from '../components/School/StudentMatrix';
-import { PageHeader } from '../components/ui';
+import { PageHeader, Button } from '../components/ui';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import { useAuth } from '../context/AuthContext';
 import CoordinatorSelector from '../components/CoordinatorSelector';
+import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const Discipular = () => {
@@ -95,6 +96,19 @@ const Discipular = () => {
                     />
                 }
             />
+
+            {/* Floating Refresh Button */}
+            <div className="fixed bottom-8 right-8 z-40">
+                <Button
+                    variant="primary"
+                    size="sm"
+                    icon={ArrowsClockwise}
+                    onClick={() => window.location.reload()}
+                    className="shadow-xl"
+                >
+                    Actualizar
+                </Button>
+            </div>
 
             <TabNavigator tabs={tabs} initialTabId="management" />
         </div>

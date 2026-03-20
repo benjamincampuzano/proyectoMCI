@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users } from '@phosphor-icons/react';
+import { Users, ArrowsClockwise } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import TabNavigator from '../components/TabNavigator';
 import GuestRegistrationForm from '../components/GuestRegistrationForm';
@@ -111,6 +111,19 @@ const Ganar = () => {
                     </div>
                 }
             />
+
+            {/* Floating Refresh Button */}
+            <div className="fixed bottom-8 right-8 z-40">
+                <Button
+                    variant="primary"
+                    size="sm"
+                    icon={ArrowsClockwise}
+                    onClick={() => window.location.reload()}
+                    className="shadow-xl"
+                >
+                    Actualizar
+                </Button>
+            </div>
 
             <TabNavigator
                 tabs={tabs}

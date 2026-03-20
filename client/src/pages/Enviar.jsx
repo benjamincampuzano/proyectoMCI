@@ -4,9 +4,10 @@ import CellManagement from '../components/CellManagement';
 import CellAttendance from '../components/CellAttendance';
 import AttendanceChart from '../components/AttendanceChart';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
-import { PageHeader } from '../components/ui';
+import { PageHeader, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import CoordinatorSelector from '../components/CoordinatorSelector';
+import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const Enviar = () => {
@@ -79,6 +80,19 @@ const Enviar = () => {
                     />
                 }
             />
+
+            {/* Floating Refresh Button */}
+            <div className="fixed bottom-8 right-8 z-40">
+                <Button
+                    variant="primary"
+                    size="sm"
+                    icon={ArrowsClockwise}
+                    onClick={() => window.location.reload()}
+                    className="shadow-xl"
+                >
+                    Actualizar
+                </Button>
+            </div>
 
             <TabNavigator tabs={tabs} initialTabId="attendance" />
         </div>
