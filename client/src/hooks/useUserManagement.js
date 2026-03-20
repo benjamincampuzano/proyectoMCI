@@ -34,7 +34,7 @@ const useUserManagement = () => {
         email: '',
         password: '',
         role: 'DISCIPULO',
-        sex: 'HOMBRE',
+        sex: '',
         phone: '',
         address: '',
         city: '',
