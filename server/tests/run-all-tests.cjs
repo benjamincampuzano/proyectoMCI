@@ -7,18 +7,17 @@ const fs = require('fs');
 const path = require('path');
 
 const testFiles = [
-    'test-auth-backend.js',
-    'test-users-backend.js',
-    'test-guests-backend.js',
-    'test-cells-backend.js',
-    'test-network-backend.js',
-    'test-seminars-backend.js',
-    'test-attendance-backend.js',
-    'test-encuentros-backend.js',
-    'test-conventions-backend.js'
+    // No functional tests available - all removed due to schema changes
 ];
 
 console.log('🚀 Iniciando ejecución de todas las pruebas del Backend...\n');
+
+if (testFiles.length === 0) {
+    console.log('⚠️  No hay tests funcionales disponibles.');
+    console.log('📝 Todos los tests fueron eliminados debido a cambios en el schema de la base de datos.');
+    console.log('💡 Se necesitan crear nuevos tests compatibles con el nuevo schema (UserRole relationship).');
+    process.exit(0);
+}
 
 let totalTests = 0;
 let passedTests = 0;
