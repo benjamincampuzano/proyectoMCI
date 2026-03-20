@@ -16,9 +16,11 @@ const UserFormModal = ({
     pastores,
     lideresDoce,
     lideresCelula,
+    users,
     isAdmin,
     validatePasswordRealTime,
-    calculateAge
+    calculateAge,
+    getAssignableRoles
 }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [passwordErrors, setPasswordErrors] = useState([]);
@@ -43,6 +45,7 @@ const UserFormModal = ({
                     pastores={pastores}
                     lideresDoce={lideresDoce}
                     lideresCelula={lideresCelula}
+                    users={users}
                     isAdmin={isAdmin}
                     showPassword={showPassword}
                     setShowPassword={setShowPassword}
@@ -50,6 +53,7 @@ const UserFormModal = ({
                     setPasswordErrors={setPasswordErrors}
                     validatePasswordRealTime={validatePasswordRealTime}
                     calculateAge={calculateAge}
+                    getAssignableRoles={getAssignableRoles}
                 />
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
@@ -90,9 +94,11 @@ UserFormModal.propTypes = {
     pastores: PropTypes.array.isRequired,
     lideresDoce: PropTypes.array.isRequired,
     lideresCelula: PropTypes.array.isRequired,
+    users: PropTypes.array,
     isAdmin: PropTypes.bool.isRequired,
     validatePasswordRealTime: PropTypes.func.isRequired,
     calculateAge: PropTypes.func.isRequired,
+    getAssignableRoles: PropTypes.func,
 };
 
 export default UserFormModal;

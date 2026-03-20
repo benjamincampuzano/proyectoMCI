@@ -8,6 +8,7 @@ import PasswordResetModal from '../components/UserManagement/PasswordResetModal'
 
 const UserManagement = () => {
     const {
+        users,
         loading,
         error,
         success,
@@ -38,6 +39,7 @@ const UserManagement = () => {
         setPasswordResetUser,
         canEdit,
         isAdmin,
+        getAssignableRoles,
     } = useUserManagement();
 
     // Validate password in real-time
@@ -119,9 +121,11 @@ const UserManagement = () => {
                 onEdit={(user) => setEditingUser({
                     ...user,
                     birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : '',
-                    pastorId: user.pastorId || '',
-                    liderDoceId: user.liderDoceId || '',
-                    liderCelulaId: user.liderCelulaId || '',
+                    pastorIds: user.pastorIds || (user.pastorId ? [user.pastorId] : []),
+                    liderDoceIds: user.liderDoceIds || (user.liderDoceId ? [user.liderDoceId] : []),
+                    liderCelulaIds: user.liderCelulaIds || (user.liderCelulaId ? [user.liderCelulaId] : []),
+                    spouseId: user.spouseId || '',
+                    neighborhood: user.neighborhood || '',
                     role: user.roles?.[0] || 'DISCIPULO'
                 })}
                 onDelete={handleDeleteUser}
@@ -140,9 +144,11 @@ const UserManagement = () => {
                 pastores={pastores}
                 lideresDoce={lideresDoce}
                 lideresCelula={lideresCelula}
+                users={users} // To select spouse
                 isAdmin={isAdmin}
                 validatePasswordRealTime={validatePasswordRealTime}
                 calculateAge={calculateAge}
+                getAssignableRoles={getAssignableRoles}
             />
 
             {editingUser && (
@@ -158,9 +164,11 @@ const UserManagement = () => {
                     pastores={pastores}
                     lideresDoce={lideresDoce}
                     lideresCelula={lideresCelula}
+                    users={users} // To select spouse
                     isAdmin={isAdmin}
                     validatePasswordRealTime={validatePasswordRealTime}
                     calculateAge={calculateAge}
+                    getAssignableRoles={getAssignableRoles}
                 />
             )}
 

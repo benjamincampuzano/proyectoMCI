@@ -35,19 +35,18 @@ async function createsHierarchyCycle(parentId, childId) {
 }
 
 /**
- * Checks if a user already has a leader for a specific role.
+ * Counts how many leaders a user has for a specific role.
  * @param {number} childId 
  * @param {string} role 
- * @returns {Promise<boolean>}
+ * @returns {Promise<number>}
  */
-async function hasLeaderForRole(childId, role) {
-    const existing = await prisma.userHierarchy.findFirst({
+async function countLeadersForRole(childId, role) {
+    return prisma.userHierarchy.count({
         where: {
             childId: childId,
             role: role
         }
     });
-    return !!existing;
 }
 
 /**
@@ -78,31 +77,20 @@ async function assignHierarchy({ parentId, childId, role }) {
         throw new Error("Jerarquía inválida: se detectó un ciclo");
     }
 
-    // 2. Single Leader per Role Rule
-    // Note: The previous logic in networkController removed the existing one.
-    // If strict compliance is required, we should THROW or REMOVE. 
-    // The request example says "throw Error if exists". 
-    // However, typical UI flow is "Assign new leader" -> implicitly replaces old one.
-    // I will stick to "Replace" logic (remove old) to keep UX smooth, OR follow strict rule if requested.
-    // The user request said: "throw new Error...". But typically users want to re-assign.
-    // I will implement a 'force' option or just remove previous for now to match current behavior but via service.
-    // actually, let's follow the user's snippet strictness first, but maybe refactor networkController to handle the error or delete previously.
+    // 2. Multi-leader checks
+    // Allow up to 2 leaders per role as per new requirement
+    const count = await countLeadersForRole(childId, role);
+    
+    // Check if this specific link already exists
+    const alreadyLinked = await prisma.userHierarchy.findFirst({
+        where: { parentId, childId, role }
+    });
+    if (alreadyLinked) return alreadyLinked; // Already assigned
 
-    // For now, let's implement strict check as per snippet, but provide a 'replace' method or handle it in controller.
-    // Actually, looking at networkController, it intentionally deletes previous.
-    // So let's make this service function just create, assuming cleanup is done or we incorporate cleanup here.
-
-    // Let's incorporate cleanup here for "assignOrReplaceHierarchy"
-
-    const existing = await hasLeaderForRole(childId, role);
-    if (existing) {
-        // Option A: Throw error (Strict)
-        // throw new Error(`El usuario ya tiene un líder para el rol ${role}`);
-
-        // Option B: Auto-replace (Pragmatic)
-        await prisma.userHierarchy.deleteMany({
-            where: { childId, role }
-        });
+    if (count >= 2) {
+        // If already has 2, we might want to throw or handle replacement.
+        // For now, let's throw to be safe, or we can implement a specific "replace" if needed.
+        throw new Error(`El usuario ya tiene el máximo de 2 líderes para el rol ${role}`);
     }
 
     // 3. Role Coherence (Requires fetching user roles, which is expensive if not passed)
@@ -134,8 +122,25 @@ async function assignHierarchy({ parentId, childId, role }) {
     });
 }
 
+/**
+ * Gets a user's spouse.
+ * @param {number} userId 
+ * @returns {Promise<Object|null>}
+ */
+async function getUserSpouse(userId) {
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { 
+            spouse: { include: { profile: true } },
+            spouseOf: { include: { profile: true } }
+        }
+    });
+    return user?.spouse || user?.spouseOf || null;
+}
+
 module.exports = {
     createsHierarchyCycle,
-    hasLeaderForRole,
-    assignHierarchy
+    countLeadersForRole,
+    assignHierarchy,
+    getUserSpouse
 };

@@ -65,9 +65,9 @@ const NetworkTree = ({ network, currentUser, onNetworkChange }) => {
                     }
 
                     // Check if there's anything to show
-                    const hasVisibleLeaders = (showPastor && network.pastor && network.pastor.id !== network.id) ||
-                                             (showLiderDoce && network.liderDoce && network.liderDoce.id !== network.id) ||
-                                             (showLiderCelula && network.liderCelula && network.liderCelula.id !== network.id);
+                    const hasVisibleLeaders = (showPastor && (network.pastores?.length > 0 || network.pastor)) ||
+                                             (showLiderDoce && (network.lideresDoce?.length > 0 || network.liderDoce)) ||
+                                             (showLiderCelula && (network.lideresCelula?.length > 0 || network.liderCelula));
 
                     if (!hasVisibleLeaders) {
                         return null;
@@ -79,39 +79,39 @@ const NetworkTree = ({ network, currentUser, onNetworkChange }) => {
                                 Jerarquía de Liderazgo
                             </h4>
                             <div className="flex flex-wrap gap-4">
-                                {showPastor && network.pastor && network.pastor.id !== network.id && (
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                                {showPastor && (network.pastores || (network.pastor ? [network.pastor] : [])).map(p => (
+                                    <div key={`p-${p.id}`} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
                                         <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
                                             <Users className="w-4 h-4" />
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase leading-none mb-0.5">Pastor</p>
-                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.pastor.fullName}</p>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{p.fullName}</p>
                                         </div>
                                     </div>
-                                )}
-                                {showLiderDoce && network.liderDoce && network.liderDoce.id !== network.id && (
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                                ))}
+                                {showLiderDoce && (network.lideresDoce || (network.liderDoce ? [network.liderDoce] : [])).map(ld => (
+                                    <div key={`ld-${ld.id}`} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
                                         <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
                                             <Users className="w-4 h-4" />
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase leading-none mb-0.5">Líder Los Doce</p>
-                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.liderDoce.fullName}</p>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{ld.fullName}</p>
                                         </div>
                                     </div>
-                                )}
-                                {showLiderCelula && network.liderCelula && network.liderCelula.id !== network.id && (
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
+                                ))}
+                                {showLiderCelula && (network.lideresCelula || (network.liderCelula ? [network.liderCelula] : [])).map(lc => (
+                                    <div key={`lc-${lc.id}`} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
                                         <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                                             <Users className="w-4 h-4" />
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase leading-none mb-0.5">Líder Célula</p>
-                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{network.liderCelula.fullName}</p>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{lc.fullName}</p>
                                         </div>
                                     </div>
-                                )}
+                                ))}
                             </div>
                         </div>
                     );
@@ -170,10 +170,13 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
         // ADMIN can manage all nodes
         if (userRoles.includes('ADMIN')) return true;
 
+        // Check if current user is either member of the couple node
+        const isSelfOrSpouse = node.id === currentUser.id || node.spouseId === currentUser.id;
+
         // LIDER_DOCE can add to their own node or to LIDER_CELULA in their network
         if (userRoles.includes('LIDER_DOCE')) {
             // Can add to themselves
-            if (node.id === currentUser.id) return true;
+            if (isSelfOrSpouse) return true;
 
             // Can add to LIDER_CELULA who are their direct disciples
             if (node.roles?.includes('LIDER_CELULA') && level === 1) {
@@ -182,7 +185,7 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
         }
 
         // LIDER_CELULA can only add to their own node
-        if (userRoles.includes('LIDER_CELULA') && node.id === currentUser.id) {
+        if (userRoles.includes('LIDER_CELULA') && isSelfOrSpouse) {
             return true;
         }
 
@@ -247,23 +250,41 @@ const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
                             // Spacer for alignment if no children
                             <div className="w-4 h-4" />
                         )}
-                        <Users className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                        <div className="text-gray-500 flex-shrink-0">
+                            {node.isCouple ? (
+                                <div className="flex -space-x-1">
+                                    <Users className="w-4 h-4 text-blue-500" />
+                                    <Users className="w-4 h-4 text-pink-500" />
+                                </div>
+                            ) : (
+                                <Users className="w-4 h-4 text-gray-500" />
+                            )}
+                        </div>
                         <div className="min-w-0 flex-1">
-                            <h3 className="font-semibold text-gray-800 dark:text-white text-sm truncate pr-2">{node.fullName}</h3>
-                            <div className="flex items-center gap-2">
-                                <span className={`
-                                    inline-block px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-full tracking-wide
-                                    ${node.roles?.includes('ADMIN') ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                                        node.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                            node.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                                node.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                                                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
-                                `}>
-                                    {node.roles?.includes('ADMIN') ? 'Super Admin' :
-                                        node.roles?.includes('PASTOR') ? 'Pastor' :
-                                            node.roles?.includes('LIDER_DOCE') ? 'Doce' :
-                                                node.roles?.includes('LIDER_CELULA') ? 'Célula' : 'Discípulo'}
-                                </span>
+                            <h3 className={`font-semibold text-sm truncate pr-2 ${node.isCouple ? 'text-blue-700 dark:text-blue-300' : 'text-gray-800 dark:text-white'}`}>
+                                {node.fullName}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-1">
+                                {node.roles?.map(role => (
+                                    <span key={role} className={`
+                                        inline-block px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-full tracking-wide
+                                        ${role === 'ADMIN' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                            role === 'PASTOR' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                                role === 'LIDER_DOCE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                                    role === 'LIDER_CELULA' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
+                                    `}>
+                                        {role === 'ADMIN' ? 'Admin' :
+                                            role === 'PASTOR' ? 'Pastor' :
+                                                role === 'LIDER_DOCE' ? 'Doce' :
+                                                    role === 'LIDER_CELULA' ? 'Célula' : 'Discípulo'}
+                                    </span>
+                                ))}
+                                {node.isCouple && (
+                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 italic">
+                                        (Pareja)
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -8,13 +8,15 @@ const UserFormFields = ({
     pastores,
     lideresDoce,
     lideresCelula,
+    users = [],
     isAdmin,
     showPassword,
     setShowPassword,
     passwordErrors,
     setPasswordErrors,
     validatePasswordRealTime,
-    calculateAge
+    calculateAge,
+    getAssignableRoles
 }) => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -136,14 +138,31 @@ const UserFormFields = ({
                 </select>
             </div>
             <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Cónyuge (Opcional)</label>
+                <select
+                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    value={formData.spouseId || ''}
+                    onChange={e => setFormData({ ...formData, spouseId: e.target.value })}
+                    disabled={!['CASADO', 'UNION_LIBRE'].includes(formData.maritalStatus)}
+                >
+                    <option value="">-- Sin Cónyuge --</option>
+                    {users
+                        .filter(u => u.id !== formData.id)
+                        .sort((a, b) => a.fullName.localeCompare(b.fullName))
+                        .map(u => (
+                            <option key={u.id} value={u.id}>{u.fullName}</option>
+                        ))
+                    }
+                </select>
+            </div>
+            <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
                 <select
                     className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                     value={formData.role}
                     onChange={e => setFormData({ ...formData, role: e.target.value, pastorId: '', liderDoceId: '', liderCelulaId: '' })}
                 >
-                    {/* getAssignableRoles logic would be outside or passed in */}
-                    {['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'].map(r => (
+                    {getAssignableRoles && getAssignableRoles().map(r => (
                         <option key={r} value={r}>{r.replace('_', ' ')}</option>
                     ))}
                 </select>
@@ -185,54 +204,109 @@ const UserFormFields = ({
                 </div>
             )}
 
-            {formData.role === 'LIDER_DOCE' && (
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Pastor</label>
-                    <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.pastorId} onChange={e => setFormData({ ...formData, pastorId: e.target.value })}>
-                        <option value="">-- Sin Asignar --</option>
-                        {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
-                    </select>
+            {(formData.role === 'LIDER_DOCE' || formData.role === 'LIDER_CELULA' || formData.role === 'DISCIPULO') && (
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+                    <h3 className="md:col-span-2 font-semibold text-gray-900 dark:text-white">Asignación de Líderes (Hasta 2 por nivel)</h3>
+                    
+                    {/* PASTORES (for LIDER_DOCE) */}
+                    {formData.role === 'LIDER_DOCE' && (
+                        <>
+                            {[0, 1].map(index => (
+                                <div key={`pastor-${index}`}>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Pastor {index + 1}</label>
+                                    <select 
+                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" 
+                                        value={formData.pastorIds?.[index] || ''} 
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            const newIds = [...(formData.pastorIds || [])];
+                                            newIds[index] = val;
+                                            const filteredIds = newIds.filter(Boolean);
+                                            
+                                            // Auto-select spouse
+                                            if (val && filteredIds.length < 2) {
+                                                const selected = pastores.find(p => p.id === parseInt(val));
+                                                if (selected?.spouseId && !filteredIds.includes(selected.spouseId.toString())) {
+                                                    filteredIds.push(selected.spouseId.toString());
+                                                }
+                                            }
+                                            setFormData({ ...formData, pastorIds: Array.from(new Set(filteredIds)) });
+                                        }}
+                                    >
+                                        <option value="">-- Sin Asignar --</option>
+                                        {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                                    </select>
+                                </div>
+                            ))}
+                        </>
+                    )}
+
+                    {/* LIDERES DOCE (for LIDER_CELULA and DISCIPULO) */}
+                    {(formData.role === 'LIDER_CELULA' || formData.role === 'DISCIPULO') && (
+                        <>
+                            {[0, 1].map(index => (
+                                <div key={`ld-${index}`}>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12 {index + 1}</label>
+                                    <select 
+                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" 
+                                        value={formData.liderDoceIds?.[index] || ''} 
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            const newIds = [...(formData.liderDoceIds || [])];
+                                            newIds[index] = val;
+                                            const filteredIds = newIds.filter(Boolean);
+                                            
+                                            if (val && filteredIds.length < 2) {
+                                                const selected = lideresDoce.find(l => l.id === parseInt(val));
+                                                if (selected?.spouseId && !filteredIds.includes(selected.spouseId.toString())) {
+                                                    filteredIds.push(selected.spouseId.toString());
+                                                }
+                                            }
+                                            setFormData({ ...formData, liderDoceIds: Array.from(new Set(filteredIds)) });
+                                        }}
+                                    >
+                                        <option value="">-- Sin Asignar --</option>
+                                        {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
+                                    </select>
+                                </div>
+                            ))}
+                        </>
+                    )}
+
+                    {/* LIDERES CELULA (for DISCIPULO) */}
+                    {formData.role === 'DISCIPULO' && (
+                        <>
+                            {[0, 1].map(index => (
+                                <div key={`lc-${index}`}>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula {index + 1}</label>
+                                    <select 
+                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" 
+                                        value={formData.liderCelulaIds?.[index] || ''} 
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            const newIds = [...(formData.liderCelulaIds || [])];
+                                            newIds[index] = val;
+                                            const filteredIds = newIds.filter(Boolean);
+                                            
+                                            if (val && filteredIds.length < 2) {
+                                                const selected = lideresCelula.find(lc => lc.id === parseInt(val));
+                                                if (selected?.spouseId && !filteredIds.includes(selected.spouseId.toString())) {
+                                                    filteredIds.push(selected.spouseId.toString());
+                                                }
+                                            }
+                                            setFormData({ ...formData, liderCelulaIds: Array.from(new Set(filteredIds)) });
+                                        }}
+                                    >
+                                        <option value="">-- Sin Asignar --</option>
+                                        {lideresCelula
+                                            .filter(lc => (formData.liderDoceIds || []).length === 0 || (formData.liderDoceIds || []).some(ldId => lc.liderDoceId === parseInt(ldId)))
+                                            .map(lc => <option key={lc.id} value={lc.id}>{lc.fullName}</option>)}
+                                    </select>
+                                </div>
+                            ))}
+                        </>
+                    )}
                 </div>
-            )}
-
-            {formData.role === 'LIDER_CELULA' && (
-                <>
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Líder 12</label>
-                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderDoceId} onChange={e => setFormData({ ...formData, liderDoceId: e.target.value })}>
-                            <option value="">-- Sin Asignar --</option>
-                            {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Asignar a Pastor (Opcional)</label>
-                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.pastorId} onChange={e => setFormData({ ...formData, pastorId: e.target.value })}>
-                            <option value="">-- Sin Asignar --</option>
-                            {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
-                        </select>
-                    </div>
-                </>
-            )}
-
-            {formData.role === 'DISCIPULO' && (
-                <>
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12</label>
-                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderDoceId} onChange={e => setFormData({ ...formData, liderDoceId: e.target.value, liderCelulaId: '' })}>
-                            <option value="">-- Sin Asignar --</option>
-                            {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula</label>
-                        <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.liderCelulaId} onChange={e => setFormData({ ...formData, liderCelulaId: e.target.value })}>
-                            <option value="">-- Sin Asignar --</option>
-                            {lideresCelula
-                                .filter(lc => !formData.liderDoceId || lc.liderDoceId === parseInt(formData.liderDoceId))
-                                .map(lc => <option key={lc.id} value={lc.id}>{lc.fullName}</option>)}
-                        </select>
-                    </div>
-                </>
             )}
 
             {/* Coordinator Toggle for LIDER_DOCE */}
@@ -321,6 +395,7 @@ UserFormFields.propTypes = {
     pastores: PropTypes.array.isRequired,
     lideresDoce: PropTypes.array.isRequired,
     lideresCelula: PropTypes.array.isRequired,
+    users: PropTypes.array,
     isAdmin: PropTypes.bool.isRequired,
     showPassword: PropTypes.bool,
     setShowPassword: PropTypes.func,
@@ -328,6 +403,7 @@ UserFormFields.propTypes = {
     setPasswordErrors: PropTypes.func,
     validatePasswordRealTime: PropTypes.func.isRequired,
     calculateAge: PropTypes.func.isRequired,
+    getAssignableRoles: PropTypes.func,
 };
 
 export default UserFormFields;

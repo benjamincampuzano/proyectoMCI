@@ -243,6 +243,8 @@ const getAllUsers = async (req, res) => {
             include: {
                 profile: true,
                 roles: { include: { role: true } },
+                spouse: { include: { profile: true } },
+                spouseOf: { include: { profile: true } },
                 parents: {
                     include: {
                         parent: {
@@ -267,6 +269,12 @@ const getAllUsers = async (req, res) => {
             phone: u.phone,
             roles: u.roles.map(r => r.role.name),
             isCoordinator: u.isCoordinator,
+            spouseId: u.spouseId || (u.spouseOf ? u.spouseOf.id : null),
+            spouseName: u.spouse?.profile.fullName || u.spouseOf?.profile.fullName || null,
+            pastorIds: u.parents.filter(p => p.role === 'PASTOR').map(p => p.parentId),
+            liderDoceIds: u.parents.filter(p => p.role === 'LIDER_DOCE').map(p => p.parentId),
+            liderCelulaIds: u.parents.filter(p => p.role === 'LIDER_CELULA').map(p => p.parentId),
+            // Maintain single IDs for backward compatibility if needed, but using arrays primarily
             pastorId: u.parents.find(p => p.role === 'PASTOR')?.parentId || null,
             liderDoceId: u.parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null,
             liderCelulaId: u.parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null,
@@ -310,6 +318,11 @@ const getUserById = async (req, res) => {
             phone: user.phone,
             roles: user.roles.map(r => r.role.name),
             isCoordinator: user.isCoordinator,
+            spouseId: user.spouseId || (user.spouseOf ? user.spouseOf.id : null),
+            spouseName: user.spouse?.profile.fullName || user.spouseOf?.profile.fullName || null,
+            pastorIds: user.parents.filter(p => p.role === 'PASTOR').map(p => p.parentId),
+            liderDoceIds: user.parents.filter(p => p.role === 'LIDER_DOCE').map(p => p.parentId),
+            liderCelulaIds: user.parents.filter(p => p.role === 'LIDER_CELULA').map(p => p.parentId),
             pastorId: user.parents.find(p => p.role === 'PASTOR')?.parentId || null,
             liderDoceId: user.parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null,
             liderCelulaId: user.parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null,
@@ -332,7 +345,7 @@ const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const userId = parseInt(id);
-        const { fullName, email, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, maritalStatus, network, isCoordinator } = req.body;
+        const { fullName, email, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, maritalStatus, network, isCoordinator, spouseId } = req.body;
 
         const userToUpdate = await prisma.user.findUnique({
             where: { id: userId },
@@ -371,9 +384,10 @@ const updateUser = async (req, res) => {
             const updated = await tx.user.update({
                 where: { id: userId },
                 data: {
-                    ...(email && { email }),
-                    ...(phone && { phone }),
-                    ...(isCoordinator !== undefined && { isCoordinator }),
+                    email,
+                    phone,
+                    isCoordinator,
+                    spouseId: spouseId ? parseInt(spouseId) : null,
                     profile: {
                         update: {
                             ...(fullName && { fullName }),
@@ -410,15 +424,15 @@ const updateUser = async (req, res) => {
 
             // 3. Update Hierarchy if leaders provided
             const hierarchyEntries = [
-                { id: pastorId, role: 'PASTOR' },
-                { id: liderDoceId, role: 'LIDER_DOCE' },
-                { id: liderCelulaId, role: 'LIDER_CELULA' }
+                { ids: pastorIds || (pastorId ? [pastorId] : undefined), role: 'PASTOR' },
+                { ids: liderDoceIds || (liderDoceId ? [liderDoceId] : undefined), role: 'LIDER_DOCE' },
+                { ids: liderCelulaIds || (liderCelulaId ? [liderCelulaId] : undefined), role: 'LIDER_CELULA' }
             ];
 
             // If any of these are explicitly passed (even as null/empty to remove), we update
-            if (pastorId !== undefined || liderDoceId !== undefined || liderCelulaId !== undefined || parentId !== undefined) {
+            if (pastorId !== undefined || liderDoceId !== undefined || liderCelulaId !== undefined || pastorIds !== undefined || liderDoceIds !== undefined || liderCelulaIds !== undefined || parentId !== undefined) {
                 // For backward compatibility or general cleanup, if parentId is passed as the primary way
-                if (parentId !== undefined && !pastorId && !liderDoceId && !liderCelulaId) {
+                if (parentId !== undefined && !pastorId && !liderDoceId && !liderCelulaId && !pastorIds && !liderDoceIds && !liderCelulaIds) {
                     await tx.userHierarchy.deleteMany({ where: { childId: userId } });
                     if (parentId) {
                         await tx.userHierarchy.create({
@@ -432,16 +446,17 @@ const updateUser = async (req, res) => {
                 } else {
                     // Modern multi-leader approach
                     for (const entry of hierarchyEntries) {
-                        if (entry.id !== undefined) {
+                        if (entry.ids !== undefined) {
                             // Replacement logic: remove previous for this role
                             await tx.userHierarchy.deleteMany({
                                 where: { childId: userId, role: entry.role }
                             });
 
-                            if (entry.id) {
+                            const ids = Array.isArray(entry.ids) ? entry.ids : [entry.ids];
+                            for (const idToAssign of ids.filter(Boolean)) {
                                 await tx.userHierarchy.create({
                                     data: {
-                                        parentId: parseInt(entry.id),
+                                        parentId: parseInt(idToAssign),
                                         childId: userId,
                                         role: entry.role
                                     }
@@ -449,6 +464,29 @@ const updateUser = async (req, res) => {
                             }
                         }
                     }
+                }
+            }
+
+            // 4. Ensure spouse symmetry
+            if (spouseId !== undefined) {
+                const sId = spouseId ? parseInt(spouseId) : null;
+                if (sId) {
+                    // Break any old spouse relationship for both
+                    await tx.user.updateMany({
+                        where: { OR: [{ spouseId: userId }, { spouseId: sId }] },
+                        data: { spouseId: null }
+                    });
+                    // Set new
+                    await tx.user.update({
+                        where: { id: userId },
+                        data: { spouseId: sId }
+                    });
+                } else {
+                    // Removing spouse: find whoever points to me or whoever I point to
+                    await tx.user.updateMany({
+                        where: { spouseId: userId },
+                        data: { spouseId: null }
+                    });
                 }
             }
 
@@ -475,7 +513,7 @@ const updateUser = async (req, res) => {
 // Admin: Crear nuevo usuario
 const createUser = async (req, res) => {
     try {
-        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, maritalStatus, network, generateTempPassword, mustChangePassword } = req.body;
+        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, maritalStatus, network, generateTempPassword, mustChangePassword, spouseId } = req.body;
 
         if (!email || !fullName) {
             return res.status(400).json({ message: 'Email and full name are required' });
@@ -528,6 +566,7 @@ const createUser = async (req, res) => {
                     password: hashedPassword,
                     phone,
                     mustChangePassword: shouldChangePassword,
+                    spouseId: spouseId ? parseInt(spouseId) : null,
                     profile: {
                         create: {
                             fullName,
@@ -559,30 +598,43 @@ const createUser = async (req, res) => {
             await tx.userRole.create({ data: { userId: newUser.id, roleId: targetRole.id } });
 
             // Create hierarchy for all provided leaders
-            const hierarchyToCreate = [
-                { id: pastorId, role: 'PASTOR' },
-                { id: liderDoceId, role: 'LIDER_DOCE' },
-                { id: liderCelulaId, role: 'LIDER_CELULA' }
-            ].filter(h => h.id);
+            const hierarchyEntries = [
+                { ids: pastorIds || (pastorId ? [pastorId] : []), role: 'PASTOR' },
+                { ids: liderDoceIds || (liderDoceId ? [liderDoceId] : []), role: 'LIDER_DOCE' },
+                { ids: liderCelulaIds || (liderCelulaId ? [liderCelulaId] : []), role: 'LIDER_CELULA' }
+            ];
 
-            for (const h of hierarchyToCreate) {
-                await tx.userHierarchy.create({
-                    data: {
-                        parentId: parseInt(h.id),
-                        childId: newUser.id,
-                        role: h.role
-                    }
-                });
+            for (const entry of hierarchyEntries) {
+                const ids = Array.isArray(entry.ids) ? entry.ids : [entry.ids];
+                for (const idToAssign of ids.filter(Boolean)) {
+                    await tx.userHierarchy.create({
+                        data: {
+                            parentId: parseInt(idToAssign),
+                            childId: newUser.id,
+                            role: entry.role
+                        }
+                    });
+                }
             }
 
             // Fallback for parentId if none of the specific ones were used
-            if (hierarchyToCreate.length === 0 && parentId) {
+            const hasSpecificLeaders = hierarchyEntries.some(e => Array.isArray(e.ids) ? e.ids.length > 0 : !!e.ids);
+            if (!hasSpecificLeaders && parentId) {
                 await tx.userHierarchy.create({
                     data: {
                         parentId: parseInt(parentId),
                         childId: newUser.id,
                         role: roleInHierarchy || 'DISCIPULO'
                     }
+                });
+            }
+
+            // Ensure spouse symmetry
+            if (spouseId) {
+                const sId = parseInt(spouseId);
+                await tx.user.update({
+                    where: { id: sId },
+                    data: { spouseId: newUser.id }
                 });
             }
 

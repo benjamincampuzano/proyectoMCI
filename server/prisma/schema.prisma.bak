@@ -27,7 +27,8 @@ model ModuleCoordinator {
   moduleName String
   createdAt  DateTime @default(now()) @db.Timestamptz(6)
   updatedAt  DateTime @updatedAt @db.Timestamptz(6)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, moduleName])
   @@index([moduleName])
@@ -44,7 +45,6 @@ model User {
   createdAt               DateTime                 @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime                 @updatedAt @db.Timestamptz(6)
   mustChangePassword      Boolean                  @default(false)
-  isCoordinator           Boolean                  @default(false)
   auditLogs               AuditLog[]
   hostedCells             Cell[]                   @relation("CellHost")
   ledCells                Cell[]                   @relation("CellLeader")
@@ -64,7 +64,6 @@ model User {
   invitedGuests           Guest[]                  @relation("InvitedBy")
   guestCalls              GuestCall[]
   guestVisits             GuestVisit[]
-  moduleCoordinations     ModuleCoordinator[]
   oracionesLed            OracionDeTres[]          @relation("LiderDoceOracion")
   oracionesMiembro        OracionDeTresMiembro[]
   guidedEnrollments       SeminarEnrollment[]      @relation("AssignedAuxiliar")
@@ -75,11 +74,12 @@ model User {
   children                UserHierarchy[]          @relation("HierarchyParent")
   profile                 UserProfile?
   roles                   UserRole[]
-  ModuleAuxiliaries       ModuleAuxiliaries[]
-
+  auxiliaryModules        SeminarModule[]          @relation("ModuleAuxiliaries")
+  isCoordinator           Boolean                  @default(false)
+  moduleCoordinations     ModuleCoordinator[]
   spouseId                Int?                     @unique
-  spouse                  User?                    @relation("SpouseRelation", fields: [spouseId], references: [id])
-  spouseOf                User?                    @relation("SpouseRelation")
+  spouse                  User?                    @relation("UserSpouse", fields: [spouseId], references: [id])
+  spouseOf                User?                    @relation("UserSpouse")
 
   @@index([email])
   @@index([createdAt])
@@ -258,22 +258,22 @@ model CellAttendance {
 }
 
 model SeminarModule {
-  id                Int                 @id @default(autoincrement())
-  name              String
-  description       String?
-  moduleNumber      Int?
-  code              String?             @unique
-  type              String              @default("SEMINARIO")
-  startDate         DateTime?           @db.Timestamptz(6)
-  endDate           DateTime?           @db.Timestamptz(6)
-  professorId       Int?
-  createdAt         DateTime            @default(now()) @db.Timestamptz(6)
-  isDeleted         Boolean             @default(false)
-  updatedAt         DateTime            @updatedAt @db.Timestamptz(6)
-  materials         ClassMaterial[]
-  enrollments       SeminarEnrollment[]
-  professor         User?               @relation("ModuleProfessor", fields: [professorId], references: [id])
-  ModuleAuxiliaries ModuleAuxiliaries[]
+  id           Int                 @id @default(autoincrement())
+  name         String
+  description  String?
+  moduleNumber Int?
+  code         String?             @unique
+  type         String              @default("SEMINARIO")
+  startDate    DateTime?           @db.Timestamptz(6)
+  endDate      DateTime?           @db.Timestamptz(6)
+  professorId  Int?
+  createdAt    DateTime            @default(now()) @db.Timestamptz(6)
+  isDeleted    Boolean             @default(false)
+  updatedAt    DateTime            @updatedAt @db.Timestamptz(6)
+  materials    ClassMaterial[]
+  enrollments  SeminarEnrollment[]
+  professor    User?               @relation("ModuleProfessor", fields: [professorId], references: [id])
+  auxiliaries  User[]              @relation("ModuleAuxiliaries")
 }
 
 model ClassMaterial {
@@ -411,14 +411,14 @@ model Encuentro {
   name              String
   description       String?
   cost              Float
+  transportCost     Float                   @default(0)
+  accommodationCost Float                   @default(0)
   startDate         DateTime                @db.Timestamptz(6)
   endDate           DateTime                @db.Timestamptz(6)
   coordinatorId     Int?
   isDeleted         Boolean                 @default(false)
   createdAt         DateTime                @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime                @updatedAt @db.Timestamptz(6)
-  accommodationCost Float                   @default(0)
-  transportCost     Float                   @default(0)
   coordinator       User?                   @relation("EncuentroCoordinator", fields: [coordinatorId], references: [id])
   leaders           EncuentroLeader[]
   registrations     EncuentroRegistration[]
@@ -444,10 +444,10 @@ model EncuentroRegistration {
   encuentroId        Int
   status             RegistrationStatus         @default(REGISTERED)
   discountPercentage Float                      @default(0)
+  needsTransport     Boolean                    @default(false)
+  needsAccommodation Boolean                    @default(false)
   createdAt          DateTime                   @default(now()) @db.Timestamptz(6)
   updatedAt          DateTime                   @updatedAt @db.Timestamptz(6)
-  needsAccommodation Boolean                    @default(false)
-  needsTransport     Boolean                    @default(false)
   classAttendances   EncuentroClassAttendance[]
   payments           EncuentroPayment[]
   encuentro          Encuentro                  @relation(fields: [encuentroId], references: [id], onDelete: Cascade)
@@ -464,12 +464,18 @@ model EncuentroPayment {
   id             Int                   @id @default(autoincrement())
   registrationId Int
   amount         Float
+  paymentType    EncuentroPaymentType  @default(ENCUENTRO)
   date           DateTime              @default(now()) @db.Timestamptz(6)
   notes          String?
   createdAt      DateTime              @default(now()) @db.Timestamptz(6)
   updatedAt      DateTime              @updatedAt @db.Timestamptz(6)
-  paymentType    EncuentroPaymentType  @default(ENCUENTRO)
   registration   EncuentroRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+}
+
+enum EncuentroPaymentType {
+  ENCUENTRO
+  TRANSPORT
+  ACCOMMODATION
 }
 
 model EncuentroClassAttendance {
@@ -573,37 +579,6 @@ model LegalDocument {
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
 
-model PasswordReset {
-  id        Int      @id @default(autoincrement())
-  email     String
-  token     String   @unique
-  expiresAt DateTime @db.Timestamptz(6)
-  isUsed    Boolean  @default(false)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @db.Timestamptz(6)
-
-  @@index([email])
-  @@index([expiresAt])
-  @@index([token])
-}
-
-model ModuleAuxiliaries {
-  A             Int
-  B             Int
-  SeminarModule SeminarModule @relation(fields: [A], references: [id], onDelete: Cascade)
-  User          User          @relation(fields: [B], references: [id], onDelete: Cascade)
-
-  @@id([A, B], map: "_ModuleAuxiliaries_AB_pkey")
-  @@index([B], map: "_ModuleAuxiliaries_B_index")
-  @@map("_ModuleAuxiliaries")
-}
-
-enum EncuentroPaymentType {
-  ENCUENTRO
-  TRANSPORT
-  ACCOMMODATION
-}
-
 enum HierarchyRole {
   PASTOR
   LIDER_DOCE
@@ -678,8 +653,8 @@ enum Network {
   HOMBRES
   JOVENES
   KIDS
-  ROCAS
   TEENS
+  ROCAS
 }
 
 enum GuestStatus {

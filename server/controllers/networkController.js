@@ -106,11 +106,13 @@ const getNetwork = async (req, res) => {
                         parent: {
                             include: {
                                 profile: true,
-                                roles: { include: { role: true } }
+                                roles: { include: { role: true } },
+                                spouse: { include: { profile: true } }
                             }
                         }
                     }
                 },
+                spouse: { include: { profile: true } },
                 _count: { select: { invitedGuests: true, assignedGuests: true } },
                 invitedGuests: {
                     where: { assignedToId: null }, // Only show under inviter if not assigned to someone else
@@ -144,59 +146,89 @@ const getNetwork = async (req, res) => {
             'DISCIPULO': 0
         };
 
+        const processedIds = new Set();
+
         // Function to build node
         const buildNode = (currentUserId) => {
+            if (processedIds.has(currentUserId)) return null;
+
             const currentUser = userMap.get(currentUserId);
             if (!currentUser) return null;
 
+            processedIds.add(currentUserId);
+
+            // Check if there is a spouse and if they are in this network
+            let spouseNode = null;
+            if (currentUser.spouseId && userMap.has(currentUser.spouseId) && !processedIds.has(currentUser.spouseId)) {
+                spouseNode = userMap.get(currentUser.spouseId);
+                processedIds.add(currentUser.spouseId);
+            }
+
             // Resolve immediate hierarchy info (parents)
-            const parentEntries = currentUser.parents || [];
-            // Map parents to useful structure
+            // If it's a couple, we might want to show parents of both? 
+            // For now, let's keep it simple and use primary user's parents or combined.
+            const allParentEntries = [...(currentUser.parents || []), ...(spouseNode?.parents || [])];
+            const uniqueParentsMap = new Map();
+            allParentEntries.forEach(p => uniqueParentsMap.set(`${p.parentId}-${p.role}`, p));
+            const parentEntries = Array.from(uniqueParentsMap.values());
+
             const leaders = {
-                pastor: parentEntries.find(p => p.role === 'PASTOR')?.parent,
-                liderDoce: parentEntries.find(p => p.role === 'LIDER_DOCE')?.parent,
-                liderCelula: parentEntries.find(p => p.role === 'LIDER_CELULA')?.parent
+                pastores: parentEntries.filter(p => p.role === 'PASTOR').map(p => p.parent),
+                lideresDoce: parentEntries.filter(p => p.role === 'LIDER_DOCE').map(p => p.parent),
+                lideresCelula: parentEntries.filter(p => p.role === 'LIDER_CELULA').map(p => p.parent)
             };
 
-            // Find children in the fetched set
-            const directChildrenEdges = currentUser.children || [];
+            // Combine children from both members of the couple
+            const allChildrenEdges = [...(currentUser.children || []), ...(spouseNode?.children || [])];
+            const uniqueChildrenEdgesMap = new Map();
+            // Use childId + role as key to avoid duplicate links to the same child for the same role
+            allChildrenEdges.forEach(edge => uniqueChildrenEdgesMap.set(`${edge.childId}-${edge.role}`, edge));
+            const directChildrenEdges = Array.from(uniqueChildrenEdgesMap.values());
 
             // Filter children so they only appear under their MOST SPECIFIC leader
-            // If a child has a LIDER_CELULA, they only show under that leader.
-            // If they only have a LIDER_DOCE, they show under that, etc.
             const discipleNodes = directChildrenEdges
                 .filter(edge => {
                     const child = userMap.get(edge.childId);
                     if (!child) return false;
 
-                    // Get all parent-child relationship roles for this child within the current network set
                     const childParents = (child.parents || [])
                         .filter(p => userMap.has(p.parentId));
 
                     if (childParents.length <= 1) return true;
 
-                    // Find the highest rank among all current parents of this child
                     const maxRank = Math.max(...childParents.map(p => ROLE_RANK[p.role] || 0));
-
-                    // Only include the child if the current parent's relationship rank matches the max rank
                     return ROLE_RANK[edge.role] === maxRank;
                 })
                 .map(edge => buildNode(edge.childId))
                 .filter(n => n !== null);
 
+            // Combine guests
+            const assignedGuests = [...(currentUser.assignedGuests || []), ...(spouseNode?.assignedGuests || [])];
+            const uniqueAssignedGuests = Array.from(new Map(assignedGuests.map(g => [g.id, g])).values());
+
+            const invitedGuests = [...(currentUser.invitedGuests || []), ...(spouseNode?.invitedGuests || [])];
+            const uniqueInvitedGuests = Array.from(new Map(invitedGuests.map(g => [g.id, g])).values());
+
             return {
                 id: currentUser.id,
-                fullName: currentUser.profile?.fullName || 'Sin Nombre',
+                fullName: spouseNode 
+                    ? `${currentUser.profile?.fullName} & ${spouseNode.profile?.fullName}` 
+                    : (currentUser.profile?.fullName || 'Sin Nombre'),
+                isCouple: !!spouseNode,
+                spouseId: currentUser.spouseId,
                 email: currentUser.email,
-                roles: currentUser.roles.map(r => r.role.name),
-                assignedGuests: (currentUser.assignedGuests || []).map(g => ({
+                roles: Array.from(new Set([...currentUser.roles.map(r => r.role.name), ...(spouseNode?.roles.map(r => r.role.name) || [])])),
+                assignedGuests: uniqueAssignedGuests.map(g => ({
                     ...g,
                     invitedByNames: g.invitedBy?.profile?.fullName || 'N/A'
                 })),
-                invitedGuests: currentUser.invitedGuests || [],
-                pastor: leaders.pastor ? { id: leaders.pastor.id, fullName: leaders.pastor.profile?.fullName } : null,
-                liderDoce: leaders.liderDoce ? { id: leaders.liderDoce.id, fullName: leaders.liderDoce.profile?.fullName } : null,
-                liderCelula: leaders.liderCelula ? { id: leaders.liderCelula.id, fullName: leaders.liderCelula.profile?.fullName } : null,
+                invitedGuests: uniqueInvitedGuests || [],
+                pastores: leaders.pastores.map(p => ({ id: p.id, fullName: p.profile?.fullName })),
+                lideresDoce: leaders.lideresDoce.map(ld => ({ id: ld.id, fullName: ld.profile?.fullName })),
+                lideresCelula: leaders.lideresCelula.map(lc => ({ id: lc.id, fullName: lc.profile?.fullName })),
+                pastor: leaders.pastores[0] ? { id: leaders.pastores[0].id, fullName: leaders.pastores[0].profile?.fullName } : null,
+                liderDoce: leaders.lideresDoce[0] ? { id: leaders.lideresDoce[0].id, fullName: leaders.lideresDoce[0].profile?.fullName } : null,
+                liderCelula: leaders.lideresCelula[0] ? { id: leaders.lideresCelula[0].id, fullName: leaders.lideresCelula[0].profile?.fullName } : null,
                 disciples: discipleNodes
             };
         };
@@ -523,17 +555,21 @@ const getUserActivityList = async (req, res) => {
                 };
             });
 
-            // Lider de 12 logic
+            // Lider de 12 logic (Handle multiple)
             const userRoles = u.roles.map(r => r.role.name);
             const isLiderDoce = userRoles.includes('LIDER_DOCE');
             
             let liderDoceName = 'N/A';
             if (isLiderDoce) {
-                const pastorParent = u.parents.find(p => p.role === 'PASTOR');
-                liderDoceName = pastorParent?.parent?.profile?.fullName || 'N/A';
+                const pastores = u.parents.filter(p => p.role === 'PASTOR');
+                liderDoceName = pastores.length > 0 
+                    ? pastores.map(p => p.parent?.profile?.fullName).join(', ') 
+                    : 'N/A';
             } else {
-                const liderDoceParent = u.parents.find(p => p.role === 'LIDER_DOCE');
-                liderDoceName = liderDoceParent?.parent?.profile?.fullName || 'N/A';
+                const lideresDoce = u.parents.filter(p => p.role === 'LIDER_DOCE');
+                liderDoceName = lideresDoce.length > 0 
+                    ? lideresDoce.map(p => p.parent?.profile?.fullName).join(', ') 
+                    : 'N/A';
             }
 
             return {
