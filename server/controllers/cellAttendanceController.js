@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = require('../prisma/client');
+const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 
 // Helper function to get all users in a leader's network (disciples and sub-disciples)

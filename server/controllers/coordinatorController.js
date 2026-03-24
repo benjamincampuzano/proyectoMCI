@@ -1,6 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = require('../prisma/client');
+const prisma = require('../utils/database');
 
 /**
  * Get module coordinators

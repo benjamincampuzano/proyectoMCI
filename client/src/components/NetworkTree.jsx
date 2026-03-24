@@ -1,383 +1,290 @@
-import { useState } from 'react';
-import { Users, UserCheck, UserPlus, UserMinus, CaretDown, CaretRight } from '@phosphor-icons/react';
-import AddUserModal from './AddUserModal';
-import RemoveUserDialog from './RemoveUserDialog';
 
-const NetworkTree = ({ network, currentUser, onNetworkChange }) => {
-    const [addModalOpen, setAddModalOpen] = useState(false);
-    const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
-    const [selectedLeader, setSelectedLeader] = useState(null);
-    const [selectedUserToRemove, setSelectedUserToRemove] = useState(null);
+// NetworkTree.jsx
+import React, { useMemo, useState, useEffect } from 'react';
+import { FlowArrow, CardsThree, UsersThree, UserPlus, UserMinus, Users, CaretDown, CaretRight } from '@phosphor-icons/react';
+import CoupleNodeTree from './tree/CoupleNodeTree';
+import UnassignedUsersModal from './unassigned/UnassignedUsersModal';
+import AssignConfirmDialog from './common/AssignConfirmDialog';
+import RadialView from './radial/RadialView';
+import { buildCoupleNetwork } from './utils/transformCouples';
+import { getUnassignedUsers } from './utils/unassigned';
+import api from '../utils/api';
+import CardsView from './cards/CardsView';
 
-    if (!network) {
-        return (
-            <div className="text-center py-8">
-                <p className="text-gray-500">Selecciona un líder para ver su red de discipulado</p>
-            </div>
-        );
+const VIEW_TREE = 'tree';
+const VIEW_RADIAL = 'radial';
+const VIEW_CARDS = 'cards';
+
+export default function NetworkTree({ network, currentUser, onNetworkChange }) {
+  const [view, setView] = useState(VIEW_TREE);
+  const [unassignedOpen, setUnassignedOpen] = useState(false);
+  const [selectedLeaderForModal, setSelectedLeaderForModal] = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
+  const [pendingAssign, setPendingAssign] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [expandedNodes, setExpandedNodes] = useState(new Set());
+
+  const coupleRoot = useMemo(() => buildCoupleNetwork(network), [network]);
+  const unassigned = useMemo(() => getUnassignedUsers({ allUsers, coupleRoot }), [allUsers, coupleRoot]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await api.get('/users');
+        setAllUsers(response.data || []);
+      } catch (error) {
+        console.error('Error loading users:', error);
+      }
+    })();
+  }, []);
+
+  const handleDropUser = ({ user, targetNode }) => {
+    if (!targetNode) {
+      console.error('Target node is undefined in NetworkTree handleDropUser');
+      return;
     }
 
-    const handleAddUser = (leader) => {
-        setSelectedLeader(leader);
-        setAddModalOpen(true);
-    };
+    if (!targetNode.partners || targetNode.partners.length === 0) {
+      console.error('Target node has no partners:', targetNode);
+      return;
+    }
 
-    const handleRemoveUser = (user) => {
-        setSelectedUserToRemove(user);
-        setRemoveDialogOpen(true);
-    };
+    const leaderId = targetNode.partners[0]?.id;
+    const leaderName = targetNode.partners.map(p => p.fullName).join(' & ');
 
-    const handleNetworkUpdated = () => {
-        if (onNetworkChange) {
-            onNetworkChange();
-        }
-    };
+    if (!leaderId) {
+      console.error('Leader ID is undefined:', { targetNode, leaderId });
+      return;
+    }
 
+    if (!user || !user.id) {
+      console.error('User or user ID is undefined:', user);
+      return;
+    }
+
+    setPendingAssign({
+      userId: user.id,
+      userName: user.name || user.fullName || 'Unknown User',
+      leaderId,
+      leaderName
+    });
+  };
+
+  const confirmAssign = async () => {
+    if (!pendingAssign) return;
+
+    try {
+      setLoading(true);
+      await api.post('/network/assign', {
+        userId: pendingAssign.userId,
+        leaderId: pendingAssign.leaderId
+      });
+
+      setAllUsers(prev => prev.filter(u => u.id !== pendingAssign.userId));
+      setPendingAssign(null);
+      onNetworkChange?.();
+    } catch (error) {
+      console.error('Error assigning user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAssignUser = async (userId, leaderId) => {
+    try {
+      await api.post('/network/assign', { userId, leaderId });
+      setAllUsers(prev => prev.filter(u => u.id !== userId));
+      onNetworkChange?.();
+    } catch (error) {
+      console.error('Error assigning user:', error);
+    }
+  };
+
+  const handleUnassignedModalOpen = () => {
+    // Open modal with current network's leader as selected if available
+    setSelectedLeaderForModal(network);
+    setUnassignedOpen(true);
+  };
+
+  const handleAddUserToNode = (node) => {
+    setSelectedLeaderForModal(node);
+    setUnassignedOpen(true);
+  };
+
+  const handleRemoveUser = async (partner) => {
+    if (!window.confirm(`¿Estás seguro de que deseas remover a ${partner.fullName} de la red de discipulado?`)) return;
+    try {
+      setLoading(true);
+      await api.delete(`/network/remove/${partner.id}`);
+      onNetworkChange?.();
+      const response = await api.get('/users');
+      setAllUsers(response.data || []);
+    } catch (error) {
+      console.error('Error removing user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectLeader = (leader) => {
+    setSelectedLeaderForModal(leader);
+  };
+
+  const toggleNodeExpansion = (nodeId) => {
+    setExpandedNodes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+      return newSet;
+    });
+  };
+
+  if (!network) {
     return (
-        <>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
-                    Red de Discipulado: {network.fullName}
-                </h2>
-
-                {/* Leadership Context for the root user */}
-                {(() => {
-                    // Don't show for ADMIN or PASTOR
-                    if (!currentUser || currentUser.roles?.includes('ADMIN') || currentUser.roles?.includes('PASTOR')) {
-                        return null;
-                    }
-
-                    // Determine what leaders to show based on user role
-                    const userRoles = currentUser.roles || [];
-                    let showPastor = false;
-                    let showLiderDoce = false;
-                    let showLiderCelula = false;
-
-                    if (userRoles.includes('LIDER_DOCE')) {
-                        showPastor = true;
-                    } else if (userRoles.includes('LIDER_CELULA')) {
-                        showPastor = true;
-                        showLiderDoce = true;
-                    } else if (userRoles.includes('DISCIPULO')) {
-                        showPastor = true;
-                        showLiderDoce = true;
-                        showLiderCelula = true;
-                    }
-
-                    // Check if there's anything to show
-                    const hasVisibleLeaders = (showPastor && (network.pastores?.length > 0 || network.pastor)) ||
-                                             (showLiderDoce && (network.lideresDoce?.length > 0 || network.liderDoce)) ||
-                                             (showLiderCelula && (network.lideresCelula?.length > 0 || network.liderCelula));
-
-                    if (!hasVisibleLeaders) {
-                        return null;
-                    }
-
-                    return (
-                        <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3 ml-1">
-                                Jerarquía de Liderazgo
-                            </h4>
-                            <div className="flex flex-wrap gap-4">
-                                {showPastor && (network.pastores || (network.pastor ? [network.pastor] : [])).map(p => (
-                                    <div key={`p-${p.id}`} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-                                        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-                                            <Users className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase leading-none mb-0.5">Pastor</p>
-                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{p.fullName}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                                {showLiderDoce && (network.lideresDoce || (network.liderDoce ? [network.liderDoce] : [])).map(ld => (
-                                    <div key={`ld-${ld.id}`} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-                                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                                            <Users className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase leading-none mb-0.5">Líder Los Doce</p>
-                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{ld.fullName}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                                {showLiderCelula && (network.lideresCelula || (network.liderCelula ? [network.liderCelula] : [])).map(lc => (
-                                    <div key={`lc-${lc.id}`} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                            <Users className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase leading-none mb-0.5">Líder Célula</p>
-                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{lc.fullName}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })()}
-
-                <NetworkNode
-                    node={network}
-                    level={0}
-                    currentUser={currentUser}
-                    onAddUser={handleAddUser}
-                    onRemoveUser={handleRemoveUser}
-                />
-            </div>
-
-            {/* Add User Modal */}
-            <AddUserModal
-                isOpen={addModalOpen}
-                onClose={() => setAddModalOpen(false)}
-                leaderId={selectedLeader?.id}
-                leaderName={selectedLeader?.fullName}
-                onUserAdded={handleNetworkUpdated}
-            />
-
-            {/* Remove User Dialog */}
-            <RemoveUserDialog
-                isOpen={removeDialogOpen}
-                onClose={() => setRemoveDialogOpen(false)}
-                user={selectedUserToRemove}
-                onUserRemoved={handleNetworkUpdated}
-            />
-        </>
+      <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+        <Users size={48} className="mb-4 text-gray-300 dark:text-gray-600" />
+        <p className="text-lg font-medium text-gray-900 dark:text-gray-100">Selecciona un líder para ver su red de discipulado</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Elige un líder de la lista para comenzar</p>
+      </div>
     );
-};
+  }
 
-const NetworkNode = ({ node, level, currentUser, onAddUser, onRemoveUser }) => {
-    const [isExpanded, setIsExpanded] = useState(level < 2);
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Red de Discipulado</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {network.fullName} • {unassigned.length} usuarios sin asignar
+            </p>
+          </div>
 
-    const hasChildren = node.disciples?.length > 0 ||
-        node.assignedGuests?.length > 0 ||
-        node.invitedGuests?.length > 0;
-
-    const totalGuests = (node.assignedGuests?.length || 0) + (node.invitedGuests?.length || 0);
-
-    /**
-     * Determine if the current user can add users to this node
-     * ADMIN: Can manage all nodes
-     * LIDER_DOCE: Can add to their own node and to LIDER_CELULA in their network
-     * LIDER_CELULA: Can add to their own node
-     * DISCIPULO: Cannot manage
-     */
-    const canAddToNode = () => {
-        if (!currentUser) return false;
-
-        const userRoles = currentUser.roles || [];
-
-        // ADMIN can manage all nodes
-        if (userRoles.includes('ADMIN')) return true;
-
-        // Check if current user is either member of the couple node
-        const isSelfOrSpouse = node.id === currentUser.id || node.spouseId === currentUser.id;
-
-        // LIDER_DOCE can add to their own node or to LIDER_CELULA in their network
-        if (userRoles.includes('LIDER_DOCE')) {
-            // Can add to themselves
-            if (isSelfOrSpouse) return true;
-
-            // Can add to LIDER_CELULA who are their direct disciples
-            if (node.roles?.includes('LIDER_CELULA') && level === 1) {
-                return true;
-            }
-        }
-
-        // LIDER_CELULA can only add to their own node
-        if (userRoles.includes('LIDER_CELULA') && isSelfOrSpouse) {
-            return true;
-        }
-
-        return false;
-    };
-
-    /**
-     * Determine if the current user can remove this node
-     * ADMIN: Can remove any node (except root)
-     * LIDER_DOCE: Can remove any disciple in their network (any level)
-     * LIDER_CELULA: Can remove any disciple in their network (any level)
-     * DISCIPULO: Cannot remove users
-     */
-    const canRemoveNode = () => {
-        if (!currentUser || level === 0) return false; // Cannot remove root node
-
-        const userRoles = currentUser.roles || [];
-
-        // ADMIN can remove any node (except root)
-        if (userRoles.includes('ADMIN')) return true;
-
-        // LIDER_DOCE can remove anyone in their network (any level >= 1)
-        if (userRoles.includes('LIDER_DOCE') && level >= 1) {
-            return true;
-        }
-
-        // LIDER_CELULA can remove anyone in their network (any level >= 1)
-        if (userRoles.includes('LIDER_CELULA') && level >= 1) {
-            return true;
-        }
-
-        return false;
-    };
-
-    const showAddButton = canAddToNode();
-    const showRemoveButton = canRemoveNode();
-
-    return (
-        <div className={`${level > 0 ? 'ml-4 mt-1.5' : ''}`}>
-            <div
-                className={`
-          p-2.5 rounded-lg border-l-2 transition-all
-          ${level === 0 ? 'bg-purple-50/80 dark:bg-purple-900/20 border-purple-500' :
-                        level === 1 ? 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-500' :
-                            'bg-gray-50/80 dark:bg-gray-900/40 border-gray-400 dark:border-gray-600'}
-          hover:shadow-sm
-        `}
+          <div className="flex items-center gap-3">
+            {/* Unassigned users button */}
+            <button
+              onClick={handleUnassignedModalOpen}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors shadow-sm"
+              title={`${selectedLeaderForModal ? `Asignar usuarios a ${selectedLeaderForModal.partners?.map(p => p.fullName).join(' & ')}` : 'Ver usuarios sin asignar (selecciona un líder con Shift+click para asignar)'}`}
             >
-                <div className="flex items-center justify-between">
-                    <div
-                        className="flex items-center gap-2 flex-1 cursor-pointer min-w-0"
-                        onClick={() => hasChildren && setIsExpanded(!isExpanded)}
-                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && hasChildren && setIsExpanded(!isExpanded)}
-                        role="button"
-                        tabIndex={0}
-                    >
-                        {hasChildren ? (
-                            <div className="text-gray-500 flex-shrink-0">
-                                {isExpanded ? <CaretDown className="w-4 h-4" /> : <CaretRight className="w-4 h-4" />}
-                            </div>
-                        ) : (
-                            // Spacer for alignment if no children
-                            <div className="w-4 h-4" />
-                        )}
-                        <div className="text-gray-500 flex-shrink-0">
-                            {node.isCouple ? (
-                                <div className="flex -space-x-1">
-                                    <Users className="w-4 h-4 text-blue-500" />
-                                    <Users className="w-4 h-4 text-pink-500" />
-                                </div>
-                            ) : (
-                                <Users className="w-4 h-4 text-gray-500" />
-                            )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <h3 className={`font-semibold text-sm truncate pr-2 ${node.isCouple ? 'text-blue-700 dark:text-blue-300' : 'text-gray-800 dark:text-white'}`}>
-                                {node.fullName}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-1">
-                                {node.roles?.map(role => (
-                                    <span key={role} className={`
-                                        inline-block px-1.5 py-0.5 text-[9px] font-bold uppercase rounded-full tracking-wide
-                                        ${role === 'ADMIN' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                                            role === 'PASTOR' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                                role === 'LIDER_DOCE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                                    role === 'LIDER_CELULA' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                                                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
-                                    `}>
-                                        {role === 'ADMIN' ? 'Admin' :
-                                            role === 'PASTOR' ? 'Pastor' :
-                                                role === 'LIDER_DOCE' ? 'Doce' :
-                                                    role === 'LIDER_CELULA' ? 'Célula' : 'Discípulo'}
-                                    </span>
-                                ))}
-                                {node.isCouple && (
-                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 italic">
-                                        (Pareja)
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+              <UsersThree size={18} />
+              <span className="font-medium">Sin Asignar</span>
+              <span className="bg-amber-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                {unassigned.length}
+              </span>
+            </button>
 
-                    <div className="flex items-center gap-2">
-                        {/* Stats - Hidden on very small screens if needed, or kept compact */}
-                        <div className="hidden sm:flex items-center gap-3 text-xs">
-                            {node.disciples?.length > 0 && (
-                                <div className="flex items-center gap-1 text-blue-600" title="Discípulos">
-                                    <UserCheck className="w-3.5 h-3.5" />
-                                    <span className="font-medium">{node.disciples.length}</span>
-                                </div>
-                            )}
-                            {totalGuests > 0 && (
-                                <div className="flex items-center gap-1 text-green-600" title="Invitados">
-                                    <UserPlus className="w-3.5 h-3.5" />
-                                    <span className="font-medium">{totalGuests}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-1">
-                            {showAddButton && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onAddUser(node);
-                                    }}
-                                    className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center justify-center"
-                                    title="Agregar usuario"
-                                >
-                                    <UserPlus className="w-3.5 h-3.5" />
-                                </button>
-                            )}
-                            {showRemoveButton && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onRemoveUser(node);
-                                    }}
-                                    className="p-1.5 bg-red-600 text-white rounded hover:bg-red-700 transition-colors flex items-center justify-center"
-                                    title="Remover usuario"
-                                >
-                                    <UserMinus className="w-3.5 h-3.5" />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
+            {/* View switcher */}
+            <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm">
+              <button
+                className={`px-4 py-2 text-sm font-medium transition-colors ${view === VIEW_TREE
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  }`}
+                onClick={() => setView(VIEW_TREE)}
+                title="Vista Árbol"
+              >
+                <FlowArrow size={16} className="inline mr-2" />
+                Árbol
+              </button>
+              <button
+                className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-gray-600 transition-colors ${view === VIEW_RADIAL
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  }`}
+                onClick={() => setView(VIEW_RADIAL)}
+                title="Vista Radial"
+              >
+                <div className="inline mr-2">⭕</div>
+                Radial
+              </button>
+              <button
+                className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-gray-600 transition-colors ${view === VIEW_CARDS
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  }`}
+                onClick={() => setView(VIEW_CARDS)}
+                title="Vista de Tarjetas"
+              >
+                <CardsThree size={16} className="inline mr-2" />
+                Tarjetas
+              </button>
             </div>
-
-            {isExpanded && hasChildren && (
-                <div className="mt-1">
-                    {/* Render disciples (Recursive) */}
-                    {node.disciples?.map((disciple) => (
-                        <NetworkNode
-                            key={`disciple-${disciple.id}`}
-                            node={disciple}
-                            level={level + 1}
-                            currentUser={currentUser}
-                            onAddUser={onAddUser}
-                            onRemoveUser={onRemoveUser}
-                        />
-                    ))}
-
-                    {/* Render guests - Compact view */}
-                    {(node.assignedGuests?.length > 0 || node.invitedGuests?.length > 0) && (
-                        <div className="ml-4 mt-1.5">
-                            <div className="p-2 bg-green-50/50 dark:bg-green-900/10 border-l-2 border-green-400 dark:border-green-600 rounded-lg">
-                                <h4 className="font-semibold text-green-800 dark:text-green-300 text-xs mb-1 flex items-center gap-1">
-                                    <UserPlus className="w-3 h-3" />
-                                    Invitados ({totalGuests})
-                                </h4>
-                                <div className="space-y-0.5">
-                                    {node.assignedGuests?.map((guest) => (
-                                        <div key={`assigned-${guest.id}`} className="text-xs text-gray-700 dark:text-gray-300 ml-2">
-                                            • {guest.name} <span className="text-[10px] text-gray-500 dark:text-gray-400 italic">(Asignado - Invitado por: {guest.invitedByNames})</span>
-                                        </div>
-                                    ))}
-                                    {node.invitedGuests?.map((guest) => (
-                                        <div key={`invited-${guest.id}`} className="text-xs text-gray-700 dark:text-gray-300 ml-2">
-                                            • {guest.name} <span className="text-[10px] text-gray-500 dark:text-gray-400 italic">(Invitado)</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
+          </div>
         </div>
-    );
-};
+      </div>
 
-export default NetworkTree;
+      {/* Main content */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+        {view === VIEW_TREE && (
+          <div className="p-6">
+            <div className="mb-4 flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-2">
+                <CaretDown size={14} />
+                <span>Ministerio de</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-6">
+              <CoupleNodeTree
+                node={coupleRoot}
+                currentUser={currentUser}
+                onAddUser={handleAddUserToNode}
+                onRemoveUser={handleRemoveUser}
+                onDropUser={handleDropUser}
+                expandedNodes={expandedNodes}
+                onToggleNode={toggleNodeExpansion}
+                onSelectLeader={handleSelectLeader}
+                selectedLeader={selectedLeaderForModal}
+              />
+            </div>
+          </div>
+        )}
+
+        {view === VIEW_RADIAL && (
+          <div className="p-6">
+            <RadialView
+              root={coupleRoot}
+              currentUser={currentUser}
+              onAddUser={handleAddUserToNode}
+              onRemoveUser={handleRemoveUser}
+            />
+          </div>
+        )}
+
+        {view === VIEW_CARDS && (
+          <div className="p-6">
+            <CardsView
+              root={coupleRoot}
+              currentUser={currentUser}
+              onAddUser={handleAddUserToNode}
+              onRemoveUser={handleRemoveUser}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      <UnassignedUsersModal
+        isOpen={unassignedOpen}
+        onClose={() => setUnassignedOpen(false)}
+        coupleRoot={coupleRoot}
+        allUsers={allUsers}
+        selectedLeader={selectedLeaderForModal}
+        onAssign={handleAssignUser}
+      />
+
+      <AssignConfirmDialog
+        open={!!pendingAssign}
+        user={pendingAssign ? { name: pendingAssign.userName } : {}}
+        leaderName={pendingAssign?.leaderName}
+        loading={loading}
+        onConfirm={confirmAssign}
+        onCancel={() => setPendingAssign(null)}
+      />
+    </div>
+  );
+}

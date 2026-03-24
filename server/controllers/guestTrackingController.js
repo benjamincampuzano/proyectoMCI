@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = require('../prisma/client');
+const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 
 // Generar un reporte Estadístico de cantidad de personas con y sin llamadas, 

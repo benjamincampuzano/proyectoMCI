@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = require('../prisma/client');
+const prisma = require('../utils/database');
 
 const CATEGORY_CONFIG = {
     'KIDS': { label: 'Kids', minAge: 5, maxAge: 7 },

@@ -15,6 +15,8 @@ const useUserManagement = () => {
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [passwordResetUser, setPasswordResetUser] = useState(null);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorDetails, setErrorDetails] = useState({ title: '', message: '', type: '' });
     const auth = useAuth();
     const currentUser = auth.user;
 
@@ -53,6 +55,45 @@ const useUserManagement = () => {
         dataTreatmentAuthorized: false,
         minorConsentAuthorized: false
     });
+
+    // Function to categorize and handle errors
+    const handleError = (error, operation = 'general') => {
+        const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
+        
+        let title = 'Error';
+        let type = 'error';
+        let message = errorMessage;
+
+        // Categorize common errors
+        if (errorMessage.includes('correo electrónico') || errorMessage.includes('email')) {
+            title = 'Error de Correo Electrónico';
+            type = 'email';
+        } else if (errorMessage.includes('teléfono') || errorMessage.includes('phone')) {
+            title = 'Error de Teléfono';
+            type = 'phone';
+        } else if (errorMessage.includes('documento') || errorMessage.includes('document')) {
+            title = 'Error de Documento';
+            type = 'document';
+        } else if (errorMessage.includes('contraseña') || errorMessage.includes('password')) {
+            title = 'Error de Contraseña';
+            type = 'password';
+        } else if (errorMessage.includes('permiso') || errorMessage.includes('permission') || errorMessage.includes('Unauthorized')) {
+            title = 'Error de Permisos';
+            type = 'permission';
+        } else if (errorMessage.includes('servidor') || errorMessage.includes('server')) {
+            title = 'Error del Servidor';
+            type = 'server';
+        }
+
+        // Set error for banner display (backward compatibility)
+        setError(errorMessage);
+        
+        // Set detailed error for modal display
+        setErrorDetails({ title, message, type });
+        setShowErrorModal(true);
+        
+        return { title, message, type };
+    };
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -121,7 +162,7 @@ const useUserManagement = () => {
             });
             fetchUsers();
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al crear usuario');
+            handleError(err, 'create');
         } finally {
             setSubmitting(false);
         }
@@ -158,7 +199,7 @@ const useUserManagement = () => {
             setEditingUser(null);
             fetchUsers();
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al actualizar');
+            handleError(err, 'update');
         } finally {
             setSubmitting(false);
         }
@@ -179,7 +220,7 @@ const useUserManagement = () => {
             setSuccess('Usuario eliminado');
             fetchUsers();
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al eliminar');
+            handleError(err, 'delete');
         }
     }, [fetchUsers]);
 
@@ -197,7 +238,7 @@ const useUserManagement = () => {
             setPasswordResetUser(null);
             fetchUsers();
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al resetear contraseña');
+            handleError(err, 'password_reset');
         } finally {
             setSubmitting(false);
         }
@@ -277,6 +318,10 @@ const useUserManagement = () => {
         canEdit,
         canCreateUsers,
         isAdmin: isUserAdmin,
+        showErrorModal,
+        setShowErrorModal,
+        errorDetails,
+        handleError,
     };
 };
 

@@ -206,14 +206,14 @@ const UserFormFields = ({
 
             {(formData.role === 'LIDER_DOCE' || formData.role === 'LIDER_CELULA' || formData.role === 'DISCIPULO') && (
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-                    <h3 className="md:col-span-2 font-semibold text-gray-900 dark:text-white">Asignación de Líderes (Hasta 2 por nivel)</h3>
+                    <h3 className="md:col-span-2 font-semibold text-gray-900 dark:text-white">Asignación de Líderes Parejas</h3>
                     
                     {/* PASTORES (for LIDER_DOCE) */}
                     {formData.role === 'LIDER_DOCE' && (
                         <>
                             {[0, 1].map(index => (
                                 <div key={`pastor-${index}`}>
-                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Pastor {index + 1}</label>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Pastor ({index + 1})</label>
                                     <select 
                                         className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" 
                                         value={formData.pastorIds?.[index] || ''} 
@@ -246,7 +246,7 @@ const UserFormFields = ({
                         <>
                             {[0, 1].map(index => (
                                 <div key={`ld-${index}`}>
-                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12 {index + 1}</label>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12 ({index + 1})</label>
                                     <select 
                                         className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" 
                                         value={formData.liderDoceIds?.[index] || ''} 
@@ -278,7 +278,7 @@ const UserFormFields = ({
                         <>
                             {[0, 1].map(index => (
                                 <div key={`lc-${index}`}>
-                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula {index + 1}</label>
+                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula ({index + 1})</label>
                                     <select 
                                         className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" 
                                         value={formData.liderCelulaIds?.[index] || ''} 
@@ -306,28 +306,6 @@ const UserFormFields = ({
                             ))}
                         </>
                     )}
-                </div>
-            )}
-
-            {/* Coordinator Toggle for LIDER_DOCE */}
-            {formData.role === 'LIDER_DOCE' && isAdmin && (
-                <div className="md:col-span-2">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                        <input
-                            type="checkbox"
-                            className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-                            checked={formData.isCoordinator || false}
-                            onChange={e => setFormData({ ...formData, isCoordinator: e.target.checked })}
-                        />
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                                Coordinador con permisos de ADMIN
-                            </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                                Este usuario tendrá los mismos permisos que un ADMIN en todos los módulos
-                            </span>
-                        </div>
-                    </label>
                 </div>
             )}
 

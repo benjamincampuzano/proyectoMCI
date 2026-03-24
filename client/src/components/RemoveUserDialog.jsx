@@ -73,11 +73,11 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
                             <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
                             <span className={`
                                 inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full
-                                ${user.roles?.includes('ADMIN') ? 'bg-red-100 text-red-800' :
-                                    user.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800' :
-                                        user.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800' :
-                                            user.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800' :
-                                                'bg-gray-100 text-gray-800'}
+                                ${user.roles?.includes('ADMIN') ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                    user.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                        user.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                            user.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                                'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
                             `}>
                                 {Array.isArray(user.roles) ? user.roles.join(', ').replace(/_/g, ' ') : (typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : (Array.isArray(user.role) ? user.role.join(', ').replace(/_/g, ' ') : 'Usuario'))}
                             </span>
@@ -100,7 +100,7 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
 
                     {/* Error Message */}
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4">
                             {error}
                         </div>
                     )}

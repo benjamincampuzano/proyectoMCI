@@ -4,7 +4,7 @@ const axios = require('axios');
 const { logActivity } = require('../utils/auditLogger');
 const { validatePassword } = require('../utils/passwordValidator');
 
-const prisma = require('../prisma/client');
+const prisma = require('../utils/database');
 
 // Geocoding helper using Nominatim
 const geocodeAddress = async (address, city) => {
@@ -89,6 +89,14 @@ const updateProfile = async (req, res) => {
             }
         }
 
+        // Check for duplicate phone number
+        if (phone) {
+            const existingPhone = await prisma.user.findUnique({ where: { phone } });
+            if (existingPhone && existingPhone.id !== userId) {
+                return res.status(400).json({ message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.' });
+            }
+        }
+
         let latitude = undefined;
         let longitude = undefined;
         if (address || city) {
@@ -99,11 +107,14 @@ const updateProfile = async (req, res) => {
             }
         }
 
+        // Clean phone number before updating
+        const cleanPhone = phone && phone.trim() !== '' ? phone.trim() : null;
+
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
                 ...(email && { email }),
-                ...(phone && { phone }),
+                ...(cleanPhone && { phone: cleanPhone }),
                 profile: {
                     update: {
                         ...(fullName && { fullName }),
@@ -136,8 +147,27 @@ const updateProfile = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error updating profile:', error);
+        
+        // Handle Prisma unique constraint errors
+        if (error.code === 'P2002') {
+            const targetField = error.meta?.target?.[0];
+            if (targetField === 'phone') {
+                return res.status(400).json({ 
+                    message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.' 
+                });
+            } else if (targetField === 'email') {
+                return res.status(400).json({ 
+                    message: 'El correo electrónico ya está registrado. Por favor use otro correo.' 
+                });
+            } else {
+                return res.status(400).json({ 
+                    message: 'Ya existe un usuario con estos datos. Por favor verifique la información.' 
+                });
+            }
+        }
+        
+        res.status(500).json({ message: 'Error del servidor al actualizar perfil' });
     }
 };
 
@@ -372,6 +402,14 @@ const updateUser = async (req, res) => {
             }
         }
 
+        // Check for duplicate phone number
+        if (phone) {
+            const existingPhone = await prisma.user.findUnique({ where: { phone } });
+            if (existingPhone && existingPhone.id !== userId) {
+                return res.status(400).json({ message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.' });
+            }
+        }
+
         let latitude = undefined;
         let longitude = undefined;
         if (address || city) {
@@ -379,13 +417,16 @@ const updateUser = async (req, res) => {
             if (coords.lat) { latitude = coords.lat; longitude = coords.lng; }
         }
 
+        // Clean phone number before updating
+        const cleanPhone = phone && phone.trim() !== '' ? phone.trim() : null;
+
         const updatedUser = await prisma.$transaction(async (tx) => {
             // 1. Update Core User & Profile
             const updated = await tx.user.update({
                 where: { id: userId },
                 data: {
                     email,
-                    phone,
+                    phone: cleanPhone,
                     isCoordinator,
                     spouseId: spouseId ? parseInt(spouseId) : null,
                     profile: {
@@ -506,8 +547,27 @@ const updateUser = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error updating user:', error);
+        
+        // Handle Prisma unique constraint errors
+        if (error.code === 'P2002') {
+            const targetField = error.meta?.target?.[0];
+            if (targetField === 'phone') {
+                return res.status(400).json({ 
+                    message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.' 
+                });
+            } else if (targetField === 'email') {
+                return res.status(400).json({ 
+                    message: 'El correo electrónico ya está registrado. Por favor use otro correo.' 
+                });
+            } else {
+                return res.status(400).json({ 
+                    message: 'Ya existe un usuario con estos datos. Por favor verifique la información.' 
+                });
+            }
+        }
+        
+        res.status(500).json({ message: 'Error del servidor al actualizar usuario' });
     }
 };
 
@@ -547,6 +607,15 @@ const createUser = async (req, res) => {
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) return res.status(400).json({ message: 'El correo electrónico ya está registrado. Por favor use otro correo.' });
 
+        // Check for duplicate phone number (more robust validation)
+        if (phone && phone.trim() !== '') {
+            const cleanPhone = phone.trim();
+            const existingPhone = await prisma.user.findUnique({ where: { phone: cleanPhone } });
+            if (existingPhone) {
+                return res.status(400).json({ message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.' });
+            }
+        }
+
         // Check for duplicate document information
         if (documentType && documentNumber) {
             const existingProfile = await prisma.userProfile.findFirst({
@@ -560,12 +629,15 @@ const createUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(finalPassword, 10);
         const coords = await geocodeAddress(address, city);
 
+        // Clean phone number before storing
+        const cleanPhone = phone && phone.trim() !== '' ? phone.trim() : null;
+
         const user = await prisma.$transaction(async (tx) => {
             const newUser = await tx.user.create({
                 data: {
                     email,
                     password: hashedPassword,
-                    phone,
+                    phone: cleanPhone,
                     mustChangePassword: shouldChangePassword,
                     spouseId: spouseId ? parseInt(spouseId) : null,
                     profile: {
@@ -653,8 +725,27 @@ const createUser = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error creating user:', error);
+        
+        // Handle Prisma unique constraint errors
+        if (error.code === 'P2002') {
+            const targetField = error.meta?.target?.[0];
+            if (targetField === 'phone') {
+                return res.status(400).json({ 
+                    message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.' 
+                });
+            } else if (targetField === 'email') {
+                return res.status(400).json({ 
+                    message: 'El correo electrónico ya está registrado. Por favor use otro correo.' 
+                });
+            } else {
+                return res.status(400).json({ 
+                    message: 'Ya existe un usuario con estos datos. Por favor verifique la información.' 
+                });
+            }
+        }
+        
+        res.status(500).json({ message: 'Error del servidor al crear usuario' });
     }
 };
 

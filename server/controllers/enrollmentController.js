@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = require('../prisma/client');
+const prisma = require('../utils/database');
 
 // Enroll a student in a module
 const enrollStudent = async (req, res) => {

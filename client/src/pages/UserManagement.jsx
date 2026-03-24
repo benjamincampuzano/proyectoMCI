@@ -5,6 +5,7 @@ import UserFilters from '../components/UserManagement/UserFilters';
 import UserTable from '../components/UserManagement/UserTable';
 import UserFormModal from '../components/UserManagement/UserFormModal';
 import PasswordResetModal from '../components/UserManagement/PasswordResetModal';
+import ErrorModal from '../components/ErrorModal';
 
 const UserManagement = () => {
     const {
@@ -41,6 +42,9 @@ const UserManagement = () => {
         canCreateUsers,
         isAdmin,
         getAssignableRoles,
+        showErrorModal,
+        setShowErrorModal,
+        errorDetails,
     } = useUserManagement();
 
     // Validate password in real-time
@@ -179,6 +183,14 @@ const UserManagement = () => {
                 user={passwordResetUser}
                 onConfirm={handlePasswordReset}
                 submitting={submitting}
+            />
+
+            <ErrorModal
+                isOpen={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                title={errorDetails.title}
+                message={errorDetails.message}
+                type={errorDetails.type}
             />
         </div>
     );

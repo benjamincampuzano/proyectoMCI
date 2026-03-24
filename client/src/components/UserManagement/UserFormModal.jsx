@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SpinnerIcon } from '@phosphor-icons/react';
 import ActionModal from '../ActionModal';
 import UserFormFields from './UserFormFields';
@@ -25,8 +25,23 @@ const UserFormModal = ({
     const [showPassword, setShowPassword] = useState(false);
     const [passwordErrors, setPasswordErrors] = useState([]);
 
+    // Initialize password errors when form opens or formData changes
+    useEffect(() => {
+        if (isOpen && formData.password && mode === 'create') {
+            setPasswordErrors(validatePasswordRealTime(formData.password, formData.fullName));
+        } else if (!isOpen) {
+            setPasswordErrors([]);
+        }
+    }, [isOpen, formData.password, formData.fullName, mode, validatePasswordRealTime]);
+
     const handleSubmit = (e) => {
         if (e) e.preventDefault();
+        
+        // Prevent submission if there are password validation errors
+        if (passwordErrors.length > 0) {
+            return;
+        }
+        
         onSubmit(e);
     };
 
@@ -66,7 +81,7 @@ const UserFormModal = ({
                     </button>
                     <button
                         type="submit"
-                        disabled={submitting}
+                        disabled={submitting || passwordErrors.length > 0}
                         className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-lg shadow-blue-500/30"
                     >
                         {submitting ? (

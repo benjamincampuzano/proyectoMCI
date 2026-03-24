@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = require('../prisma/client');
+const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 
 // Create or update church attendance for a specific date

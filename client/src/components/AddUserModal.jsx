@@ -141,7 +141,7 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                             <span className="ml-3 text-gray-600 dark:text-gray-400">Cargando usuarios...</span>
                         </div>
                     ) : error ? (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded">
                             {error}
                         </div>
                     ) : filteredUsers.length === 0 ? (
@@ -162,8 +162,8 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                                     className={`
                                         p-4 rounded-lg border-2 cursor-pointer transition-all
                                         ${selectedUserId === user.id
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                            : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                                         }
                                     `}
                                 >
@@ -175,17 +175,17 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                                                 <p className="text-sm text-gray-500 dark:text-gray-400">{user.phone}</p>
                                             )}
                                             {(user.pastorId || user.liderDoceId || user.liderCelulaId) && (
-                                                <div className="text-xs text-orange-600 mt-1">
+                                                <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
                                                     <span className="font-medium">⚠ Reasignación:</span>
                                                     <div className="ml-4 mt-1 space-y-0.5">
                                                         {user.pastor && (
-                                                            <div>Pastor: {user.pastor.fullName}</div>
+                                                            <div className="text-gray-700 dark:text-gray-300">Pastor: {user.pastor.fullName}</div>
                                                         )}
                                                         {user.liderDoce && (
-                                                            <div>Líder Doce: {user.liderDoce.fullName}</div>
+                                                            <div className="text-gray-700 dark:text-gray-300">Líder Doce: {user.liderDoce.fullName}</div>
                                                         )}
                                                         {user.liderCelula && (
-                                                            <div>Líder Célula: {user.liderCelula.fullName}</div>
+                                                            <div className="text-gray-700 dark:text-gray-300">Líder Célula: {user.liderCelula.fullName}</div>
                                                         )}
                                                     </div>
                                                 </div>
@@ -193,11 +193,11 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                                         </div>
                                         <span className={`
                                             px-3 py-1 text-xs font-medium rounded-full
-                                            ${user.roles?.includes('ADMIN') ? 'bg-red-100 text-red-800' :
-                                                user.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800' :
-                                                    user.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800' :
-                                                        user.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800' :
-                                                            'bg-gray-100 text-gray-800'}
+                                            ${user.roles?.includes('ADMIN') ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                                user.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                                    user.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                                        user.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
                                         `}>
                                             {user.roles ? user.roles.join(', ').replace(/_/g, ' ') : 'Usuario'}
                                         </span>
