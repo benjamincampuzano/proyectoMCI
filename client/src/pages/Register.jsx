@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Calendar, Check, Shield, X, Eye, EyeSlash, Plus, Envelope, ArrowsClockwiseIcon } from '@phosphor-icons/react';
+import { Lock, User, Calendar, Check, Shield, X, EyeIcon, EyeClosedIcon, Plus, Envelope, ArrowsClockwiseIcon } from '@phosphor-icons/react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import { DATA_POLICY_URL } from '../constants/policies';
 import toast from 'react-hot-toast';
 import logo from '../assets/logo.jpg';
-import { Lock, Eye, EyeSlash } from '@phosphor-icons/react';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -43,12 +42,12 @@ const Register = () => {
         const operator = operators[Math.floor(Math.random() * operators.length)];
         let num1 = Math.floor(Math.random() * 9) + 1;
         let num2 = Math.floor(Math.random() * 8) + 1;
-        
+
         // Ensure subtraction doesn't result in negative
         if (operator === '-' && num2 > num1) {
             [num1, num2] = [num2, num1];
         }
-        
+
         setCaptcha({ num1, num2, operator });
         setFormData({ ...formData, captchaAnswer: '' });
     };
@@ -90,10 +89,10 @@ const Register = () => {
         setError('');
 
         // Verify captcha
-        const expectedAnswer = captcha.operator === '+' 
-            ? captcha.num1 + captcha.num2 
+        const expectedAnswer = captcha.operator === '+'
+            ? captcha.num1 + captcha.num2
             : captcha.num1 - captcha.num2;
-        
+
         if (parseInt(formData.captchaAnswer) !== expectedAnswer) {
             setError('Por favor resuelve correctamente el captcha');
             generateCaptcha();
@@ -113,7 +112,7 @@ const Register = () => {
         } else {
             // Handle specific error messages with better user experience
             const errorMessage = result.message.toLowerCase();
-            
+
             if (errorMessage.includes('teléfono') || errorMessage.includes('phone')) {
                 toast.error('El número de teléfono ya está registrado. Por favor usa otro número.');
             } else if (errorMessage.includes('correo') || errorMessage.includes('email')) {
@@ -125,7 +124,7 @@ const Register = () => {
             } else {
                 toast.error(errorMessage || 'Error al crear la cuenta. Por favor intenta nuevamente.');
             }
-            
+
             setError(result.message);
             generateCaptcha();
         }
@@ -197,7 +196,7 @@ const Register = () => {
                                     />
                                 </div>
                             </div>
-                                                        <div>
+                            <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Fecha de Nacimiento</label>
                                 <input
                                     type="date"
@@ -241,7 +240,7 @@ const Register = () => {
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                                     >
-                                        {showPassword ? <Eye size={20} /> : <EyeSlash size={20} />}
+                                        {showPassword ? <EyeIcon size={20} /> : <EyeClosedIcon size={20} />}
                                     </button>
                                 </div>
                                 {formData.password && (
@@ -333,8 +332,8 @@ const Register = () => {
                                         <option value="JOVENES">Jovenes (15 años en adelante solteros)</option>
                                     </select>
                                 </div>
-                                
-                                
+
+
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-2">Dirección</label>
