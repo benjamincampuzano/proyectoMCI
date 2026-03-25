@@ -12,7 +12,7 @@ const normalizePhone = (phone) => {
 };
 
 /**
- * Helper to check if two dates are in the same calendar week (Sunday to Saturday)
+ * check if two dates are in the same calendar week (Sunday to Saturday)
  */
 const isSameWeek = (date1, date2) => {
     const d1 = new Date(date1);
