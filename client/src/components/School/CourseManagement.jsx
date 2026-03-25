@@ -17,7 +17,7 @@ const SCHOOL_LEVELS = [
 ];
 
 const CourseManagement = () => {
-    const { user, hasRole, hasAnyRole, isSuperAdmin } = useAuth();
+    const { user, hasRole, hasAnyRole, isSuperAdmin, isCoordinator } = useAuth();
     const [courses, setCourses] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -94,6 +94,7 @@ const CourseManagement = () => {
             setFormData({ ...formData, name: '', description: '', professorId: null, auxiliarId: null, startDate: '', endDate: '' });
             fetchCourses();
         } catch (error) {
+            console.error('Error creating course:', error);
             toast.error('Error creating course');
         }
     };
@@ -101,6 +102,10 @@ const CourseManagement = () => {
     const openEditModal = (e, course) => {
         e.stopPropagation();
         setEditingCourse(course);
+        
+        // Find the corresponding nivel and seccion based on moduleId
+        const levelInfo = SCHOOL_LEVELS.find(l => l.moduleNumber === course.moduleNumber) || { nivel: '1', seccion: 'A' };
+        
         setFormData({
             name: course.name,
             description: course.description || '',
@@ -108,8 +113,8 @@ const CourseManagement = () => {
             endDate: course.endDate ? course.endDate.split('T')[0] : '',
             professorId: course.professor || null,
             auxiliarId: course.auxiliaries?.[0] || null,
-            nivel: '1',
-            seccion: 'A'
+            nivel: levelInfo.nivel,
+            seccion: levelInfo.seccion
         });
         setShowEditModal(true);
     };
@@ -117,15 +122,21 @@ const CourseManagement = () => {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
+            // Find the corresponding moduleId based on selected nivel and seccion
+            const selectedLevel = SCHOOL_LEVELS.find(l => l.nivel === formData.nivel && l.seccion === formData.seccion);
+            const moduleId = selectedLevel ? selectedLevel.moduleNumber : editingCourse.moduleNumber;
+            
             await api.put(`/school/modules/${editingCourse.id}`, {
                 ...formData,
-                profesorId: formData.professorId?.id,
+                moduleId: moduleId,
+                professorId: formData.professorId?.id,
                 auxiliarIds: formData.auxiliarId ? [parseInt(formData.auxiliarId?.id)] : []
             });
             setShowEditModal(false);
             setEditingCourse(null);
             fetchCourses();
         } catch (error) {
+            console.error('Error updating course:', error);
             toast.error('Error updating course');
         }
     };
@@ -174,7 +185,7 @@ const CourseManagement = () => {
                             <SquaresFourIcon size={18} />
                         </button>
                     </div>
-                    {hasAnyRole(['ADMIN']) && (
+                    {(hasAnyRole(['ADMIN']) || isCoordinator()) && (
                         <Button
                             onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
                             variant="primary"
@@ -200,7 +211,7 @@ const CourseManagement = () => {
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                                {hasAnyRole(['ADMIN']) && (
+                                {(hasAnyRole(['ADMIN']) || isCoordinator()) && (
                                     <div className="flex space-x-2">
                                         <Button
                                             onClick={(e) => openEditModal(e, course)}
@@ -297,7 +308,7 @@ const CourseManagement = () => {
                                             >
                                                 Ver
                                             </Button>
-                                            {hasAnyRole(['ADMIN']) && (
+                                            {(hasAnyRole(['ADMIN']) || isCoordinator()) && (
                                                 <>
                                                     <Button
                                                         onClick={(e) => openEditModal(e, course)}
@@ -340,42 +351,37 @@ const CourseManagement = () => {
                         <form onSubmit={showEditModal ? handleUpdate : handleCreate} className="flex-1 flex flex-col overflow-hidden">
                             <div className="flex-1 overflow-y-auto p-8 space-y-5">
 
-                            {/* Nivel/Seccion Selection only for Create */}
-                            {!showEditModal && (
-                                <div className="grid grid-cols-1 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Seleccionar Nivel (Clase)</label>
-                                        <select
-                                            className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg dark:text-white border border-gray-200 dark:border-gray-600"
-                                            value={`${formData.nivel}${formData.seccion}`}
-                                            onChange={e => {
-                                                const val = e.target.value;
-                                                setFormData({ ...formData, nivel: val.substring(0, 1), seccion: val.substring(1) });
-                                            }}
-                                        >
-                                            {SCHOOL_LEVELS.map(level => (
-                                                <option key={`${level.nivel}${level.seccion}`} value={`${level.nivel}${level.seccion}`}>
-                                                    {level.nivel}{level.seccion} - {level.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Name Input - Only visible/editable when editing */}
-                            {showEditModal && (
+                            {/* Nivel/Seccion Selection - Available for both Create and Edit */}
+                            <div className="grid grid-cols-1 gap-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg dark:text-white"
-                                        value={formData.name}
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    />
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                        {showEditModal ? 'Cambiar Nivel (Clase)' : 'Seleccionar Nivel (Clase)'}
+                                    </label>
+                                    <select
+                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg dark:text-white border border-gray-200 dark:border-gray-600"
+                                        value={`${formData.nivel}${formData.seccion}`}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            const selectedLevel = SCHOOL_LEVELS.find(l => `${l.nivel}${l.seccion}` === val);
+                                            setFormData({ 
+                                                ...formData, 
+                                                nivel: val.substring(0, 1), 
+                                                seccion: val.substring(1),
+                                                name: showEditModal && selectedLevel ? 
+                                                    `${selectedLevel.name} (Nivel ${selectedLevel.nivel}${selectedLevel.seccion})` : 
+                                                    formData.name
+                                            });
+                                        }}
+                                    >
+                                        {SCHOOL_LEVELS.map(level => (
+                                            <option key={`${level.nivel}${level.seccion}`} value={`${level.nivel}${level.seccion}`}>
+                                                {level.nivel}{level.seccion} - {level.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                            )}
-
+                            </div>
+                            
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
                                 <textarea

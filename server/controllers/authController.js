@@ -97,7 +97,8 @@ const register = async (req, res) => {
                 include: {
                     profile: true,
                     roles: { include: { role: true } },
-                    parents: { include: { parent: { include: { profile: true } } } }
+                    parents: { include: { parent: { include: { profile: true } } } },
+                    moduleCoordinations: true
                 }
             });
         });
@@ -151,7 +152,8 @@ const login = async (req, res) => {
             where: { email },
             include: {
                 profile: true,
-                roles: { include: { role: true } }
+                roles: { include: { role: true } },
+                moduleCoordinations: true
             }
         });
 
@@ -334,7 +336,8 @@ const registerSetup = async (req, res) => {
                 id: user.id,
                 email: user.email,
                 fullName: user.profile.fullName,
-                roles
+                roles,
+                isCoordinator: true
             },
         });
     } catch (err) {

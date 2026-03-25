@@ -47,7 +47,8 @@ const getProfile = async (req, res) => {
             include: {
                 profile: true,
                 roles: { include: { role: true } },
-                parents: { include: { parent: { include: { profile: true } } } }
+                parents: { include: { parent: { include: { profile: true } } } },
+                moduleCoordinations: true
             }
         });
 
@@ -62,7 +63,7 @@ const getProfile = async (req, res) => {
                 phone: user.phone,
                 ...user.profile,
                 roles: user.roles.map(r => r.role.name),
-                isCoordinator: user.isCoordinator,
+                isCoordinator: user.isCoordinator || user.moduleCoordinations.length > 0,
                 hierarchy: user.parents.map(p => ({
                     parentId: p.parentId,
                     parentName: p.parent.profile.fullName,
@@ -286,7 +287,8 @@ const getAllUsers = async (req, res) => {
                     select: {
                         invitedGuests: true
                     }
-                }
+                },
+                moduleCoordinations: true
             },
             orderBy: { profile: { fullName: 'asc' } }
         });
@@ -298,7 +300,7 @@ const getAllUsers = async (req, res) => {
             email: u.email,
             phone: u.phone,
             roles: u.roles.map(r => r.role.name),
-            isCoordinator: u.isCoordinator,
+            isCoordinator: u.isCoordinator || u.moduleCoordinations.length > 0,
             spouseId: u.spouseId || (u.spouseOf ? u.spouseOf.id : null),
             spouseName: u.spouse?.profile.fullName || u.spouseOf?.profile.fullName || null,
             pastorIds: u.parents.filter(p => p.role === 'PASTOR').map(p => p.parentId),
@@ -333,7 +335,8 @@ const getUserById = async (req, res) => {
             include: {
                 profile: true,
                 roles: { include: { role: true } },
-                parents: { include: { parent: { include: { profile: true } } } }
+                parents: { include: { parent: { include: { profile: true } } } },
+                moduleCoordinations: true
             }
         });
 
@@ -347,7 +350,7 @@ const getUserById = async (req, res) => {
             email: user.email,
             phone: user.phone,
             roles: user.roles.map(r => r.role.name),
-            isCoordinator: user.isCoordinator,
+            isCoordinator: user.isCoordinator || user.moduleCoordinations.length > 0,
             spouseId: user.spouseId || (user.spouseOf ? user.spouseOf.id : null),
             spouseName: user.spouse?.profile.fullName || user.spouseOf?.profile.fullName || null,
             pastorIds: user.parents.filter(p => p.role === 'PASTOR').map(p => p.parentId),

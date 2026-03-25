@@ -2,6 +2,32 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = require('../utils/database');
 const { SCHOOL_LEVELS } = require('../utils/levelConstants');
 const { getUserNetwork } = require('../utils/networkUtils');
+ 
+// Helper to check if a user is a coordinator for a specific module
+const isUserCoordinator = async (userId, moduleName = 'discipular') => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                roles: { include: { role: true } },
+                moduleCoordinations: {
+                    where: { moduleName: { equals: moduleName, mode: 'insensitive' } }
+                }
+            }
+        });
+
+        if (!user) return false;
+
+        const isAdmin = user.roles.some(r => r.role.name === 'ADMIN');
+        const isGenCoordinator = user.isCoordinator;
+        const isModuleCoordinator = user.moduleCoordinations.length > 0;
+
+        return isAdmin || isGenCoordinator || isModuleCoordinator;
+    } catch (error) {
+        console.error('Error in isUserCoordinator check:', error);
+        return false;
+    }
+};
 
 // Helper to resolve Leader name for a student (walking up hierarchy)
 // Preference: Cell Leader > Doce Leader > Pastor
@@ -37,9 +63,10 @@ const createModule = async (req, res) => {
     try {
         const roles = req.user.roles || [];
         const isAdmin = roles.includes('ADMIN');
+        const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
 
-        if (!isAdmin) {
-            return res.status(403).json({ error: 'Solo los administradores pueden crear clases.' });
+        if (!isAdmin && !isCoordinator) {
+            return res.status(403).json({ error: 'Solo los administradores o coordinadores pueden crear clases.' });
         }
 
         const { name, description, moduleId, professorId, startDate, endDate, auxiliarIds } = req.body;
@@ -79,8 +106,10 @@ const getModules = async (req, res) => {
         let whereClause = { type: 'ESCUELA' };
 
         const roles = user.roles || [];
+        const isCoordinator = await isUserCoordinator(user.id, 'discipular');
+        
         // Filtering based on role
-        if (roles.includes('ADMIN') || roles.includes('PASTOR') || roles.includes('ADMIN')) {
+        if (roles.includes('ADMIN') || roles.includes('PASTOR') || isCoordinator) {
             // See all
         } else if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
             // See classes where they are Professor OR Auxiliar OR have disciples enrolled
@@ -114,6 +143,7 @@ const getModules = async (req, res) => {
             where: whereClause,
             include: {
                 professor: { select: { id: true, profile: { select: { fullName: true } } } },
+                auxiliaries: { select: { id: true, profile: { select: { fullName: true } } } },
                 _count: { select: { enrollments: true } }
             },
             orderBy: { startDate: 'desc' }
@@ -122,7 +152,8 @@ const getModules = async (req, res) => {
         // Format
         const formattedModules = modules.map(m => ({
             ...m,
-            professor: m.professor ? { ...m.professor, fullName: m.professor.profile?.fullName || 'Sin Asignar' } : null
+            professor: m.professor ? { ...m.professor, fullName: m.professor.profile?.fullName || 'Sin Asignar' } : null,
+            auxiliaries: m.auxiliaries.map(a => ({ ...a, fullName: a.profile?.fullName || 'Sin Asignar' }))
         }));
 
         res.json(formattedModules);
@@ -139,9 +170,10 @@ const updateModule = async (req, res) => {
 
         const roles = req.user.roles || [];
         const isAdmin = roles.includes('ADMIN');
+        const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
 
-        if (!isAdmin) {
-            return res.status(403).json({ error: 'Solo los administradores pueden editar la configuración de las clases.' });
+        if (!isAdmin && !isCoordinator) {
+            return res.status(403).json({ error: 'Solo los administradores o coordinadores pueden editar la configuración de las clases.' });
         }
 
         const updateData = {
@@ -178,9 +210,10 @@ const deleteModule = async (req, res) => {
         const moduleId = parseInt(id);
         const roles = req.user.roles || [];
         const isAdmin = roles.includes('ADMIN');
+        const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
 
-        if (!isAdmin) {
-            return res.status(403).json({ error: 'Solo los administradores pueden eliminar clases.' });
+        if (!isAdmin && !isCoordinator) {
+            return res.status(403).json({ error: 'Solo los administradores o coordinadores pueden eliminar clases.' });
         }
 
         // Check if there are "notes" or "information" (grades, project notes, etc.)
@@ -306,7 +339,8 @@ const getModuleMatrix = async (req, res) => {
         // Access Control
         const roles = user.roles || [];
         const isAdmin = roles.includes('ADMIN');
-        const isProfessor = moduleData.professorId === user.id || isAdmin;
+        const isCoordinator = await isUserCoordinator(user.id, 'discipular');
+        const isProfessor = moduleData.professorId === user.id || isAdmin || isCoordinator;
         const isAuxiliar = moduleData.auxiliaries.some(a => a.id === user.id);
         const isDisciple = roles.includes('DISCIPULO');
 
@@ -419,12 +453,14 @@ const updateMatrixCell = async (req, res) => {
         // LIDER_CELULA can only edit if they are the assigned Auxiliar for this specific student
         const isAssignedAuxiliar = enrollment.assignedAuxiliarId === user.id;
 
+        const isCoordinator = await isUserCoordinator(user.id, 'discipular');
+
         if (roles.includes('DISCIPULO')) {
             return res.status(403).json({ error: 'Estudiantes no pueden modificar notas o asistencia.' });
         }
 
-        if (!isProfessorOfModule && !isAssignedAuxiliar) {
-            return res.status(403).json({ error: 'No tienes permiso para editar este estudiante. Solo el profesor de la clase o el auxiliar asignado pueden realizar cambios.' });
+        if (!isProfessorOfModule && !isAssignedAuxiliar && !isCoordinator) {
+            return res.status(403).json({ error: 'No tienes permiso para editar este estudiante. Solo el profesor de la clase, el auxiliar asignado o el coordinador pueden realizar cambios.' });
         }
 
         // Update Logic
@@ -601,24 +637,49 @@ const getStudentMatrix = async (req, res) => {
         // Determine which users to include based on role
         let userWhereClause = {};
         const roles = user.roles || [];
+        const isCoordinator = await isUserCoordinator(user.id, 'discipular');
 
-        if (roles.includes('ADMIN') || roles.includes('PASTOR')) {
-            // See all students
+        if (roles.includes('ADMIN') || roles.includes('PASTOR') || isCoordinator) {
+            // See all students and leaders
             userWhereClause = {
-                roles: { some: { role: { name: 'DISCIPULO' } } }
+                roles: { 
+                    some: { 
+                        role: { 
+                            name: { 
+                                in: ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE'] 
+                            } 
+                        } 
+                    } 
+                }
             };
         } else if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
-            // See students in their network
+            // See students and leaders in their network
             const networkUserIds = await getUserNetwork(userId);
             userWhereClause = {
                 id: { in: [...networkUserIds, userId] },
-                roles: { some: { role: { name: 'DISCIPULO' } } }
+                roles: { 
+                    some: { 
+                        role: { 
+                            name: { 
+                                in: ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE'] 
+                            } 
+                        } 
+                    } 
+                }
             };
         } else {
             // Students can only see themselves
             userWhereClause = {
                 id: userId,
-                roles: { some: { role: { name: 'DISCIPULO' } } }
+                roles: { 
+                    some: { 
+                        role: { 
+                            name: { 
+                                in: ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE'] 
+                            } 
+                        } 
+                    } 
+                }
             };
         }
 

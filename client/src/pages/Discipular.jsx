@@ -92,7 +92,7 @@ const Discipular = () => {
                         moduleCoordinator={moduleCoordinator}
                         moduleName="Discipular"
                         onCoordinatorChange={handleCoordinatorChange}
-                        disabled={!hasAnyRole([ROLES.ADMIN])}
+                        disabled={!hasAdminOrCoordinator}
                     />
                 }
             />
