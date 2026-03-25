@@ -2,6 +2,7 @@
 // components/tree/CoupleNodeTree.jsx
 import React, { useState, memo } from 'react';
 import CoupleCard from './CoupleCard';
+import GuestNode from './GuestNode';
 import { canAddToNode, canRemoveFromNode, canManageAssignments } from '../utils/permissions';
 
 export default memo(function CoupleNodeTree({ 
@@ -75,19 +76,16 @@ export default memo(function CoupleNodeTree({
       </div>
 
       {/* Children section */}
-      {isExpanded && node.disciples?.length > 0 && (
+      {isExpanded && (node.disciples?.length > 0 || (node.guests?.assigned?.length > 0 || node.guests?.invited?.length > 0)) && (
         <div className="relative mt-2 pl-3">
           {/* Vertical line for children */}
           <div className="absolute left-1.5 top-0 bottom-0 w-0.5 bg-gray-400 dark:bg-gray-600" />
           
-          {/* Children cards in vertical stacked layout */}
           <div className="flex flex-col gap-3">
-            {node.disciples.map((child, index) => (
+            {/* Disciples */}
+            {node.disciples?.map((child) => (
               <div key={child.id} className="relative">
-                {/* Horizontal line to child */}
                 <div className="absolute left-0 top-6 w-1.5 h-0.5 bg-gray-400 dark:bg-gray-600" />
-                
-                {/* Child node */}
                 <div className="ml-1 min-w-[280px] flex-1">
                   <CoupleNodeTree 
                     node={child} 
@@ -102,6 +100,26 @@ export default memo(function CoupleNodeTree({
                     onSelectLeader={onSelectLeader}
                     selectedLeader={selectedLeader}
                   />
+                </div>
+              </div>
+            ))}
+
+            {/* Guests (Assigned) */}
+            {node.guests?.assigned?.map((guest) => (
+              <div key={`assigned-${guest.id}`} className="relative">
+                <div className="absolute left-0 top-6 w-1.5 h-0.5 bg-gray-400 dark:bg-gray-600" />
+                <div className="ml-1 min-w-[280px] flex-1">
+                  <GuestNode guest={guest} />
+                </div>
+              </div>
+            ))}
+
+            {/* Guests (Invited by) */}
+            {node.guests?.invited?.map((guest) => (
+              <div key={`invited-${guest.id}`} className="relative">
+                <div className="absolute left-0 top-6 w-1.5 h-0.5 bg-gray-400 dark:bg-gray-600" />
+                <div className="ml-1 min-w-[280px] flex-1">
+                  <GuestNode guest={guest} />
                 </div>
               </div>
             ))}

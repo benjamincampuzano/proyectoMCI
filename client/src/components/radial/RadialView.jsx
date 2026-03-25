@@ -33,7 +33,11 @@ function layoutRadial(root, expandedNodes, radiusStep = 160) {
     const isExpanded = expandedNodes.has(node.id);
     if (!isExpanded) return;
 
-    const children = node.disciples || [];
+    const children = [
+      ...(isExpanded ? (node.disciples || []) : []),
+      ...(isExpanded ? (node.guests?.assigned?.map(g => ({ ...g, isGuest: true, id: `guest-assigned-${g.id}`, partners: [{ fullName: g.name }] })) || []) : []),
+      ...(isExpanded ? (node.guests?.invited?.map(g => ({ ...g, isGuest: true, id: `guest-invited-${g.id}`, partners: [{ fullName: g.name }] })) || []) : [])
+    ];
     const step = (angleEnd - angleStart) / Math.max(1, children.length);
     children.forEach((child, i) => {
       const start = angleStart + i * step;
@@ -155,14 +159,15 @@ export default function RadialView({ root, currentUser, onAddUser, onRemoveUser,
 
           {/* nodes */}
           {nodes.map((n, idx) => {
-            const guests = (n.node.guests?.assigned?.length || 0) + (n.node.guests?.invited?.length || 0);
+            const isGuest = n.node.isGuest;
+            const guestsCount = (n.node.guests?.assigned?.length || 0) + (n.node.guests?.invited?.length || 0);
             const disciplesCount = n.node.disciples?.length || 0;
-            const label = n.node.partners.map(p => p.fullName).join(' y ');
-            const perms = computePerms(n.node);
-            const r = 20;
+            const label = n.node.partners ? n.node.partners.map(p => p.fullName).join(' y ') : n.node.name;
+            const perms = isGuest ? { add: false, remove: false } : computePerms(n.node);
+            const r = isGuest ? 12 : 20;
             const isExpanded = expandedNodes.has(n.node.id);
             const hasChildren = disciplesCount > 0;
-            const colors = getRoleColor(n.node.roles);
+            const colors = isGuest ? { primary: '#10b981', bg: '#f0fdf4', border: '#16a34a' } : getRoleColor(n.node.roles);
 
             return (
               <g 
@@ -172,7 +177,7 @@ export default function RadialView({ root, currentUser, onAddUser, onRemoveUser,
                   e.stopPropagation();
                   toggleNode(n.node.id);
                 }}
-                className="cursor-pointer transition-transform duration-200 hover:scale-110"
+                className="cursor-pointer"
               >
                 {/* Circle with role color */}
                 <circle 
@@ -193,11 +198,24 @@ export default function RadialView({ root, currentUser, onAddUser, onRemoveUser,
                   />
                 )}
 
+                {/* Green indicator for disciples with guests */}
+                {!isGuest && n.node.roles?.includes('DISCIPULO') && guestsCount > 0 && (
+                  <circle 
+                    r={4} 
+                    cx={-r * 0.7} 
+                    cy={-r * 0.7} 
+                    fill="#10b981" 
+                    stroke="#059669" 
+                    strokeWidth={1}
+                    className="stroke-white dark:stroke-gray-900"
+                  />
+                )}
+
                 <title>
                   {label}{'\n'}
                   Roles: {n.node.roles?.join(', ') || 'Sin rol'}{'\n'}
                   Discípulos: {disciplesCount}{'\n'}
-                  Invitados: {guests}
+                  Invitados: {guestsCount}
                 </title>
 
                 {perms.add && (

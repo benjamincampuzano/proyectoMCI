@@ -14,7 +14,7 @@ export default function CardsView({ root, currentUser, onAddUser, onRemoveUser }
             {levelNodes.map(node => {
               const canAdd = canAddToNode({ node, ancestors: [], currentUser });
               const canRemove = canRemoveFromNode({ node, ancestors: [], currentUser, level: depth });
-              const guests = (node.guests?.assigned?.length || 0) + (node.guests?.invited?.length || 0);
+              const guestsCount = (node.guests?.assigned?.length || 0) + (node.guests?.invited?.length || 0);
               const disciplesCount = node.disciples?.length || 0;
               return (
                 <div key={node.id} className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm transition-colors">
@@ -40,18 +40,34 @@ export default function CardsView({ root, currentUser, onAddUser, onRemoveUser }
                         <Users size={14} /> {disciplesCount}
                       </div>
                       <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center justify-end gap-1 mt-0.5">
-                        <UserPlus size={14} /> {guests}
+                        <UserPlus size={14} /> {guestsCount}
                       </div>
                     </div>
                   </div>
+
+                  {/* Guests List */}
+                  {guestsCount > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2 tracking-wider flex items-center gap-1">
+                        <UserPlus size={12} /> Invitados ({guestsCount})
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[...(node.guests?.assigned || []), ...(node.guests?.invited || [])].map((g, i) => (
+                          <span key={`${g.id}-${i}`} className="text-[10px] px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-100 dark:border-green-800 rounded-full font-medium">
+                            {g.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-4 flex items-center gap-2 flex-wrap">
                     {canAdd && (
                       <button 
                         onClick={() => onAddUser(node)} 
-                        className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded transition-colors shadow-sm"
+                        className="px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded flex items-center gap-1 transition-colors border border-blue-200 dark:border-blue-800/50"
                       >
-                        Agregar
+                        <UserPlus size={12} />Agregar
                       </button>
                     )}
                     {canRemove && node.partners.map(p => (
@@ -60,7 +76,7 @@ export default function CardsView({ root, currentUser, onAddUser, onRemoveUser }
                         onClick={() => onRemoveUser(p)} 
                         className="px-2 py-1 text-xs bg-red-100 hover:bg-red-200 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded flex items-center gap-1 transition-colors border border-red-200 dark:border-red-800/50"
                       >
-                        <UserMinus size={12} /> {p.fullName}
+                        <UserMinus size={12} /> Eliminar
                       </button>
                     ))}
                   </div>
@@ -72,4 +88,4 @@ export default function CardsView({ root, currentUser, onAddUser, onRemoveUser }
       ))}
     </div>
   );
-}
+}

@@ -139,20 +139,6 @@ const Home = () => {
         }
     };
 
-    const renderQuickStats = () => {
-    const stats = {
-        total: network?.totalMembers || network?.memberCount || network?.members?.length || 0,
-        cells: network?.cells?.length || network?.cellCount || network?.celulas?.length || 0,
-        leaders: network?.children?.length || network?.leaders?.length || network?.lideres?.length || 0,
-    };
-    return (
-        <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
-            <span>{stats.total} miembros</span>
-            <span>{stats.cells} células</span>
-            <span>{stats.leaders} líderes</span>
-        </div>
-    );
-};
     const canViewNetwork = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO']);
     const canViewReport = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
     const isAdminOrPastor = isSuperAdmin() || hasAnyRole(['PASTOR']);
@@ -187,14 +173,13 @@ const Home = () => {
                         <div className="min-h-[300px]">
                             {network ? (
                                 <>
-                                    <div className="flex items-center justify-between mb-4">
+                                    <div className="mb-4">
                                         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
                                             {isSuperAdmin()
                                                 ? `Red de ${selectedLeader?.fullName}`
                                                 : 'Mi Red'
                                             }
                                         </h2>
-                                        {renderQuickStats()}
                                     </div>
                                     <NetworkTree
                                         network={network}
