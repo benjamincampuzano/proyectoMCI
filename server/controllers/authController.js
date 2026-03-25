@@ -453,7 +453,7 @@ const forcePasswordChange = async (req, res) => {
             }
         });
 
-        await logActivity(req.user.userId, 'UPDATE', 'USER', parseInt(userId), { message: 'Reinicio de contraseña por administrador' }, req.ip, req.headers['user-agent']);
+        await logActivity(req.user.id, 'UPDATE', 'USER', parseInt(userId), { message: 'Reinicio de contraseña por administrador' }, req.ip, req.headers['user-agent']);
 
         res.status(200).json({ message: 'Contraseña reiniciada. El usuario deberá cambiarla en su próximo inicio de sesión.' });
     } catch (error) {

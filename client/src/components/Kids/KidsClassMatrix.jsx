@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningIcon } from '@phosphor-icons/react';
+import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningCircle } from '@phosphor-icons/react';
 import { AsyncSearchSelect, Button } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
 
@@ -286,7 +286,7 @@ const KidsClassMatrix = ({ courseId }) => {
                                     if (age !== null && categoryConfig && (age < categoryConfig.minAge || age > categoryConfig.maxAge)) {
                                         return (
                                             <div className="mt-2 flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-                                                <WarningIcon size={16} />
+                                                <WarningCircle size={16} />
                                                 <span>La edad no corresponde a esta categoría</span>
                                             </div>
                                         );
@@ -354,7 +354,7 @@ const KidsClassMatrix = ({ courseId }) => {
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
                     <div className="flex items-start gap-3">
                         <div className="text-red-600 dark:text-red-400 mt-0.5">
-                            <WarningIcon size={20} />
+                            <WarningCircle size={20} />
                         </div>
                         <div>
                             <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">

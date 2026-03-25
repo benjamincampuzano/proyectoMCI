@@ -13,9 +13,6 @@ import {
     MapPin,
     Medal,
     GraduationCap,
-    Funnel,
-    ArrowsClockwise,
-    X,
     PhoneCall
 } from '@phosphor-icons/react';
 import api from '../utils/api';
@@ -38,12 +35,7 @@ const UserActivityList = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [showFilters, setShowFilters] = useState(false);
     
-    // Filtros
-    const [filters, setFilters] = useState({
-        role: ''
-    });
 
     useEffect(() => {
         fetchActivityData();
@@ -68,21 +60,13 @@ const UserActivityList = () => {
                 item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.roles.some(r => r.toLowerCase().includes(searchTerm.toLowerCase()));
 
-            // Filtro por rol
-            const matchesRole = !filters.role || item.roles.includes(filters.role);
 
-            return matchesSearch && matchesRole;
+            return matchesSearch;
         });
-    }, [data, searchTerm, filters]);
+    }, [data, searchTerm]);
 
-    const clearFilters = () => {
-        setFilters({
-            role: ''
-        });
-        setSearchTerm('');
-    };
 
-    const hasActiveFilters = Object.values(filters).some(v => v !== '') || searchTerm;
+    const hasActiveFilters = searchTerm;
 
     const columns = [
         {
@@ -114,7 +98,7 @@ const UserActivityList = () => {
             )
         },
         {
-            header: 'Líder de 12',
+            header: 'Líder de 12 o Inmediato',
             key: 'liderDoce',
             render: (liderName) => (
                 <div className="flex items-center space-x-2">
@@ -122,7 +106,7 @@ const UserActivityList = () => {
                         <Medal size={14} />
                     </div>
                     <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                        {liderName || 'N/A'}
+                        {liderName && liderName !== 'N/A' ? liderName : 'Sin líder asignado'}
                     </span>
                 </div>
             )
@@ -273,17 +257,11 @@ const UserActivityList = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button 
-                            variant={showFilters ? "primary" : "outline"} 
-                            size="sm" 
-                            icon={Funnel}
-                            onClick={() => setShowFilters(!showFilters)}
-                        >
-                            Filtros {hasActiveFilters && `(${Object.values(filters).filter(v => v !== '').length + (searchTerm ? 1 : 0)})`}
-                        </Button>
-                        <Button variant="ghost" size="sm" icon={ArrowsClockwise} onClick={fetchActivityData}>
-                            Actualizar
-                        </Button>
+                        {hasActiveFilters && (
+                            <Button variant="ghost" size="sm" onClick={() => setSearchTerm('')} className="text-xs">
+                                Limpiar búsqueda
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -301,37 +279,7 @@ const UserActivityList = () => {
                     />
                 </div>
 
-                {/* Panel de filtros avanzados */}
-                {showFilters && (
-                    <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-xl space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Filtros Avanzados</h4>
-                            {hasActiveFilters && (
-                                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs">
-                                    Limpiar filtros
-                                </Button>
-                            )}
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                            {/* Filtro por rol */}
-                            <div>
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Rol</label>
-                                <select
-                                    value={filters.role}
-                                    onChange={(e) => setFilters({...filters, role: e.target.value})}
-                                    className="w-full text-sm px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
-                                >
-                                    <option value="">Todos</option>
-                                    {ROLES.map(rol => (
-                                        <option key={rol} value={rol}>{rol.replace(/_/g, ' ')}</option>
-                                    ))}
-                                </select>
                             </div>
-                        </div>
-                    </div>
-                )}
-            </div>
 
             <div className="relative">
                 {loading ? (
@@ -352,11 +300,7 @@ const UserActivityList = () => {
             {!loading && data.length > 0 && (
                 <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800 flex flex-col md:flex-row items-center justify-between gap-2">
                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {hasActiveFilters ? (
-                            <>Mostrando <b>{filteredData.length}</b> de <b>{data.length}</b> usuarios (filtrados)</>
-                        ) : (
-                            <>Mostrando <b>{filteredData.length}</b> usuarios</>
-                        )}
+                        Mostrando <b>{filteredData.length}</b> usuarios
                     </span>
                     <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
                         <div className="flex items-center gap-1"><House size={10} /> IG: Iglesia</div>

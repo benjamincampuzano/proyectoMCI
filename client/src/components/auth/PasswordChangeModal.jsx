@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Lock, Eye, EyeSlash, Warning, CheckCircle, ShieldCheck } from '@phosphor-icons/react';
+import { Lock, Eye, EyeSlash, WarningCircle, CheckCircle, ShieldCheck } from '@phosphor-icons/react';
 
 const PasswordChangeModal = ({ isOpen, onClose }) => {
     const { user, changePassword } = useAuth();
@@ -67,7 +67,7 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
                             <form onSubmit={handleSubmit} className="space-y-5">
                                 {error && (
                                     <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-sm flex items-center gap-2 border border-red-200 dark:border-red-800 animate-in shake duration-300">
-                                        <WarningIcon size={18} shrink={0} />
+                                        <WarningCircle size={18} />
                                         <span>{error}</span>
                                     </div>
                                 )}
@@ -91,7 +91,7 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
                                             onClick={() => setShowPasswords(!showPasswords)}
                                             className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                                         >
-                                            {showPasswords ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            {showPasswords ? <EyeSlash size={18} /> : <Eye size={18} />}
                                         </button>
                                     </div>
                                 </div>
@@ -129,7 +129,7 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
                                         <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                     </div>
                                     <div className="mt-2 text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5 px-1">
-                                        <WarningIcon size={12} />
+                                        <WarningCircle size={12} />
                                         La contraseña debe tener al menos 8 caracteres.
                                     </div>
                                 </div>

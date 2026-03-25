@@ -59,8 +59,18 @@ const Login = () => {
                 navigate('/');
             }
         } else {
-            if (result.message?.toLowerCase().includes('contraseña') || result.message?.toLowerCase().includes('password')) {
+            // Handle different types of authentication errors
+            if (result.message?.toLowerCase().includes('credenciales') || 
+                result.message?.toLowerCase().includes('incorrectas') ||
+                result.message?.toLowerCase().includes('contraseña') || 
+                result.message?.toLowerCase().includes('password')) {
                 setError('❌ Contraseña incorrecta. Verifica tus credenciales e intenta nuevamente.');
+            } else if (result.message?.toLowerCase().includes('usuario no encontrado') || 
+                       result.message?.toLowerCase().includes('email')) {
+                setError('❌ Usuario no encontrado. Verifica tu email e intenta nuevamente.');
+            } else if (result.message?.toLowerCase().includes('acceso denegado') || 
+                       result.message?.toLowerCase().includes('deshabilitada')) {
+                setError('❌ Acceso denegado. Contacta al administrador del sistema.');
             } else {
                 setError(`❌ ${result.message}`);
             }

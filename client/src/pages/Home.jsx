@@ -25,8 +25,7 @@ const Home = () => {
         if (isSuperAdmin()) {
             fetchPastores();
         } else if (hasAnyRole(['PASTOR'])) {
-            handleSelectLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
-            setLoading(false); 
+            fetchLideresDoce(); 
         } else if (hasAnyRole(['LIDER_DOCE'])) {
             handleSelectLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
             setLoading(false); 
@@ -57,13 +56,55 @@ const Home = () => {
     const fetchLideresDoce = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/network/los-doce');
-            setLideresDoce(response.data);
-            if (response.data.length > 0) {
-                handleSelectLeader({ id: response.data[0].id, fullName: response.data[0].fullName, roles: ['LIDER_DOCE'] });
+            if (hasAnyRole(['PASTOR'])) {
+                // Para PASTOR, cargar todos sus LIDER_DOCE y luego sus redes
+                const response = await api.get('/network/los-doce');
+                const lideresDoceData = response.data;
+                setLideresDoce(lideresDoceData);
+                
+                if (lideresDoceData.length > 0) {
+                    // Crear una red combinada con todos los LIDER_DOCE del PASTOR
+                    const combinedNetwork = {
+                        id: user.id,
+                        fullName: user.fullName,
+                        roles: user.roles,
+                        disciples: []
+                    };
+                    
+                    // Cargar la red de cada LIDER_DOCE
+                    const networkPromises = lideresDoceData.map(async (lider) => {
+                        try {
+                            const networkResponse = await api.get(`/network/${lider.id}`);
+                            return networkResponse.data;
+                        } catch (err) {
+                            console.warn(`No se pudo cargar la red de ${lider.fullName}:`, err);
+                            return null;
+                        }
+                    });
+                    
+                    const networks = await Promise.all(networkPromises);
+                    
+                    // Combinar todas las redes en una sola estructura
+                    networks.forEach(network => {
+                        if (network) {
+                            combinedNetwork.disciples.push(network);
+                        }
+                    });
+                    
+                    setNetwork(combinedNetwork);
+                    setSelectedLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
+                } else {
+                    setLoading(false);
+                }
             } else {
-                setLoading(false);
+                // Para otros roles, cargar lista de LIDER_DOCE
+                const response = await api.get('/network/los-doce');
+                setLideresDoce(response.data);
+                if (response.data.length > 0) {
+                    handleSelectLeader({ id: response.data[0].id, fullName: response.data[0].fullName, roles: ['LIDER_DOCE'] });
+                }
             }
+            setLoading(false);
         } catch (err) {
             setError(err.response?.data?.message || err.message);
             setLoading(false);
@@ -93,16 +134,25 @@ const Home = () => {
             handleSelectLeader(selectedLeader);
         } else if (isSuperAdmin()) {
             fetchPastores();
+        } else if (hasAnyRole(['PASTOR'])) {
+            fetchLideresDoce();
         }
     };
 
     const renderQuickStats = () => {
-        const stats = {
-            total: network?.totalMembers || network?.memberCount || network?.members?.length || network?.total || 0,
-            cells: network?.cells?.length || network?.cellCount || network?.celulas?.length || network?.cells_count || 0,
-            leaders: network?.children?.length || network?.leaders?.length || network?.lideres?.length || network?.leaders_count || 0
-        };
+    const stats = {
+        total: network?.totalMembers || network?.memberCount || network?.members?.length || 0,
+        cells: network?.cells?.length || network?.cellCount || network?.celulas?.length || 0,
+        leaders: network?.children?.length || network?.leaders?.length || network?.lideres?.length || 0,
     };
+    return (
+        <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
+            <span>{stats.total} miembros</span>
+            <span>{stats.cells} células</span>
+            <span>{stats.leaders} líderes</span>
+        </div>
+    );
+};
     const canViewNetwork = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO']);
     const canViewReport = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
     const isAdminOrPastor = isSuperAdmin() || hasAnyRole(['PASTOR']);
@@ -124,36 +174,7 @@ const Home = () => {
                         </div>
                     )}
 
-                    {/* Network Selector for Pastor */}
-                    {hasAnyRole(['PASTOR']) && lideresDoce.length > 0 && (
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowNetworkSelector(!showNetworkSelector)}
-                                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                            >
-                                <span className="text-gray-700 dark:text-gray-300">
-                                    Red de: {selectedLeader?.fullName || 'Seleccionar'}
-                                </span>
-                                <CaretDown className="w-4 h-4" />
-                            </button>
-                            {showNetworkSelector && (
-                                <div className="absolute top-full mt-1 left-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-[200px]">
-                                    {lideresDoce.map((ld) => (
-                                        <button
-                                            key={ld.id}
-                                            onClick={() => {
-                                                handleSelectLeader({ id: ld.id, fullName: ld.fullName, roles: ['LIDER_DOCE'] });
-                                                setShowNetworkSelector(false);
-                                            }}
-                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
-                                        >
-                                            {ld.fullName}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    {/* Para PASTOR, mostrar directamente su red completa sin selector */}
 
                     {networkLoading ? (
                         <div className="flex items-center justify-center h-[300px] bg-gray-50 dark:bg-gray-800 rounded-2xl">

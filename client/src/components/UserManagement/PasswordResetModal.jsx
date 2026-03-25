@@ -1,4 +1,4 @@
-import { X, Key, WarningIcon } from '@phosphor-icons/react';
+import { X, Key, WarningCircle } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 
 const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) => {
@@ -65,7 +65,7 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
                 <div className="p-6">
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
                         <div className="flex items-start gap-3">
-                            <WarningIcon className="text-orange-600 mt-0.5" size={18} />
+                            <WarningCircle className="text-orange-600 mt-0.5" size={18} />
                             <div className="flex-1">
                                 <p className="text-sm font-medium text-orange-800 mb-1">
                                     Estás a punto de resetear la contraseña de:

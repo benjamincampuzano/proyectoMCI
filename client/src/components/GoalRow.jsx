@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, Clock, Pen, Trash, X, WarningIcon } from '@phosphor-icons/react';
+import { CheckCircle, XCircle, Clock, Pen, Trash, X, Warning } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
 
@@ -146,7 +146,7 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-full">
-                            <WarningIcon size={24} className="text-red-600 dark:text-red-400" />
+                            <Warning size={24} className="text-red-600 dark:text-red-400" />
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">

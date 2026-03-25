@@ -169,6 +169,8 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
         setSuccess('');
     };
 
+    if (!isOpen) return null;
+
     // PASTOR no puede crear invitados - mostrar mensaje informativo
     if (currentUser?.roles?.includes('PASTOR')) {
         return (
@@ -201,8 +203,6 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
             </div>
         );
     }
-
-    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">

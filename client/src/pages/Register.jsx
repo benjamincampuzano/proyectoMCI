@@ -7,7 +7,7 @@ import { validatePassword, getPasswordStrength } from '../utils/passwordValidato
 import { DATA_POLICY_URL } from '../constants/policies';
 import toast from 'react-hot-toast';
 import logo from '../assets/logo.jpg';
-import { LockIcon, EyeIcon, EyeClosedIcon } from '@phosphor-icons/react';
+import { Lock, Eye, EyeSlash } from '@phosphor-icons/react';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -241,7 +241,7 @@ const Register = () => {
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                                     >
-                                        {showPassword ? <EyeIcon size={20} /> : <EyeClosedIcon size={20} />}
+                                        {showPassword ? <Eye size={20} /> : <EyeSlash size={20} />}
                                     </button>
                                 </div>
                                 {formData.password && (

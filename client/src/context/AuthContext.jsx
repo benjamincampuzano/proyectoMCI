@@ -71,7 +71,16 @@ export const AuthProvider = ({ children }) => {
             setUser(normalizedUser);
             return { success: true, mustChangePassword: res.data.user?.mustChangePassword || false };
         } catch (error) {
-            return { success: false, message: error.response?.data?.message || 'Login failed' };
+            // Handle different types of authentication errors
+            if (error.response?.status === 401) {
+                return { success: false, message: 'Credenciales incorrectas. Verifica tu email y contraseña.' };
+            } else if (error.response?.status === 403) {
+                return { success: false, message: 'Acceso denegado. Tu cuenta puede estar deshabilitada.' };
+            } else if (error.response?.status === 404) {
+                return { success: false, message: 'Usuario no encontrado. Verifica tu email.' };
+            } else {
+                return { success: false, message: error.response?.data?.message || 'Error al iniciar sesión. Intenta nuevamente.' };
+            }
         }
     };
 

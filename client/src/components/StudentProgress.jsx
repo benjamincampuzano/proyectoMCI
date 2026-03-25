@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendUp, MagnifyingGlass, CheckCircle, Circle, Warning } from '@phosphor-icons/react';
+import { TrendUp, MagnifyingGlass, CheckCircle, Circle, WarningCircle } from '@phosphor-icons/react';
 import api from '../utils/api';
 import { AsyncSearchSelect } from './ui';
 
@@ -35,7 +35,7 @@ const StudentProgress = () => {
         <div className="space-y-6">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-4">
-                    <Search className="w-5 h-5 text-purple-600" />
+                    <MagnifyingGlass className="w-5 h-5 text-purple-600" />
                     <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Buscar Estudiante
@@ -56,7 +56,7 @@ const StudentProgress = () => {
 
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-center gap-3">
-                    <WarningIcon className="w-5 h-5" />
+                    <WarningCircle className="w-5 h-5" />
                     <p>{error}</p>
                 </div>
             )}
@@ -64,7 +64,7 @@ const StudentProgress = () => {
             {selectedUser && progressData && (
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-2 mb-6 border-b pb-4 dark:border-gray-700">
-                        <TrendingUp className="w-6 h-6 text-purple-600" />
+                        <TrendUp className="w-6 h-6 text-purple-600" />
                         <h3 className="text-xl font-bold text-gray-800 dark:text-white">
                             Progreso de Escuela: {selectedUser.fullName}
                         </h3>

@@ -140,12 +140,12 @@ const GuestList = ({ refreshTrigger }) => {
     // Funciones auxiliares de permisos
     const canEditAllFields = (guest) => {
         const roles = currentUser?.roles || [];
-        return roles.includes('ADMIN') || roles.includes('LIDER_DOCE') || roles.includes('PASTOR');
+        return roles.includes('ADMIN') || roles.includes('LIDER_DOCE');
     };
 
     const canDelete = (guest) => {
         const roles = currentUser?.roles || [];
-        if (roles.includes('ADMIN') || roles.includes('LIDER_DOCE') || roles.includes('PASTOR')) {
+        if (roles.includes('ADMIN') || roles.includes('LIDER_DOCE')) {
             return true;
         }
         // LIDER_CELULA/DISCIPULO solo pueden eliminar invitados que invitaron
@@ -437,13 +437,15 @@ const GuestList = ({ refreshTrigger }) => {
                                                             <Trash size={18} />
                                                         </button>
                                                     )}
-                                                    <button
-                                                        onClick={() => setConvertingGuest(guest)}
-                                                        className="p-1 text-green-400 hover:text-green-300"
-                                                        title="Convertir a Discípulo"
-                                                    >
-                                                        <UserCheckIcon size={18} />
-                                                    </button>
+                                                    {!currentUser?.roles?.includes('PASTOR') && (
+                                                        <button
+                                                            onClick={() => setConvertingGuest(guest)}
+                                                            className="p-1 text-green-400 hover:text-green-300"
+                                                            title="Convertir a Discípulo"
+                                                        >
+                                                            <UserCheckIcon size={18} />
+                                                        </button>
+                                                    )}
                                                 </>
                                             )}
                                         </div>

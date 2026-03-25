@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { WarningIcon, X } from '@phosphor-icons/react';
+import { Warning, X } from '@phosphor-icons/react';
 
 const ConfirmationModal = ({
     isOpen,
@@ -10,7 +10,7 @@ const ConfirmationModal = ({
     confirmText = "Confirmar",
     cancelText = "Cancelar",
     confirmButtonClass = "bg-red-600 hover:bg-red-700 text-white",
-    icon: Icon = WarningIcon,
+    icon: Icon = Warning,
     iconColor = "text-red-600 dark:text-red-400",
     children
 }) => {
