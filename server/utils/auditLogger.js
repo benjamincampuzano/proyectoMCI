@@ -25,7 +25,9 @@ const logActivity = async (userId, action, entityType, entityId = null, details 
             }
         });
     } catch (error) {
-        console.error('Error recording audit log:', error);
+        if (process.env.NODE_ENV !== "production") {
+            console.error('Error recording audit log:', error);
+        }
     }
 };
 

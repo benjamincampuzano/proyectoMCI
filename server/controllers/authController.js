@@ -427,9 +427,22 @@ const forcePasswordChange = async (req, res) => {
         const { userId } = req.params;
         const { newTempPassword } = req.body;
 
+        // Security check: Only ADMIN can reset any password. PASTOR and LIDER_DOCE only their network.
+        const currentUserRoles = req.user.roles || [];
+        const isSelfAdmin = currentUserRoles.includes('ADMIN');
+        const targetUserId = parseInt(userId);
+
+        if (!isSelfAdmin) {
+            const { getUserNetwork } = require('../utils/networkUtils');
+            const networkIds = await getUserNetwork(req.user.id);
+            if (!networkIds.includes(targetUserId)) {
+                return res.status(403).json({ message: 'No tienes permiso para resetear esta contraseña' });
+            }
+        }
+
         // Validate the temporary password
         const user = await prisma.user.findUnique({
-            where: { id: parseInt(userId) },
+            where: { id: targetUserId },
             include: { profile: true }
         });
 
@@ -449,14 +462,14 @@ const forcePasswordChange = async (req, res) => {
         const hashedPassword = await bcrypt.hash(newTempPassword, 10);
 
         await prisma.user.update({
-            where: { id: parseInt(userId) },
+            where: { id: targetUserId },
             data: {
                 password: hashedPassword,
                 mustChangePassword: true
             }
         });
 
-        await logActivity(req.user.id, 'UPDATE', 'USER', parseInt(userId), { message: 'Reinicio de contraseña por administrador' }, req.ip, req.headers['user-agent']);
+        await logActivity(req.user.id, 'UPDATE', 'USER', targetUserId, { message: 'Reinicio de contraseña por administrador' }, req.ip, req.headers['user-agent']);
 
         res.status(200).json({ message: 'Contraseña reiniciada. El usuario deberá cambiarla en su próximo inicio de sesión.' });
     } catch (error) {

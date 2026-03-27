@@ -29,7 +29,7 @@ const validatePassword = (password, context = {}) => {
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumbers = /\d/.test(password);
-    const hasSymbols = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const hasSymbols = /[!@#$%^&*(),.?":{}|<>+\-_]/.test(password);
 
     if (!(hasUpperCase && hasLowerCase && hasNumbers && hasSymbols)) {
         return {

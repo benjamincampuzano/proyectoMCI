@@ -293,6 +293,7 @@ model ClassResource {
   id         Int           @id @default(autoincrement())
   materialId Int
   type       ResourceType
+  name       String?
   url        String
   material   ClassMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
 

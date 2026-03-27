@@ -588,20 +588,23 @@ const createUser = async (req, res) => {
         let shouldChangePassword = true;
 
         if (generateTempPassword) {
-            // Generar una contraseña temporal segura
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*+';
+            const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const lower = 'abcdefghijklmnopqrstuvwxyz';
+            const nums = '0123456789';
+            const syms = '!@#$%^&*+-_';
+            const all = upper + lower + nums + syms;
+            
             let tempPass = '';
-            // Al menos 8 caracteres
-            for (let i = 0; i < 8; i++) {
-                tempPass += chars.charAt(Math.floor(Math.random() * chars.length));
+            tempPass += upper.charAt(Math.floor(Math.random() * upper.length));
+            tempPass += lower.charAt(Math.floor(Math.random() * lower.length));
+            tempPass += nums.charAt(Math.floor(Math.random() * nums.length));
+            tempPass += syms.charAt(Math.floor(Math.random() * syms.length));
+            
+            for (let i = 0; i < 6; i++) {
+                tempPass += all.charAt(Math.floor(Math.random() * all.length));
             }
-            // Asegurar que tenga al menos una mayúscula, minúscula, número y símbolo
-            if (!/[A-Z]/.test(tempPass)) tempPass = 'A' + tempPass.slice(1);
-            if (!/[a-z]/.test(tempPass)) tempPass = 'a' + tempPass.slice(1);
-            if (!/\d/.test(tempPass)) tempPass = '1' + tempPass.slice(1);
-            if (!/[!@#$%^&*+]/.test(tempPass)) tempPass = '!' + tempPass.slice(1);
-
-            finalPassword = tempPass;
+            // Mezclar caracteres
+            finalPassword = tempPass.split('').sort(() => 0.5 - Math.random()).join('');
             shouldChangePassword = true;
         } else if (!password) {
             return res.status(400).json({ message: 'Password is required when not generating temporary password' });

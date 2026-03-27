@@ -5,25 +5,23 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
     const [tempPassword, setTempPassword] = useState('');
 
     const generateTempPassword = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(),.?":{}|<>';
+        const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lower = 'abcdefghijklmnopqrstuvwxyz';
+        const nums = '0123456789';
+        const syms = '!@#$%^&*+-_';
+        const all = upper + lower + nums + syms;
+        
         let tempPass = '';
-        // Generar 12 caracteres para asegurar longitud suficiente
-        for (let i = 0; i < 12; i++) {
-            tempPass += chars.charAt(Math.floor(Math.random() * chars.length));
+        tempPass += upper.charAt(Math.floor(Math.random() * upper.length));
+        tempPass += lower.charAt(Math.floor(Math.random() * lower.length));
+        tempPass += nums.charAt(Math.floor(Math.random() * nums.length));
+        tempPass += syms.charAt(Math.floor(Math.random() * syms.length));
+        
+        for (let i = 0; i < 8; i++) {
+            tempPass += all.charAt(Math.floor(Math.random() * all.length));
         }
         
-        // Asegurar que tenga al menos una mayúscula, minúscula, número y símbolo válido
-        const hasUpperCase = /[A-Z]/.test(tempPass);
-        const hasLowerCase = /[a-z]/.test(tempPass);
-        const hasNumbers = /\d/.test(tempPass);
-        const hasValidSymbols = /[!@#$%^&*(),.?":{}|<>]/.test(tempPass);
-        
-        if (!hasUpperCase) tempPass = 'A' + tempPass.slice(1);
-        if (!hasLowerCase) tempPass = 'a' + tempPass.slice(1);
-        if (!hasNumbers) tempPass = '1' + tempPass.slice(1);
-        if (!hasValidSymbols) tempPass = '!' + tempPass.slice(1);
-        
-        return tempPass.slice(0, 12); // Asegurar longitud exacta de 12
+        return tempPass.split('').sort(() => 0.5 - Math.random()).join('');
     };
 
     // Generar contraseña solo cuando se abre el modal

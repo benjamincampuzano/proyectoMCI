@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { Plus, Calendar, Users, Trash, Pen, List, SquaresFourIcon } from '@phosphor-icons/react';
+import { Plus, Calendar, Users, Trash, Pencil, Eye, List, SquaresFourIcon, BookOpen } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from "../../context/AuthContext";
 import ClassMatrix from './ClassMatrix';
 import { AsyncSearchSelect, Button } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
+import ClassMaterialManager from './ClassMaterialManager';
 
 const SCHOOL_LEVELS = [
     { nivel: '1', seccion: 'A', name: 'Pastoreados en su amor', moduleNumber: 1 },
@@ -21,6 +22,12 @@ const CourseManagement = () => {
     const [courses, setCourses] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+
+    // Check if current user is assigned as auxiliar to a specific course
+    const isAuxiliarAssignedToCourse = (course) => {
+        if (!user || !course.auxiliaries) return false;
+        return course.auxiliaries.some(aux => aux.id === user.id);
+    };
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCourse, setEditingCourse] = useState(null);
     const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
@@ -28,6 +35,8 @@ const CourseManagement = () => {
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState(null);
+    const [showMaterialModal, setShowMaterialModal] = useState(false);
+    const [selectedMaterialModuleId, setSelectedMaterialModuleId] = useState(null);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -102,10 +111,10 @@ const CourseManagement = () => {
     const openEditModal = (e, course) => {
         e.stopPropagation();
         setEditingCourse(course);
-        
+
         // Find the corresponding nivel and seccion based on moduleId
         const levelInfo = SCHOOL_LEVELS.find(l => l.moduleNumber === course.moduleNumber) || { nivel: '1', seccion: 'A' };
-        
+
         setFormData({
             name: course.name,
             description: course.description || '',
@@ -125,7 +134,7 @@ const CourseManagement = () => {
             // Find the corresponding moduleId based on selected nivel and seccion
             const selectedLevel = SCHOOL_LEVELS.find(l => l.nivel === formData.nivel && l.seccion === formData.seccion);
             const moduleId = selectedLevel ? selectedLevel.moduleNumber : editingCourse.moduleNumber;
-            
+
             await api.put(`/school/modules/${editingCourse.id}`, {
                 ...formData,
                 moduleId: moduleId,
@@ -164,22 +173,20 @@ const CourseManagement = () => {
                     <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                         <button
                             onClick={() => setViewMode('table')}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                                viewMode === 'table'
-                                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
-                            }`}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'table'
+                                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                                }`}
                             title="Vista de tabla"
                         >
                             <List size={18} />
                         </button>
                         <button
                             onClick={() => setViewMode('cards')}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                                viewMode === 'cards'
-                                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
-                            }`}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'cards'
+                                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                                }`}
                             title="Vista de tarjetas"
                         >
                             <SquaresFourIcon size={18} />
@@ -209,28 +216,41 @@ const CourseManagement = () => {
                             tabIndex={0}
                             className="bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700 relative group"
                         >
-                            <div className="flex justify-between items-start mb-4">
+                             <div className="flex justify-between items-start mb-4">
                                 <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                                {(hasAnyRole(['ADMIN']) || isCoordinator()) && (
+                                {(hasAnyRole(['ADMIN']) || isCoordinator() || hasRole('DISCIPULO') || isAuxiliarAssignedToCourse(course)) && (
                                     <div className="flex space-x-2">
                                         <Button
-                                            onClick={(e) => openEditModal(e, course)}
+                                            onClick={(e) => { e.stopPropagation(); setSelectedMaterialModuleId(course.id); setShowMaterialModal(true); }}
                                             variant="ghost"
                                             size="icon"
-                                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                                            title="Editar"
+                                            className={`${hasAnyRole(['ADMIN']) || isCoordinator() || isAuxiliarAssignedToCourse(course) ? 'text-purple-500 hover:text-purple-700 hover:bg-purple-50' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'}`}
+                                            title={hasAnyRole(['ADMIN']) || isCoordinator() || isAuxiliarAssignedToCourse(course) ? "Gestionar Material" : "Ver Material"}
                                         >
-                                            <Pen size={18} />
+                                            <BookOpen size={18} />
                                         </Button>
-                                        <Button
-                                            onClick={(e) => handleDelete(e, course.id)}
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                            title="Eliminar"
-                                        >
-                                            <Trash size={18} />
-                                        </Button>
+                                        {(hasAnyRole(['ADMIN']) || isCoordinator()) && (
+                                            <Button
+                                                onClick={(e) => openEditModal(e, course)}
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                                                title="Editar"
+                                            >
+                                                <Pencil size={18} />
+                                            </Button>
+                                        )}
+                                        {(hasAnyRole(['ADMIN']) || isCoordinator()) && (
+                                            <Button
+                                                onClick={(e) => handleDelete(e, course.id)}
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                title="Eliminar"
+                                            >
+                                                <Trash size={18} />
+                                            </Button>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -299,12 +319,13 @@ const CourseManagement = () => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex justify-end gap-2">
-                                            <Button
+                                         <div className="flex justify-end gap-2">
+                                                                                        <Button
                                                 onClick={() => setSelectedCourseId(course.id)}
                                                 variant="ghost"
                                                 size="sm"
                                                 className="text-blue-600 hover:text-blue-800"
+                                                icon={Eye}
                                             >
                                                 Ver
                                             </Button>
@@ -315,6 +336,7 @@ const CourseManagement = () => {
                                                         variant="ghost"
                                                         size="sm"
                                                         className="text-amber-600 hover:text-amber-800"
+                                                        icon={Pencil}
                                                     >
                                                         Editar
                                                     </Button>
@@ -351,87 +373,87 @@ const CourseManagement = () => {
                         <form onSubmit={showEditModal ? handleUpdate : handleCreate} className="flex-1 flex flex-col overflow-hidden">
                             <div className="flex-1 overflow-y-auto p-8 space-y-5">
 
-                            {/* Nivel/Seccion Selection - Available for both Create and Edit */}
-                            <div className="grid grid-cols-1 gap-4">
+                                {/* Nivel/Seccion Selection - Available for both Create and Edit */}
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                            {showEditModal ? 'Cambiar Nivel (Clase)' : 'Seleccionar Nivel (Clase)'}
+                                        </label>
+                                        <select
+                                            className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg dark:text-white border border-gray-200 dark:border-gray-600"
+                                            value={`${formData.nivel}${formData.seccion}`}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                const selectedLevel = SCHOOL_LEVELS.find(l => `${l.nivel}${l.seccion}` === val);
+                                                setFormData({
+                                                    ...formData,
+                                                    nivel: val.substring(0, 1),
+                                                    seccion: val.substring(1),
+                                                    name: showEditModal && selectedLevel ?
+                                                        `${selectedLevel.name} (Nivel ${selectedLevel.nivel}${selectedLevel.seccion})` :
+                                                        formData.name
+                                                });
+                                            }}
+                                        >
+                                            {SCHOOL_LEVELS.map(level => (
+                                                <option key={`${level.nivel}${level.seccion}`} value={`${level.nivel}${level.seccion}`}>
+                                                    {level.nivel}{level.seccion} - {level.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                        {showEditModal ? 'Cambiar Nivel (Clase)' : 'Seleccionar Nivel (Clase)'}
-                                    </label>
-                                    <select
-                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg dark:text-white border border-gray-200 dark:border-gray-600"
-                                        value={`${formData.nivel}${formData.seccion}`}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            const selectedLevel = SCHOOL_LEVELS.find(l => `${l.nivel}${l.seccion}` === val);
-                                            setFormData({ 
-                                                ...formData, 
-                                                nivel: val.substring(0, 1), 
-                                                seccion: val.substring(1),
-                                                name: showEditModal && selectedLevel ? 
-                                                    `${selectedLevel.name} (Nivel ${selectedLevel.nivel}${selectedLevel.seccion})` : 
-                                                    formData.name
-                                            });
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
+                                    <textarea
+                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg dark:text-white"
+                                        value={formData.description}
+                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                        rows="2"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
+                                        <input type="date" className="w-full px-4 py-2 rounded-lg border dark:bg-gray-700/50 dark:text-white dark:border-gray-600" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
+                                        <input type="date" className="w-full px-4 py-2 rounded-lg border dark:bg-gray-700/50 dark:text-white dark:border-gray-600" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Profesor</label>
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) => {
+                                            const params = { search: term, role: 'LIDER_DOCE' };
+                                            return api.get('/users/search', { params })
+                                                .then(res => res.data);
                                         }}
-                                    >
-                                        {SCHOOL_LEVELS.map(level => (
-                                            <option key={`${level.nivel}${level.seccion}`} value={`${level.nivel}${level.seccion}`}>
-                                                {level.nivel}{level.seccion} - {level.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        selectedValue={formData.professorId}
+                                        onSelect={(user) => setFormData({ ...formData, professorId: user })}
+                                        placeholder="Seleccionar Profesor (Líder de 12)..."
+                                        labelKey="fullName"
+                                    />
                                 </div>
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
-                                <textarea
-                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg dark:text-white"
-                                    value={formData.description}
-                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                    rows="2"
-                                />
-                            </div>
 
-                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
-                                    <input type="date" className="w-full px-4 py-2 rounded-lg border dark:bg-gray-700/50 dark:text-white dark:border-gray-600" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} />
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Auxiliar</label>
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) => {
+                                            const params = { search: term, role: 'LIDER_CELULA' };
+                                            return api.get('/users/search', { params })
+                                                .then(res => res.data);
+                                        }}
+                                        selectedValue={formData.auxiliarId}
+                                        onSelect={(user) => setFormData({ ...formData, auxiliarId: user })}
+                                        placeholder="Seleccionar Auxiliar (Líder de Célula)..."
+                                        labelKey="fullName"
+                                    />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
-                                    <input type="date" className="w-full px-4 py-2 rounded-lg border dark:bg-gray-700/50 dark:text-white dark:border-gray-600" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Profesor</label>
-                                <AsyncSearchSelect
-                                    fetchItems={(term) => {
-                                        const params = { search: term, role: 'LIDER_DOCE' };
-                                        return api.get('/users/search', { params })
-                                            .then(res => res.data);
-                                    }}
-                                    selectedValue={formData.professorId}
-                                    onSelect={(user) => setFormData({ ...formData, professorId: user })}
-                                    placeholder="Seleccionar Profesor (Líder de 12)..."
-                                    labelKey="fullName"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Auxiliar</label>
-                                <AsyncSearchSelect
-                                    fetchItems={(term) => {
-                                        const params = { search: term, role: 'LIDER_CELULA' };
-                                        return api.get('/users/search', { params })
-                                            .then(res => res.data);
-                                    }}
-                                    selectedValue={formData.auxiliarId}
-                                    onSelect={(user) => setFormData({ ...formData, auxiliarId: user })}
-                                    placeholder="Seleccionar Auxiliar (Líder de Célula)..."
-                                    labelKey="fullName"
-                                />
-                            </div>
 
                             </div>
 
@@ -500,6 +522,15 @@ const CourseManagement = () => {
                     </div>
                 </div>
             </ConfirmationModal>
+
+            {showMaterialModal && (
+                <ClassMaterialManager
+                    moduleId={selectedMaterialModuleId}
+                    classNumber={1} // Defaulting to class 1 when opened from the main course list
+                    readOnly={!(hasAnyRole(['ADMIN']) || isCoordinator() || isAuxiliarAssignedToCourse(courses.find(c => c.id === selectedMaterialModuleId)))}
+                    onClose={() => setShowMaterialModal(false)}
+                />
+            )}
         </div>
     );
 };

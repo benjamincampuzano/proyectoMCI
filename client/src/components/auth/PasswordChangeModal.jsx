@@ -14,17 +14,36 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
 
     if (!isOpen && !success) return null;
 
+    const validatePassword = (password) => {
+        const requirements = [
+            { label: 'Mínimo 8 caracteres', met: password.length >= 8 },
+            { label: 'Una mayúscula', met: /[A-Z]/.test(password) },
+            { label: 'Una minúscula', met: /[a-z]/.test(password) },
+            { label: 'Un número', met: /\d/.test(password) },
+            { label: 'Un símbolo (!@#$%^&*+-_)', met: /[!@#$%^&*(),.?":{}|<>+\-_]/.test(password) }
+        ];
+        const allMet = requirements.every(r => r.met);
+        return { requirements, allMet };
+    };
+
+    const { requirements, allMet } = validatePassword(newPassword);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (!allMet) {
+            setError('La nueva contraseña no cumple con los requisitos');
+            return;
+        }
 
         if (newPassword !== confirmPassword) {
             setError('Las contraseñas no coinciden');
             return;
         }
 
-        if (newPassword.length < 8) {
-            setError('La nueva contraseña debe tener al menos 8 caracteres');
+        if (currentPassword === newPassword) {
+            setError('La nueva contraseña debe ser diferente a la actual');
             return;
         }
 
@@ -128,16 +147,27 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
                                         />
                                         <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                     </div>
-                                    <div className="mt-2 text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5 px-1">
-                                        <WarningCircle size={12} />
-                                        La contraseña debe tener al menos 8 caracteres.
+                                    
+                                    {/* Password Requirements */}
+                                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl space-y-2 border border-gray-100 dark:border-gray-800">
+                                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Requisitos:</p>
+                                        <div className="grid grid-cols-1 gap-1.5">
+                                            {requirements.map((req, idx) => (
+                                                <div key={idx} className={`flex items-center gap-2 text-[11px] ${req.met ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
+                                                    <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${req.met ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                                                        <CheckCircle size={10} weight={req.met ? "bold" : "regular"} />
+                                                    </div>
+                                                    {req.label}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
                                 <button
                                     type="submit"
-                                    disabled={loading}
-                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 mt-4"
+                                    disabled={loading || !allMet || newPassword !== confirmPassword}
+                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none flex items-center justify-center gap-2 mt-4"
                                 >
                                     {loading ? (
                                         <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

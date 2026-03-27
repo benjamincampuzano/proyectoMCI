@@ -35,7 +35,9 @@ app.use(
         callback(null, true);
       } else {
         const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
-        console.error(`❌ CORS BLOCKED: ${origin}`); // Agregamos log para depurar
+        if (process.env.NODE_ENV !== "production") {
+          console.error(`❌ CORS BLOCKED: ${origin}`);
+        }
         callback(new Error(msg));
       }
     },
@@ -103,7 +105,9 @@ app.get("/", (req, res) => {
 
 /* ✅ Global Error Handler */
 app.use((err, req, res, next) => {
-  console.error("❌ Global Error Handler:", err.stack);
+  if (process.env.NODE_ENV !== "production") {
+    console.error("❌ Global Error Handler:", err.stack);
+  }
   res.status(500).json({
     message: "Internal Server Error",
     error: process.env.NODE_ENV === "production" ? {} : err.message,
@@ -114,5 +118,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`Server running on port ${PORT}`);
+  }
 });

@@ -162,7 +162,18 @@ const ClassMatrix = ({ courseId }) => {
                                                     <BookOpen size={14} />
                                                 </Button>
                                             )}
-                                            {(!isProfessor && hasMaterial) && (
+                                            {isStudent && hasMaterial && (
+                                                <Button
+                                                    onClick={() => { setSelectedClassNum(classNum); setShowMaterialModal(true); }}
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="p-1 rounded transition-colors text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                                    title="Ver Material"
+                                                >
+                                                    <BookOpen size={14} />
+                                                </Button>
+                                            )}
+                                            {(!isProfessor && !isStudent && hasMaterial) && (
                                                 <div className="text-blue-500" title="Material Disponible">
                                                     <BookOpen size={14} />
                                                 </div>
@@ -331,6 +342,7 @@ const ClassMatrix = ({ courseId }) => {
                 <ClassMaterialManager
                     moduleId={courseId}
                     classNumber={selectedClassNum}
+                    readOnly={isStudent}
                     onClose={() => {
                         setShowMaterialModal(false);
                         fetchMaterials();

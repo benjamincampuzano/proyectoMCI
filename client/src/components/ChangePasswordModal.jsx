@@ -29,10 +29,10 @@ const validatePassword = (password, email = '', fullName = '') => {
         requirements.push({ label: 'Un número', met: false });
     }
 
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-        requirements.push({ label: 'Un símbolo (!@#$%^&*)', met: true });
+    if (/[!@#$%^&*(),.?":{}|<>+\-_]/.test(password)) {
+        requirements.push({ label: 'Un símbolo (!@#$%^&*+-_)', met: true });
     } else {
-        requirements.push({ label: 'Un símbolo (!@#$%^&*)', met: false });
+        requirements.push({ label: 'Un símbolo (!@#$%^&*+-_)', met: false });
     }
 
     const commonPasswords = ['password', '12345678', 'contraseña', 'iglesia', 'mci2024', 'mci2025', 'qwerty', 'admin123'];

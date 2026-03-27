@@ -272,6 +272,13 @@ const deleteModule = async (req, res) => {
 const enrollStudent = async (req, res) => {
     try {
         const { moduleId, studentId, assignedAuxiliarId } = req.body;
+        const roles = req.user.roles || [];
+        const isAdmin = roles.includes('ADMIN');
+        const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
+
+        if (!isAdmin && !isCoordinator) {
+            return res.status(403).json({ error: 'Solo los administradores o coordinadores pueden inscribir estudiantes.' });
+        }
 
         const enrollment = await prisma.seminarEnrollment.create({
             data: {
@@ -297,7 +304,10 @@ const unenrollStudent = async (req, res) => {
         const { enrollmentId } = req.params;
 
         const roles = req.user.roles || [];
-        if (!roles.includes('ADMIN') && !roles.includes('LIDER_DOCE')) {
+        const isAdmin = roles.includes('ADMIN');
+        const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
+
+        if (!isAdmin && !roles.includes('LIDER_DOCE') && !isCoordinator) {
             return res.status(403).json({ error: 'Not authorized to remove students' });
         }
 
@@ -343,6 +353,15 @@ const getModuleMatrix = async (req, res) => {
         const isProfessor = moduleData.professorId === user.id || isAdmin || isCoordinator;
         const isAuxiliar = moduleData.auxiliaries.some(a => a.id === user.id);
         const isDisciple = roles.includes('DISCIPULO');
+        
+        // Permisos especiales para materiales según especificaciones:
+        // - LIDER_DOCE: Tiene perfil "Solo" para actualizar asistencia, notas y materiales
+        // - LIDER_CELULA: Tiene mismos perfiles del Profesor para editar notas, asistencias y materiales
+        const isLiderDoce = roles.includes('LIDER_DOCE');
+        const isLiderCelula = roles.includes('LIDER_CELULA');
+        
+        // Para gestión de materiales, LIDER_DOCE y LIDER_CELULA tienen permisos de profesor/auxiliar
+        const hasMaterialPermissions = isProfessor || isLiderDoce || isLiderCelula || isAuxiliar;
 
         // Determine which enrollments to show
         let enrollmentsQuery = { moduleId };
@@ -417,9 +436,9 @@ const getModuleMatrix = async (req, res) => {
             },
             matrix,
             permissions: {
-                isProfessor: isProfessor && !isDisciple,
-                isAuxiliar: isAuxiliar && !isDisciple,
-                isStudent: isDisciple || (!isProfessor && !isAuxiliar),
+                isProfessor: hasMaterialPermissions, // Incluye profesor, LIDER_DOCE, LIDER_CELULA, auxiliar
+                isAuxiliar: isAuxiliar, // Auxiliares asignados directamente
+                isStudent: isDisciple && !hasMaterialPermissions, // Solo lectura si no tiene permisos especiales
                 userId: user.id
             }
         });
@@ -455,7 +474,7 @@ const updateMatrixCell = async (req, res) => {
 
         const isCoordinator = await isUserCoordinator(user.id, 'discipular');
 
-        if (roles.includes('DISCIPULO')) {
+        if (roles.includes('DISCIPULO') && !isAdmin && !isCoordinator) {
             return res.status(403).json({ error: 'Estudiantes no pueden modificar notas o asistencia.' });
         }
 
@@ -781,9 +800,38 @@ const getClassMaterials = async (req, res) => {
         const { moduleId } = req.params;
         const materials = await prisma.classMaterial.findMany({
             where: { moduleId: parseInt(moduleId) },
-            orderBy: { classNumber: 'asc' }
+            orderBy: { classNumber: 'asc' },
+            include: {
+                resources: true
+            }
         });
-        res.json(materials);
+        
+        // Transform resources into expected format
+        const transformedMaterials = materials.map(material => {
+            const documents = material.resources
+                .filter(resource => resource.type === 'DOCUMENT')
+                .map(resource => {
+                    // Si tiene nombre, devolver objeto {name, url}, sino solo URL (compatibilidad)
+                    return resource.name 
+                        ? { name: resource.name, url: resource.url }
+                        : resource.url;
+                });
+            const videoLinks = material.resources
+                .filter(resource => resource.type === 'VIDEO')
+                .map(resource => resource.url);
+            const quizLinks = material.resources
+                .filter(resource => resource.type === 'QUIZ')
+                .map(resource => resource.url);
+            
+            return {
+                ...material,
+                documents,
+                videoLinks,
+                quizLinks
+            };
+        });
+        
+        res.json(transformedMaterials);
     } catch (error) {
         console.error('Error fetching materials:', error);
         res.status(500).json({ error: 'Error fetching materials' });
@@ -804,14 +852,16 @@ const updateClassMaterial = async (req, res) => {
         if (!moduleData) return res.status(404).json({ error: 'Module not found' });
 
         const roles = user.roles || [];
-        const isAdmin = roles.includes('ADMIN') || roles.includes('ADMIN');
+        const isAdmin = roles.includes('ADMIN');
+        const isCoordinator = await isUserCoordinator(user.id, 'discipular');
         const isProfesorRole = roles.includes('PROFESOR');
-        const isModuleProfessor = moduleData.professorId === user.id || isAdmin || isProfesorRole;
+        const isModuleProfessor = moduleData.professorId === user.id || isAdmin || isProfesorRole || isCoordinator;
 
         if (!isModuleProfessor) {
-            return res.status(403).json({ error: 'Only professors can manage materials' });
+            return res.status(403).json({ error: 'Only professors or coordinators can manage materials' });
         }
 
+        // Create or update the material
         const material = await prisma.classMaterial.upsert({
             where: {
                 moduleId_classNumber: {
@@ -822,20 +872,96 @@ const updateClassMaterial = async (req, res) => {
             create: {
                 moduleId: parseInt(moduleId),
                 classNumber: parseInt(classNumber),
-                description,
-                documents: documents || [],
-                videoLinks: videoLinks || [],
-                quizLinks: quizLinks || []
+                description
             },
             update: {
-                description,
-                documents: documents || [],
-                videoLinks: videoLinks || [],
-                quizLinks: quizLinks || []
+                description
             }
         });
 
-        res.json(material);
+        // Delete existing resources for this material
+        await prisma.classResource.deleteMany({
+            where: { materialId: material.id }
+        });
+
+        // Create new resources from the arrays
+        const resourcesToCreate = [];
+        
+        // Add documents
+        if (documents && documents.length > 0) {
+            documents.forEach(doc => {
+                // Manejar tanto strings (compatibilidad) como objetos {name, url}
+                if (typeof doc === 'string') {
+                    resourcesToCreate.push({
+                        materialId: material.id,
+                        type: 'DOCUMENT',
+                        url: doc
+                    });
+                } else {
+                    resourcesToCreate.push({
+                        materialId: material.id,
+                        type: 'DOCUMENT',
+                        name: doc.name || null,
+                        url: doc.url
+                    });
+                }
+            });
+        }
+        
+        // Add video links
+        if (videoLinks && videoLinks.length > 0) {
+            videoLinks.forEach(url => {
+                resourcesToCreate.push({
+                    materialId: material.id,
+                    type: 'VIDEO',
+                    url
+                });
+            });
+        }
+        
+        // Add quiz links
+        if (quizLinks && quizLinks.length > 0) {
+            quizLinks.forEach(url => {
+                resourcesToCreate.push({
+                    materialId: material.id,
+                    type: 'QUIZ',
+                    url
+                });
+            });
+        }
+        
+        // Create all resources if any exist
+        if (resourcesToCreate.length > 0) {
+            await prisma.classResource.createMany({
+                data: resourcesToCreate
+            });
+        }
+
+        // Return the material with resources in the expected format
+        const updatedMaterial = await prisma.classMaterial.findUnique({
+            where: { id: material.id },
+            include: { resources: true }
+        });
+        
+        const transformedMaterial = {
+            ...updatedMaterial,
+            documents: updatedMaterial.resources
+                .filter(resource => resource.type === 'DOCUMENT')
+                .map(resource => {
+                    // Si tiene nombre, devolver objeto {name, url}, sino solo URL (compatibilidad)
+                    return resource.name 
+                        ? { name: resource.name, url: resource.url }
+                        : resource.url;
+                }),
+            videoLinks: updatedMaterial.resources
+                .filter(resource => resource.type === 'VIDEO')
+                .map(resource => resource.url),
+            quizLinks: updatedMaterial.resources
+                .filter(resource => resource.type === 'QUIZ')
+                .map(resource => resource.url)
+        };
+
+        res.json(transformedMaterial);
     } catch (error) {
         console.error('Error updating materials:', error);
         res.status(500).json({ error: 'Error updating materials' });

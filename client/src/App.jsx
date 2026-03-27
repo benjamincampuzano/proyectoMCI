@@ -9,6 +9,7 @@ import ConnectivityHandler from './components/ConnectivityHandler';
 import LoadingOverlay from './components/LoadingOverlay';
 import TransitionLoader from './components/TransitionLoader';
 import ChangePasswordModal from './components/ChangePasswordModal';
+import './utils/logger'; // Import logger to disable console logs in production
 
 // Lazy load pages
 const Login = lazy(() => import('./pages/Login'));
