@@ -157,3 +157,5 @@ copilot-labs/
 tabnine-config/
 .tabnine-history/
 cypress/
+BBDD_Prueba.md
+cypress.config.js
