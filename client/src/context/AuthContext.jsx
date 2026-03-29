@@ -28,11 +28,10 @@ export const AuthProvider = ({ children }) => {
                 const res = await api.get('/auth/init-status');
                 setIsInitialized(res.data.isInitialized);
             } catch (error) {
+                console.error('Error checking init status:', error);
                 toast.error('Error al verificar inicialización del sistema.');
             }
         };
-
-        checkInit();
 
         const checkAuth = async () => {
             const token = localStorage.getItem('token');
@@ -45,6 +44,7 @@ export const AuthProvider = ({ children }) => {
                         localStorage.setItem('user', JSON.stringify(normalizedUser));
                     }
                 } catch (error) {
+                    console.error('Auth check error:', error);
                     toast.error('Error al cargar perfil de usuario.');
                     // If error is 401 or 404 (user not found/stale token), logout
                     if (error.response?.status === 401 || error.response?.status === 404) {
@@ -59,18 +59,22 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         };
 
+        checkInit();
         checkAuth();
     }, []);
 
     const login = async (email, password) => {
         try {
+            console.log('Attempting login for:', email);
             const res = await api.post('/auth/login', { email, password });
             localStorage.setItem('token', res.data.token);
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);
+            console.log('Login successful for user:', normalizedUser);
             return { success: true, mustChangePassword: res.data.user?.mustChangePassword || false };
         } catch (error) {
+            console.error('Login error:', error);
             // Handle different types of authentication errors
             if (error.response?.status === 401) {
                 return { success: false, message: 'Credenciales incorrectas. Verifica tu email y contraseña.' };
@@ -105,7 +109,7 @@ export const AuthProvider = ({ children }) => {
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);
-            return { success: true };
+            return { success: true, mustChangePassword: res.data.user?.mustChangePassword || false };
         } catch (error) {
             return { success: false, message: error.response?.data?.message || 'Registration failed' };
         }

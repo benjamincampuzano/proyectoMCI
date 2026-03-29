@@ -50,6 +50,7 @@ const register = async (req, res) => {
                     email,
                     password: hashedPassword,
                     phone,
+                    mustChangePassword: false, // Los usuarios nuevos no necesitan cambiar contraseña
                     profile: {
                         create: {
                             fullName,

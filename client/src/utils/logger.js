@@ -1,14 +1,14 @@
-// Disable all console logs in production
+// Disable console logs in production but keep errors for debugging
 const disableLogs = () => {
   if (import.meta.env.PROD) {
     const originalConsole = { ...console };
     
-    // Override all console methods
+    // Override only non-error console methods in production
     console.log = () => {};
     console.info = () => {};
     console.debug = () => {};
     console.warn = () => {};
-    console.error = () => {};
+    // Keep console.error for debugging mobile issues
     console.trace = () => {};
     console.group = () => {};
     console.groupEnd = () => {};

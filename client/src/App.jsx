@@ -10,6 +10,7 @@ import LoadingOverlay from './components/LoadingOverlay';
 import TransitionLoader from './components/TransitionLoader';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import './utils/logger'; // Import logger to disable console logs in production
+import mobileDebug from './utils/mobileDebug'; // Import mobile debugging
 
 // Lazy load pages
 const Login = lazy(() => import('./pages/Login'));
@@ -105,6 +106,11 @@ const RouteTransitionHandler = () => {
 // import { Toaster } from 'react-hot-toast';
 
 function App() {
+  // Initialize mobile debugging
+  useEffect(() => {
+    mobileDebug.init();
+  }, []);
+
   return (
     <ThemeProvider>
       <LoadingProvider>

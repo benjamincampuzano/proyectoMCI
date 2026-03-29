@@ -39,6 +39,8 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        
+        console.log('Login form submitted for:', email);
 
         // Verify captcha
         const expectedAnswer = captcha.operator === '+'
@@ -46,34 +48,46 @@ const Login = () => {
             : captcha.num1 - captcha.num2;
 
         if (parseInt(captchaAnswer) !== expectedAnswer) {
+            console.log('Captcha validation failed');
             setError('❌ Captcha incorrecto. Por favor resuelve la operación correctamente.');
             generateCaptcha();
             return;
         }
 
-        const result = await login(email, password);
-        if (result.success) {
-            if (result.mustChangePassword) {
-                setShowPasswordChangeModal(true);
+        try {
+            console.log('Attempting login...');
+            const result = await login(email, password);
+            console.log('Login result:', result);
+            
+            if (result.success) {
+                console.log('Login successful, navigating...');
+                if (result.mustChangePassword) {
+                    setShowPasswordChangeModal(true);
+                } else {
+                    navigate('/');
+                }
             } else {
-                navigate('/');
+                console.log('Login failed:', result.message);
+                // Handle different types of authentication errors
+                if (result.message?.toLowerCase().includes('credenciales') || 
+                    result.message?.toLowerCase().includes('incorrectas') ||
+                    result.message?.toLowerCase().includes('contraseña') || 
+                    result.message?.toLowerCase().includes('password')) {
+                    setError('❌ Contraseña incorrecta. Verifica tus credenciales e intenta nuevamente.');
+                } else if (result.message?.toLowerCase().includes('usuario no encontrado') || 
+                           result.message?.toLowerCase().includes('email')) {
+                    setError('❌ Usuario no encontrado. Verifica tu email e intenta nuevamente.');
+                } else if (result.message?.toLowerCase().includes('acceso denegado') || 
+                           result.message?.toLowerCase().includes('deshabilitada')) {
+                    setError('❌ Acceso denegado. Contacta al administrador del sistema.');
+                } else {
+                    setError(`❌ ${result.message}`);
+                }
+                generateCaptcha();
             }
-        } else {
-            // Handle different types of authentication errors
-            if (result.message?.toLowerCase().includes('credenciales') || 
-                result.message?.toLowerCase().includes('incorrectas') ||
-                result.message?.toLowerCase().includes('contraseña') || 
-                result.message?.toLowerCase().includes('password')) {
-                setError('❌ Contraseña incorrecta. Verifica tus credenciales e intenta nuevamente.');
-            } else if (result.message?.toLowerCase().includes('usuario no encontrado') || 
-                       result.message?.toLowerCase().includes('email')) {
-                setError('❌ Usuario no encontrado. Verifica tu email e intenta nuevamente.');
-            } else if (result.message?.toLowerCase().includes('acceso denegado') || 
-                       result.message?.toLowerCase().includes('deshabilitada')) {
-                setError('❌ Acceso denegado. Contacta al administrador del sistema.');
-            } else {
-                setError(`❌ ${result.message}`);
-            }
+        } catch (error) {
+            console.error('Login error:', error);
+            setError('❌ Error inesperado. Intenta nuevamente.');
             generateCaptcha();
         }
     };

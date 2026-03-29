@@ -583,9 +583,9 @@ const createUser = async (req, res) => {
             return res.status(400).json({ message: 'Email and full name are required' });
         }
 
-        // Forzar cambio de contraseña para nuevos usuarios creados por administrador
+        // Forzar cambio de contraseña solo si se genera contraseña temporal
         let finalPassword = password;
-        let shouldChangePassword = true;
+        let shouldChangePassword = false;
 
         if (generateTempPassword) {
             const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -605,7 +605,7 @@ const createUser = async (req, res) => {
             }
             // Mezclar caracteres
             finalPassword = tempPass.split('').sort(() => 0.5 - Math.random()).join('');
-            shouldChangePassword = true;
+            shouldChangePassword = true; // Solo forzar cambio si es contraseña temporal
         } else if (!password) {
             return res.status(400).json({ message: 'Password is required when not generating temporary password' });
         }

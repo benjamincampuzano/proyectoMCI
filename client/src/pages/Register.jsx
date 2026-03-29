@@ -108,7 +108,11 @@ const Register = () => {
         const result = await register(formData);
         if (result.success) {
             toast.success('¡Cuenta creada exitosamente!');
-            navigate('/');
+            if (result.mustChangePassword) {
+                navigate('/');
+            } else {
+                navigate('/');
+            }
         } else {
             // Handle specific error messages with better user experience
             const errorMessage = result.message.toLowerCase();
