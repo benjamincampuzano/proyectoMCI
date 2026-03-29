@@ -465,11 +465,12 @@ const CellManagement = () => {
                                                     const eligibleUsers = eligibleResponse.data;
                                                     console.log('Eligible users:', eligibleUsers);
                                                     
-                                                    // Filter out administrators and pastors
+                                                    // Filter to include only LIDER_DOCE, LIDER_CELULA, and DISCIPULO roles
                                                     const filteredEligible = eligibleUsers.filter(user => {
                                                         const userRoles = user.roles || [];
-                                                        return !userRoles.includes('ADMIN') && 
-                                                               !userRoles.includes('PASTOR');
+                                                        return userRoles.includes('LIDER_DOCE') || 
+                                                               userRoles.includes('LIDER_CELULA') || 
+                                                               userRoles.includes('DISCIPULO');
                                                     });
 
                                                     // Filter by search term if provided
@@ -484,11 +485,12 @@ const CellManagement = () => {
                                                     return filteredEligible;
                                                 }
 
-                                                // Filter out administrators and pastors, but allow other leadership roles
+                                                // Filter to include only LIDER_DOCE, LIDER_CELULA, and DISCIPULO roles
                                                 const filteredUsers = networkUsers.filter(user => {
                                                     const userRoles = user.roles || [];
-                                                    return !userRoles.includes('ADMIN') && 
-                                                           !userRoles.includes('PASTOR');
+                                                    return userRoles.includes('LIDER_DOCE') || 
+                                                           userRoles.includes('LIDER_CELULA') || 
+                                                           userRoles.includes('DISCIPULO');
                                                 });
 
                                                 console.log('Filtered users:', filteredUsers); // Debug log
