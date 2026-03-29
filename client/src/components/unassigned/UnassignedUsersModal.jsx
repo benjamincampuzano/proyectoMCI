@@ -2,11 +2,16 @@
 import React, { useMemo, useState } from 'react';
 import { X, MagnifyingGlass, UserPlus } from '@phosphor-icons/react';
 import { getUnassignedUsers } from '../../utils/unassigned';
+import { canManageAssignments } from '../../utils/permissions';
+import { ROLES } from '../../constants/roles';
 
-export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allUsers = [], selectedLeader, onAssign }) {
+export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allUsers = [], selectedLeader, onAssign, currentUser }) {
   const [search, setSearch] = useState('');
   const [busyId, setBusyId] = useState(null);
 
+  // Verificar permisos del usuario actual
+  const hasAssignmentPermission = currentUser ? canManageAssignments(currentUser) : false;
+  
   const unassigned = useMemo(() => getUnassignedUsers({ allUsers, coupleRoot }), [allUsers, coupleRoot]);
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -17,17 +22,33 @@ export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allU
       (u.phone && String(u.phone).includes(s))
     );
   }, [search, unassigned]);
-
+  
   if (!isOpen) return null;
 
   const defaultLeaderId = selectedLeader?.partners?.[0]?.id;
   const defaultLeaderName = selectedLeader?.partners?.map(p => p.fullName).join(' & ');
 
   const handleAssign = async (userId) => {
-    if (!onAssign || !defaultLeaderId) return;
+    if (!hasAssignmentPermission) {
+      alert('No tienes permisos para realizar esta acción');
+      return;
+    }
+    
+    if (!onAssign) {
+      alert('Error: función de asignación no disponible');
+      return;
+    }
+    
+    if (!defaultLeaderId) {
+      alert('Por favor selecciona un líder antes de asignar usuarios');
+      return;
+    }
+    
     try {
       setBusyId(userId);
       await onAssign(userId, defaultLeaderId);
+    } catch (error) {
+      alert('Error al asignar usuario: ' + (error.message || 'Error desconocido'));
     } finally {
       setBusyId(null);
     }
@@ -38,7 +59,7 @@ export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allU
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div>
+          <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Usuarios sin asignar</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {filtered.length} usuarios no pertenecen a ningún nodo{defaultLeaderId ? ` · Asignar a: ${defaultLeaderName}` : ' · Selecciona un líder en el árbol para asignar'}
@@ -74,19 +95,7 @@ export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allU
               {filtered.map(u => (
                 <div 
                   key={u.id} 
-                  className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-move"
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('application/x-user', JSON.stringify({
-                      id: u.id,
-                      name: u.fullName,
-                      fullName: u.fullName
-                    }));
-                    e.currentTarget.classList.add('opacity-50');
-                  }}
-                  onDragEnd={(e) => {
-                    e.currentTarget.classList.remove('opacity-50');
-                  }}
+                  className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <div className="min-w-0">
                     <div className="font-medium text-gray-900 dark:text-white truncate">{u.fullName}</div>
@@ -95,10 +104,22 @@ export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allU
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500 dark:text-gray-400">{Array.isArray(u.roles) ? u.roles.join(', ').replace(/_/g,' ') : 'Usuario'}</span>
                     <button
-                      disabled={!defaultLeaderId || busyId === u.id}
+                      disabled={!hasAssignmentPermission || !defaultLeaderId || busyId === u.id}
                       onClick={() => handleAssign(u.id)}
-                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center gap-1"
-                      title={defaultLeaderId ? `Asignar a ${defaultLeaderName}` : 'Selecciona un líder en el árbol'}
+                      className={`px-3 py-1.5 text-sm rounded flex items-center gap-1 ${
+                        !hasAssignmentPermission || !defaultLeaderId || busyId === u.id
+                          ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                      title={
+                        !hasAssignmentPermission 
+                          ? 'No tienes permisos para asignar usuarios'
+                          : !defaultLeaderId 
+                          ? 'Selecciona un líder en el árbol (usa Shift+Click en un líder)'
+                          : busyId === u.id
+                          ? 'Asignando en progreso...'
+                          : `Asignar a ${defaultLeaderName}`
+                      }
                     >
                       <UserPlus size={16}/> {busyId === u.id ? 'Asignando…' : 'Asignar'}
                     </button>

@@ -12,7 +12,6 @@ export default memo(function CoupleNodeTree({
   ancestors = [], 
   onAddUser, 
   onRemoveUser, 
-  onDropUser,
   expandedNodes,
   onToggleNode,
   onSelectLeader,
@@ -39,18 +38,6 @@ export default memo(function CoupleNodeTree({
     }
   };
 
-  const handleDropUser = (data) => {
-    if (!node) {
-      console.error('Node is undefined in CoupleNodeTree handleDropUser');
-      return;
-    }
-    onDropUser({
-      user: data.user,
-      targetNode: node,
-      ancestors: [...ancestors, node]
-    });
-  };
-
   return (
     <div className={`${level > 0 ? 'ml-2 mt-1' : ''}`}>
       {/* Connection line for child nodes */}
@@ -68,7 +55,6 @@ export default memo(function CoupleNodeTree({
           canRemove={canRemove}
           onAdd={() => onAddUser(node)} 
           onRemovePartner={(partner) => onRemoveUser(partner)}
-          onDropUser={handleDropUser}
           canManageAssignments={canManage}
           onSelectLeader={handleSelectLeader}
           isSelected={selectedLeader?.id === node.id}
@@ -94,7 +80,6 @@ export default memo(function CoupleNodeTree({
                     ancestors={[...ancestors, node]} 
                     onAddUser={onAddUser}
                     onRemoveUser={onRemoveUser}
-                    onDropUser={onDropUser}
                     expandedNodes={expandedNodes}
                     onToggleNode={onToggleNode}
                     onSelectLeader={onSelectLeader}

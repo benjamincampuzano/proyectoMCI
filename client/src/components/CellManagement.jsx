@@ -40,6 +40,7 @@ const CellManagement = () => {
     const [eligibleLeaders, setEligibleLeaders] = useState([]);
     const [eligibleHosts, setEligibleHosts] = useState([]);
     const [eligibleDoceLeaders, setEligibleDoceLeaders] = useState([]);
+    const [selectedLeaderRole, setSelectedLeaderRole] = useState('');
 
     // Filtering
     const [filterDoce, setFilterDoce] = useState('');
@@ -91,11 +92,30 @@ const CellManagement = () => {
     // When liderDoceId changes, fetch eligible leaders (filtered by that LIDER_DOCE's network)
     useEffect(() => {
         if (formData.liderDoceId) {
-            fetchEligibleLeaders(formData.liderDoceId);
+            fetchEligibleLeaders(formData.liderDoceId, selectedLeaderRole);
         } else {
-            fetchEligibleLeaders();
+            fetchEligibleLeaders(null, selectedLeaderRole);
         }
-    }, [formData.liderDoceId]);
+    }, [formData.liderDoceId, selectedLeaderRole]);
+
+    // When leaderId changes, determine the role of the selected leader
+    useEffect(() => {
+        if (formData.leaderId && eligibleLeaders.length > 0) {
+            const selectedLeader = eligibleLeaders.find(leader => leader.id.toString() === formData.leaderId);
+            if (selectedLeader) {
+                const roles = selectedLeader.roles || [];
+                if (roles.includes('LIDER_DOCE')) {
+                    setSelectedLeaderRole('LIDER_DOCE');
+                } else if (roles.includes('LIDER_CELULA')) {
+                    setSelectedLeaderRole('LIDER_CELULA');
+                } else {
+                    setSelectedLeaderRole('');
+                }
+            }
+        } else {
+            setSelectedLeaderRole('');
+        }
+    }, [formData.leaderId, eligibleLeaders]);
 
     // When liderDoceId changes, fetch eligible hosts (from that LIDER_DOCE's network)
     useEffect(() => {
@@ -149,11 +169,15 @@ const CellManagement = () => {
         }
     };
 
-    const fetchEligibleLeaders = async (liderDoceId = null) => {
+    const fetchEligibleLeaders = async (liderDoceId = null, selectedLeaderRole = null) => {
         try {
             const params = {};
             if (liderDoceId) {
                 params.liderDoceId = liderDoceId;
+            }
+            // Add parameter to specify if we want leaders from a specific role's network
+            if (selectedLeaderRole) {
+                params.selectedRole = selectedLeaderRole;
             }
             const response = await api.get('/enviar/eligible-leaders', { params });
             setEligibleLeaders(response.data);
@@ -302,6 +326,7 @@ const CellManagement = () => {
             setShowCreateForm(false);
             setIsEditing(false);
             setEditingCellId(null);
+            setSelectedLeaderRole('');
             setFormData({
                 name: '',
                 leaderId: '',
@@ -394,6 +419,7 @@ const CellManagement = () => {
                         if (showCreateForm) {
                             setIsEditing(false);
                             setEditingCellId(null);
+                            setSelectedLeaderRole('');
                             setFormData({
                                 name: '',
                                 leaderId: '',
@@ -452,37 +478,16 @@ const CellManagement = () => {
                                     <AsyncSearchSelect
                                         fetchItems={async (term) => {
                                             try {
-                                                // Get users from my network
+                                                // Get users from my network only
                                                 const networkResponse = await api.get('/users/my-network/all');
                                                 const networkUsers = networkResponse.data;
 
                                                 console.log('Network users:', networkUsers); // Debug log
 
-                                                // If no network users, try to get eligible members directly
+                                                // If no network users, return empty array (don't show users from other networks)
                                                 if (!networkUsers || networkUsers.length === 0) {
-                                                    console.log('No network users found, trying eligible members endpoint');
-                                                    const eligibleResponse = await api.get('/enviar/eligible-members');
-                                                    const eligibleUsers = eligibleResponse.data;
-                                                    console.log('Eligible users:', eligibleUsers);
-                                                    
-                                                    // Filter to include only LIDER_DOCE, LIDER_CELULA, and DISCIPULO roles
-                                                    const filteredEligible = eligibleUsers.filter(user => {
-                                                        const userRoles = user.roles || [];
-                                                        return userRoles.includes('LIDER_DOCE') || 
-                                                               userRoles.includes('LIDER_CELULA') || 
-                                                               userRoles.includes('DISCIPULO');
-                                                    });
-
-                                                    // Filter by search term if provided
-                                                    if (term && term.length > 0) {
-                                                        const searchTerm = term.toLowerCase();
-                                                        return filteredEligible.filter(user =>
-                                                            user.fullName.toLowerCase().includes(searchTerm) ||
-                                                            user.email.toLowerCase().includes(searchTerm)
-                                                        );
-                                                    }
-
-                                                    return filteredEligible;
+                                                    console.log('No network users found');
+                                                    return [];
                                                 }
 
                                                 // Filter to include only LIDER_DOCE, LIDER_CELULA, and DISCIPULO roles
@@ -579,6 +584,7 @@ const CellManagement = () => {
                                     setShowCreateForm(false);
                                     setIsEditing(false);
                                     setEditingCellId(null);
+                                    setSelectedLeaderRole('');
                                     setFormData({
                                         name: '',
                                         leaderId: '',
@@ -768,6 +774,7 @@ const CellManagement = () => {
                                             setShowCreateForm(false);
                                             setIsEditing(false);
                                             setEditingCellId(null);
+                                            setSelectedLeaderRole('');
                                             setFormData({
                                                 name: '',
                                                 leaderId: '',

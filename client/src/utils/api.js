@@ -5,12 +5,15 @@ const baseURL = import.meta.env.DEV
     ? 'http://localhost:5000'  // Siempre localhost en desarrollo
     : (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
-console.log('🔗 API Configuration:', {
-    mode: import.meta.env.MODE,
-    isDev: import.meta.env.DEV,
-    baseURL: baseURL,
-    envURL: import.meta.env.VITE_API_URL
-});
+// Solo mostrar configuración en desarrollo si se necesita
+if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_API) {
+    console.log('🔗 API Configuration:', {
+        mode: import.meta.env.MODE,
+        isDev: import.meta.env.DEV,
+        baseURL: baseURL,
+        envURL: import.meta.env.VITE_API_URL
+    });
+}
 
 const api = axios.create({
     baseURL: `${baseURL}/api`,
@@ -25,8 +28,8 @@ api.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
         }
         
-        // Debug en desarrollo
-        if (import.meta.env.DEV) {
+        // Debug en desarrollo solo si está habilitado
+        if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_API) {
             console.log(`🌐 ${config.method?.toUpperCase()} ${config.url}`, {
                 baseURL: config.baseURL,
                 fullURL: `${config.baseURL}${config.url}`,
@@ -44,8 +47,8 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
     (response) => {
-        // Debug en desarrollo
-        if (import.meta.env.DEV) {
+        // Debug en desarrollo solo si está habilitado
+        if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_API) {
             console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url}`, {
                 status: response.status,
                 data: response.data
@@ -58,8 +61,8 @@ api.interceptors.response.use(
         const messageFromNetwork = error?.message;
         const userMessage = messageFromApi || messageFromNetwork || 'Error inesperado';
 
-        // Debug mejorado en desarrollo
-        if (import.meta.env.DEV) {
+        // Debug mejorado en desarrollo solo si está habilitado
+        if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_API) {
             console.error(`❌ ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
                 status: error.response?.status,
                 statusText: error.response?.statusText,

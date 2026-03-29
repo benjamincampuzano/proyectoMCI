@@ -54,29 +54,32 @@ export const mobileDebug = {
 
   // Initialize mobile debugging
   init() {
-    this.logMobileInfo();
-    this.checkMobileIssues();
-    
-    // Log navigation changes
-    let lastPath = window.location.pathname;
-    const checkNavigation = () => {
-      if (window.location.pathname !== lastPath) {
-        console.log('Navigation changed from', lastPath, 'to', window.location.pathname);
-        lastPath = window.location.pathname;
-      }
-    };
-    
-    // Check navigation every second
-    setInterval(checkNavigation, 1000);
-    
-    // Log errors globally
-    window.addEventListener('error', (event) => {
-      console.error('Global error:', event.error);
-    });
-    
-    window.addEventListener('unhandledrejection', (event) => {
-      console.error('Unhandled promise rejection:', event.reason);
-    });
+    // Solo ejecutar en desarrollo si está habilitado
+    if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_MOBILE) {
+      this.logMobileInfo();
+      this.checkMobileIssues();
+      
+      // Log navigation changes
+      let lastPath = window.location.pathname;
+      const checkNavigation = () => {
+        if (window.location.pathname !== lastPath) {
+          console.log('Navigation changed from', lastPath, 'to', window.location.pathname);
+          lastPath = window.location.pathname;
+        }
+      };
+      
+      // Check navigation every second
+      setInterval(checkNavigation, 1000);
+      
+      // Log errors globally
+      window.addEventListener('error', (event) => {
+        console.error('Global error:', event.error);
+      });
+      
+      window.addEventListener('unhandledrejection', (event) => {
+        console.error('Unhandled promise rejection:', event.reason);
+      });
+    }
   }
 };
 

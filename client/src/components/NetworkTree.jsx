@@ -42,38 +42,6 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     })();
   }, []);
 
-  const handleDropUser = ({ user, targetNode }) => {
-    if (!targetNode) {
-      console.error('Target node is undefined in NetworkTree handleDropUser');
-      return;
-    }
-
-    if (!targetNode.partners || targetNode.partners.length === 0) {
-      console.error('Target node has no partners:', targetNode);
-      return;
-    }
-
-    const leaderId = targetNode.partners[0]?.id;
-    const leaderName = targetNode.partners.map(p => p.fullName).join(' & ');
-
-    if (!leaderId) {
-      console.error('Leader ID is undefined:', { targetNode, leaderId });
-      return;
-    }
-
-    if (!user || !user.id) {
-      console.error('User or user ID is undefined:', user);
-      return;
-    }
-
-    setPendingAssign({
-      userId: user.id,
-      userName: user.name || user.fullName || 'Unknown User',
-      leaderId,
-      leaderName
-    });
-  };
-
   const confirmAssign = async () => {
     if (!pendingAssign) return;
 
@@ -105,8 +73,8 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   };
 
   const handleUnassignedModalOpen = () => {
-    // Open modal with current network's leader as selected if available
-    setSelectedLeaderForModal(network);
+    // Open modal with current network's root leader as selected if available
+    setSelectedLeaderForModal(coupleRoot);
     setUnassignedOpen(true);
   };
 
@@ -238,7 +206,6 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
                 currentUser={currentUser}
                 onAddUser={handleAddUserToNode}
                 onRemoveUser={handleRemoveUser}
-                onDropUser={handleDropUser}
                 expandedNodes={expandedNodes}
                 onToggleNode={toggleNodeExpansion}
                 onSelectLeader={handleSelectLeader}
@@ -279,6 +246,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
         allUsers={allUsers}
         selectedLeader={selectedLeaderForModal}
         onAssign={handleAssignUser}
+        currentUser={currentUser}
       />
 
       <AssignConfirmDialog

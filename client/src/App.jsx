@@ -119,9 +119,11 @@ const RouteTransitionHandler = () => {
 // import { Toaster } from 'react-hot-toast';
 
 function App() {
-  // Initialize mobile debugging
+  // Initialize mobile debugging in development only if enabled
   useEffect(() => {
-    mobileDebug.init();
+    if (process.env.NODE_ENV === 'development' && import.meta.env.VITE_DEBUG_MOBILE) {
+      mobileDebug.init();
+    }
   }, []);
 
   return (
