@@ -15,20 +15,18 @@ const Discipular = () => {
     const hasAdminOrCoordinator = hasAnyRole([ROLES.ADMIN]) || isCoordinator();
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
 
+    const handleRefresh = () => {
+        fetchCoordinator();
+    };
+
     // Handler for coordinator changes
     const handleCoordinatorChange = (newCoordinator) => {
         setModuleCoordinator(newCoordinator);
         
         // After a short delay, refresh the coordinator data from server
-        if (newCoordinator) {
-            setTimeout(() => {
-                fetchCoordinator();
-            }, 500);
-        } else {
-            setTimeout(() => {
-                fetchCoordinator();
-            }, 500);
-        }
+        setTimeout(() => {
+            fetchCoordinator();
+        }, 500);
     };
 
     const fetchCoordinator = async () => {
@@ -45,7 +43,7 @@ const Discipular = () => {
                 const coordinators = coordinatorsRes.data;
                 if (coordinators && coordinators.length > 0) {
                     // Find the first coordinator with ADMIN role or the first one
-                    const adminCoordinator = coordinators.find(c => c.role === 'ADMIN') || coordinators[0];
+                    const adminCoordinator = coordinators.find(c => c.role === ROLES.ADMIN) || coordinators[0];
                     setModuleCoordinator(adminCoordinator);
                 } else {
                     setModuleCoordinator(null);
@@ -59,6 +57,7 @@ const Discipular = () => {
 
     useEffect(() => {
         fetchCoordinator();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const tabs = [
@@ -103,7 +102,7 @@ const Discipular = () => {
                     variant="primary"
                     size="sm"
                     icon={ArrowsClockwise}
-                    onClick={() => window.location.reload()}
+                    onClick={handleRefresh}
                     className="shadow-xl"
                 >
                     Actualizar

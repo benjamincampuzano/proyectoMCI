@@ -4,8 +4,8 @@ const prisma = require('../utils/database');
 const CATEGORY_CONFIG = {
     'KIDS': { label: 'Kids', minAge: 5, maxAge: 7 },
     'TEENS': { label: 'Teens', minAge: 8, maxAge: 10 },
-    'ROCAS': { label: 'Rocas', minAge: 11, maxAge: 14 },
-    'JOVENES': { label: 'Jóvenes', minAge: 15, maxAge: 99 }
+    'ROCAS': { label: 'Rocas', minAge: 11, maxAge: 13 },
+    'JOVENES': { label: 'Jóvenes', minAge: 14, maxAge: 99 }
 };
 
 const calculateAge = (birthDate) => {
@@ -333,6 +333,7 @@ const updateMatrixCell = async (req, res) => {
                 where: { id: parseInt(enrollmentId) },
                 data: {
                     finalGrade: avgGrade,
+                    attendanceRate: attendanceRate,
                     status: 'EN_PROGRESO'
                 }
             });
@@ -349,8 +350,12 @@ const getStudentMatrix = async (req, res) => {
     try {
         const users = await prisma.user.findMany({
             where: {
-                profile: { network: { in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES'] } },
-                isDeleted: false
+                isDeleted: false,
+                seminarEnrollments: {
+                    some: {
+                        module: { type: 'KIDS' }
+                    }
+                }
             },
             select: {
                 id: true,
@@ -492,21 +497,35 @@ const getKidsStatsByLeader = async (req, res) => {
     try {
         const leaders = await prisma.user.findMany({
             where: {
-                roles: { some: { role: { name: 'LIDER_DOCE' } } },
+                roles: { 
+                    some: { 
+                        role: { name: { in: ['LIDER_DOCE', 'LIDER_CELULA'] } } 
+                    } 
+                },
                 isDeleted: false
             },
             select: {
                 id: true,
                 profile: { select: { fullName: true } },
+                roles: {
+                    select: {
+                        role: { select: { name: true } }
+                    }
+                },
                 children: {
                     where: {
                         child: {
-                            profile: { network: 'KIDS' },
+                            seminarEnrollments: {
+                                some: {
+                                    module: { type: 'KIDS' }
+                                }
+                            },
                             isDeleted: false
                         },
-                        role: 'LIDER_DOCE'
+                        role: 'DISCIPULO'
                     },
                     select: {
+                        role: true,
                         child: {
                             select: {
                                 id: true,
@@ -550,8 +569,14 @@ const getKidsStatsByLeader = async (req, res) => {
                 });
             });
 
+            // Get the role names for display
+            const roleNames = leader.roles.map(r => r.role.name).join(', ');
+            const roleDisplay = roleNames.includes('LIDER_DOCE') ? 'Líder 12' : 
+                              roleNames.includes('LIDER_CELULA') ? 'Líder Célula' : 
+                              'Líder';
+
             return {
-                leaderName: leader.profile?.fullName || 'Sin nombre',
+                leaderName: `${leader.profile?.fullName || 'Sin nombre'} (${roleDisplay})`,
                 students: totalStudents,
                 avgGrade: gradeCount > 0 ? (totalGrades / gradeCount).toFixed(1) : '0.0',
                 avgAttendance: attendanceCount > 0 ? (totalAttendance / attendanceCount).toFixed(1) : '0.0',

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { MagnifyingGlass, CheckCircle, XCircle, Clock, Users, BookOpen } from '@phosphor-icons/react';
+import { MagnifyingGlass, CheckCircle, XCircle, Clock } from '@phosphor-icons/react';
 import { Button, Input, AsyncSearchSelect } from '../ui';
 
 const KIDS_LEVELS = [
@@ -28,6 +28,7 @@ const KidsStudentMatrix = () => {
 
     useEffect(() => {
         fetchStudentMatrix();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchStudentMatrix = async () => {

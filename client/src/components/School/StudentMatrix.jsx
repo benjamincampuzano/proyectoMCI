@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { useAuth } from '../../context/AuthContext';
-import { MagnifyingGlassIcon, Funnel, CheckCircle, XCircle, Clock, Users, BookOpen } from '@phosphor-icons/react';
+import { MagnifyingGlass, Funnel, CheckCircle, XCircle, Clock, Users, BookOpen } from '@phosphor-icons/react';
 import { Button, Input, AsyncSearchSelect } from '../ui';
 
 const SCHOOL_LEVELS = [
@@ -14,7 +13,6 @@ const SCHOOL_LEVELS = [
 ];
 
 const StudentMatrix = () => {
-    const { user, hasRole } = useAuth();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -23,6 +21,7 @@ const StudentMatrix = () => {
 
     useEffect(() => {
         fetchStudentMatrix();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchStudentMatrix = async () => {
@@ -116,7 +115,7 @@ const StudentMatrix = () => {
                             Buscar Estudiante
                         </label>
                         <div className="relative">
-                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                            <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                             <Input
                                 placeholder="Buscar por nombre..."
                                 value={searchTerm}

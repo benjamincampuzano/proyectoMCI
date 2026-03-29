@@ -5,6 +5,7 @@ import { Plus, Calendar, Users, Trash, Pen, List, SquaresFourIcon } from '@phosp
 import { AsyncSearchSelect, Button } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
 import { useAuth } from "../../context/AuthContext";
+import { ROLES } from '../../constants/roles';
 import KidsClassMatrix from './KidsClassMatrix';
 
 
@@ -113,7 +114,7 @@ const KidsCourseManagement = () => {
         try {
             await api.put(`/kids/modules/${editingCourse.id}`, {
                 ...formData,
-                profesorId: formData.professorId?.id,
+                professorId: formData.professorId?.id,
                 auxiliarIds: formData.auxiliarId ? [parseInt(formData.auxiliarId?.id)] : []
             });
             setShowEditModal(false);
@@ -168,7 +169,7 @@ const KidsCourseManagement = () => {
                             <SquaresFourIcon size={18} />
                         </button>
                     </div>
-                    {hasAnyRole(['ADMIN']) && (
+                    {hasAnyRole([ROLES.ADMIN]) && (
                         <Button
                             onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
                             variant="primary"
@@ -203,7 +204,7 @@ const KidsCourseManagement = () => {
                             >
                                 <div className="flex justify-between items-start mb-4">
                                     <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                                    {hasAnyRole(['ADMIN']) && (
+                                    {hasAnyRole([ROLES.ADMIN]) && (
                                         <div className="flex space-x-2">
                                             <Button
                                                 onClick={(e) => openEditModal(e, course)}
@@ -323,7 +324,7 @@ const KidsCourseManagement = () => {
                                                 >
                                                     Ver
                                                 </Button>
-                                                {hasAnyRole(['ADMIN']) && (
+                                                {hasAnyRole([ROLES.ADMIN]) && (
                                                     <>
                                                         <Button
                                                             onClick={(e) => openEditModal(e, course)}

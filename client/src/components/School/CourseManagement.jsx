@@ -3,6 +3,7 @@ import api from '../../utils/api';
 import { Plus, Calendar, Users, Trash, Pencil, Eye, List, SquaresFourIcon, BookOpen } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from "../../context/AuthContext";
+import { ROLES } from '../../constants/roles';
 import ClassMatrix from './ClassMatrix';
 import { AsyncSearchSelect, Button } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
@@ -18,7 +19,7 @@ const SCHOOL_LEVELS = [
 ];
 
 const CourseManagement = () => {
-    const { user, hasRole, hasAnyRole, isSuperAdmin, isCoordinator } = useAuth();
+    const { user, hasAnyRole, isCoordinator } = useAuth();
     const [courses, setCourses] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -53,6 +54,7 @@ const CourseManagement = () => {
 
     useEffect(() => {
         fetchCourses();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user.roles]);
 
     const fetchCourses = async () => {
@@ -63,8 +65,6 @@ const CourseManagement = () => {
             console.error('Error fetching courses', error);
         }
     };
-
-    // fetchLeaders removed - using AsyncSearchSelect now
 
     const handleDelete = async (e, id) => {
         e.stopPropagation();
@@ -192,7 +192,7 @@ const CourseManagement = () => {
                             <SquaresFourIcon size={18} />
                         </button>
                     </div>
-                    {(hasAnyRole(['ADMIN']) || isCoordinator()) && (
+                    {(hasAnyRole([ROLES.ADMIN]) || isCoordinator()) && (
                         <Button
                             onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
                             variant="primary"
@@ -218,18 +218,18 @@ const CourseManagement = () => {
                         >
                              <div className="flex justify-between items-start mb-4">
                                 <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                                {(hasAnyRole(['ADMIN']) || isCoordinator() || hasRole('DISCIPULO') || isAuxiliarAssignedToCourse(course)) && (
+                                {(hasAnyRole([ROLES.ADMIN]) || isCoordinator() || hasRole('DISCIPULO') || isAuxiliarAssignedToCourse(course)) && (
                                     <div className="flex space-x-2">
                                         <Button
                                             onClick={(e) => { e.stopPropagation(); setSelectedMaterialModuleId(course.id); setShowMaterialModal(true); }}
                                             variant="ghost"
                                             size="icon"
-                                            className={`${hasAnyRole(['ADMIN']) || isCoordinator() || isAuxiliarAssignedToCourse(course) ? 'text-purple-500 hover:text-purple-700 hover:bg-purple-50' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'}`}
-                                            title={hasAnyRole(['ADMIN']) || isCoordinator() || isAuxiliarAssignedToCourse(course) ? "Gestionar Material" : "Ver Material"}
+                                            className={`${hasAnyRole([ROLES.ADMIN]) || isCoordinator() || isAuxiliarAssignedToCourse(course) ? 'text-purple-500 hover:text-purple-700 hover:bg-purple-50' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'}`}
+                                            title={hasAnyRole([ROLES.ADMIN]) || isCoordinator() || isAuxiliarAssignedToCourse(course) ? "Gestionar Material" : "Ver Material"}
                                         >
                                             <BookOpen size={18} />
                                         </Button>
-                                        {(hasAnyRole(['ADMIN']) || isCoordinator()) && (
+                                        {(hasAnyRole([ROLES.ADMIN]) || isCoordinator()) && (
                                             <Button
                                                 onClick={(e) => openEditModal(e, course)}
                                                 variant="ghost"
@@ -240,7 +240,7 @@ const CourseManagement = () => {
                                                 <Pencil size={18} />
                                             </Button>
                                         )}
-                                        {(hasAnyRole(['ADMIN']) || isCoordinator()) && (
+                                        {(hasAnyRole([ROLES.ADMIN]) || isCoordinator()) && (
                                             <Button
                                                 onClick={(e) => handleDelete(e, course.id)}
                                                 variant="ghost"
@@ -329,7 +329,7 @@ const CourseManagement = () => {
                                             >
                                                 Ver
                                             </Button>
-                                            {(hasAnyRole(['ADMIN']) || isCoordinator()) && (
+                                            {(hasAnyRole([ROLES.ADMIN]) || isCoordinator()) && (
                                                 <>
                                                     <Button
                                                         onClick={(e) => openEditModal(e, course)}
@@ -527,7 +527,7 @@ const CourseManagement = () => {
                 <ClassMaterialManager
                     moduleId={selectedMaterialModuleId}
                     classNumber={1} // Defaulting to class 1 when opened from the main course list
-                    readOnly={!(hasAnyRole(['ADMIN']) || isCoordinator() || isAuxiliarAssignedToCourse(courses.find(c => c.id === selectedMaterialModuleId)))}
+                    readOnly={!(hasAnyRole([ROLES.ADMIN]) || isCoordinator() || isAuxiliarAssignedToCourse(courses.find(c => c.id === selectedMaterialModuleId)))}
                     onClose={() => setShowMaterialModal(false)}
                 />
             )}

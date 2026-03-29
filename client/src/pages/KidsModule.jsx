@@ -11,8 +11,7 @@ import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const KidsModule = () => {
-    const { hasAnyRole, isCoordinator } = useAuth();
-    const hasAdminOrCoordinator = hasAnyRole([ROLES.ADMIN]) || isCoordinator();
+    const { hasAnyRole } = useAuth();
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
 
     // Handler for coordinator changes
@@ -20,15 +19,9 @@ const KidsModule = () => {
         setModuleCoordinator(newCoordinator);
         
         // After a short delay, refresh the coordinator data from server
-        if (newCoordinator) {
-            setTimeout(() => {
-                fetchCoordinator();
-            }, 500);
-        } else {
-            setTimeout(() => {
-                fetchCoordinator();
-            }, 500);
-        }
+        setTimeout(() => {
+            fetchCoordinator();
+        }, 500);
     };
 
     const fetchCoordinator = async () => {
@@ -59,6 +52,7 @@ const KidsModule = () => {
 
     useEffect(() => {
         fetchCoordinator();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     const tabs = [
         { 
@@ -102,7 +96,7 @@ const KidsModule = () => {
                     variant="primary"
                     size="sm"
                     icon={ArrowsClockwise}
-                    onClick={() => window.location.reload()}
+                    onClick={() => fetchCoordinator()}
                     className="shadow-xl"
                 >
                     Actualizar

@@ -27,6 +27,7 @@ const ClassMatrix = ({ courseId }) => {
     useEffect(() => {
         fetchMatrix();
         fetchMaterials();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [courseId]);
 
     const fetchMatrix = async () => {
@@ -80,7 +81,7 @@ const ClassMatrix = ({ courseId }) => {
 
     const handleDeleteEnrollment = async (enrollmentId) => {
         // Find the enrollment to show details in the confirmation modal
-        const enrollment = matrix.find(m => m.id === enrollmentId);
+        const enrollment = data?.matrix?.find(m => m.id === enrollmentId);
         setEnrollmentToDelete(enrollment);
         setShowDeleteConfirm(true);
     };
@@ -103,14 +104,8 @@ const ClassMatrix = ({ courseId }) => {
     const permissions = data?.permissions || {};
     const { isProfessor = false, isAuxiliar = false, isStudent = true } = permissions;
 
-    // Logic: Professors can edit everything. 
-    // Auxiliaries can edit if assigned (usually handled in row).
-    // Students (or Disciples in this context) cannot edit.
-    // We'll rely on backend 403 for detailed row-level security, but primarily disable UI here.
+    // Professors can enroll, students are read-only
     const canEnroll = isProfessor;
-
-    // Note: 'permissions' object structure from backend is { isProfessor, isAuxiliar, isStudent }.
-    // So 'isStudent' being true effectively means Read-Only for this matrix.
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 overflow-hidden">

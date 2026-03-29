@@ -62,7 +62,7 @@ const resolveLeaderName = (userWithParents) => {
 const createModule = async (req, res) => {
     try {
         const roles = req.user.roles || [];
-        const isAdmin = roles.includes('ADMIN');
+        const isAdmin = roles.some(r => r.role?.name === 'ADMIN');
         const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
 
         if (!isAdmin && !isCoordinator) {

@@ -60,7 +60,7 @@ const getModuleCoordinators = async (req, res) => {
             id: c.id,
             email: c.email,
             fullName: c.profile?.fullName || 'Sin Nombre',
-            role: c.roles[0]?.role.name
+            role: c.roles?.[0]?.role?.name || 'LIDER_DOCE'
         }));
 
         res.json(formatted);

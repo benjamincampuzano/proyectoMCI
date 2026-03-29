@@ -7,12 +7,13 @@ import { Download, Users, BookOpen, UserCheck, TrendUp } from '@phosphor-icons/r
 import { Button } from '../ui';
 
 const KidsStats = () => {
-    const { user, hasAnyRole } = useAuth();
+    const { hasAnyRole } = useAuth();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchStats();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchStats = async () => {

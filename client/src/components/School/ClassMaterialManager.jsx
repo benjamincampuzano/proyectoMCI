@@ -198,6 +198,7 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose, readOnly = false
     
     useEffect(() => {
         fetchMaterials();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [moduleId, classNumber]);
 
     const fetchMaterials = async () => {

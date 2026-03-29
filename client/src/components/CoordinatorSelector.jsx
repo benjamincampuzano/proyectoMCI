@@ -92,8 +92,7 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
             </div>
             <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
                 <Shield size={12} />
-                <span>LIDER_DOCE❌ Invalido, intentalo nuevamente
-</span>
+                <span>LIDER_DOCE</span>
             </div>
         </div>
     );

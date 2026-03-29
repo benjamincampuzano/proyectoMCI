@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from "../../context/AuthContext";
+import { ROLES, ROLE_GROUPS } from '../../constants/roles';
 import * as XLSX from 'xlsx';
 import { Download, Users, BookOpenIcon, UserCheckIcon, TrendUpIcon, MedalIcon } from '@phosphor-icons/react';
 import { Button } from '../ui';
 
 const SchoolLeaderStats = () => {
-    const { user, hasAnyRole } = useAuth();
+    const { hasAnyRole } = useAuth();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchStats();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchStats = async () => {
@@ -49,7 +51,7 @@ const SchoolLeaderStats = () => {
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Reporte Estadístico por Líder</h2>
                     <p className="text-gray-500 dark:text-gray-400">Desempeño de estudiantes agrupado por Líder de 12</p>
                 </div>
-                {hasAnyRole(['ADMIN', 'LIDER_DOCE']) && (
+                {hasAnyRole([ROLES.ADMIN, ...ROLE_GROUPS.CAN_VIEW_STATS]) && (
                     <Button
                         onClick={downloadExcel}
                         variant="success"
