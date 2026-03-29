@@ -7,6 +7,7 @@ import UnassignedUsersModal from './unassigned/UnassignedUsersModal';
 import AssignConfirmDialog from './common/AssignConfirmDialog';
 import RadialView from './radial/RadialView';
 import { buildCoupleNetwork } from './utils/transformCouples';
+import { getRootNodeForRole } from './utils/buildHierarchy';
 import { getUnassignedUsers } from './utils/unassigned';
 import api from '../utils/api';
 import CardsView from './cards/CardsView';
@@ -24,7 +25,10 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   const [loading, setLoading] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState(new Set());
 
-  const coupleRoot = useMemo(() => buildCoupleNetwork(network), [network]);
+  const coupleRoot = useMemo(() => {
+    const fullNetwork = buildCoupleNetwork(network);
+    return getRootNodeForRole(fullNetwork, currentUser);
+  }, [network, currentUser]);
   const unassigned = useMemo(() => getUnassignedUsers({ allUsers, coupleRoot }), [allUsers, coupleRoot]);
 
   useEffect(() => {

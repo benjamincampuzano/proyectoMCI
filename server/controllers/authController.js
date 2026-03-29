@@ -149,6 +149,12 @@ const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        console.log('🔑 Login attempt:', {
+            email,
+            passwordLength: password?.length,
+            passwordPreview: password ? password.substring(0, 3) + '...' : 'null'
+        });
+
         const user = await prisma.user.findUnique({
             where: { email },
             include: {
@@ -159,12 +165,29 @@ const login = async (req, res) => {
         });
 
         if (!user) {
+            console.log('❌ User not found:', email);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        console.log('👤 User found:', {
+            id: user.id,
+            email: user.email,
+            fullName: user.profile?.fullName,
+            mustChangePassword: user.mustChangePassword,
+            hasPassword: !!user.password,
+            passwordHashLength: user.password?.length
+        });
+
         const isMatch = await bcrypt.compare(password, user.password);
 
+        console.log('🔐 Password comparison result:', {
+            inputPassword: password,
+            isMatch,
+            storedHashPrefix: user.password.substring(0, 10) + '...'
+        });
+
         if (!isMatch) {
+            console.log('❌ Password mismatch for user:', email);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
@@ -176,8 +199,12 @@ const login = async (req, res) => {
         // Log the login activity
         await logActivity(user.id, 'LOGIN', 'USER', user.id, null, req.ip, req.headers['user-agent']);
 
-        // Update last login (we don't have lastLogin field in User anymore, choosing to ignore or add to profile if needed)
-        // For now, removing it as it's not in the new schema
+        console.log('✅ Login successful:', {
+            userId: user.id,
+            email: user.email,
+            mustChangePassword: user.mustChangePassword,
+            roles
+        });
 
         res.status(200).json({
             token,
@@ -194,7 +221,7 @@ const login = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('❌ Login error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -428,6 +455,14 @@ const forcePasswordChange = async (req, res) => {
         const { userId } = req.params;
         const { newTempPassword } = req.body;
 
+        console.log('🔄 Force password change request:', {
+            userId,
+            newTempPassword,
+            passwordLength: newTempPassword?.length,
+            requestingUser: req.user.id,
+            requestingUserRoles: req.user.roles
+        });
+
         // Security check: Only ADMIN can reset any password. PASTOR and LIDER_DOCE only their network.
         const currentUserRoles = req.user.roles || [];
         const isSelfAdmin = currentUserRoles.includes('ADMIN');
@@ -451,16 +486,30 @@ const forcePasswordChange = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
+        console.log('👤 Target user found:', {
+            id: user.id,
+            email: user.email,
+            fullName: user.profile?.fullName
+        });
+
         const validation = validatePassword(newTempPassword, {
             email: user.email,
             fullName: user.profile?.fullName
         });
 
+        console.log('✅ Password validation:', validation);
+
         if (!validation.isValid) {
+            console.log('❌ Password validation failed:', validation.message);
             return res.status(400).json({ message: validation.message });
         }
 
         const hashedPassword = await bcrypt.hash(newTempPassword, 10);
+        
+        console.log('🔐 Password hashed successfully:', {
+            hashLength: hashedPassword.length,
+            hashPrefix: hashedPassword.substring(0, 10) + '...'
+        });
 
         await prisma.user.update({
             where: { id: targetUserId },
@@ -470,11 +519,13 @@ const forcePasswordChange = async (req, res) => {
             }
         });
 
+        console.log('✅ User updated successfully');
+
         await logActivity(req.user.id, 'UPDATE', 'USER', targetUserId, { message: 'Reinicio de contraseña por administrador' }, req.ip, req.headers['user-agent']);
 
         res.status(200).json({ message: 'Contraseña reiniciada. El usuario deberá cambiarla en su próximo inicio de sesión.' });
     } catch (error) {
-        console.error('Force password change error:', error);
+        console.error('❌ Force password change error:', error);
         res.status(500).json({ message: 'Error al forzar el cambio de contraseña' });
     }
 };

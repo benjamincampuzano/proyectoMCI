@@ -34,6 +34,26 @@ const SetupWizard = () => {
         }
     }, [isInitialized, navigate]);
 
+    // Additional safeguard: Check initialization status on component mount
+    useEffect(() => {
+        const checkInitialization = async () => {
+            try {
+                const response = await fetch('/api/auth/init-status');
+                const data = await response.json();
+                if (data.isInitialized) {
+                    console.log('System already initialized, redirecting to login');
+                    navigate('/login');
+                }
+            } catch (error) {
+                console.error('Error checking initialization:', error);
+            }
+        };
+        
+        if (!authLoading) {
+            checkInitialization();
+        }
+    }, [authLoading, navigate]);
+
     // If system is already initialized, redirect immediately
     if (!authLoading && isInitialized) {
         return <Navigate to="/login" replace />;

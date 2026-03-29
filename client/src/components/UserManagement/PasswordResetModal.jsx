@@ -1,8 +1,9 @@
-import { X, Key, WarningCircle } from '@phosphor-icons/react';
+import { X, Key, WarningCircle, Copy } from '@phosphor-icons/react';
 import { useState, useEffect } from 'react';
 
 const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) => {
     const [tempPassword, setTempPassword] = useState('');
+    const [copied, setCopied] = useState(false);
 
     const generateTempPassword = () => {
         const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -21,15 +22,79 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
             tempPass += all.charAt(Math.floor(Math.random() * all.length));
         }
         
-        return tempPass.split('').sort(() => 0.5 - Math.random()).join('');
+        const finalPassword = tempPass.split('').sort(() => 0.5 - Math.random()).join('');
+        
+        console.log('🔐 Generated temporary password:', {
+            password: finalPassword,
+            length: finalPassword.length,
+            hasUpper: /[A-Z]/.test(finalPassword),
+            hasLower: /[a-z]/.test(finalPassword),
+            hasNumbers: /\d/.test(finalPassword),
+            hasSymbols: /[!@#$%^&*+-_]/.test(finalPassword)
+        });
+        
+        return finalPassword;
     };
 
     // Generar contraseña solo cuando se abre el modal
     useEffect(() => {
         if (isOpen && user) {
             setTempPassword(generateTempPassword());
+            setCopied(false); // Resetear estado de copia al abrir modal
         }
     }, [isOpen, user]);
+
+    // Función para copiar contraseña al portapapeles
+    const copyToClipboard = async (event) => {
+        // Prevenir comportamiento por defecto en eventos touch
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        try {
+            await navigator.clipboard.writeText(tempPassword);
+            setCopied(true);
+            console.log('📋 Contraseña copiada al portapapeles:', tempPassword);
+            
+            // Resetear el estado después de 2 segundos
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('❌ Error al copiar contraseña:', err);
+            
+            // Fallback para navegadores que no soportan clipboard API
+            try {
+                // Crear un elemento temporal para la selección
+                const textArea = document.createElement('textarea');
+                textArea.value = tempPassword;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                
+                // Seleccionar y copiar
+                textArea.focus();
+                textArea.select();
+                textArea.setSelectionRange(0, 99999); // Para dispositivos móviles
+                
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                    console.log('📋 Contraseña copiada con fallback:', tempPassword);
+                } else {
+                    console.error('❌ Falló el fallback de copia');
+                }
+            } catch (fallbackError) {
+                console.error('❌ Error en fallback:', fallbackError);
+                
+                // Último recurso: mostrar la contraseña para copia manual
+                alert(`Contraseña para copiar manualmente: ${tempPassword}`);
+            }
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -83,12 +148,55 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
                                 Contraseña temporal generada:
                             </label>
                             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                <code className="text-sm font-mono text-gray-900 break-all">
-                                    {tempPassword}
-                                </code>
+                                <div className="flex items-center justify-between gap-2">
+                                    <code className="text-sm font-mono text-gray-900 break-all flex-1">
+                                        {tempPassword}
+                                    </code>
+                                    <button
+                                        onClick={copyToClipboard}
+                                        onTouchStart={(e) => {
+                                            e.preventDefault();
+                                        }}
+                                        onTouchEnd={copyToClipboard}
+                                        onTouchMove={(e) => {
+                                            e.preventDefault();
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                copyToClipboard(e);
+                                            }
+                                        }}
+                                        className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 touch-none select-none ${
+                                            copied 
+                                                ? 'bg-green-100 text-green-700 border border-green-200' 
+                                                : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 active:scale-95'
+                                        }`}
+                                        title={copied ? '¡Copiado!' : 'Copiar contraseña'}
+                                        aria-label={copied ? 'Contraseña copiada' : 'Copiar contraseña al portapapeles'}
+                                        type="button"
+                                    >
+                                        {copied ? (
+                                            <>
+                                                <span className="text-green-600">✓</span>
+                                                Copiado
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Copy size={14} />
+                                                Copiar
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                             <p className="text-xs text-gray-500 mt-1">
                                 Esta contraseña será válida solo hasta que el usuario la cambie.
+                                {copied && (
+                                    <span className="text-green-600 font-medium ml-1">
+                                        ¡Contraseña copiada al portapapeles!
+                                    </span>
+                                )}
                             </p>
                         </div>
 

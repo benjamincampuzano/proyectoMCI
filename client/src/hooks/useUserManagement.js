@@ -229,15 +229,28 @@ const useUserManagement = () => {
         setError('');
         setSuccess('');
         
+        console.log('🔄 Password reset initiated:', {
+            user: {
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email
+            },
+            tempPassword,
+            passwordLength: tempPassword?.length
+        });
+        
         try {
             const response = await api.post(`/auth/force-password-change/${user.id}`, {
                 newTempPassword: tempPassword
             });
             
+            console.log('✅ Password reset response:', response.data);
+            
             setSuccess(`Contraseña de ${user.fullName} reseteada exitosamente. Contraseña temporal: ${tempPassword}`);
             setPasswordResetUser(null);
             fetchUsers();
         } catch (err) {
+            console.error('❌ Password reset error:', err.response?.data || err);
             handleError(err, 'password_reset');
         } finally {
             setSubmitting(false);

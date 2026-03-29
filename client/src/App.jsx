@@ -9,6 +9,7 @@ import ConnectivityHandler from './components/ConnectivityHandler';
 import LoadingOverlay from './components/LoadingOverlay';
 import TransitionLoader from './components/TransitionLoader';
 import ChangePasswordModal from './components/ChangePasswordModal';
+// import MobileDebugger from './components/MobileDebugger';
 import './utils/logger'; // Import logger to disable console logs in production
 import mobileDebug from './utils/mobileDebug'; // Import mobile debugging
 
@@ -35,9 +36,21 @@ const LegalDocuments = lazy(() => import('./pages/LegalDocuments'));
 
 const PrivateRoute = ({ children }) => {
   const { user, loading, isInitialized } = useAuth();
+  
+  // Show loading while checking authentication and initialization status
   if (loading) return <div>Loading...</div>;
-  if (!user && !isInitialized) return <Navigate to="/setup" />;
-  if (!user && isInitialized) return <Navigate to="/login" />;
+  
+  // If no user is logged in
+  if (!user) {
+    // If system is not initialized, go to setup
+    if (!isInitialized) {
+      return <Navigate to="/setup" />;
+    }
+    // If system is initialized, go to login
+    return <Navigate to="/login" />;
+  }
+  
+  // User is logged in, allow access
   return children;
 };
 
@@ -119,6 +132,7 @@ function App() {
             <ConnectivityHandler />
             <RouteTransitionHandler />
             <LoadingOverlay />
+            {/* <MobileDebugger /> */}
             {/* <Toaster position="top-right" toastOptions={{ duration: 4000 }} /> */}
             <Suspense fallback={<TransitionLoader />}>
               <Routes>

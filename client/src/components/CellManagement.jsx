@@ -451,26 +451,63 @@ const CellManagement = () => {
                                 <div className="flex gap-2">
                                     <AsyncSearchSelect
                                         fetchItems={async (term) => {
-                                            // Get users from my network
-                                            const networkResponse = await api.get('/users/my-network/all');
-                                            const networkUsers = networkResponse.data;
+                                            try {
+                                                // Get users from my network
+                                                const networkResponse = await api.get('/users/my-network/all');
+                                                const networkUsers = networkResponse.data;
 
-                                            // Filter out administrators and pastors
-                                            const filteredUsers = networkUsers.filter(user =>
-                                                !user.roles.includes('ADMIN') &&
-                                                !user.roles.includes('PASTOR')
-                                            );
+                                                console.log('Network users:', networkUsers); // Debug log
 
-                                            // Filter by search term if provided
-                                            if (term && term.length > 0) {
-                                                const searchTerm = term.toLowerCase();
-                                                return filteredUsers.filter(user =>
-                                                    user.fullName.toLowerCase().includes(searchTerm) ||
-                                                    user.email.toLowerCase().includes(searchTerm)
-                                                );
+                                                // If no network users, try to get eligible members directly
+                                                if (!networkUsers || networkUsers.length === 0) {
+                                                    console.log('No network users found, trying eligible members endpoint');
+                                                    const eligibleResponse = await api.get('/enviar/eligible-members');
+                                                    const eligibleUsers = eligibleResponse.data;
+                                                    console.log('Eligible users:', eligibleUsers);
+                                                    
+                                                    // Filter out administrators and pastors
+                                                    const filteredEligible = eligibleUsers.filter(user => {
+                                                        const userRoles = user.roles || [];
+                                                        return !userRoles.includes('ADMIN') && 
+                                                               !userRoles.includes('PASTOR');
+                                                    });
+
+                                                    // Filter by search term if provided
+                                                    if (term && term.length > 0) {
+                                                        const searchTerm = term.toLowerCase();
+                                                        return filteredEligible.filter(user =>
+                                                            user.fullName.toLowerCase().includes(searchTerm) ||
+                                                            user.email.toLowerCase().includes(searchTerm)
+                                                        );
+                                                    }
+
+                                                    return filteredEligible;
+                                                }
+
+                                                // Filter out administrators and pastors, but allow other leadership roles
+                                                const filteredUsers = networkUsers.filter(user => {
+                                                    const userRoles = user.roles || [];
+                                                    return !userRoles.includes('ADMIN') && 
+                                                           !userRoles.includes('PASTOR');
+                                                });
+
+                                                console.log('Filtered users:', filteredUsers); // Debug log
+
+                                                // Filter by search term if provided
+                                                if (term && term.length > 0) {
+                                                    const searchTerm = term.toLowerCase();
+                                                    return filteredUsers.filter(user =>
+                                                        user.fullName.toLowerCase().includes(searchTerm) ||
+                                                        user.email.toLowerCase().includes(searchTerm)
+                                                    );
+                                                }
+
+                                                return filteredUsers;
+                                            } catch (error) {
+                                                console.error('Error fetching users for assignment:', error);
+                                                toast.error('Error al cargar usuarios disponibles');
+                                                return [];
                                             }
-
-                                            return filteredUsers;
                                         }}
                                         selectedValue={selectedMember}
                                         onSelect={setSelectedMember}

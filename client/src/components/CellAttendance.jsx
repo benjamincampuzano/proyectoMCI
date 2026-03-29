@@ -166,7 +166,7 @@ const CellAttendance = () => {
                         <MapPin className="w-5 h-5 text-red-500 mt-0.5" />
                         <div>
                             <p className="text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 tracking-wider">Dirección</p>
-                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate" title={currentCell.address}>
+                            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate max-w-[200px]" title={currentCell.address}>
                                 {currentCell.address || 'N/A'}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">{currentCell.city || 'N/A'}</p>

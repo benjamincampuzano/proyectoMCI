@@ -133,6 +133,17 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);
+        
+        // Re-check initialization status after logout to ensure proper routing
+        const checkInitAfterLogout = async () => {
+            try {
+                const res = await api.get('/auth/init-status');
+                setIsInitialized(res.data.isInitialized);
+            } catch (error) {
+                console.error('Error checking init status after logout:', error);
+            }
+        };
+        checkInitAfterLogout();
     };
 
     const updateProfile = (updatedUser) => {
