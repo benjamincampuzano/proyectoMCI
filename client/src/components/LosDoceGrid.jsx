@@ -53,7 +53,7 @@ const LosDoceGrid = React.memo(({ losDoce, onSelectLeader }) => {
                                 {leader.roles?.includes('ADMIN')
                                     ? 'Administrador'
                                     : leader.roles?.includes('PASTOR')
-                                        ? 'Pastor'
+                                        ? (leader.isCouple ? 'Pastores' : 'Pastor')
                                         : 'Líder 12'}
                             </span>
                         </div>

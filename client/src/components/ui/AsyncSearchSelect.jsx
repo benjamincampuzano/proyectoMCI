@@ -195,7 +195,7 @@ const AsyncSearchSelect = ({
 AsyncSearchSelect.propTypes = {
     fetchItems: PropTypes.func.isRequired,
     onSelect: PropTypes.func.isRequired,
-    selectedValue: PropTypes.oneOfType([PropTypes.object, PropTypes.number]),
+    selectedValue: PropTypes.oneOfType([PropTypes.object, PropTypes.number, PropTypes.string]),
     placeholder: PropTypes.string,
     labelKey: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
     valueKey: PropTypes.string,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import TabNavigator from '../components/TabNavigator';
 import KidsCourseManagement from '../components/Kids/KidsCourseManagement';
+import KidsSchedule from '../components/Kids/KidsSchedule';
 import KidsStudentMatrix from '../components/Kids/KidsStudentMatrix';
 import KidsStats from '../components/Kids/KidsStats';
 import { PageHeader, Button } from '../components/ui';
@@ -55,6 +56,12 @@ const KidsModule = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     const tabs = [
+        {
+            id: 'schedule',
+            label: 'Cronograma',
+            component: KidsSchedule,
+            roles: ROLE_GROUPS.ALL_LEADERS
+        },
         { 
             id: 'management', 
             label: 'Clases y Notas', 
@@ -103,7 +110,7 @@ const KidsModule = () => {
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="management" />
+            <TabNavigator tabs={tabs} initialTabId="schedule" />
         </div>
     );
 };

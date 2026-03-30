@@ -132,7 +132,9 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Red de Discipulado</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {network.fullName} • {unassigned.length} usuarios sin asignar
+              {network.partners && network.partners.length > 1 
+                ? `${network.partners[0].fullName} & ${network.partners[1].fullName}`
+                : network.fullName} • {unassigned.length} usuarios sin asignar
             </p>
           </div>
 

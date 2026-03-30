@@ -5,8 +5,6 @@ import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningCircle } from '@ph
 import { AsyncSearchSelect, Button } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
 
-const CLASSES_COUNT = 12;
-
 const CATEGORY_INFO = {
     'KIDS': { label: 'Kids', minAge: 5, maxAge: 7 },
     'TEENS': { label: 'Teens', minAge: 8, maxAge: 10 },
@@ -34,6 +32,8 @@ const KidsClassMatrix = ({ courseId }) => {
     const [showEnrollModal, setShowEnrollModal] = useState(false);
     const [selectedStudentId, setSelectedStudentId] = useState('');
     const [selectedStudent, setSelectedStudent] = useState(null);
+    const [selectedGuardianId, setSelectedGuardianId] = useState('');
+    const [selectedGuardian, setSelectedGuardian] = useState(null);
 
     // Unenrollment Confirmation Modal State
     const [showUnenrollConfirm, setShowUnenrollConfirm] = useState(false);
@@ -109,12 +109,15 @@ const KidsClassMatrix = ({ courseId }) => {
         try {
             await api.post('/kids/enroll', {
                 userId: selectedStudentId,
-                moduleId: courseId
+                moduleId: courseId,
+                guardianId: selectedGuardianId || null
             });
             toast.success('Estudiante inscrito correctamente');
             setShowEnrollModal(false);
             setSelectedStudentId('');
             setSelectedStudent(null);
+            setSelectedGuardianId('');
+            setSelectedGuardian(null);
             fetchMatrix();
         } catch (error) {
             const errorMsg = error.response?.data?.message || 'Error al inscribir estudiante';
@@ -178,11 +181,15 @@ const KidsClassMatrix = ({ courseId }) => {
                         <tr>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Estudiante</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acudiente</th>
-                            {Array.from({ length: CLASSES_COUNT }, (_, i) => (
+                            {courseInfo?.classCount ? Array.from({ length: courseInfo.classCount }, (_, i) => (
                                 <th key={i} className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                                     C{i + 1}
                                 </th>
-                            ))}
+                            )) : (
+                                <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Sin clases definidas
+                                </th>
+                            )}
                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Asist.</th>
                         </tr>
                     </thead>
@@ -195,19 +202,21 @@ const KidsClassMatrix = ({ courseId }) => {
                                 <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                                     {row.responsibleName || 'N/A'}
                                 </td>
-                                {Array.from({ length: CLASSES_COUNT }, (_, i) => {
+                                {courseInfo?.classCount ? Array.from({ length: courseInfo.classCount }, (_, i) => {
                                     const attendance = row.classAttendances?.find(a => a.classNumber === i + 1);
                                     return (
                                         <td key={i} className="px-1 py-2 text-center">
                                             <select
-                                                value={attendance?.status || 'ASISTE'}
+                                                value={attendance?.status || 'SIN_CLASE'}
                                                 onChange={(e) => handleCellUpdate(row.enrollmentId, i + 1, 'status', e.target.value)}
                                                 className={`text-xs px-1 py-1 rounded border-0 cursor-pointer ${attendance?.status === 'ASISTE' ? 'bg-green-100 text-green-800' :
                                                         attendance?.status === 'AUSENCIA_JUSTIFICADA' ? 'bg-yellow-100 text-yellow-800' :
                                                             attendance?.status === 'AUSENCIA_NO_JUSTIFICADA' ? 'bg-red-100 text-red-800' :
-                                                                'bg-gray-100 text-gray-800'
+                                                                attendance?.status === 'SIN_CLASE' ? 'bg-gray-200 text-gray-600' :
+                                                                    'bg-gray-100 text-gray-800'
                                                     }`}
                                             >
+                                                <option value="SIN_CLASE">-</option>
                                                 <option value="ASISTE">A</option>
                                                 <option value="AUSENCIA_JUSTIFICADA">AJ</option>
                                                 <option value="AUSENCIA_NO_JUSTIFICADA">ANJ</option>
@@ -215,7 +224,11 @@ const KidsClassMatrix = ({ courseId }) => {
                                             </select>
                                         </td>
                                     );
-                                })}
+                                }) : (
+                                    <td className="px-1 py-2 text-center text-xs text-gray-500" colSpan="1">
+                                        Sin clases
+                                    </td>
+                                )}
                                 <td className="px-4 py-3 text-center text-sm">
                                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${calculateAttendance(row.classAttendances) >= 80 ? 'bg-green-100 text-green-800' :
                                             calculateAttendance(row.classAttendances) >= 50 ? 'bg-yellow-100 text-yellow-800' :
@@ -270,48 +283,83 @@ const KidsClassMatrix = ({ courseId }) => {
                             </div>
                         )}
 
-                        {selectedStudent && (
-                            <div className="mb-4 p-3 rounded-lg border">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {selectedStudent.fullName}
-                                </p>
-                                {selectedStudent.birthDate && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Edad: {calculateAge(selectedStudent.birthDate)} años
-                                    </p>
-                                )}
-                                {selectedStudent.birthDate && courseInfo && (() => {
-                                    const age = calculateAge(selectedStudent.birthDate);
-                                    const categoryConfig = CATEGORY_INFO[courseInfo.category];
-                                    if (age !== null && categoryConfig && (age < categoryConfig.minAge || age > categoryConfig.maxAge)) {
-                                        return (
-                                            <div className="mt-2 flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-                                                <WarningCircle size={16} />
-                                                <span>La edad no corresponde a esta categoría</span>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                })()}
-                            </div>
-                        )}
-
                         <div className="space-y-4">
+                            {!selectedStudent && (
+                                <AsyncSearchSelect
+                                    fetchItems={(term) => {
+                                        return api.get(`/kids/eligible-students/${courseId}`, { params: { search: term } })
+                                            .then(res => res.data);
+                                    }}
+                                    selectedValue={selectedStudentId}
+                                    onSelect={(user) => {
+                                        setSelectedStudentId(user?.id || '');
+                                        setSelectedStudent(user || null);
+                                    }}
+                                    placeholder="Buscar estudiante elegible..."
+                                    labelKey="fullName"
+                                />
+                            )}
+                            
+                            {selectedStudent && (
+                                <div className="mb-4 p-3 rounded-lg border">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {selectedStudent.fullName}
+                                    </p>
+                                    {selectedStudent.birthDate && (
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            Edad: {calculateAge(selectedStudent.birthDate)} años
+                                        </p>
+                                    )}
+                                    {selectedStudent.birthDate && courseInfo && (() => {
+                                        const age = calculateAge(selectedStudent.birthDate);
+                                        const categoryConfig = CATEGORY_INFO[courseInfo.category];
+                                        if (age !== null && categoryConfig && (age < categoryConfig.minAge || age > categoryConfig.maxAge)) {
+                                            return (
+                                                <div className="mt-2 flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+                                                    <WarningCircle size={16} />
+                                                    <span>La edad no corresponde a esta categoría</span>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+                                </div>
+                            )}
+                            
                             <AsyncSearchSelect
                                 fetchItems={(term) => {
-                                    return api.get(`/kids/eligible-students/${courseId}`, { params: { search: term } })
-                                        .then(res => res.data);
+                                    return api.get('/users/search', {
+                                        params: {
+                                            search: term,
+                                            excludeRoles: 'PASTOR,ADMIN'
+                                        }
+                                    }).then(res => res.data);
                                 }}
-                                selectedValue={selectedStudentId}
+                                selectedValue={selectedGuardianId}
                                 onSelect={(user) => {
-                                    setSelectedStudentId(user?.id || '');
-                                    setSelectedStudent(user || null);
+                                    setSelectedGuardianId(user?.id || '');
+                                    setSelectedGuardian(user || null);
                                 }}
-                                placeholder="Buscar estudiante elegible..."
+                                placeholder="Buscar acudiente (opcional)..."
                                 labelKey="fullName"
                             />
+                            
+                            {selectedGuardian && (
+                                <div className="mb-4 p-3 rounded-lg border bg-green-50 dark:bg-green-900/20">
+                                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        Acudiente seleccionado: {selectedGuardian.fullName}
+                                    </p>
+                                </div>
+                            )}
+                            
                             <div className="flex justify-end space-x-3">
-                                <Button onClick={() => { setShowEnrollModal(false); setSelectedStudent(null); setSelectedStudentId(''); }} variant="secondary">Cancelar</Button>
+                                <Button onClick={() => { 
+                                    setShowEnrollModal(false); 
+                                    setSelectedStudent(null); 
+                                    setSelectedStudentId(''); 
+                                    setSelectedGuardian(null); 
+                                    setSelectedGuardianId(''); 
+                                }} variant="secondary">Cancelar</Button>
                                 <Button onClick={handleEnroll} className="bg-pink-600 hover:bg-pink-700">Inscribir</Button>
                             </div>
                         </div>

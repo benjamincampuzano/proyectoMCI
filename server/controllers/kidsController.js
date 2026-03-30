@@ -29,7 +29,7 @@ const CATEGORY_MODULE_NUMBERS = {
 
 const createModule = async (req, res) => {
     try {
-        const { name, description, startDate, endDate, professorId, auxiliarIds = [], category = 'KIDS' } = req.body;
+        const { name, description, startDate, endDate, professorId, auxiliarIds = [], category = 'KIDS', classCount } = req.body;
         const moduleNumber = CATEGORY_MODULE_NUMBERS[category] || 101;
 
         const module = await prisma.seminarModule.create({
@@ -39,6 +39,7 @@ const createModule = async (req, res) => {
                 type: 'KIDS',
                 code: `${category}_${Date.now()}`,
                 moduleNumber,
+                ...(classCount && { classCount: parseInt(classCount) }),
                 startDate: startDate ? new Date(startDate) : null,
                 endDate: endDate ? new Date(endDate) : null,
                 professorId: professorId ? parseInt(professorId) : null,
@@ -70,17 +71,68 @@ const getModules = async (req, res) => {
             include: {
                 professor: { select: { id: true, profile: { select: { fullName: true } } } },
                 auxiliaries: { select: { id: true, profile: { select: { fullName: true } } } },
-                _count: { select: { enrollments: true } }
+                _count: { select: { enrollments: true } },
+                kidsSchedules: {
+                    select: {
+                        date: true,
+                        teacherId: true,
+                        teacher: {
+                            select: {
+                                profile: {
+                                    select: { fullName: true }
+                                }
+                            }
+                        }
+                    },
+                    orderBy: { date: 'asc' }
+                }
             },
             orderBy: { createdAt: 'desc' }
         });
 
-        const formatted = modules.map(m => ({
-            ...m,
-            category: m.code?.split('_')[0] || 'KIDS',
-            professor: m.professor ? { id: m.professor.id, fullName: m.professor.profile?.fullName } : null,
-            auxiliaries: m.auxiliaries.map(a => ({ id: a.id, fullName: a.profile?.fullName }))
-        }));
+        const formatted = modules.map(m => {
+            // Calcular fecha de inicio (la más antigua)
+            const startDate = m.kidsSchedules.length > 0 
+                ? m.kidsSchedules.reduce((earliest, schedule) => {
+                    return !earliest || schedule.date < earliest ? schedule.date : earliest;
+                }, m.kidsSchedules[0].date)
+                : null;
+
+            // Calcular fecha final (la más reciente)
+            const endDate = m.kidsSchedules.length > 0
+                ? m.kidsSchedules.reduce((latest, schedule) => {
+                    return !latest || schedule.date > latest ? schedule.date : latest;
+                }, m.kidsSchedules[0].date)
+                : null;
+
+            // Calcular último profesor asignado
+            const lastTeacher = m.kidsSchedules.length > 0
+                ? m.kidsSchedules
+                    .filter(schedule => schedule.teacherId)
+                    .reduce((latest, schedule) => {
+                        return !latest || schedule.date > latest.date ? schedule : latest;
+                    }, null)
+                : null;
+
+            // Calcular classCount basado en el número de filas del cronograma
+            const classCount = m.kidsSchedules.length > 0 ? m.kidsSchedules.length : null;
+
+            return {
+                ...m,
+                category: m.code?.split('_')[0] || 'KIDS',
+                professor: lastTeacher ? { 
+                    id: lastTeacher.teacherId, 
+                    fullName: lastTeacher.teacher?.profile?.fullName 
+                } : m.professor ? { 
+                    id: m.professor.id, 
+                    fullName: m.professor.profile?.fullName 
+                } : null,
+                startDate,
+                endDate,
+                classCount, // Usar el cálculo dinámico en lugar del valor original
+                auxiliaries: m.auxiliaries.map(a => ({ id: a.id, fullName: a.profile?.fullName }))
+            };
+        });
 
         res.json(formatted);
     } catch (error) {
@@ -92,7 +144,7 @@ const getModules = async (req, res) => {
 const updateModule = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, startDate, endDate, professorId, auxiliarIds = [] } = req.body;
+        const { name, description, startDate, endDate, professorId, auxiliarIds = [], classCount } = req.body;
 
         const module = await prisma.seminarModule.update({
             where: { id: parseInt(id) },
@@ -101,6 +153,7 @@ const updateModule = async (req, res) => {
                 description,
                 startDate: startDate ? new Date(startDate) : null,
                 endDate: endDate ? new Date(endDate) : null,
+                classCount: classCount !== undefined ? parseInt(classCount) : undefined,
                 professorId: professorId ? parseInt(professorId) : null,
                 auxiliaries: {
                     set: auxiliarIds.map(id => ({ id: parseInt(id) }))
@@ -150,7 +203,23 @@ const getModuleMatrix = async (req, res) => {
         const { id } = req.params;
 
         const module = await prisma.seminarModule.findUnique({
-            where: { id: parseInt(id) }
+            where: { id: parseInt(id) },
+            include: {
+                kidsSchedules: {
+                    select: {
+                        date: true,
+                        teacherId: true,
+                        teacher: {
+                            select: {
+                                profile: {
+                                    select: { fullName: true }
+                                }
+                            }
+                        }
+                    },
+                    orderBy: { date: 'asc' }
+                }
+            }
         });
 
         const enrollments = await prisma.seminarEnrollment.findMany({
@@ -170,6 +239,9 @@ const getModuleMatrix = async (req, res) => {
                         }
                     }
                 },
+                guardian: {
+                    select: { profile: { select: { fullName: true } } }
+                },
                 classAttendances: true
             }
         });
@@ -179,7 +251,7 @@ const getModuleMatrix = async (req, res) => {
             studentId: e.user.id,
             studentName: e.user.profile?.fullName,
             studentBirthDate: e.user.profile?.birthDate,
-            responsibleName: e.user.parents?.[0]?.parent?.profile?.fullName || null,
+            responsibleName: e.guardian?.profile?.fullName || e.user.parents?.[0]?.parent?.profile?.fullName || null,
             classAttendances: e.classAttendances,
             finalGrade: e.finalGrade,
             status: e.status
@@ -188,7 +260,8 @@ const getModuleMatrix = async (req, res) => {
         res.json({
             module: {
                 ...module,
-                category: module?.code?.split('_')[0] || 'KIDS'
+                category: module?.code?.split('_')[0] || 'KIDS',
+                classCount: module?.kidsSchedules && module.kidsSchedules.length > 0 ? module.kidsSchedules.length : null
             },
             matrix
         });
@@ -200,7 +273,7 @@ const getModuleMatrix = async (req, res) => {
 
 const enrollStudent = async (req, res) => {
     try {
-        const { userId, moduleId } = req.body;
+        const { userId, moduleId, guardianId } = req.body;
 
         const existing = await prisma.seminarEnrollment.findUnique({
             where: {
@@ -249,6 +322,7 @@ const enrollStudent = async (req, res) => {
             data: {
                 userId: parseInt(userId),
                 moduleId: parseInt(moduleId),
+                guardianId: guardianId ? parseInt(guardianId) : null,
                 status: 'INSCRITO'
             }
         });
@@ -359,11 +433,16 @@ const getStudentMatrix = async (req, res) => {
             },
             select: {
                 id: true,
-                profile: { select: { fullName: true } },
+                profile: { 
+                    select: { 
+                        fullName: true, 
+                        birthDate: true 
+                    } 
+                },
                 parents: {
                     include: {
                         parent: {
-                            select: { id: true, profile: { select: { fullName: true } } }
+                            select: { id: true, profile: { select: { fullName: true, birthDate: true } } }
                         }
                     }
                 },
@@ -382,10 +461,13 @@ const getStudentMatrix = async (req, res) => {
         const formatted = users.map(u => {
             const leaderEntry = u.parents?.find(p => p.role === 'LIDER_DOCE');
             const responsibleEntry = u.parents?.find(p => p.role === 'DISCIPULO');
-
+            
             return {
                 id: u.id,
                 fullName: u.profile?.fullName,
+                profile: {
+                    birthDate: u.profile?.birthDate
+                },
                 leaderDoce: leaderEntry ? {
                     id: leaderEntry.parent.id,
                     fullName: leaderEntry.parent.profile?.fullName

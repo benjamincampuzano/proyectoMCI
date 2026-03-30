@@ -149,25 +149,25 @@ const updateProfile = async (req, res) => {
         });
     } catch (error) {
         console.error('Error updating profile:', error);
-        
+
         // Handle Prisma unique constraint errors
         if (error.code === 'P2002') {
             const targetField = error.meta?.target?.[0];
             if (targetField === 'phone') {
-                return res.status(400).json({ 
-                    message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.' 
+                return res.status(400).json({
+                    message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.'
                 });
             } else if (targetField === 'email') {
-                return res.status(400).json({ 
-                    message: 'El correo electrónico ya está registrado. Por favor use otro correo.' 
+                return res.status(400).json({
+                    message: 'El correo electrónico ya está registrado. Por favor use otro correo.'
                 });
             } else {
-                return res.status(400).json({ 
-                    message: 'Ya existe un usuario con estos datos. Por favor verifique la información.' 
+                return res.status(400).json({
+                    message: 'Ya existe un usuario con estos datos. Por favor verifique la información.'
                 });
             }
         }
-        
+
         res.status(500).json({ message: 'Error del servidor al actualizar perfil' });
     }
 };
@@ -336,6 +336,8 @@ const getUserById = async (req, res) => {
                 profile: true,
                 roles: { include: { role: true } },
                 parents: { include: { parent: { include: { profile: true } } } },
+                spouse: { include: { profile: true } },
+                spouseOf: { include: { profile: true } },
                 moduleCoordinations: true
             }
         });
@@ -551,25 +553,25 @@ const updateUser = async (req, res) => {
         });
     } catch (error) {
         console.error('Error updating user:', error);
-        
+
         // Handle Prisma unique constraint errors
         if (error.code === 'P2002') {
             const targetField = error.meta?.target?.[0];
             if (targetField === 'phone') {
-                return res.status(400).json({ 
-                    message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.' 
+                return res.status(400).json({
+                    message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.'
                 });
             } else if (targetField === 'email') {
-                return res.status(400).json({ 
-                    message: 'El correo electrónico ya está registrado. Por favor use otro correo.' 
+                return res.status(400).json({
+                    message: 'El correo electrónico ya está registrado. Por favor use otro correo.'
                 });
             } else {
-                return res.status(400).json({ 
-                    message: 'Ya existe un usuario con estos datos. Por favor verifique la información.' 
+                return res.status(400).json({
+                    message: 'Ya existe un usuario con estos datos. Por favor verifique la información.'
                 });
             }
         }
-        
+
         res.status(500).json({ message: 'Error del servidor al actualizar usuario' });
     }
 };
@@ -593,13 +595,13 @@ const createUser = async (req, res) => {
             const nums = '0123456789';
             const syms = '!@#$%^&*+-_';
             const all = upper + lower + nums + syms;
-            
+
             let tempPass = '';
             tempPass += upper.charAt(Math.floor(Math.random() * upper.length));
             tempPass += lower.charAt(Math.floor(Math.random() * lower.length));
             tempPass += nums.charAt(Math.floor(Math.random() * nums.length));
             tempPass += syms.charAt(Math.floor(Math.random() * syms.length));
-            
+
             for (let i = 0; i < 6; i++) {
                 tempPass += all.charAt(Math.floor(Math.random() * all.length));
             }
@@ -732,25 +734,25 @@ const createUser = async (req, res) => {
         });
     } catch (error) {
         console.error('Error creating user:', error);
-        
+
         // Handle Prisma unique constraint errors
         if (error.code === 'P2002') {
             const targetField = error.meta?.target?.[0];
             if (targetField === 'phone') {
-                return res.status(400).json({ 
-                    message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.' 
+                return res.status(400).json({
+                    message: 'El número de teléfono ya está registrado. Por favor use otro teléfono.'
                 });
             } else if (targetField === 'email') {
-                return res.status(400).json({ 
-                    message: 'El correo electrónico ya está registrado. Por favor use otro correo.' 
+                return res.status(400).json({
+                    message: 'El correo electrónico ya está registrado. Por favor use otro correo.'
                 });
             } else {
-                return res.status(400).json({ 
-                    message: 'Ya existe un usuario con estos datos. Por favor verifique la información.' 
+                return res.status(400).json({
+                    message: 'Ya existe un usuario con estos datos. Por favor verifique la información.'
                 });
             }
         }
-        
+
         res.status(500).json({ message: 'Error del servidor al crear usuario' });
     }
 };
@@ -797,7 +799,7 @@ const deleteUser = async (req, res) => {
         }
 
         if (userToDelete._count.children > 0 || userToDelete._count.ledCells > 0 || userToDelete._count.invitedGuests > 0) {
-            return res.status(400).json({ message: 'User has dependencies (descendants, cells, or guests) and cannot be deleted yet.' });
+            return res.status(400).json({ message: 'El usuario tiene dependencias (Discipulos, Células o Invitados) y aún no puede ser eliminado.' });
         }
 
         await prisma.$transaction([

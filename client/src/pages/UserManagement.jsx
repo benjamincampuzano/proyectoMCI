@@ -131,7 +131,9 @@ const UserManagement = () => {
                     liderCelulaIds: user.liderCelulaIds || (user.liderCelulaId ? [user.liderCelulaId] : []),
                     spouseId: user.spouseId || '',
                     neighborhood: user.neighborhood || '',
-                    role: user.roles?.[0] || 'DISCIPULO'
+                    role: user.roles?.[0] || 'DISCIPULO',
+                    sex: user.sex || '',
+                    documentType: user.documentType || ''
                 })}
                 onDelete={handleDeleteUser}
                 onResetPassword={setPasswordResetUser}

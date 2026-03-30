@@ -25,6 +25,7 @@ export function buildIdIndex(root) {
 
 export function buildCoupleNetwork(root) {
   if (!root) return null;
+  console.log('Building couple network from root:', root);
   const index = buildIdIndex(root);
   const visited = new Set();
   
@@ -37,6 +38,8 @@ export function buildCoupleNetwork(root) {
       spouseMap.set(sId, String(id));
     }
   });
+  
+  console.log('Spouse map:', Array.from(spouseMap.entries()));
 
   function toCoupleNode(person) {
     if (!person) return null;
@@ -51,16 +54,24 @@ export function buildCoupleNetwork(root) {
       partners.push({ id: p.id, fullName: p.fullName, roles: Array.isArray(p.roles) ? p.roles : [] });
     };
 
-    visited.add(pId);
-    pushPartner(person);
+    if (Array.isArray(person.partners) && person.partners.length > 0) {
+      // Use pre-grouped partners from API if available
+      person.partners.forEach(p => {
+        visited.add(String(p.id));
+        partners.push({ ...p, roles: Array.isArray(p.roles) ? p.roles : [] });
+      });
+    } else {
+      visited.add(pId);
+      pushPartner(person);
 
-    // Try to find spouse in both directions using spouseMap
-    const sIdFromMap = spouseMap.get(pId);
-    if (sIdFromMap) {
-      const spouse = index.get(sIdFromMap);
-      if (spouse && !visited.has(String(spouse.id))) {
-        visited.add(String(spouse.id));
-        pushPartner(spouse);
+      // Try to find spouse in both directions using spouseMap
+      const sIdFromMap = spouseMap.get(pId);
+      if (sIdFromMap) {
+        const spouse = index.get(sIdFromMap);
+        if (spouse && !visited.has(String(spouse.id))) {
+          visited.add(String(spouse.id));
+          pushPartner(spouse);
+        }
       }
     }
 
@@ -89,13 +100,16 @@ export function buildCoupleNetwork(root) {
 
     const coupleId = partners.map(p => p.id).sort().join('_');
 
-    return {
+    const result = {
       id: coupleId || person.id,
       partners,
       roles: roleUnion,
       disciples: children,
       guests: { assigned, invited },
     };
+    
+    console.log('Couple node created:', result);
+    return result;
   }
 
   return toCoupleNode(root);

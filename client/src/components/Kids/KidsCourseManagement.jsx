@@ -18,27 +18,10 @@ const CATEGORY_INFO = {
 };
 
 const KidsCourseManagement = () => {
-    const { user, hasRole, hasAnyRole, isSuperAdmin } = useAuth();
+    const { user, hasAnyRole } = useAuth();
     const [courses, setCourses] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState(null);
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [editingCourse, setEditingCourse] = useState(null);
     const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
-
-    // Delete Confirmation Modal State
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [courseToDelete, setCourseToDelete] = useState(null);
-
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        startDate: '',
-        endDate: '',
-        professorId: null,
-        auxiliarId: null,
-        category: 'KIDS'
-    });
 
     useEffect(() => {
         fetchCourses();
@@ -50,78 +33,6 @@ const KidsCourseManagement = () => {
             setCourses(res.data);
         } catch (error) {
             console.error('Error fetching courses', error);
-        }
-    };
-
-    const handleDelete = async (e, id) => {
-        e.stopPropagation();
-        // Find the course to show details in the confirmation modal
-        const course = courses.find(c => c.id === id);
-        setCourseToDelete(course);
-        setShowDeleteConfirm(true);
-    };
-
-    const performDelete = async () => {
-        if (!courseToDelete) return;
-
-        try {
-            await api.delete(`/kids/modules/${courseToDelete.id}`);
-            fetchCourses();
-        } catch (error) {
-            toast.error('Error, No se puede eliminar la clase porque existen estudiantes inscritos y notas asociadas. Primero debe desvincular a todos los estudiantes.');
-        }
-    };
-
-    const handleCreate = async (e) => {
-        e.preventDefault();
-        try {
-            const categoryConfig = CATEGORY_INFO[formData.category];
-            const finalName = categoryConfig ? `${categoryConfig.label} (${categoryConfig.ageRange})` : formData.category;
-
-            await api.post('/kids/modules', {
-                ...formData,
-                name: finalName,
-                category: formData.category,
-                professorId: formData.professorId?.id,
-                auxiliarIds: formData.auxiliarId ? [parseInt(formData.auxiliarId?.id)] : []
-            });
-            setShowCreateModal(false);
-            setFormData({ name: '', description: '', professorId: null, auxiliarId: null, startDate: '', endDate: '', category: 'KIDS' });
-            fetchCourses();
-            toast.success('Clase creada exitosamente');
-        } catch (error) {
-            toast.error('Error creating course');
-        }
-    };
-
-    const openEditModal = (e, course) => {
-        e.stopPropagation();
-        setEditingCourse(course);
-        setFormData({
-            name: course.name,
-            description: course.description || '',
-            startDate: course.startDate ? course.startDate.split('T')[0] : '',
-            endDate: course.endDate ? course.endDate.split('T')[0] : '',
-            professorId: course.professor || null,
-            auxiliarId: course.auxiliaries?.[0] || null,
-            category: 'KIDS'
-        });
-        setShowEditModal(true);
-    };
-
-    const handleUpdate = async (e) => {
-        e.preventDefault();
-        try {
-            await api.put(`/kids/modules/${editingCourse.id}`, {
-                ...formData,
-                professorId: formData.professorId?.id,
-                auxiliarIds: formData.auxiliarId ? [parseInt(formData.auxiliarId?.id)] : []
-            });
-            setShowEditModal(false);
-            setEditingCourse(null);
-            fetchCourses();
-        } catch (error) {
-            toast.error('Error updating course');
         }
     };
 
@@ -169,16 +80,6 @@ const KidsCourseManagement = () => {
                             <SquaresFourIcon size={18} />
                         </button>
                     </div>
-                    {hasAnyRole([ROLES.ADMIN]) && (
-                        <Button
-                            onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
-                            variant="primary"
-                            icon={Plus}
-                            className="bg-pink-600 hover:bg-pink-700"
-                        >
-                            Nueva Clase
-                        </Button>
-                    )}
                 </div>
             </div>
 
@@ -204,28 +105,6 @@ const KidsCourseManagement = () => {
                             >
                                 <div className="flex justify-between items-start mb-4">
                                     <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                                    {hasAnyRole([ROLES.ADMIN]) && (
-                                        <div className="flex space-x-2">
-                                            <Button
-                                                onClick={(e) => openEditModal(e, course)}
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                                                title="Editar"
-                                            >
-                                                <Pen size={18} />
-                                            </Button>
-                                            <Button
-                                                onClick={(e) => handleDelete(e, course.id)}
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                title="Eliminar"
-                                            >
-                                                <Trash size={18} />
-                                            </Button>
-                                        </div>
-                                    )}
                                 </div>
                                 <div className="flex gap-2 mb-2">
                                     <span className={`${colors.bg} ${colors.text} text-xs px-2 py-1 rounded-full`}>
@@ -241,6 +120,13 @@ const KidsCourseManagement = () => {
                                     <div className="flex items-center">
                                         <Users size={16} className="mr-2" />
                                         <span>Prof: {course.professor?.fullName || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <Users size={16} className="mr-2" />
+                                        <span>Aux: {course.auxiliaries && course.auxiliaries.length > 0 
+                                            ? course.auxiliaries.map(a => a.fullName).join(', ')
+                                            : 'N/A'
+                                        }</span>
                                     </div>
                                     <div className="flex items-center">
                                         <Calendar size={16} className="mr-2" />
@@ -268,7 +154,13 @@ const KidsCourseManagement = () => {
                                     Profesor
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Auxiliar
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Fecha Inicio
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Fecha Final
                                 </th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Estudiantes
@@ -295,7 +187,6 @@ const KidsCourseManagement = () => {
                                                 <div className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600" onClick={() => setSelectedCourseId(course.id)}>
                                                     {course.name}
                                                 </div>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{course.description}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -304,48 +195,32 @@ const KidsCourseManagement = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {course.professor?.fullName || 'N/A'}
+                                            {course.professor?.fullName || 'Sin asignar'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {course.auxiliaries && course.auxiliaries.length > 0 
+                                                ? course.auxiliaries.map(a => a.fullName).join(', ')
+                                                : 'Sin asignar'
+                                            }
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                                {course._count?.enrollments || 0}
-                                            </span>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {course.endDate ? new Date(course.endDate).toLocaleDateString() : 'Sin fecha'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
+                                            {course._count?.enrollments || 0}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end gap-2">
-                                                <Button
-                                                    onClick={() => setSelectedCourseId(course.id)}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-blue-600 hover:text-blue-800"
-                                                >
-                                                    Ver
-                                                </Button>
-                                                {hasAnyRole([ROLES.ADMIN]) && (
-                                                    <>
-                                                        <Button
-                                                            onClick={(e) => openEditModal(e, course)}
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-amber-600 hover:text-amber-800"
-                                                        >
-                                                            Editar
-                                                        </Button>
-                                                        <Button
-                                                            onClick={(e) => handleDelete(e, course.id)}
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-red-500 hover:text-red-700"
-                                                            icon={Trash}
-                                                        >
-                                                            Eliminar
-                                                        </Button>
-                                                    </>
-                                                )}
-                                            </div>
+                                            <Button
+                                                onClick={() => setSelectedCourseId(course.id)}
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-blue-600 hover:text-blue-800"
+                                            >
+                                                Ver
+                                            </Button>
                                         </td>
                                     </tr>
                                 );
@@ -354,170 +229,6 @@ const KidsCourseManagement = () => {
                     </table>
                 </div>
             )}
-
-            {(showCreateModal || showEditModal) && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 transition-all">
-                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full h-[95vh] overflow-hidden flex flex-col">
-                        <div className="p-8 flex-shrink-0">
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white border-b pb-2">
-                                {showEditModal ? 'Editar Clase' : 'Nueva Clase Kids'}
-                            </h3>
-                        </div>
-
-                        <form onSubmit={showEditModal ? handleUpdate : handleCreate} className="flex-1 flex flex-col overflow-hidden">
-                            <div className="flex-1 overflow-y-auto p-8 space-y-5">
-
-                            {!showEditModal && (
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Categoría</label>
-                                    <select
-                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg dark:text-white border border-gray-200 dark:border-gray-600"
-                                        value={formData.category}
-                                        onChange={e => setFormData({ ...formData, category: e.target.value })}
-                                    >
-                                        {Object.entries(CATEGORY_INFO).map(([key, info]) => (
-                                            <option key={key} value={key}>
-                                                {info.label} ({info.ageRange})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-
-                            {showEditModal && (
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg dark:text-white"
-                                        value={formData.name}
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    />
-                                </div>
-                            )}
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
-                                <textarea
-                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg dark:text-white"
-                                    value={formData.description}
-                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                    rows="2"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
-                                    <input type="date" className="w-full px-4 py-2 rounded-lg border dark:bg-gray-700/50 dark:text-white dark:border-gray-600" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
-                                    <input type="date" className="w-full px-4 py-2 rounded-lg border dark:bg-gray-700/50 dark:text-white dark:border-gray-600" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Profesor</label>
-                                <AsyncSearchSelect
-                                    fetchItems={(term) => {
-                                        const params = { search: term, role: 'LIDER_DOCE' };
-                                        return api.get('/users/search', { params })
-                                            .then(res => res.data);
-                                    }}
-                                    selectedValue={formData.professorId}
-                                    onSelect={(user) => setFormData({ ...formData, professorId: user })}
-                                    placeholder="Seleccionar Profesor..."
-                                    labelKey="fullName"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Auxiliar</label>
-                                <AsyncSearchSelect
-                                    fetchItems={(term) => {
-                                        const params = { search: term, role: 'LIDER_CELULA' };
-                                        return api.get('/users/search', { params })
-                                            .then(res => res.data);
-                                    }}
-                                    selectedValue={formData.auxiliarId}
-                                    onSelect={(user) => setFormData({ ...formData, auxiliarId: user })}
-                                    placeholder="Seleccionar Auxiliar..."
-                                    labelKey="fullName"
-                                />
-                            </div>
-
-                            </div>
-
-                            {/* Submit Buttons - Fixed at bottom outside scroll area */}
-                            <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-                                <div className="p-8 flex justify-end space-x-3">
-                                    <Button type="button" onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} variant="secondary">Cancelar</Button>
-                                    <Button type="submit" className="bg-gradient-to-r from-pink-600 to-purple-600">{showEditModal ? 'Guardar Cambios' : 'Crear Clase'}</Button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            <ConfirmationModal
-                isOpen={showDeleteConfirm}
-                onClose={() => {
-                    setShowDeleteConfirm(false);
-                    setCourseToDelete(null);
-                }}
-                onConfirm={performDelete}
-                title="Eliminar Clase"
-                message="¿Estás seguro de eliminar esta clase?"
-                confirmText="Eliminar Clase"
-                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
-            >
-                {courseToDelete && (
-                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Clase:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{courseToDelete.name}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Categoría:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{CATEGORY_INFO[courseToDelete.category]?.label || courseToDelete.category}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Estudiantes:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{courseToDelete._count?.enrollments || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Profesor:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{courseToDelete.professor?.fullName || 'N/A'}</span>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
-                    <div className="flex items-start gap-3">
-                        <div className="text-red-600 dark:text-red-400 mt-0.5">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
-                                ⚠️ Acción Irreversible
-                            </h4>
-                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
-                                <li>• Se eliminará la clase completamente</li>
-                                <li>• Se perderán todas las inscripciones</li>
-                                <li>• Se perderán todas las notas y asistencia</li>
-                                <li>• No se puede deshacer esta acción</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </ConfirmationModal>
         </div>
     );
 };

@@ -153,7 +153,7 @@ const useUserManagement = () => {
             setFormData({
                 documentType: '', documentNumber: '', fullName: '', birthDate: '',
                 email: '', password: '', role: 'DISCIPULO',
-                sex: 'HOMBRE', phone: '', address: '', city: '', neighborhood: '',
+                sex: '', phone: '', address: '', city: '', neighborhood: '',
                 maritalStatus: '', network: '',
                 pastorIds: [], liderDoceIds: [], liderCelulaIds: [],
                 pastorId: '', liderDoceId: '', liderCelulaId: '',

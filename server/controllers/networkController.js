@@ -81,8 +81,13 @@ const getNetwork = async (req, res) => {
         // Fetch all descendants with their children details
         // We need to fetch 'parents' to link them back to the tree
         // OR we can fetch 'children' on everyone? 
-        // Efficient way: Fetch all involved users (root + descendants).
+        // Efficient way: Fetch all involved users (root + descendants + spouse).
         const allIds = [rootId, ...allDescendantIds];
+        
+        // Include the spouse of the root user if exists
+        if (rootUser.spouseId) {
+            allIds.push(rootUser.spouseId);
+        }
 
         const allUsers = await prisma.user.findMany({
             where: {
@@ -93,7 +98,9 @@ const getNetwork = async (req, res) => {
                     }
                 }
             },
-            include: {
+            select: {
+                id: true,
+                spouseId: true,
                 profile: true,
                 roles: { include: { role: true } },
                 children: { // Get direct children for linkage
@@ -112,7 +119,8 @@ const getNetwork = async (req, res) => {
                         }
                     }
                 },
-                spouse: { include: { profile: true } },
+                spouse: { select: { id: true, profile: { select: { fullName: true } } } },
+                spouseOf: { select: { id: true, profile: { select: { fullName: true } } } },
                 _count: { select: { invitedGuests: true, assignedGuests: true } },
                 invitedGuests: {
                     where: { assignedToId: null }, // Only show under inviter if not assigned to someone else
@@ -159,9 +167,10 @@ const getNetwork = async (req, res) => {
 
             // Check if there is a spouse and if they are in this network
             let spouseNode = null;
-            if (currentUser.spouseId && userMap.has(currentUser.spouseId) && !processedIds.has(currentUser.spouseId)) {
-                spouseNode = userMap.get(currentUser.spouseId);
-                processedIds.add(currentUser.spouseId);
+            const targetSpouseId = currentUser.spouseId || (currentUser.spouseOf ? currentUser.spouseOf.id : null);
+            if (targetSpouseId && userMap.has(targetSpouseId) && !processedIds.has(targetSpouseId)) {
+                spouseNode = userMap.get(targetSpouseId);
+                processedIds.add(targetSpouseId);
             }
 
             // Resolve immediate hierarchy info (parents)
@@ -229,11 +238,21 @@ const getNetwork = async (req, res) => {
                 pastor: leaders.pastores[0] ? { id: leaders.pastores[0].id, fullName: leaders.pastores[0].profile?.fullName } : null,
                 liderDoce: leaders.lideresDoce[0] ? { id: leaders.lideresDoce[0].id, fullName: leaders.lideresDoce[0].profile?.fullName } : null,
                 liderCelula: leaders.lideresCelula[0] ? { id: leaders.lideresCelula[0].id, fullName: leaders.lideresCelula[0].profile?.fullName } : null,
+                partners: spouseNode ? [
+                    { id: currentUser.id, fullName: currentUser.profile?.fullName, roles: currentUser.roles.map(r => r.role.name) },
+                    { id: spouseNode.id, fullName: spouseNode.profile?.fullName, roles: spouseNode.roles.map(r => r.role.name) }
+                ] : [
+                    { id: currentUser.id, fullName: currentUser.profile?.fullName, roles: currentUser.roles.map(r => r.role.name) }
+                ],
                 disciples: discipleNodes
             };
         };
 
         const tree = buildNode(rootId);
+        console.log(`=== NETWORK RESPONSE FOR USER ${rootId} ===`);
+        console.log('Partners count:', tree.partners?.length || 0);
+        console.log('Partners:', tree.partners?.map(p => ({ id: p.id, fullName: p.fullName })) || []);
+        console.log('Full response:', JSON.stringify(tree, null, 2));
         res.json(tree);
 
     } catch (error) {
@@ -400,27 +419,86 @@ const removeUserFromNetwork = async (req, res) => {
  */
 const getPastores = async (req, res) => {
     try {
+        // Get all pastors including their spouse information
         const pastores = await prisma.user.findMany({
             where: {
-                roles: { some: { role: { name: { in: ['PASTOR', 'ADMIN'] } } } }
+                roles: { 
+                    some: { role: { name: 'PASTOR' } },
+                    none: { role: { name: 'ADMIN' } }
+                }
             },
             select: {
                 id: true,
                 email: true,
                 profile: { select: { fullName: true } },
-                roles: { include: { role: true } }
+                roles: { include: { role: true } },
+                spouse: {
+                    select: {
+                        id: true,
+                        profile: { select: { fullName: true } },
+                        roles: { include: { role: true } }
+                    }
+                },
+                spouseOf: {
+                    select: {
+                        id: true,
+                        profile: { select: { fullName: true } },
+                        roles: { include: { role: true } }
+                    }
+                },
+                spouseId: true
             },
             orderBy: { profile: { fullName: 'asc' } }
         });
 
-        const formatted = pastores.map(p => ({
-            id: p.id,
-            fullName: p.profile?.fullName || 'Sin Nombre',
-            email: p.email,
-            roles: p.roles.map(r => r.role.name)
-        }));
+        // Group pastors by couples
+        const processedIds = new Set();
+        const formattedPastores = [];
 
-        res.json(formatted);
+        pastores.forEach(pastor => {
+            if (processedIds.has(pastor.id)) return;
+
+            // Check if spouse is also a pastor
+            const spouse = pastor.spouse || pastor.spouseOf;
+            const spouseIsPastor = spouse && spouse.roles.some(r => r.role.name === 'PASTOR');
+            
+            if (spouseIsPastor) {
+                // This is a pastor couple - create a combined entry
+                // Make sure we process this couple only once by checking if spouse has already been processed
+                if (!processedIds.has(spouse.id)) {
+                    formattedPastores.push({
+                        id: pastor.id, // Use one ID as the primary
+                        fullName: `${pastor.profile?.fullName} & ${spouse.profile?.fullName}`,
+                        email: pastor.email,
+                        roles: ['PASTOR'],
+                        isCouple: true,
+                        spouseId: pastor.spouseId || spouse.id,
+                        partners: [
+                            { id: pastor.id, fullName: pastor.profile?.fullName },
+                            { id: spouse.id, fullName: spouse.profile?.fullName }
+                        ]
+                    });
+                    processedIds.add(pastor.id);
+                    processedIds.add(spouse.id);
+                } else {
+                    // Spouse was already processed, skip this pastor
+                    processedIds.add(pastor.id);
+                }
+            } else {
+                // Single pastor
+                formattedPastores.push({
+                    id: pastor.id,
+                    fullName: pastor.profile?.fullName || 'Sin Nombre',
+                    email: pastor.email,
+                    roles: pastor.roles.map(r => r.role.name),
+                    isCouple: false,
+                    partners: [{ id: pastor.id, fullName: pastor.profile?.fullName }]
+                });
+                processedIds.add(pastor.id);
+            }
+        });
+
+        res.json(formattedPastores);
     } catch (error) {
         console.error('Error fetching Pastores:', error);
         res.status(500).json({ error: 'Error fetching Pastores' });

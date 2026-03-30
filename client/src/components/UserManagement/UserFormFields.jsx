@@ -24,7 +24,7 @@ const UserFormFields = ({
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Tipo de Documento</label>
                 <select
                     className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                    value={formData.documentType}
+                    value={formData.documentType || ''}
                     onChange={e => setFormData({ ...formData, documentType: e.target.value })}
                 >
                     <option value="">Seleccionar...</option>
@@ -76,7 +76,7 @@ const UserFormFields = ({
                     <div className="relative">
                         <input
                             required
-                            type={showPassword ? "text" : "password"}
+                            type={showPassword ? "text" : "Contraseña"}
                             placeholder="Mínimo 8 caracteres"
                             className="w-full p-2 pr-10 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                             value={formData.password}
@@ -159,7 +159,7 @@ const UserFormFields = ({
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
                 <select
                     className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                    value={formData.role}
+                    value={formData.role || ''}
                     onChange={e => setFormData({ ...formData, role: e.target.value, pastorId: '', liderDoceId: '', liderCelulaId: '' })}
                 >
                     {getAssignableRoles && getAssignableRoles().map(r => (
@@ -169,7 +169,8 @@ const UserFormFields = ({
             </div>
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Sexo</label>
-                <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.sex} onChange={e => setFormData({ ...formData, sex: e.target.value })}>
+                <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.sex || ''} onChange={e => setFormData({ ...formData, sex: e.target.value })}>
+                    <option value="">Seleccionar...</option>
                     <option value="HOMBRE">Hombre</option>
                     <option value="MUJER">Mujer</option>
                 </select>
