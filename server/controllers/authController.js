@@ -8,7 +8,7 @@ const prisma = require('../utils/database');
 
 const register = async (req, res) => {
     try {
-        const { email, password, fullName, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
+        const { email, password, fullName, sex, phone, address, city, parentId, liderDoceId, roleInHierarchy, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
 
         const validation = validatePassword(password, { email, fullName });
         if (!validation.isValid) {
@@ -82,15 +82,48 @@ const register = async (req, res) => {
                 }
             });
 
-            // 3. Handle Hierarchy if parent provided
-            if (parentId) {
+            // 3. Handle Hierarchy if parent or liderDoceId provided
+            const reqParentId = parentId || liderDoceId;
+            if (reqParentId) {
+                const parentUserId = parseInt(reqParentId);
+
                 await tx.userHierarchy.create({
                     data: {
-                        parentId: parseInt(parentId),
+                        parentId: parentUserId,
                         childId: newUser.id,
                         role: roleInHierarchy || 'DISCIPULO'
                     }
                 });
+
+                // Check for spouse to assign automatically as well
+                const parentUser = await tx.user.findUnique({
+                    where: { id: parentUserId },
+                    select: { spouseId: true }
+                });
+
+                if (parentUser && parentUser.spouseId) {
+                    await tx.userHierarchy.create({
+                        data: {
+                            parentId: parentUser.spouseId,
+                            childId: newUser.id,
+                            role: roleInHierarchy || 'DISCIPULO'
+                        }
+                    });
+                } else if (parentUser) {
+                    const spouseOfUser = await tx.user.findFirst({
+                        where: { spouseId: parentUserId },
+                        select: { id: true }
+                    });
+                    if (spouseOfUser) {
+                        await tx.userHierarchy.create({
+                            data: {
+                                parentId: spouseOfUser.id,
+                                childId: newUser.id,
+                                role: roleInHierarchy || 'DISCIPULO'
+                            }
+                        });
+                    }
+                }
             }
 
             return tx.user.findUnique({
@@ -241,16 +274,46 @@ const getPublicLeaders = async (req, res) => {
             },
             select: {
                 id: true,
+                spouseId: true,
                 profile: { select: { fullName: true } },
                 roles: { include: { role: { select: { name: true } } } }
             }
         });
 
-        const formattedLeaders = leaders.map(l => ({
-            id: l.id,
-            fullName: l.profile.fullName,
-            roles: l.roles.map(r => r.role.name)
-        }));
+        const formattedLeaders = [];
+        const processedIds = new Set();
+
+        for (const leader of leaders) {
+            if (processedIds.has(leader.id)) continue;
+
+            let displayName = leader.profile.fullName;
+            let partnerId = null;
+
+            if (leader.spouseId) {
+                const spouse = leaders.find(l => l.id === leader.spouseId);
+                if (spouse) {
+                    displayName += ` y ${spouse.profile.fullName}`;
+                    processedIds.add(spouse.id);
+                    partnerId = spouse.id;
+                }
+            } else {
+                const spouseOf = leaders.find(l => l.spouseId === leader.id);
+                if (spouseOf) {
+                    displayName += ` y ${spouseOf.profile.fullName}`;
+                    processedIds.add(spouseOf.id);
+                    partnerId = spouseOf.id;
+                }
+            }
+
+            formattedLeaders.push({
+                id: leader.id,
+                partnerId: partnerId,
+                fullName: displayName,
+                roles: leader.roles.map(r => r.role.name)
+            });
+
+            processedIds.add(leader.id);
+        }
 
         res.json(formattedLeaders);
     } catch (error) {

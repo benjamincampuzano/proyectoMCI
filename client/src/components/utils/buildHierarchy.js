@@ -192,9 +192,8 @@ export function buildCustomHierarchy(network, currentUser) {
       return userNode;
       
     case ROLES.LIDER_DOCE:
-      // Si es LIDER_DOCE, aparecerían su PASTOR -> Mismo Usuario -> Todos sus LIDER_CELULA y DISCIPULOS -> Invitados
+      // Si es LIDER_DOCE, aparecerían su PASTOR -> Mismo Usuario -> Todos sus discípulos (incluyendo LÍDERES DE CÉLULA) -> Invitados
       const pastor = findPastor(userNode, network);
-      const lideresCelula = findLideresCelulaUnderLiderDoce(userNode);
       const disciples = findDisciples(userNode);
       
       // Crear un nodo raíz personalizado
@@ -202,7 +201,6 @@ export function buildCustomHierarchy(network, currentUser) {
         ...userNode,
         disciples: [
           ...(pastor ? [pastor] : []),
-          ...lideresCelula,
           ...disciples
         ]
       };

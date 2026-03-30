@@ -29,26 +29,28 @@ const CATEGORY_MODULE_NUMBERS = {
 
 const createModule = async (req, res) => {
     try {
-        const { name, description, startDate, endDate, professorId, auxiliarIds = [], category = 'KIDS', classCount } = req.body;
+        const { name, description, startDate, endDate, professorIds = [], auxiliarIds = [], category = 'KIDS', classCount } = req.body;
         const moduleNumber = CATEGORY_MODULE_NUMBERS[category] || 101;
 
         const module = await prisma.seminarModule.create({
             data: {
                 name,
                 description,
-                type: 'KIDS',
-                code: `${category}_${Date.now()}`,
-                moduleNumber,
+                code: `${category}_${moduleNumber}`,
+                type: category,
                 ...(classCount && { classCount: parseInt(classCount) }),
                 startDate: startDate ? new Date(startDate) : null,
                 endDate: endDate ? new Date(endDate) : null,
-                professorId: professorId ? parseInt(professorId) : null,
+                professorIds: professorIds.length > 0 ? professorIds.map(id => parseInt(id)) : [],
                 auxiliaries: auxiliarIds.length > 0 ? {
                     connect: auxiliarIds.map(id => ({ id: parseInt(id) }))
+                } : undefined,
+                professors: professorIds.length > 0 ? {
+                    connect: professorIds.map(id => ({ id: parseInt(id) }))
                 } : undefined
             },
             include: {
-                professor: { select: { id: true, profile: { select: { fullName: true } } } },
+                professors: { select: { id: true, profile: { select: { fullName: true } } } },
                 auxiliaries: { select: { id: true, profile: { select: { fullName: true } } } },
                 _count: { select: { enrollments: true } }
             }
@@ -69,7 +71,7 @@ const getModules = async (req, res) => {
                 isDeleted: false
             },
             include: {
-                professor: { select: { id: true, profile: { select: { fullName: true } } } },
+                professors: { select: { id: true, profile: { select: { fullName: true } } } },
                 auxiliaries: { select: { id: true, profile: { select: { fullName: true } } } },
                 _count: { select: { enrollments: true } },
                 kidsSchedules: {
@@ -123,10 +125,11 @@ const getModules = async (req, res) => {
                 professor: lastTeacher ? { 
                     id: lastTeacher.teacherId, 
                     fullName: lastTeacher.teacher?.profile?.fullName 
-                } : m.professor ? { 
-                    id: m.professor.id, 
-                    fullName: m.professor.profile?.fullName 
+                } : m.professors && m.professors.length > 0 ? { 
+                    id: m.professors[0].id, 
+                    fullName: m.professors[0].profile?.fullName 
                 } : null,
+                professors: m.professors ? m.professors.map(p => ({ id: p.id, fullName: p.profile?.fullName })) : [],
                 startDate,
                 endDate,
                 classCount, // Usar el cálculo dinámico en lugar del valor original
@@ -144,7 +147,7 @@ const getModules = async (req, res) => {
 const updateModule = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, startDate, endDate, professorId, auxiliarIds = [], classCount } = req.body;
+        const { name, description, startDate, endDate, professorIds = [], auxiliarIds = [], classCount } = req.body;
 
         const module = await prisma.seminarModule.update({
             where: { id: parseInt(id) },
@@ -154,13 +157,16 @@ const updateModule = async (req, res) => {
                 startDate: startDate ? new Date(startDate) : null,
                 endDate: endDate ? new Date(endDate) : null,
                 classCount: classCount !== undefined ? parseInt(classCount) : undefined,
-                professorId: professorId ? parseInt(professorId) : null,
+                professorIds: professorIds.length > 0 ? professorIds.map(id => parseInt(id)) : [],
                 auxiliaries: {
                     set: auxiliarIds.map(id => ({ id: parseInt(id) }))
+                },
+                professors: {
+                    set: professorIds.map(id => ({ id: parseInt(id) }))
                 }
             },
             include: {
-                professor: { select: { id: true, profile: { select: { fullName: true } } } },
+                professors: { select: { id: true, profile: { select: { fullName: true } } } },
                 auxiliaries: { select: { id: true, profile: { select: { fullName: true } } } }
             }
         });

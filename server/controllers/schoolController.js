@@ -117,7 +117,7 @@ const getModules = async (req, res) => {
             whereClause = {
                 type: 'ESCUELA',
                 OR: [
-                    { professorId: parseInt(user.id) },
+                    { professorIds: { has: parseInt(user.id) } },
                     { auxiliaries: { some: { id: parseInt(user.id) } } },
                     { enrollments: { some: { userId: { in: [...networkUserIds, user.id] } } } }
                 ]
@@ -142,7 +142,7 @@ const getModules = async (req, res) => {
         const modules = await prisma.seminarModule.findMany({
             where: whereClause,
             include: {
-                professor: { select: { id: true, profile: { select: { fullName: true } } } },
+                professors: { select: { id: true, profile: { select: { fullName: true } } } },
                 auxiliaries: { select: { id: true, profile: { select: { fullName: true } } } },
                 _count: { select: { enrollments: true } }
             },
@@ -152,7 +152,14 @@ const getModules = async (req, res) => {
         // Format
         const formattedModules = modules.map(m => ({
             ...m,
-            professor: m.professor ? { ...m.professor, fullName: m.professor.profile?.fullName || 'Sin Asignar' } : null,
+            professor: m.professors && m.professors.length > 0 ? { 
+                id: m.professors[0].id, 
+                fullName: m.professors[0].profile?.fullName || 'Sin Asignar' 
+            } : null,
+            professors: m.professors ? m.professors.map(p => ({ 
+                id: p.id, 
+                fullName: p.profile?.fullName || 'Sin Asignar' 
+            })) : [],
             auxiliaries: m.auxiliaries.map(a => ({ ...a, fullName: a.profile?.fullName || 'Sin Asignar' }))
         }));
 

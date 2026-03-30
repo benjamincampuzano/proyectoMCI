@@ -74,7 +74,9 @@ const oracionDeTresRoutes = require("./routes/oracionDeTresRoutes");
 const legalDocumentRoutes = require("./routes/legalDocumentRoutes");
 const kidsRoutes = require("./routes/kidsRoutes");
 const kidsScheduleRoutes = require("./routes/kidsSchedule");
+const kidsClassPhotosRoutes = require("./routes/kidsClassPhotos");
 const coordinatorRoutes = require("./routes/coordinatorRoutes");
+const artSchoolRoutes = require("./routes/artSchoolRoutes");
 
 /* ✅ API endpoints */
 app.use("/api/auth", authRoutes);
@@ -93,7 +95,9 @@ app.use("/api/oracion-de-tres", oracionDeTresRoutes);
 app.use("/api/legal-documents", legalDocumentRoutes);
 app.use("/api/kids", kidsRoutes);
 app.use("/api/kids-schedule", kidsScheduleRoutes);
+app.use("/api/kids-class-photos", kidsClassPhotosRoutes);
 app.use("/api/coordinators", coordinatorRoutes);
+app.use("/api/arts", artSchoolRoutes);
 
 /* ✅ Healthcheck */
 app.get("/", (req, res) => {

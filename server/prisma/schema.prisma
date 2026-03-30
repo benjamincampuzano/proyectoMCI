@@ -71,7 +71,6 @@ model User {
   guidedEnrollments       SeminarEnrollment[]      @relation("AssignedAuxiliar")
   seminarEnrollments      SeminarEnrollment[]
   guardianEnrollments    SeminarEnrollment[]      @relation("EnrollmentGuardian")
-  professedModules        SeminarModule[]          @relation("ModuleProfessor")
   cell                    Cell?                    @relation("CellMembers", fields: [cellId], references: [id])
   spouse                  User?                    @relation("SpouseRelation", fields: [spouseId], references: [id])
   spouseOf                User?                    @relation("SpouseRelation")
@@ -79,9 +78,15 @@ model User {
   children                UserHierarchy[]          @relation("HierarchyParent")
   profile                 UserProfile?
   roles                   UserRole[]
+  professorModules        SeminarModule[]          @relation("ModuleProfessors")
   auxiliaryModules        SeminarModule[]          @relation("ModuleAuxiliaries")
   kidsSchedulesAsTeacher  KidsSchedule[]           @relation("TeacherSchedule")
   kidsSchedulesAsAuxiliary KidsSchedule[]          @relation("AuxiliarySchedule")
+  uploadedPhotos          KidsClassPhoto[]         @relation("UploadedPhotos")
+  artRoles                ArtSchoolRole[]
+  artClassesTaught        ArtClass[]               @relation("ArtProfessor")
+  artEnrollments          ArtEnrollment[]
+  registeredArtPayments   ArtPayment[]             @relation("UserRegistrar")
 
   @@index([email])
   @@index([createdAt])
@@ -270,13 +275,13 @@ model SeminarModule {
   startDate         DateTime?           @db.Timestamptz(6)
   endDate           DateTime?           @db.Timestamptz(6)
   classCount        Int?
-  professorId       Int?
+  professorIds      Int[]               // Array de coordinadores
   createdAt         DateTime            @default(now()) @db.Timestamptz(6)
   isDeleted         Boolean             @default(false)
   updatedAt         DateTime            @updatedAt @db.Timestamptz(6)
   materials         ClassMaterial[]
   enrollments       SeminarEnrollment[]
-  professor         User?               @relation("ModuleProfessor", fields: [professorId], references: [id])
+  professors        User[]              @relation("ModuleProfessors")
   auxiliaries       User[]              @relation("ModuleAuxiliaries")
   kidsSchedules     KidsSchedule[]
 }
@@ -768,4 +773,95 @@ model KidsSchedule {
 
   @@index([moduleId])
   @@index([date])
+}
+
+model KidsClassPhoto {
+  id           Int      @id @default(autoincrement())
+  url          String
+  description  String?  @db.Text
+  uploadedBy   Int
+  uploadDate   DateTime @default(now()) @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+
+  uploader     User     @relation("UploadedPhotos", fields: [uploadedBy], references: [id])
+
+  @@index([uploadedBy])
+  @@index([uploadDate])
+}
+
+enum ArtRole {
+  COORDINADOR
+  TESORERO
+  PROFESOR
+  ESTUDIANTE
+}
+
+model ArtSchoolRole {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  role      ArtRole
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([role])
+}
+
+model ArtClass {
+  id          Int             @id @default(autoincrement())
+  name        String
+  description String?
+  cost        Float           @default(0)
+  startDate   DateTime?       @db.Timestamptz(6)
+  endDate     DateTime?       @db.Timestamptz(6)
+  professorId Int?
+  isDeleted   Boolean         @default(false)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
+  professor   User?           @relation("ArtProfessor", fields: [professorId], references: [id])
+  enrollments ArtEnrollment[]
+}
+
+model ArtEnrollment {
+  id          Int             @id @default(autoincrement())
+  userId      Int
+  classId     Int
+  status      EnrollmentStatus @default(INSCRITO)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  artClass    ArtClass        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  attendances ArtAttendance[]
+  payments    ArtPayment[]
+
+  @@unique([userId, classId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ArtAttendance {
+  id           Int           @id @default(autoincrement())
+  enrollmentId Int
+  classNumber  Int
+  attended     Boolean       @default(false)
+  date         DateTime      @default(now()) @db.Timestamptz(6)
+  createdAt    DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(6)
+  enrollment   ArtEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, classNumber])
+}
+
+model ArtPayment {
+  id             Int           @id @default(autoincrement())
+  enrollmentId   Int
+  amount         Float
+  date           DateTime      @default(now()) @db.Timestamptz(6)
+  notes          String?
+  registeredById Int?
+  createdAt      DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(6)
+  enrollment     ArtEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  registeredBy   User?         @relation("UserRegistrar", fields: [registeredById], references: [id])
 }

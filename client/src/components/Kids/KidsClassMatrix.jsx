@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningCircle } from '@phosphor-icons/react';
-import { AsyncSearchSelect, Button } from '../ui';
+import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningCircle, Camera, Upload } from '@phosphor-icons/react';
+import { AsyncSearchSelect, Button, Input } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
+import { useAuth } from '../../context/AuthContext';
+import { ROLE_GROUPS } from '../../constants/roles';
 
 const CATEGORY_INFO = {
     'KIDS': { label: 'Kids', minAge: 5, maxAge: 7 },
@@ -25,6 +27,7 @@ const calculateAge = (birthDate) => {
 };
 
 const KidsClassMatrix = ({ courseId }) => {
+    const { hasAnyRole } = useAuth();
     const [matrix, setMatrix] = useState([]);
     const [courseInfo, setCourseInfo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -39,6 +42,46 @@ const KidsClassMatrix = ({ courseId }) => {
     const [showUnenrollConfirm, setShowUnenrollConfirm] = useState(false);
     const [enrollmentToUnenroll, setEnrollmentToUnenroll] = useState(null);
 
+    // Photo Modal State
+    const [showPhotoModal, setShowPhotoModal] = useState(false);
+    const [selectedClass, setSelectedClass] = useState(null);
+    const [photoUrl, setPhotoUrl] = useState('');
+    const [photoDescription, setPhotoDescription] = useState('');
+    const [uploading, setUploading] = useState(false);
+
+    // Check permissions based on module assignment (local roles)
+    const currentUserId = useMemo(() => JSON.parse(localStorage.getItem('user'))?.id, []);
+    
+    const isModuleProfessor = useMemo(() => {
+        if (!courseInfo) return false;
+        return courseInfo.professors?.some(p => p.id === currentUserId) || false;
+    }, [courseInfo, currentUserId]);
+
+    const isModuleAuxiliary = useMemo(() => {
+        if (!courseInfo) return false;
+        return courseInfo.auxiliaries?.some(a => a.id === currentUserId) || false;
+    }, [courseInfo, currentUserId]);
+
+    const canUploadEvidence = useMemo(() => 
+        isModuleProfessor, // Solo profesores del módulo pueden subir evidencias
+        [isModuleProfessor]
+    );
+
+    const canEditAttendance = useMemo(() => 
+        isModuleProfessor || isModuleAuxiliary, // Profesores y auxiliares del módulo pueden editar asistencia
+        [isModuleProfessor, isModuleAuxiliary]
+    );
+
+    const canEnrollStudents = useMemo(() => 
+        isModuleProfessor || isModuleAuxiliary, // Profesores y auxiliares del módulo pueden inscribir estudiantes
+        [isModuleProfessor, isModuleAuxiliary]
+    );
+
+    const canDeleteStudents = useMemo(() => 
+        isModuleProfessor, // Solo profesores del módulo pueden eliminar estudiantes
+        [isModuleProfessor]
+    );
+
     useEffect(() => {
         fetchMatrix();
         fetchCourseInfo();
@@ -50,7 +93,7 @@ const KidsClassMatrix = ({ courseId }) => {
             const course = res.data.find(c => c.id === courseId);
             setCourseInfo(course);
         } catch (error) {
-            console.error('Error fetching course info:', error);
+            // Error fetching course info
         }
     };
 
@@ -63,7 +106,7 @@ const KidsClassMatrix = ({ courseId }) => {
                 setCourseInfo(res.data.module);
             }
         } catch (error) {
-            console.error('Error fetching matrix:', error);
+            // Error fetching matrix
         } finally {
             setLoading(false);
         }
@@ -157,6 +200,46 @@ const KidsClassMatrix = ({ courseId }) => {
         return (grades.reduce((sum, g) => sum + g, 0) / grades.length).toFixed(1);
     };
 
+    // Photo Modal Functions
+    const openPhotoModal = (classInfo) => {
+        setSelectedClass(classInfo);
+        setShowPhotoModal(true);
+    };
+
+    const closePhotoModal = () => {
+        setShowPhotoModal(false);
+        setSelectedClass(null);
+        setPhotoUrl('');
+        setPhotoDescription('');
+    };
+
+    const handlePhotoUpload = async () => {
+        if (!photoUrl.trim()) {
+            toast.error('Por favor ingresa la URL de la imagen');
+            return;
+        }
+
+        try {
+            setUploading(true);
+            const photoData = {
+                url: photoUrl.trim(),
+                description: `Clase ${selectedClass.classNumber}: ${photoDescription.trim()}`,
+                uploadedBy: JSON.parse(localStorage.getItem('user')).id,
+                uploadDate: new Date().toISOString()
+            };
+
+            await api.post('/kids-class-photos', photoData);
+            
+            toast.success('Evidencia de clase guardada exitosamente');
+            closePhotoModal();
+        } catch (error) {
+            // Error uploading photo
+            toast.error('Error al guardar la evidencia de clase');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     if (loading) {
         return <div className="text-center py-10">Cargando matriz...</div>;
     }
@@ -165,14 +248,16 @@ const KidsClassMatrix = ({ courseId }) => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Matriz de Clases</h2>
-                <Button
-                    onClick={() => setShowEnrollModal(true)}
-                    variant="primary"
-                    icon={UserPlus}
-                    className="bg-pink-600 hover:bg-pink-700"
-                >
-                    Inscribir Estudiante
-                </Button>
+                {canEnrollStudents && (
+                    <Button
+                        onClick={() => setShowEnrollModal(true)}
+                        variant="primary"
+                        icon={UserPlus}
+                        className="bg-pink-600 hover:bg-pink-700"
+                    >
+                        Inscribir Estudiante
+                    </Button>
+                )}
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
@@ -183,7 +268,20 @@ const KidsClassMatrix = ({ courseId }) => {
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acudiente</th>
                             {courseInfo?.classCount ? Array.from({ length: courseInfo.classCount }, (_, i) => (
                                 <th key={i} className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
-                                    C{i + 1}
+                                    <div className="space-y-1">
+                                        <div>C{i + 1}</div>
+                                        {canUploadEvidence && (
+                                            <Button
+                                                onClick={() => openPhotoModal({ classNumber: i + 1 })}
+                                                variant="secondary"
+                                                size="xs"
+                                                className="inline-flex items-center gap-1 text-xs"
+                                            >
+                                                <Camera size={12} />
+                                                Evidencia
+                                            </Button>
+                                        )}
+                                    </div>
                                 </th>
                             )) : (
                                 <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
@@ -206,22 +304,36 @@ const KidsClassMatrix = ({ courseId }) => {
                                     const attendance = row.classAttendances?.find(a => a.classNumber === i + 1);
                                     return (
                                         <td key={i} className="px-1 py-2 text-center">
-                                            <select
-                                                value={attendance?.status || 'SIN_CLASE'}
-                                                onChange={(e) => handleCellUpdate(row.enrollmentId, i + 1, 'status', e.target.value)}
-                                                className={`text-xs px-1 py-1 rounded border-0 cursor-pointer ${attendance?.status === 'ASISTE' ? 'bg-green-100 text-green-800' :
+                                            {canEditAttendance ? (
+                                                <select
+                                                    value={attendance?.status || 'SIN_CLASE'}
+                                                    onChange={(e) => handleCellUpdate(row.enrollmentId, i + 1, 'status', e.target.value)}
+                                                    className={`text-xs px-1 py-1 rounded border-0 cursor-pointer ${attendance?.status === 'ASISTE' ? 'bg-green-100 text-green-800' :
+                                                            attendance?.status === 'AUSENCIA_JUSTIFICADA' ? 'bg-yellow-100 text-yellow-800' :
+                                                                attendance?.status === 'AUSENCIA_NO_JUSTIFICADA' ? 'bg-red-100 text-red-800' :
+                                                                    attendance?.status === 'SIN_CLASE' ? 'bg-gray-200 text-gray-600' :
+                                                                        'bg-gray-100 text-gray-800'
+                                                        }`}
+                                                >
+                                                    <option value="SIN_CLASE">-</option>
+                                                    <option value="ASISTE">A</option>
+                                                    <option value="AUSENCIA_JUSTIFICADA">AJ</option>
+                                                    <option value="AUSENCIA_NO_JUSTIFICADA">ANJ</option>
+                                                    <option value="BAJA">BJ</option>
+                                                </select>
+                                            ) : (
+                                                <div className={`text-xs px-1 py-1 rounded border-0 ${attendance?.status === 'ASISTE' ? 'bg-green-100 text-green-800' :
                                                         attendance?.status === 'AUSENCIA_JUSTIFICADA' ? 'bg-yellow-100 text-yellow-800' :
                                                             attendance?.status === 'AUSENCIA_NO_JUSTIFICADA' ? 'bg-red-100 text-red-800' :
                                                                 attendance?.status === 'SIN_CLASE' ? 'bg-gray-200 text-gray-600' :
                                                                     'bg-gray-100 text-gray-800'
-                                                    }`}
-                                            >
-                                                <option value="SIN_CLASE">-</option>
-                                                <option value="ASISTE">A</option>
-                                                <option value="AUSENCIA_JUSTIFICADA">AJ</option>
-                                                <option value="AUSENCIA_NO_JUSTIFICADA">ANJ</option>
-                                                <option value="BAJA">BJ</option>
-                                            </select>
+                                                    }`}>
+                                                    {attendance?.status === 'ASISTE' ? 'A' :
+                                                        attendance?.status === 'AUSENCIA_JUSTIFICADA' ? 'AJ' :
+                                                            attendance?.status === 'AUSENCIA_NO_JUSTIFICADA' ? 'ANJ' :
+                                                                attendance?.status === 'BAJA' ? 'BJ' : '-'}
+                                                </div>
+                                            )}
                                         </td>
                                     );
                                 }) : (
@@ -241,14 +353,16 @@ const KidsClassMatrix = ({ courseId }) => {
                                     {calculateFinalGrade(row.classAttendances) || '-'}
                                 </td>
                                 <td className="px-4 py-3 text-center">
-                                    <Button
-                                        onClick={() => handleUnenroll(row.enrollmentId)}
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-red-500 hover:text-red-700"
-                                    >
-                                        <Trash size={16} />
-                                    </Button>
+                                    {canDeleteStudents && (
+                                        <Button
+                                            onClick={() => handleUnenroll(row.enrollmentId)}
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-red-500 hover:text-red-700"
+                                        >
+                                            <Trash size={16} />
+                                        </Button>
+                                    )}
                                 </td>
                             </tr>
                         ))}
@@ -418,6 +532,92 @@ const KidsClassMatrix = ({ courseId }) => {
                     </div>
                 </div>
             </ConfirmationModal>
+
+            {/* Photo Modal */}
+            {showPhotoModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Subir Evidencia de Clase
+                            </h3>
+                            <Button onClick={closePhotoModal} variant="ghost" size="icon">
+                                <X size={20} />
+                            </Button>
+                        </div>
+
+                        {selectedClass && (
+                            <div className="mb-4 p-3 rounded-lg border bg-blue-50 dark:bg-blue-900/20">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    <span className="font-medium">Clase:</span> {selectedClass.classNumber}
+                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    <span className="font-medium">Módulo:</span> {courseInfo?.name || 'Kids'}
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    URL de la Imagen (Google Drive)
+                                </label>
+                                <Input
+                                    type="url"
+                                    placeholder="https://drive.google.com/..."
+                                    value={photoUrl}
+                                    onChange={(e) => setPhotoUrl(e.target.value)}
+                                    className="w-full"
+                                />
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Pega el enlace público de la imagen en Google Drive
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Descripción de la Evidencia
+                                </label>
+                                <textarea
+                                    placeholder="Describe la actividad, fecha, tema de la clase..."
+                                    value={photoDescription}
+                                    onChange={(e) => setPhotoDescription(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-100"
+                                    rows="3"
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <Button
+                                    onClick={handlePhotoUpload}
+                                    disabled={uploading || !photoUrl.trim()}
+                                    className="flex-1"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Guardando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload size={16} className="mr-2" />
+                                            Guardar Evidencia
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    onClick={closePhotoModal}
+                                    variant="secondary"
+                                    disabled={uploading}
+                                    className="flex-1"
+                                >
+                                    Cancelar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

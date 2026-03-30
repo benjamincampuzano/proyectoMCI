@@ -1,21 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const kidsScheduleController = require('../controllers/kidsScheduleController');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
+const { 
+    authorizeKidsScheduleAccess, 
+    authorizeKidsScheduleModification,
+    authorizeScheduleModification 
+} = require('../middleware/kidsScheduleAuth');
 
 // Protect all routes with authentication
 router.use(authenticate);
 
 // Get schedules for a specific course/module
-router.get('/module/:moduleId', authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']), kidsScheduleController.getSchedulesByModule);
+// Visible para: ADMIN, PASTOR, Coordinador del módulo, Profesores y Auxiliares asignados
+router.get('/module/:moduleId', authorizeKidsScheduleAccess, kidsScheduleController.getSchedulesByModule);
 
-// Create a new schedule (Admin/Coordinator)
-router.post('/module/:moduleId', kidsScheduleController.createSchedule);
+// Create a new schedule
+// Solo para: ADMIN, PASTOR, Coordinador del módulo
+router.post('/module/:moduleId', authorizeKidsScheduleModification, kidsScheduleController.createSchedule);
 
-// Update a schedule (Admin/Coordinator)
-router.put('/:id', kidsScheduleController.updateSchedule);
+// Update a schedule
+// Solo para: ADMIN, PASTOR, Coordinador del módulo
+router.put('/:id', authorizeScheduleModification, kidsScheduleController.updateSchedule);
 
-// Delete a schedule (Admin/Coordinator)
-router.delete('/:id', kidsScheduleController.deleteSchedule);
+// Delete a schedule
+// Solo para: ADMIN, PASTOR, Coordinador del módulo
+router.delete('/:id', authorizeScheduleModification, kidsScheduleController.deleteSchedule);
 
 module.exports = router;

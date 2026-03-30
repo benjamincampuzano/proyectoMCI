@@ -25,6 +25,7 @@ const NetworkAssignment = lazy(() => import('./components/NetworkAssignment'));
 const Convenciones = lazy(() => import('./pages/Convenciones'));
 const Encuentros = lazy(() => import('./pages/Encuentros'));
 const KidsModule = lazy(() => import('./pages/KidsModule'));
+const EscuelaDeArtes = lazy(() => import('./pages/EscuelaDeArtes'));
 const AuditDashboard = lazy(() => import('./pages/AuditDashboard'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const SetupWizard = lazy(() => import('./pages/SetupWizard'));
@@ -152,6 +153,7 @@ function App() {
                   <Route path="enviar" element={<Enviar />} />
                   <Route path="encuentros" element={<Encuentros />} />
                   <Route path="kids" element={<KidsModule />} />
+                  <Route path="escuela-de-artes" element={<EscuelaDeArtes />} />
                   <Route path="convenciones" element={<Convenciones />} />
                   <Route path="network" element={<NetworkAssignment />} />
                   <Route path="usuarios" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />

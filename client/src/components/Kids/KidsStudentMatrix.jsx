@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { MagnifyingGlass, CheckCircle, XCircle, Clock } from '@phosphor-icons/react';
+import { MagnifyingGlass, Camera, X, Upload, Link } from '@phosphor-icons/react';
 import { Button, Input, AsyncSearchSelect } from '../ui';
 
 const KIDS_LEVELS = [
@@ -22,6 +22,10 @@ const KidsStudentMatrix = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showPhotoModal, setShowPhotoModal] = useState(false);
+    const [photoUrl, setPhotoUrl] = useState('');
+    const [photoDescription, setPhotoDescription] = useState('');
+    const [uploading, setUploading] = useState(false);
 
     // Función para calcular edad
     const calculateAge = (birthDate) => {
@@ -147,6 +151,47 @@ const KidsStudentMatrix = () => {
         return `${average.toFixed(1)}%`;
     };
 
+    const handlePhotoUpload = async () => {
+        if (!photoUrl.trim()) {
+            alert('Por favor ingresa la URL de la imagen');
+            return;
+        }
+
+        try {
+            setUploading(true);
+            const photoData = {
+                url: photoUrl.trim(),
+                description: photoDescription.trim(),
+                uploadedBy: user.id,
+                uploadDate: new Date().toISOString()
+            };
+
+            await api.post('/kids-class-photos', photoData);
+            
+            // Resetear el modal
+            setPhotoUrl('');
+            setPhotoDescription('');
+            setShowPhotoModal(false);
+            
+            alert('Evidencia de clase guardada exitosamente');
+        } catch (error) {
+            console.error('Error uploading photo:', error);
+            alert('Error al guardar la evidencia de clase');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const openPhotoModal = () => {
+        setShowPhotoModal(true);
+    };
+
+    const closePhotoModal = () => {
+        setShowPhotoModal(false);
+        setPhotoUrl('');
+        setPhotoDescription('');
+    };
+
     const filteredStudents = students.filter(student => {
         const matchesSearch = student.fullName.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
@@ -166,10 +211,18 @@ const KidsStudentMatrix = () => {
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
                     Matriz de Seguimiento Kids
                 </h2>
+                <Button
+                    onClick={openPhotoModal}
+                    variant="primary"
+                    className="inline-flex items-center gap-2"
+                >
+                    <Camera size={20} />
+                    Subir Evidencia de Clase
+                </Button>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-4">
-                // Ya no se necesitan filtros de líder ni nivel
+                
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -252,6 +305,86 @@ const KidsStudentMatrix = () => {
                     </div>
                 )}
             </div>
+
+            {/* Modal para subir evidencias de clase */}
+            {showPhotoModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                Subir Evidencia de Clase
+                            </h3>
+                            <Button
+                                onClick={closePhotoModal}
+                                variant="ghost"
+                                size="sm"
+                                className="p-1"
+                            >
+                                <X size={20} />
+                            </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    URL de la Imagen (Google Drive)
+                                </label>
+                                <Input
+                                    type="url"
+                                    placeholder="https://drive.google.com/..."
+                                    value={photoUrl}
+                                    onChange={(e) => setPhotoUrl(e.target.value)}
+                                    className="w-full"
+                                />
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Pega el enlace público de la imagen en Google Drive
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Descripción de la Evidencia
+                                </label>
+                                <textarea
+                                    placeholder="Describe la actividad, fecha, tema de la clase..."
+                                    value={photoDescription}
+                                    onChange={(e) => setPhotoDescription(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-100"
+                                    rows="3"
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <Button
+                                    onClick={handlePhotoUpload}
+                                    disabled={uploading || !photoUrl.trim()}
+                                    className="flex-1"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Guardando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload size={16} className="mr-2" />
+                                            Guardar Evidencia
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    onClick={closePhotoModal}
+                                    variant="secondary"
+                                    disabled={uploading}
+                                    className="flex-1"
+                                >
+                                    Cancelar
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
