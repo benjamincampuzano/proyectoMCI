@@ -43,8 +43,8 @@ exports.createSchedule = async (req, res) => {
                 observations
             },
             include: {
-                teacher: { select: { profile: { select: { fullName: true } } } },
-                auxiliary: { select: { profile: { select: { fullName: true } } } }
+                teacher: { select: { id: true, profile: { select: { fullName: true } } } },
+                auxiliary: { select: { id: true, profile: { select: { fullName: true } } } }
             }
         });
 
@@ -87,8 +87,8 @@ exports.updateSchedule = async (req, res) => {
                 observations
             },
             include: {
-                teacher: { select: { profile: { select: { fullName: true } } } },
-                auxiliary: { select: { profile: { select: { fullName: true } } } }
+                teacher: { select: { id: true, profile: { select: { fullName: true } } } },
+                auxiliary: { select: { id: true, profile: { select: { fullName: true } } } }
             }
         });
 

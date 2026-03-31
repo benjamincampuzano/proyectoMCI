@@ -38,8 +38,8 @@ const KidsStats = () => {
         <div className="space-y-8 animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Reporte Estadístico Kids</h2>
-                    <p className="text-gray-500 dark:text-gray-400">Participación de estudiantes Kids en células y clases</p>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Reporte Estadístico de Clases</h2>
+                    <p className="text-gray-500 dark:text-gray-400">Participación de estudiantes en células y clases (Kids, Teens, Rocas, Jóvenes)</p>
                 </div>
             </div>
 
@@ -49,7 +49,7 @@ const KidsStats = () => {
                         <div className="p-2 bg-pink-100 dark:bg-pink-800 rounded-lg text-pink-600 dark:text-pink-300">
                             <Users size={20} />
                         </div>
-                        <span className="text-sm font-bold text-pink-800 dark:text-pink-200 uppercase tracking-tight">Total Kids</span>
+                        <span className="text-sm font-bold text-pink-800 dark:text-pink-200 uppercase tracking-tight">Total Estudiantes</span>
                     </div>
                     <div className="flex flex-col">
                         <span className="text-3xl font-extrabold text-pink-900 dark:text-white">{totalStudents}</span>
@@ -141,7 +141,7 @@ const KidsStats = () => {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Líder 12</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Líder</th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Estudiantes</th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estudiantes en Células</th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">% en Células</th>

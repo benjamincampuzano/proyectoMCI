@@ -454,7 +454,11 @@ const getStudentMatrix = async (req, res) => {
                 isDeleted: false,
                 seminarEnrollments: {
                     some: {
-                        module: { type: 'KIDS' }
+                        module: { 
+                            type: {
+                                in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                            }
+                        }
                     }
                 }
             },
@@ -493,7 +497,11 @@ const getStudentMatrix = async (req, res) => {
                 },
                 seminarEnrollments: {
                     where: {
-                        module: { type: 'KIDS' }
+                        module: { 
+                            type: {
+                                in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                            }
+                        }
                     },
                     include: {
                         module: { select: { moduleNumber: true, name: true, code: true } },
@@ -670,7 +678,11 @@ const getKidsStatsByLeader = async (req, res) => {
                         child: {
                             seminarEnrollments: {
                                 some: {
-                                    module: { type: 'KIDS' }
+                                    module: { 
+                                        type: {
+                                            in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                                        }
+                                    }
                                 }
                             },
                             isDeleted: false
@@ -683,7 +695,13 @@ const getKidsStatsByLeader = async (req, res) => {
                             select: {
                                 id: true,
                                 seminarEnrollments: {
-                                    where: { module: { type: 'KIDS' } },
+                                    where: { 
+                                        module: { 
+                                            type: {
+                                                in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                                            }
+                                        }
+                                    },
                                     include: { classAttendances: true }
                                 }
                             }
@@ -792,7 +810,9 @@ const checkKidsAccess = async (req, res) => {
                             seminarEnrollments: {
                                 some: {
                                     module: {
-                                        type: 'KIDS'
+                                        type: {
+                                            in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                                        }
                                     }
                                 }
                             }
@@ -808,7 +828,9 @@ const checkKidsAccess = async (req, res) => {
                                 seminarEnrollments: {
                                     where: {
                                         module: {
-                                            type: 'KIDS'
+                                            type: {
+                                                in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                                            }
                                         }
                                     },
                                     include: {
