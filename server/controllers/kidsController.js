@@ -30,13 +30,32 @@ const CATEGORY_MODULE_NUMBERS = {
 const createModule = async (req, res) => {
     try {
         const { name, description, startDate, endDate, professorIds = [], auxiliarIds = [], category = 'KIDS', classCount } = req.body;
-        const moduleNumber = CATEGORY_MODULE_NUMBERS[category] || 101;
+        const baseModuleNumber = CATEGORY_MODULE_NUMBERS[category] || 101;
+
+        // Generate unique code by checking existing modules
+        let moduleNumber = baseModuleNumber;
+        let code = `${category}_${moduleNumber}`;
+        
+        // Find the next available module number
+        while (true) {
+            const existingModule = await prisma.seminarModule.findFirst({
+                where: { code },
+                select: { id: true }
+            });
+            
+            if (!existingModule) {
+                break; // Found an available code
+            }
+            
+            moduleNumber++; // Try next number
+            code = `${category}_${moduleNumber}`;
+        }
 
         const module = await prisma.seminarModule.create({
             data: {
                 name,
                 description,
-                code: `${category}_${moduleNumber}`,
+                code,
                 type: category,
                 ...(classCount && { classCount: parseInt(classCount) }),
                 startDate: startDate ? new Date(startDate) : null,
@@ -67,7 +86,9 @@ const getModules = async (req, res) => {
     try {
         const modules = await prisma.seminarModule.findMany({
             where: {
-                type: 'KIDS',
+                type: {
+                    in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                },
                 isDeleted: false
             },
             include: {

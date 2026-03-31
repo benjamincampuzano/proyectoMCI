@@ -266,12 +266,12 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Despliega un curso para ver su cronograma</p>
                     </div>
                 </div>
-                {hasAnyRole([ROLES.ADMIN]) && (
+                {hasAnyRole(['ADMIN', 'PASTOR','LIDER_DOCE']) && (
                     <Button
                         onClick={() => setShowCreateCourseModal(true)}
                         variant="primary"
                         icon={Plus}
-                        className="bg-pink-600 hover:bg-pink-700"
+                        className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
                     >
                         Nueva Clase
                     </Button>
@@ -522,7 +522,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                     <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-md w-full overflow-hidden flex flex-col">
                         <div className="p-6 flex-shrink-0">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white border-b pb-2">
-                                Nueva Clase Kids
+                                Nueva Clase - {CATEGORY_INFO[courseFormData.category]?.label || courseFormData.category}
                             </h3>
                         </div>
 
