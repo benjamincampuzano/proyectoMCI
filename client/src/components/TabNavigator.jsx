@@ -11,6 +11,12 @@ const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange =
 
   // Filter tabs based on user roles
   const allowedTabs = tabs.filter(tab => {
+    // If tab has customCheck function, use it
+    if (tab.customCheck && typeof tab.customCheck === 'function') {
+      return tab.customCheck();
+    }
+    
+    // Otherwise, use role-based checking
     if (!tab.roles || tab.roles.length === 0) return true;
     // Check if user has required roles OR if tab allows coordinators
     const hasRoleAccess = hasAnyRole(tab.roles);

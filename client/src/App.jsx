@@ -9,6 +9,7 @@ import ConnectivityHandler from './components/ConnectivityHandler';
 import LoadingOverlay from './components/LoadingOverlay';
 import TransitionLoader from './components/TransitionLoader';
 import ChangePasswordModal from './components/ChangePasswordModal';
+import api from './utils/api';
 // import MobileDebugger from './components/MobileDebugger';
 import './utils/logger'; // Import logger to disable console logs in production
 import mobileDebug from './utils/mobileDebug'; // Import mobile debugging
@@ -68,6 +69,104 @@ const UserManagementRoute = ({ children }) => {
   const roles = user?.roles || [];
   const authorized = roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
   return user && authorized ? children : <Navigate to="/" />;
+};
+
+const KidsModuleRoute = ({ children }) => {
+  const { user, loading, isAdmin } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  
+  // Check if user is ADMIN (always has access)
+  if (isAdmin()) {
+    return children;
+  }
+  
+  // For non-admin users, we need to check if they have relationship with KIDS module
+  // This will be checked asynchronously
+  const [hasKidsAccess, setHasKidsAccess] = useState(null);
+  
+  useEffect(() => {
+    const checkKidsAccess = async () => {
+      try {
+        // Check if user is coordinator of KIDS module
+        const coordinatorRes = await api.get('/coordinators/module/kids');
+        if (coordinatorRes.data && coordinatorRes.data.id === user.id) {
+          setHasKidsAccess(true);
+          return;
+        }
+        
+        // Check if user has students enrolled in KIDS
+        const studentsRes = await api.get('/kids/students/check-access');
+        if (studentsRes.data.hasAccess) {
+          setHasKidsAccess(true);
+          return;
+        }
+        
+        setHasKidsAccess(false);
+      } catch (error) {
+        console.error('Error checking KIDS access:', error);
+        setHasKidsAccess(false);
+      }
+    };
+    
+    if (user) {
+      checkKidsAccess();
+    }
+  }, [user]);
+  
+  if (hasKidsAccess === null) {
+    return <div>Loading...</div>;
+  }
+  
+  return user && hasKidsAccess ? children : <Navigate to="/" />;
+};
+
+const LegalDocumentsRoute = ({ children }) => {
+  const { user, loading, isAdmin } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  
+  // Check if user is ADMIN (always has access)
+  if (isAdmin()) {
+    return children;
+  }
+  
+  // For non-admin users, we need to check if they have relationship with KIDS module
+  // This will be checked asynchronously
+  const [hasKidsAccess, setHasKidsAccess] = useState(null);
+  
+  useEffect(() => {
+    const checkKidsAccess = async () => {
+      try {
+        // Check if user is coordinator of KIDS module
+        const coordinatorRes = await api.get('/coordinators/module/kids');
+        if (coordinatorRes.data && coordinatorRes.data.id === user.id) {
+          setHasKidsAccess(true);
+          return;
+        }
+        
+        // Check if user has students enrolled in KIDS
+        const studentsRes = await api.get('/kids/students/check-access');
+        if (studentsRes.data.hasAccess) {
+          setHasKidsAccess(true);
+          return;
+        }
+        
+        setHasKidsAccess(false);
+      } catch (error) {
+        console.error('Error checking Legal Documents access:', error);
+        setHasKidsAccess(false);
+      }
+    };
+    
+    if (user) {
+      checkKidsAccess();
+    }
+  }, [user]);
+  
+  if (hasKidsAccess === null) {
+    return <div>Loading...</div>;
+  }
+  
+  return user && hasKidsAccess ? children : <Navigate to="/" />;
 };
 
 const PageLoader = () => (
@@ -152,13 +251,13 @@ function App() {
                   <Route path="discipular" element={<Discipular />} />
                   <Route path="enviar" element={<Enviar />} />
                   <Route path="encuentros" element={<Encuentros />} />
-                  <Route path="kids" element={<KidsModule />} />
+                  <Route path="kids" element={<KidsModuleRoute><KidsModule /></KidsModuleRoute>} />
                   <Route path="escuela-de-artes" element={<EscuelaDeArtes />} />
                   <Route path="convenciones" element={<Convenciones />} />
                   <Route path="network" element={<NetworkAssignment />} />
                   <Route path="usuarios" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
                   <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
-                  <Route path="documentos-legales" element={<LegalDocuments />} />
+                  <Route path="documentos-legales" element={<LegalDocumentsRoute><LegalDocuments /></LegalDocumentsRoute>} />
                 </Route>
               </Routes>
             </Suspense>

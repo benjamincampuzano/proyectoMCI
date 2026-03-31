@@ -182,74 +182,50 @@ const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        console.log('🔑 Login attempt:', {
-            email,
-            passwordLength: password?.length,
-            passwordPreview: password ? password.substring(0, 3) + '...' : 'null'
-        });
-
-        const user = await prisma.user.findUnique({
-            where: { email },
+        const user = await prisma.user.findFirst({
+            where: {
+                email,
+                isActive: true,
+                isDeleted: false
+            },
             include: {
                 profile: true,
-                roles: { include: { role: true } },
-                moduleCoordinations: true
+                roles: {
+                    include: {
+                        role: true
+                    }
+                }
             }
         });
 
         if (!user) {
-            console.log('❌ User not found:', email);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
-
-        console.log('👤 User found:', {
-            id: user.id,
-            email: user.email,
-            fullName: user.profile?.fullName,
-            mustChangePassword: user.mustChangePassword,
-            hasPassword: !!user.password,
-            passwordHashLength: user.password?.length
-        });
 
         const isMatch = await bcrypt.compare(password, user.password);
 
-        console.log('🔐 Password comparison result:', {
-            inputPassword: password,
-            isMatch,
-            storedHashPrefix: user.password.substring(0, 10) + '...'
-        });
-
         if (!isMatch) {
-            console.log('❌ Password mismatch for user:', email);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const roles = user.roles.map(r => r.role.name);
-        const token = jwt.sign({ userId: user.id, roles }, process.env.JWT_SECRET, {
-            expiresIn: '1d',
-        });
+        const token = jwt.sign(
+            { 
+                userId: user.id, 
+                email: user.email, 
+                roles: user.roles.map(r => r.role.name),
+                mustChangePassword: user.mustChangePassword
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
 
-        // Log the login activity
-        await logActivity(user.id, 'LOGIN', 'USER', user.id, null, req.ip, req.headers['user-agent']);
-
-        console.log('✅ Login successful:', {
-            userId: user.id,
-            email: user.email,
-            mustChangePassword: user.mustChangePassword,
-            roles
-        });
-
-        res.status(200).json({
+        res.json({
             token,
             user: {
                 id: user.id,
                 email: user.email,
-                fullName: user.profile.fullName,
-                roles,
-                phone: user.phone,
-                address: user.profile.address,
-                city: user.profile.city,
-                sex: user.profile.sex,
+                fullName: user.profile?.fullName,
+                roles: user.roles.map(r => r.role.name),
                 mustChangePassword: user.mustChangePassword
             }
         });
@@ -518,14 +494,6 @@ const forcePasswordChange = async (req, res) => {
         const { userId } = req.params;
         const { newTempPassword } = req.body;
 
-        console.log('🔄 Force password change request:', {
-            userId,
-            newTempPassword,
-            passwordLength: newTempPassword?.length,
-            requestingUser: req.user.id,
-            requestingUserRoles: req.user.roles
-        });
-
         // Security check: Only ADMIN can reset any password. PASTOR and LIDER_DOCE only their network.
         const currentUserRoles = req.user.roles || [];
         const isSelfAdmin = currentUserRoles.includes('ADMIN');
@@ -549,48 +517,29 @@ const forcePasswordChange = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        console.log('👤 Target user found:', {
-            id: user.id,
-            email: user.email,
-            fullName: user.profile?.fullName
-        });
-
         const validation = validatePassword(newTempPassword, {
             email: user.email,
             fullName: user.profile?.fullName
         });
 
-        console.log('✅ Password validation:', validation);
-
         if (!validation.isValid) {
-            console.log('❌ Password validation failed:', validation.message);
             return res.status(400).json({ message: validation.message });
         }
 
         const hashedPassword = await bcrypt.hash(newTempPassword, 10);
         
-        console.log('🔐 Password hashed successfully:', {
-            hashLength: hashedPassword.length,
-            hashPrefix: hashedPassword.substring(0, 10) + '...'
-        });
-
         await prisma.user.update({
             where: { id: targetUserId },
             data: {
                 password: hashedPassword,
-                mustChangePassword: true
+                mustChangePassword: true,
+                updatedAt: new Date()
             }
         });
 
-        console.log('✅ User updated successfully');
-
-        await logActivity(req.user.id, 'UPDATE', 'USER', targetUserId, { message: 'Reinicio de contraseña por administrador' }, req.ip, req.headers['user-agent']);
-
-        res.status(200).json({ message: 'Contraseña reiniciada. El usuario deberá cambiarla en su próximo inicio de sesión.' });
+        res.json({ message: 'Contraseña reseteada exitosamente' });
     } catch (error) {
-        console.error('❌ Force password change error:', error);
-        res.status(500).json({ message: 'Error al forzar el cambio de contraseña' });
+        console.error('Force password change error:', error);
+        res.status(500).json({ message: 'Error resetting password' });
     }
 };
-
-module.exports = { register, login, getPublicLeaders, checkInitStatus, registerSetup, changePassword, forcePasswordChange };

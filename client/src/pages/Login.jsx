@@ -40,54 +40,54 @@ const Login = () => {
         e.preventDefault();
         setError('');
         
-        console.log('Login form submitted for:', email);
-
         // Verify captcha
         const expectedAnswer = captcha.operator === '+'
             ? captcha.num1 + captcha.num2
             : captcha.num1 - captcha.num2;
 
         if (parseInt(captchaAnswer) !== expectedAnswer) {
-            console.log('Captcha validation failed');
             setError('❌ Captcha incorrecto. Por favor resuelve la operación correctamente.');
             generateCaptcha();
             return;
         }
 
         try {
-            console.log('Attempting login...');
             const result = await login(email, password);
-            console.log('Login result:', result);
             
             if (result.success) {
-                console.log('Login successful, navigating...');
                 if (result.mustChangePassword) {
                     setShowPasswordChangeModal(true);
                 } else {
                     navigate('/');
                 }
             } else {
-                console.log('Login failed:', result.message);
                 // Handle different types of authentication errors
                 if (result.message?.toLowerCase().includes('credenciales') || 
-                    result.message?.toLowerCase().includes('incorrectas') ||
-                    result.message?.toLowerCase().includes('contraseña') || 
-                    result.message?.toLowerCase().includes('password')) {
-                    setError('❌ Contraseña incorrecta. Verifica tus credenciales e intenta nuevamente.');
-                } else if (result.message?.toLowerCase().includes('usuario no encontrado') || 
-                           result.message?.toLowerCase().includes('email')) {
-                    setError('❌ Usuario no encontrado. Verifica tu email e intenta nuevamente.');
-                } else if (result.message?.toLowerCase().includes('acceso denegado') || 
-                           result.message?.toLowerCase().includes('deshabilitada')) {
-                    setError('❌ Acceso denegado. Contacta al administrador del sistema.');
+                    result.message?.toLowerCase().includes('incorrectas') || 
+                    result.message?.toLowerCase().includes('invalid')) {
+                    setError('❌ Correo electrónico o contraseña incorrectos. Por favor verifica tus credenciales.');
+                } else if (result.message?.toLowerCase().includes('inactiva') || 
+                         result.message?.toLowerCase().includes('deshabilitada')) {
+                    setError('❌ Tu cuenta está inactiva. Por favor contacta al administrador.');
+                } else if (result.message?.toLowerCase().includes('eliminada') || 
+                         result.message?.toLowerCase().includes('eliminado')) {
+                    setError('❌ Tu cuenta ha sido eliminada. Por favor contacta al administrador.');
+                } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+                    setError('❌ No se puede conectar al servidor. Por favor verifica tu conexión a internet.');
                 } else {
-                    setError(`❌ ${result.message}`);
+                    setError(`❌ ${result.message || 'Error al iniciar sesión'}`);
                 }
                 generateCaptcha();
             }
         } catch (error) {
             console.error('Login error:', error);
-            setError('❌ Error inesperado. Intenta nuevamente.');
+            
+            // Handle network errors specifically
+            if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+                setError('❌ No se puede conectar al servidor. Por favor verifica tu conexión a internet.');
+            } else {
+                setError('❌ Error al iniciar sesión. Por favor intenta nuevamente.');
+            }
             generateCaptcha();
         }
     };

@@ -474,20 +474,35 @@ const CellManagement = () => {
                             {/* Assign Member Section */}
                             <div>
                                 <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Asignar Discípulo</h4>
+                                <div className="mb-2">
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Solo puedes asignar usuarios que pertenecen a tu red de discipulado
+                                    </p>
+                                </div>
                                 <div className="flex gap-2">
                                     <AsyncSearchSelect
                                         fetchItems={async (term) => {
                                             try {
-                                                // Get users from my network only
+                                                // Get users from my network only (ADMIN gets all users)
                                                 const networkResponse = await api.get('/users/my-network/all');
                                                 const networkUsers = networkResponse.data;
 
-                                                console.log('Network users:', networkUsers); // Debug log
+                                                // Check if current user is ADMIN
+                                                const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                                                const isAdmin = currentUser.roles?.includes('ADMIN');
 
-                                                // If no network users, return empty array (don't show users from other networks)
+                                                // If no network users, provide helpful feedback
                                                 if (!networkUsers || networkUsers.length === 0) {
-                                                    console.log('No network users found');
-                                                    return [];
+                                                    // Return a special indicator to show a message
+                                                    return [{ 
+                                                        _specialMessage: true,
+                                                        message: isAdmin 
+                                                            ? 'No hay usuarios disponibles en el sistema.' 
+                                                            : 'No tienes usuarios en tu red de discipulado. Solo los líderes (Líder de 12, Pastor) pueden asignar discípulos a células.',
+                                                        fullName: 'Sin usuarios disponibles',
+                                                        disabled: true,
+                                                        id: 'special-no-network'
+                                                    }];
                                                 }
 
                                                 // Filter to include only LIDER_DOCE, LIDER_CELULA, and DISCIPULO roles
@@ -498,15 +513,38 @@ const CellManagement = () => {
                                                            userRoles.includes('DISCIPULO');
                                                 });
 
-                                                console.log('Filtered users:', filteredUsers); // Debug log
+                                                // If no users after filtering, show appropriate message
+                                                if (filteredUsers.length === 0) {
+                                                    return [{ 
+                                                        _specialMessage: true,
+                                                        message: isAdmin 
+                                                            ? 'No hay usuarios con roles compatibles para asignar a células (se necesitan roles: Líder de 12, Líder de Célula, Discípulo).'
+                                                            : 'Los usuarios en tu red no tienen roles compatibles para asignar a células (se necesitan roles: Líder de 12, Líder de Célula, Discípulo).',
+                                                        fullName: 'Sin usuarios compatibles',
+                                                        disabled: true,
+                                                        id: 'special-no-compatible'
+                                                    }];
+                                                }
 
                                                 // Filter by search term if provided
                                                 if (term && term.length > 0) {
                                                     const searchTerm = term.toLowerCase();
-                                                    return filteredUsers.filter(user =>
+                                                    const searchFiltered = filteredUsers.filter(user =>
                                                         user.fullName.toLowerCase().includes(searchTerm) ||
                                                         user.email.toLowerCase().includes(searchTerm)
                                                     );
+                                                    
+                                                    if (searchFiltered.length === 0) {
+                                                        return [{ 
+                                                            _specialMessage: true,
+                                                            message: `No se encontraron usuarios que coincidan con "${term}" ${isAdmin ? 'en el sistema' : 'en tu red'}.`,
+                                                            fullName: 'Sin resultados',
+                                                            disabled: true,
+                                                            id: 'special-no-search'
+                                                        }];
+                                                    }
+                                                    
+                                                    return searchFiltered;
                                                 }
 
                                                 return filteredUsers;
@@ -517,10 +555,59 @@ const CellManagement = () => {
                                             }
                                         }}
                                         selectedValue={selectedMember}
-                                        onSelect={setSelectedMember}
                                         labelKey="fullName"
                                         placeholder="Buscar discípulo..."
                                         className="flex-1"
+                                        renderItem={(item) => {
+                                            if (item._specialMessage) {
+                                                return (
+                                                    <div className="p-3 text-center">
+                                                        <div className="font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                                            {item.fullName}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-500 leading-relaxed">
+                                                            {item.message}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                            
+                                            // Regular user display
+                                            return (
+                                                <div>
+                                                    <div className="font-medium text-gray-900 dark:text-gray-100">
+                                                        {item.fullName}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {item.email}
+                                                    </div>
+                                                    <div className="flex gap-1 mt-1">
+                                                        {item.roles.map(role => (
+                                                            <span 
+                                                                key={role}
+                                                                className={`px-2 py-1 text-xs rounded-full ${
+                                                                    role === 'LIDER_DOCE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                                                    role === 'LIDER_CELULA' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                                                    role === 'DISCIPULO' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                                                    'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                                                }`}
+                                                            >
+                                                                {role === 'LIDER_DOCE' ? 'Líder 12' :
+                                                                 role === 'LIDER_CELULA' ? 'Líder Célula' :
+                                                                 role === 'DISCIPULO' ? 'Discípulo' : role}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }}
+                                        onSelect={(item) => {
+                                            // Prevent selection of special message items
+                                            if (item._specialMessage) {
+                                                return;
+                                            }
+                                            setSelectedMember(item);
+                                        }}
                                     />
                                     <Button
                                         onClick={handleAssignMember}

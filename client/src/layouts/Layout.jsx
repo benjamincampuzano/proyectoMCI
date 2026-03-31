@@ -1,11 +1,12 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { House, Users, UserPlus, Heart, PaperPlaneTilt, Calendar, BookOpen, SignOut, TreeStructure, Target, ShieldCheck, Baby, CaretLeft, CaretRight, Palette } from '@phosphor-icons/react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';
 import PasswordChangeModal from '../components/auth/PasswordChangeModal';
 import logo from '../assets/logo.jpg';
+import api from '../utils/api';
 
 const SidebarItem = ({ to, icon: Icon, label, active }) => (
     <Link
@@ -25,6 +26,31 @@ const Layout = () => {
     const location = useLocation();
     const [isCollapsed, setIsCollapsed] = useState(true);
     const [showProfileModal, setShowProfileModal] = useState(false);
+    const [hasKidsAccess, setHasKidsAccess] = useState(false);
+
+    // Check if user has access to KIDS module
+    useEffect(() => {
+        const checkKidsAccess = async () => {
+            try {
+                // If user is ADMIN, always grant access
+                if (isAdmin()) {
+                    setHasKidsAccess(true);
+                    return;
+                }
+                
+                // For non-admin users, check access via API
+                const res = await api.get('/kids/students/check-access');
+                setHasKidsAccess(res.data.hasAccess);
+            } catch (error) {
+                console.error('Error checking KIDS access:', error);
+                setHasKidsAccess(false);
+            }
+        };
+
+        if (user) {
+            checkKidsAccess();
+        }
+    }, [user, isAdmin]);
 
     if (!user) return <Outlet />;
 
@@ -34,7 +60,7 @@ const Layout = () => {
         { to: '/ganar', icon: UserPlus, label: 'Ganar' },
         { to: '/consolidar', icon: Heart, label: 'Consolidar' },
         { to: '/discipular', icon: BookOpen, label: 'Discipular' },
-        { to: '/kids', icon: Baby, label: 'Kids' },
+        ...(hasKidsAccess ? [{ to: '/kids', icon: Baby, label: 'Kids' }] : []),
         { to: '/escuela-de-artes', icon: Palette, label: 'Artes' },
         { to: '/enviar', icon: PaperPlaneTilt, label: 'Enviar' },
         { to: '/encuentros', icon: Users, label: 'Encuentros' },

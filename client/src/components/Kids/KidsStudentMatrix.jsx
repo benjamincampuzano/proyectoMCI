@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
-import { MagnifyingGlass, Camera, X, Upload, Link } from '@phosphor-icons/react';
+import { MagnifyingGlass, Camera, X, Upload, Link, Download } from '@phosphor-icons/react';
 import { Button, Input, AsyncSearchSelect } from '../ui';
+import * as XLSX from 'xlsx';
 
 const KIDS_LEVELS = [
     { nivel: 'KIDS', seccion: '1A', name: 'Kids (5-7 años)', moduleNumber: 101, minAge: 5, maxAge: 7 },
@@ -83,6 +84,22 @@ const KidsStudentMatrix = () => {
             return 'Sin fecha';
         }
         
+        if (isNaN(date.getTime())) {
+            return 'Fecha inválida';
+        }
+        
+        return date.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
+
+    // Función para formatear fecha de asistencia a célula
+    const formatCellAttendanceDate = (attendanceDate) => {
+        if (!attendanceDate) return 'Sin asistencia';
+        
+        const date = new Date(attendanceDate);
         if (isNaN(date.getTime())) {
             return 'Fecha inválida';
         }
@@ -192,6 +209,40 @@ const KidsStudentMatrix = () => {
         setPhotoDescription('');
     };
 
+    const downloadExcel = () => {
+        const excelData = filteredStudents.map(student => {
+            const birthDate = student.profile?.birthDate;
+            const age = calculateAge(birthDate);
+            const formattedDate = formatDate(birthDate);
+            
+            return {
+                'Nombre': student.fullName,
+                'Edad': age || '-',
+                'Teléfono': student.phone || '-',
+                'Correo': student.email || '-',
+                'Fecha de Nacimiento': formattedDate,
+                'Acudiente': student.responsible?.fullName || '-',
+                'Líder': student.leaderDoce ? 
+                    `${student.leaderDoce.fullName} (${student.leaderDoce.role === 'LIDER_DOCE' ? 'Líder 12' : 
+                        student.leaderDoce.role === 'LIDER_CELULA' ? 'Líder Célula' : 
+                        student.leaderDoce.role})` : '-',
+                'En Célula': student.cell?.hasCell ? 'SÍ' : 'NO',
+                'Nombre Célula': student.cell?.name || '-',
+                'Última Asistencia Célula': student.lastCellAttendance ? 
+                    `${formatCellAttendanceDate(student.lastCellAttendance.date)} - ${student.lastCellAttendance.status === 'PRESENTE' ? 'Asistió' : 
+                        student.lastCellAttendance.status === 'AUSENTE' ? 'No asistió' :
+                        student.lastCellAttendance.status === 'JUSTIFICADO' ? 'Justificado' :
+                        student.lastCellAttendance.status}` : '-',
+                'Asistencia General': getAttendanceRate(student.enrollments)
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Matriz Estudiantes Kids");
+        XLSX.writeFile(wb, `Matriz_Estudiantes_Kids_${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.xlsx`);
+    };
+
     const filteredStudents = students.filter(student => {
         const matchesSearch = student.fullName.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
@@ -212,12 +263,12 @@ const KidsStudentMatrix = () => {
                     Matriz de Seguimiento Kids
                 </h2>
                 <Button
-                    onClick={openPhotoModal}
-                    variant="primary"
+                    onClick={downloadExcel}
+                    variant="success"
                     className="inline-flex items-center gap-2"
                 >
-                    <Camera size={20} />
-                    Subir Evidencia de Clase
+                    <Download size={20} />
+                    Exportar Excel
                 </Button>
             </div>
 
@@ -253,13 +304,25 @@ const KidsStudentMatrix = () => {
                                     Edad
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Teléfono
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Correo
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Fecha de Nacimiento
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Acudiente
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Líderes
+                                    Líder
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Célula
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Última Asistencia Célula
                                 </th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Asistencia
@@ -281,13 +344,52 @@ const KidsStudentMatrix = () => {
                                             {age || '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {student.phone || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {student.email || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {formattedDate}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {student.responsible?.fullName || '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {student.leaderDoce?.fullName || '-'}
+                                            {student.leaderDoce ? (
+                                                <div>
+                                                    <div>{student.leaderDoce.fullName}</div>
+                                                    <div className="text-xs text-gray-400">
+                                                        {student.leaderDoce.role === 'LIDER_DOCE' ? 'Líder 12' : 
+                                                         student.leaderDoce.role === 'LIDER_CELULA' ? 'Líder Célula' : 
+                                                         student.leaderDoce.role}
+                                                    </div>
+                                                </div>
+                                            ) : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {student.cell?.hasCell ? (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                    SÍ
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                                    NO
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {student.lastCellAttendance ? (
+                                                <div>
+                                                    <div>{formatCellAttendanceDate(student.lastCellAttendance.date)}</div>
+                                                    <div className="text-xs text-gray-400">
+                                                        {student.lastCellAttendance.status === 'PRESENTE' ? 'Asistió' : 
+                                                         student.lastCellAttendance.status === 'AUSENTE' ? 'No asistió' :
+                                                         student.lastCellAttendance.status === 'JUSTIFICADO' ? 'Justificado' :
+                                                         student.lastCellAttendance.status}
+                                                    </div>
+                                                </div>
+                                            ) : '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
                                             {getAttendanceRate(student.enrollments)}

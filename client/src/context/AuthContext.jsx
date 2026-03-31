@@ -28,8 +28,14 @@ export const AuthProvider = ({ children }) => {
                 const res = await api.get('/auth/init-status');
                 setIsInitialized(res.data.isInitialized);
             } catch (error) {
-                console.error('Error checking init status:', error);
-                toast.error('Error al verificar inicialización del sistema.');
+                // Silently handle network errors (server not available)
+                if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+                    console.log('Server not available - skipping init status check');
+                    setIsInitialized(false); // Default to false when server is unavailable
+                } else {
+                    console.error('Error checking init status:', error);
+                    toast.error('Error al verificar inicialización del sistema.');
+                }
             }
         };
 
@@ -44,15 +50,23 @@ export const AuthProvider = ({ children }) => {
                         localStorage.setItem('user', JSON.stringify(normalizedUser));
                     }
                 } catch (error) {
-                    console.error('Auth check error:', error);
-                    toast.error('Error al cargar perfil de usuario.');
-                    // If error is 401 or 404 (user not found/stale token), logout
-                    if (error.response?.status === 401 || error.response?.status === 404) {
-                        logout();
-                    } else {
-                        // Fallback to stored user if server fails but not 401/404
+                    // Silently handle network errors (server not available)
+                    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+                        console.log('Server not available - using stored user data');
+                        // Fallback to stored user if server fails
                         const storedUser = JSON.parse(localStorage.getItem('user'));
                         if (storedUser) setUser(normalizeUserRoles(storedUser));
+                    } else {
+                        console.error('Auth check error:', error);
+                        toast.error('Error al cargar perfil de usuario.');
+                        // If error is 401 or 404 (user not found/stale token), logout
+                        if (error.response?.status === 401 || error.response?.status === 404) {
+                            logout();
+                        } else {
+                            // Fallback to stored user if server fails but not 401/404
+                            const storedUser = JSON.parse(localStorage.getItem('user'));
+                            if (storedUser) setUser(normalizeUserRoles(storedUser));
+                        }
                     }
                 }
             }
@@ -65,26 +79,14 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            console.log('Attempting login for:', email);
             const res = await api.post('/auth/login', { email, password });
             localStorage.setItem('token', res.data.token);
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);
-            console.log('Login successful for user:', normalizedUser);
             return { success: true, mustChangePassword: res.data.user?.mustChangePassword || false };
         } catch (error) {
-            console.error('Login error:', error);
-            // Handle different types of authentication errors
-            if (error.response?.status === 401) {
-                return { success: false, message: 'Credenciales incorrectas. Verifica tu email y contraseña.' };
-            } else if (error.response?.status === 403) {
-                return { success: false, message: 'Acceso denegado. Tu cuenta puede estar deshabilitada.' };
-            } else if (error.response?.status === 404) {
-                return { success: false, message: 'Usuario no encontrado. Verifica tu email.' };
-            } else {
-                return { success: false, message: error.response?.data?.message || 'Error al iniciar sesión. Intenta nuevamente.' };
-            }
+            return { success: false, message: error.response?.data?.message || 'Error al iniciar sesión' };
         }
     };
 
@@ -140,7 +142,13 @@ export const AuthProvider = ({ children }) => {
                 const res = await api.get('/auth/init-status');
                 setIsInitialized(res.data.isInitialized);
             } catch (error) {
-                console.error('Error checking init status after logout:', error);
+                // Silently handle network errors (server not available)
+                if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+                    console.log('Server not available - skipping init status check after logout');
+                    setIsInitialized(false); // Default to false when server is unavailable
+                } else {
+                    console.error('Error checking init status after logout:', error);
+                }
             }
         };
         checkInitAfterLogout();

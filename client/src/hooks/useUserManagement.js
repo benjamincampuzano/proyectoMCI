@@ -224,38 +224,24 @@ const useUserManagement = () => {
         }
     }, [fetchUsers]);
 
-    const handlePasswordReset = useCallback(async (user, tempPassword) => {
-        setSubmitting(true);
+    const resetPassword = async (user, tempPassword) => {
         setError('');
         setSuccess('');
         
-        console.log('🔄 Password reset initiated:', {
-            user: {
-                id: user.id,
-                fullName: user.fullName,
-                email: user.email
-            },
-            tempPassword,
-            passwordLength: tempPassword?.length
-        });
-        
         try {
-            const response = await api.post(`/auth/force-password-change/${user.id}`, {
-                newTempPassword: tempPassword
-            });
-            
-            console.log('✅ Password reset response:', response.data);
+            const response = await api.post(`/auth/reset-password/${user.id}`, { newTempPassword: tempPassword });
             
             setSuccess(`Contraseña de ${user.fullName} reseteada exitosamente. Contraseña temporal: ${tempPassword}`);
             setPasswordResetUser(null);
             fetchUsers();
         } catch (err) {
-            console.error('❌ Password reset error:', err.response?.data || err);
             handleError(err, 'password_reset');
         } finally {
             setSubmitting(false);
         }
-    }, [fetchUsers]);
+    };
+
+    const handlePasswordReset = resetPassword;
 
     const pastores = users.filter(u => u.roles?.includes('PASTOR'));
     const lideresDoce = users.filter(u => u.roles?.includes('LIDER_DOCE'));

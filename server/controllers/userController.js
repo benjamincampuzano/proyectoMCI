@@ -875,10 +875,42 @@ const assignLeader = async (req, res) => {
     }
 };
 
-// Obtener usuarios en mi red (para líderes)
+// Obtener usuarios en mi red (para líderes) - MODIFICADO para soportar ADMIN
 const getMyNetwork = async (req, res) => {
     try {
         const userId = req.user.id;
+        const userRoles = req.user.roles || [];
+        
+        // Si es ADMIN, devolver todos los usuarios (excepto otros admins y el mismo usuario)
+        if (userRoles.includes('ADMIN')) {
+            const users = await prisma.user.findMany({
+                where: {
+                    id: { not: userId },
+                    roles: {
+                        none: {
+                            role: { name: 'ADMIN' }
+                        }
+                    }
+                },
+                include: {
+                    profile: true,
+                    roles: { include: { role: true } }
+                },
+                orderBy: { profile: { fullName: 'asc' } }
+            });
+
+            const formatted = users.map(u => ({
+                id: u.id,
+                fullName: u.profile.fullName,
+                email: u.email,
+                phone: u.phone,
+                roles: u.roles.map(r => r.role.name)
+            }));
+
+            return res.json(formatted);
+        }
+        
+        // Para otros roles, usar la lógica normal de red
         const networkIds = await getUserNetwork(userId);
 
         if (networkIds.length === 0) {

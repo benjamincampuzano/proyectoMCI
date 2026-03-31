@@ -6,6 +6,7 @@ import { Button, AsyncSearchSelect } from '../ui';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES } from '../../constants/roles';
 import ConfirmationModal from '../ConfirmationModal';
+import PropTypes from 'prop-types';
 
 const CATEGORY_INFO = {
     'KIDS': { label: 'Kids', color: 'pink' },
@@ -14,7 +15,7 @@ const CATEGORY_INFO = {
     'JOVENES': { label: 'Jóvenes', color: 'purple' }
 };
 
-const KidsSchedule = () => {
+const KidsSchedule = ({ moduleCoordinator }) => {
     const { user, hasAnyRole } = useAuth();
     const [courses, setCourses] = useState([]);
     const [expandedCourseId, setExpandedCourseId] = useState(null);
@@ -57,7 +58,9 @@ const KidsSchedule = () => {
         category: 'KIDS'
     });
 
-    const isCoordinatorOrAdmin = hasAnyRole([ROLES.ADMIN]) || user?.isCoordinator;
+    // Check if user is ADMIN or the specific coordinator of the KIDS module
+    const isKidsCoordinatorOrAdmin = hasAnyRole([ROLES.ADMIN]) || 
+        (moduleCoordinator && user?.id === moduleCoordinator.id);
 
     useEffect(() => {
         fetchCourses();
@@ -306,7 +309,7 @@ const KidsSchedule = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        {isCoordinatorOrAdmin && (
+                                        {isKidsCoordinatorOrAdmin && (
                                             <Button
                                                 onClick={(e) => handleOpenCreateModal(course.id, e)}
                                                 variant="primary"
@@ -366,7 +369,7 @@ const KidsSchedule = () => {
                                                             <th className="px-4 py-3">Maestro</th>
                                                             <th className="px-4 py-3">Auxiliar</th>
                                                             <th className="px-4 py-3">Observaciones</th>
-                                                            {isCoordinatorOrAdmin && <th className="px-4 py-3 text-right">Acciones</th>}
+                                                            {isKidsCoordinatorOrAdmin && <th className="px-4 py-3 text-right">Acciones</th>}
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -391,7 +394,7 @@ const KidsSchedule = () => {
                                                                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-normal min-w-[200px] text-xs">
                                                                     {schedule.observations}
                                                                 </td>
-                                                                {isCoordinatorOrAdmin && (
+                                                                {isKidsCoordinatorOrAdmin && (
                                                                     <td className="px-4 py-3 text-right">
                                                                         <div className="flex justify-end gap-2">
                                                                             <button 
@@ -662,6 +665,14 @@ const KidsSchedule = () => {
             />
         </div>
     );
+};
+
+KidsSchedule.propTypes = {
+    moduleCoordinator: PropTypes.shape({
+        id: PropTypes.number,
+        fullName: PropTypes.string,
+        email: PropTypes.string
+    })
 };
 
 export default KidsSchedule;

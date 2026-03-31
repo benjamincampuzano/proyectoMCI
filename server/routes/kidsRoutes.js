@@ -12,7 +12,8 @@ const {
     updateMatrixCell,
     getStudentMatrix,
     getEligibleStudents,
-    getKidsStatsByLeader
+    getKidsStatsByLeader,
+    checkKidsAccess
 } = require('../controllers/kidsController');
 
 router.use(authenticate);
@@ -30,5 +31,6 @@ router.post('/matrix/update', updateMatrixCell);
 router.get('/student-matrix', getStudentMatrix);
 router.get('/eligible-students/:moduleId', getEligibleStudents);
 router.get('/stats/leader', getKidsStatsByLeader);
+router.get('/students/check-access', checkKidsAccess);
 
 module.exports = router;

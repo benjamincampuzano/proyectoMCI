@@ -24,7 +24,9 @@ const getModuleCoordinators = async (req, res) => {
         if (module) {
             where.moduleCoordinations = {
                 some: {
-                    moduleName: module
+                    moduleName: {
+                        in: [module, module.toLowerCase(), module.toUpperCase()] // Buscar variantes
+                    }
                 }
             };
         }

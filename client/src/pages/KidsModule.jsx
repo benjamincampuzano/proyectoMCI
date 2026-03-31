@@ -14,12 +14,13 @@ import api from '../utils/api';
 const KidsModule = () => {
     const { hasAnyRole } = useAuth();
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
+    const [isKidsTeacherOrAuxiliary, setIsKidsTeacherOrAuxiliary] = useState(null);
 
     // Handler for coordinator changes
     const handleCoordinatorChange = (newCoordinator) => {
         setModuleCoordinator(newCoordinator);
         
-        // After a short delay, refresh the coordinator data from server
+        // After a short delay, refresh coordinator data from server
         setTimeout(() => {
             fetchCoordinator();
         }, 500);
@@ -31,14 +32,14 @@ const KidsModule = () => {
             setModuleCoordinator(res.data);
         } catch (error) {
             console.error('Error fetching coordinator:', error);
-            // If the endpoint doesn't exist, try to find a coordinator by isCoordinator flag
+            // If endpoint doesn't exist, try to find a coordinator by isCoordinator flag
             try {
                 const coordinatorsRes = await api.get('/coordinators', {
                     params: { module: 'kids' }
                 });
                 const coordinators = coordinatorsRes.data;
                 if (coordinators && coordinators.length > 0) {
-                    // Find the first coordinator with ADMIN role or the first one
+                    // Find first coordinator with ADMIN role or first one
                     const adminCoordinator = coordinators.find(c => c.role === 'ADMIN') || coordinators[0];
                     setModuleCoordinator(adminCoordinator);
                 } else {
@@ -51,16 +52,40 @@ const KidsModule = () => {
         }
     };
 
+    const checkIfKidsTeacherOrAuxiliary = async () => {
+        try {
+            const res = await api.get('/kids/students/check-access');
+            setIsKidsTeacherOrAuxiliary(res.data.hasAccess);
+        } catch (error) {
+            console.error('Error checking KIDS teacher/auxiliary access:', error);
+            setIsKidsTeacherOrAuxiliary(false);
+        }
+    };
+
     useEffect(() => {
         fetchCoordinator();
+        checkIfKidsTeacherOrAuxiliary();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Define roles for specific tabs
+    const SCHEDULE_AND_MATRIX_ROLES = [ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA];
+    
+    // Custom role checker for schedule and matrix tabs
+    const hasScheduleOrMatrixAccess = () => {
+        const userRoles = hasAnyRole(SCHEDULE_AND_MATRIX_ROLES);
+        const isCoordinator = moduleCoordinator && moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
+        const isTeacherOrAuxiliary = isKidsTeacherOrAuxiliary === true;
+        
+        return userRoles || isCoordinator || isTeacherOrAuxiliary;
+    };
+    
     const tabs = [
         {
             id: 'schedule',
             label: 'Cronograma',
-            component: KidsSchedule,
-            roles: ROLE_GROUPS.ALL_LEADERS
+            component: (props) => <KidsSchedule {...props} moduleCoordinator={moduleCoordinator} />,
+            customCheck: hasScheduleOrMatrixAccess
         },
         { 
             id: 'management', 
@@ -72,7 +97,7 @@ const KidsModule = () => {
             id: 'matrix',
             label: 'Matriz de Estudiantes',
             component: KidsStudentMatrix,
-            roles: ROLE_GROUPS.ALL_LEADERS
+            customCheck: hasScheduleOrMatrixAccess
         },
         {
             id: 'stats',

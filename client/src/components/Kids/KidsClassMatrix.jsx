@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningCircle, Camera, Upload } from '@phosphor-icons/react';
+import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningCircle, Upload, CameraIcon } from '@phosphor-icons/react';
 import { AsyncSearchSelect, Button, Input } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
 import { useAuth } from '../../context/AuthContext';
@@ -27,7 +27,7 @@ const calculateAge = (birthDate) => {
 };
 
 const KidsClassMatrix = ({ courseId }) => {
-    const { hasAnyRole } = useAuth();
+    const { hasAnyRole, isCoordinator } = useAuth();
     const [matrix, setMatrix] = useState([]);
     const [courseInfo, setCourseInfo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -63,23 +63,23 @@ const KidsClassMatrix = ({ courseId }) => {
     }, [courseInfo, currentUserId]);
 
     const canUploadEvidence = useMemo(() => 
-        isModuleProfessor, // Solo profesores del módulo pueden subir evidencias
-        [isModuleProfessor]
+        hasAnyRole(['ADMIN', 'PASTOR']) || isCoordinator() || isModuleProfessor || isModuleAuxiliary, // ADMIN, PASTOR, coordinadores, profesores y auxiliares del módulo pueden subir evidencias
+        [hasAnyRole, isCoordinator, isModuleProfessor, isModuleAuxiliary]
     );
 
     const canEditAttendance = useMemo(() => 
-        isModuleProfessor || isModuleAuxiliary, // Profesores y auxiliares del módulo pueden editar asistencia
-        [isModuleProfessor, isModuleAuxiliary]
+        hasAnyRole(['ADMIN', 'PASTOR']) || isModuleProfessor || isModuleAuxiliary, // ADMIN, PASTOR, profesores y auxiliares del módulo pueden editar asistencia
+        [hasAnyRole, isModuleProfessor, isModuleAuxiliary]
     );
 
     const canEnrollStudents = useMemo(() => 
-        isModuleProfessor || isModuleAuxiliary, // Profesores y auxiliares del módulo pueden inscribir estudiantes
-        [isModuleProfessor, isModuleAuxiliary]
+        hasAnyRole(['ADMIN', 'PASTOR']) || isCoordinator() || isModuleProfessor || isModuleAuxiliary, // ADMIN, PASTOR, coordinadores, profesores y auxiliares del módulo pueden inscribir estudiantes
+        [hasAnyRole, isCoordinator, isModuleProfessor, isModuleAuxiliary]
     );
 
     const canDeleteStudents = useMemo(() => 
-        isModuleProfessor, // Solo profesores del módulo pueden eliminar estudiantes
-        [isModuleProfessor]
+        hasAnyRole(['ADMIN', 'PASTOR']) || isModuleProfessor, // ADMIN, PASTOR y profesores del módulo pueden eliminar estudiantes
+        [hasAnyRole, isModuleProfessor]
     );
 
     useEffect(() => {
@@ -277,7 +277,7 @@ const KidsClassMatrix = ({ courseId }) => {
                                                 size="xs"
                                                 className="inline-flex items-center gap-1 text-xs"
                                             >
-                                                <Camera size={12} />
+                                                <CameraIcon size={12} />
                                                 Evidencia
                                             </Button>
                                         )}

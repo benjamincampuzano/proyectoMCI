@@ -439,11 +439,29 @@ const getStudentMatrix = async (req, res) => {
             },
             select: {
                 id: true,
+                email: true,
+                phone: true,
                 profile: { 
                     select: { 
                         fullName: true, 
                         birthDate: true 
                     } 
+                },
+                cellId: true,
+                cell: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
+                cellAttendances: {
+                    select: {
+                        id: true,
+                        date: true,
+                        status: true
+                    },
+                    orderBy: { date: 'desc' },
+                    take: 1
                 },
                 parents: {
                     include: {
@@ -458,28 +476,54 @@ const getStudentMatrix = async (req, res) => {
                     },
                     include: {
                         module: { select: { moduleNumber: true, name: true, code: true } },
-                        classAttendances: true
+                        classAttendances: true,
+                        guardian: {
+                            select: { profile: { select: { fullName: true } } }
+                        }
                     }
                 }
             }
         });
 
         const formatted = users.map(u => {
-            const leaderEntry = u.parents?.find(p => p.role === 'LIDER_DOCE');
-            const responsibleEntry = u.parents?.find(p => p.role === 'DISCIPULO');
+            // Buscar líder (puede ser LIDER_DOCE o LIDER_CELULA)
+            const leaderEntry = u.parents?.find(p => p.role === 'LIDER_DOCE' || p.role === 'LIDER_CELULA');
+            
+            // Buscar acudiente únicamente en las inscripciones (campo guardian)
+            const guardianFromEnrollment = u.seminarEnrollments?.find(e => e.guardian)?.guardian;
+            
+            // Información de célula
+            const hasCell = !!u.cellId;
+            const lastCellAttendance = u.cellAttendances && u.cellAttendances.length > 0 
+                ? u.cellAttendances[0] 
+                : null;
             
             return {
                 id: u.id,
+                email: u.email,
+                phone: u.phone,
                 fullName: u.profile?.fullName,
                 profile: {
                     birthDate: u.profile?.birthDate
                 },
+                cell: hasCell ? {
+                    id: u.cell?.id,
+                    name: u.cell?.name,
+                    hasCell: true
+                } : {
+                    hasCell: false
+                },
+                lastCellAttendance: lastCellAttendance ? {
+                    date: lastCellAttendance.date,
+                    status: lastCellAttendance.status
+                } : null,
                 leaderDoce: leaderEntry ? {
                     id: leaderEntry.parent.id,
-                    fullName: leaderEntry.parent.profile?.fullName
+                    fullName: leaderEntry.parent.profile?.fullName,
+                    role: leaderEntry.role
                 } : null,
-                responsible: responsibleEntry ? {
-                    fullName: responsibleEntry.parent.profile?.fullName
+                responsible: guardianFromEnrollment ? {
+                    fullName: guardianFromEnrollment.profile?.fullName
                 } : null,
                 enrollments: u.seminarEnrollments.map(e => ({
                     module: {
@@ -679,6 +723,95 @@ const getKidsStatsByLeader = async (req, res) => {
     }
 };
 
+const checkKidsAccess = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const userRoles = req.user.roles || [];
+
+        // Admin always has access
+        if (userRoles.includes('ADMIN')) {
+            return res.json({ hasAccess: true });
+        }
+
+        // Check if user is coordinator of KIDS module
+        const coordinatorRes = await prisma.moduleCoordinator.findFirst({
+            where: {
+                userId: userId,
+                moduleName: {
+                    in: ['KIDS', 'kids'] // Buscar ambas variantes
+                }
+            }
+        });
+
+        if (coordinatorRes) {
+            return res.json({ hasAccess: true });
+        }
+
+        // Check if user has students enrolled in KIDS (as teacher or auxiliary)
+        const teacherInSchedules = await prisma.kidsSchedule.findFirst({
+            where: {
+                OR: [
+                    { teacherId: userId },
+                    { auxiliaryId: userId }
+                ]
+            }
+        });
+
+        if (teacherInSchedules) {
+            return res.json({ hasAccess: true });
+        }
+
+        // Check if user has KIDS students in their hierarchy (as leader)
+        const hasKidsInHierarchy = await prisma.user.findFirst({
+            where: {
+                id: userId,
+                children: {
+                    some: {
+                        child: {
+                            seminarEnrollments: {
+                                some: {
+                                    module: {
+                                        type: 'KIDS'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            include: {
+                children: {
+                    include: {
+                        child: {
+                            include: {
+                                seminarEnrollments: {
+                                    where: {
+                                        module: {
+                                            type: 'KIDS'
+                                        }
+                                    },
+                                    include: {
+                                        module: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (hasKidsInHierarchy) {
+            return res.json({ hasAccess: true });
+        }
+
+        res.json({ hasAccess: false });
+    } catch (error) {
+        console.error('Error checking KIDS access:', error);
+        res.status(500).json({ message: 'Error checking KIDS access' });
+    }
+};
+
 module.exports = {
     createModule,
     getModules,
@@ -690,5 +823,6 @@ module.exports = {
     updateMatrixCell,
     getStudentMatrix,
     getEligibleStudents,
-    getKidsStatsByLeader
+    getKidsStatsByLeader,
+    checkKidsAccess
 };

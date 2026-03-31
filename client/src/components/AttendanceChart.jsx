@@ -14,6 +14,7 @@ const AttendanceChart = () => {
         endDate,
         setEndDate,
         loading,
+        error,
     } = useAttendance();
     const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -148,6 +149,16 @@ const AttendanceChart = () => {
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                     Tendencia de Asistencia
                 </h2>
+                
+                {/* Error Display */}
+                {error && (
+                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <p className="text-red-700 dark:text-red-300 text-sm">
+                            Error: {error}
+                        </p>
+                    </div>
+                )}
+                
                 {loading ? (
                     <div className="text-center py-12">
                         <p className="text-gray-500 dark:text-gray-400">Cargando estadísticas...</p>
