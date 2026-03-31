@@ -27,14 +27,23 @@ export const AuthProvider = ({ children }) => {
             try {
                 const res = await api.get('/auth/init-status');
                 setIsInitialized(res.data.isInitialized);
+                // Store the initialization status for fallback
+                localStorage.setItem('systemInitialized', res.data.isInitialized.toString());
             } catch (error) {
                 // Silently handle network errors (server not available)
                 if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-                    console.log('Server not available - skipping init status check');
-                    setIsInitialized(false); // Default to false when server is unavailable
+                    // Check if we have stored the initialization status
+                    const storedInitStatus = localStorage.getItem('systemInitialized');
+                    if (storedInitStatus !== null) {
+                        const isStoredInitialized = storedInitStatus === 'true';
+                        setIsInitialized(isStoredInitialized);
+                    } else {
+                        setIsInitialized(false); // Default to false when server is unavailable
+                    }
                 } else {
                     console.error('Error checking init status:', error);
                     toast.error('Error al verificar inicialización del sistema.');
+                    setIsInitialized(false); // Default to false on error
                 }
             }
         };

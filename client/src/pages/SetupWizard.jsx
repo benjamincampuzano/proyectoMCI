@@ -41,7 +41,6 @@ const SetupWizard = () => {
                 const response = await fetch('/api/auth/init-status');
                 const data = await response.json();
                 if (data.isInitialized) {
-                    console.log('System already initialized, redirecting to login');
                     navigate('/login');
                 }
             } catch (error) {
