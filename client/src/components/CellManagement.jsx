@@ -1172,6 +1172,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         Eliminar
                                     </Button>
                                 )}
+                            </div>
                         </div>
                     ))}
                 </div>
