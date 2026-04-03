@@ -249,8 +249,10 @@ const useUserManagement = () => {
 
     const filteredUsers = useMemo(() => {
         return users.filter(u => {
-            const matchesSearch = u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                u.email.toLowerCase().includes(searchTerm.toLowerCase());
+            const fullName = u.fullName || '';
+            const email = u.email || '';
+            const matchesSearch = fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                email.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesRole = roleFilter === '' || u.roles?.includes(roleFilter);
             const matchesSex = sexFilter === '' || u.sex === sexFilter;
             const matchesLiderDoce = liderDoceFilter === '' || u.liderDoceId === parseInt(liderDoceFilter);

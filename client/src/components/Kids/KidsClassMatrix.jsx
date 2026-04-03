@@ -410,7 +410,7 @@ const KidsClassMatrix = ({ courseId }) => {
                                         setSelectedStudent(user || null);
                                     }}
                                     placeholder="Buscar estudiante elegible..."
-                                    labelKey="fullName"
+                                    labelKey={(item) => item.fullName || item.profile?.fullName}
                                 />
                             )}
                             

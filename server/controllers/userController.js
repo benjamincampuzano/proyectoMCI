@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const axios = require('axios');
+const { randomInt } = require('crypto');
 const { logActivity } = require('../utils/auditLogger');
 const { validatePassword } = require('../utils/passwordValidator');
 const { canManageUser, getVisibleRoles, MANAGABLE_ROLES, PROTECTED_ROLES } = require('../middleware/coordinatorAuth');
@@ -35,11 +36,44 @@ const geocodeAddress = async (address, city) => {
 };
 
 const { getUserNetwork } = require('../utils/networkUtils');
+const { getUserNetworkId } = require('../middleware/coordinatorAuth');
 
-// Función auxiliar local eliminada en favor de la centralizada en utils/networkUtils
+/**
+ * Auxiliar para formatear un objeto de usuario de Prisma a un formato aplanado para el frontend.
+ */
+const formatUser = (user) => {
+    if (!user) return null;
 
+    let pastorId = null;
+    let liderDoceId = null;
+    let liderCelulaId = null;
 
-// Obtener perfil propio
+    if (user.parents) {
+        pastorId = user.parents.find(p => p.role === 'PASTOR')?.parentId || null;
+        liderDoceId = user.parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null;
+        liderCelulaId = user.parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null;
+    }
+
+    return {
+        ...(user.profile || {}),
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        isActive: user.isActive,
+        roles: user.roles ? user.roles.map(r => r.role.name) : [],
+        pastorId,
+        liderDoceId,
+        liderCelulaId,
+        isCoordinator: user.isCoordinator,
+        mustChangePassword: user.mustChangePassword,
+        spouseId: user.spouseId,
+        hierarchy: (user.parents || []).map(p => ({
+            parentId: p.parentId,
+            parentName: p.parent?.profile?.fullName || '(sin nombre)',
+            role: p.role
+        }))
+    };
+};
 const getProfile = async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
@@ -58,19 +92,7 @@ const getProfile = async (req, res) => {
         }
 
         res.status(200).json({
-            user: {
-                id: user.id,
-                email: user.email,
-                phone: user.phone,
-                ...user.profile,
-                roles: user.roles.map(r => r.role.name),
-                isCoordinator: user.isCoordinator || user.moduleCoordinations.length > 0,
-                hierarchy: user.parents.map(p => ({
-                    parentId: p.parentId,
-                    parentName: p.parent.profile.fullName,
-                    role: p.role
-                }))
-            }
+            user: formatUser(user)
         });
     } catch (error) {
         console.error(error);
@@ -81,7 +103,7 @@ const getProfile = async (req, res) => {
 // Actualizar perfil propio
 const updateProfile = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = parseInt(req.user.id);
         const { fullName, email, sex, phone, address, city, documentType, documentNumber, birthDate } = req.body;
 
         if (email) {
@@ -222,52 +244,58 @@ const changePassword = async (req, res) => {
 const getAllUsers = async (req, res) => {
     try {
         const { role, page = 1, limit = 50 } = req.query;
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
 
         if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
-            const roleFilter = role ? { role: { name: role } } : {};
             const users = await prisma.user.findMany({
                 where: {
                     isDeleted: false,
-                    role: roleFilter.role ? { name: roleFilter.role.name } : undefined
+                    roles: {
+                        none: { role: { name: 'ADMIN' } },
+                        ...(role && {
+                            some: {
+                                role: { name: role }
+                            }
+                        })
+                    }
                 },
                 include: {
                     roles: { include: { role: true } },
                     profile: true,
-                    network: true
+                    parents: true
                 },
-                skip: (page - 1) * limit,
-                take: limit,
+                skip: (pageNum - 1) * limitNum,
+                take: limitNum,
                 orderBy: { id: 'desc' }
             });
 
-            const filteredUsers = users.filter(u =>
-                u.roles?.[0]?.role?.name !== 'ADMIN'
-            );
-
-            return res.json(filteredUsers);
+            return res.json(users.map(formatUser));
         }
 
         if (req.user.isModuleCoordinator) {
-            const roleFilter = role ? { role: { name: role } } : {
-                role: { name: { in: MANAGABLE_ROLES } }
-            };
-
             const users = await prisma.user.findMany({
                 where: {
                     isDeleted: false,
-                    ...roleFilter
+                    roles: {
+                        some: {
+                            role: { 
+                                name: role || { in: MANAGABLE_ROLES }
+                            }
+                        }
+                    }
                 },
                 include: {
                     roles: { include: { role: true } },
                     profile: true,
-                    network: true
+                    parents: true
                 },
-                skip: (page - 1) * limit,
-                take: limit,
+                skip: (pageNum - 1) * limitNum,
+                take: limitNum,
                 orderBy: { id: 'desc' }
             });
 
-            return res.json(users);
+            return res.json(users.map(formatUser));
         }
 
         if (req.user.roles.includes('LIDER_DOCE')) {
@@ -277,27 +305,29 @@ const getAllUsers = async (req, res) => {
                 return res.json([]);
             }
 
-            const roleFilter = role ? { role: { name: role } } : {
-                role: { name: { in: MANAGABLE_ROLES } }
-            };
-
             const users = await prisma.user.findMany({
                 where: {
                     isDeleted: false,
-                    networkId: requesterNetworkId,
-                    ...roleFilter
+                    id: { in: requesterNetworkId },
+                    ...(role && {
+                        roles: {
+                            some: {
+                                role: { name: role }
+                            }
+                        }
+                    })
                 },
                 include: {
                     roles: { include: { role: true } },
                     profile: true,
-                    network: true
+                    parents: true
                 },
-                skip: (page - 1) * limit,
-                take: limit,
+                skip: (pageNum - 1) * limitNum,
+                take: limitNum,
                 orderBy: { id: 'desc' }
             });
 
-            return res.json(users);
+            return res.json(users.map(formatUser));
         }
 
         return res.json([]);
@@ -321,7 +351,7 @@ const getUserById = async (req, res) => {
             include: {
                 roles: { include: { role: true } },
                 profile: true,
-                network: true
+                parents: true
             }
         });
 
@@ -330,22 +360,13 @@ const getUserById = async (req, res) => {
         }
 
         const targetRole = user.roles?.[0]?.role?.name;
-        const permission = await canManageUser(req.user, targetRole, user.networkId);
+        const permission = await canManageUser(req.user, targetRole, user.profile?.network);
 
         if (!permission.canManage) {
             return res.status(403).json({ message: permission.reason });
         }
 
-        const formattedUser = {
-            ...user.profile,
-            id: user.id,
-            email: user.email,
-            phone: user.phone,
-            roles: user.roles.map(r => r.role.name),
-            networkId: user.networkId
-        };
-
-        res.status(200).json({ user: formattedUser });
+        res.status(200).json({ user: formatUser(user) });
 
     } catch (error) {
         console.error('Error fetching user:', error);
@@ -366,7 +387,7 @@ const updateUser = async (req, res) => {
             where: { id: userId },
             include: {
                 roles: { include: { role: true } },
-                network: true
+                profile: true
             }
         });
 
@@ -375,7 +396,7 @@ const updateUser = async (req, res) => {
         }
 
         const targetRole = targetUser.roles?.[0]?.role?.name;
-        const permission = await canManageUser(req.user, targetRole, targetUser.networkId);
+        const permission = await canManageUser(req.user, targetRole, targetUser.profile?.network);
 
         if (!permission.canManage) {
             return res.status(403).json({ message: permission.reason });
@@ -409,14 +430,15 @@ const updateUser = async (req, res) => {
         const cleanPhone = phone && phone.trim() !== '' ? phone.trim() : null;
 
         const updatedUser = await prisma.$transaction(async (tx) => {
-            // 1. Update Core User & Profile
-            const updated = await tx.user.update({
+            const newUser = await tx.user.update({
                 where: { id: userId },
                 data: {
-                    email,
-                    phone: cleanPhone,
-                    isCoordinator,
-                    spouseId: spouseId ? parseInt(spouseId) : null,
+                    ...(email !== undefined && { email }),
+                    ...(cleanPhone !== undefined && { phone: cleanPhone }),
+                    ...(isCoordinator !== undefined && { isCoordinator }),
+                    ...(spouseId !== undefined && { 
+                        spouseId: spouseId ? parseInt(spouseId) : null 
+                    }),
                     profile: {
                         update: {
                             ...(fullName && { fullName }),
@@ -520,23 +542,18 @@ const updateUser = async (req, res) => {
                 }
             }
 
-            return updated;
+            return newUser;
         });
 
         const finalUpdated = await prisma.user.findUnique({
             where: { id: userId },
-            include: { profile: true, roles: { include: { role: true } } }
+            include: { profile: true, roles: { include: { role: true } }, parents: true }
         });
 
-        await logActivity(req.user.id, 'UPDATE', 'USER', userId, { targetUser: finalUpdated.profile.fullName }, req.ip, req.headers['user-agent']);
+        await logActivity(req.user.id, 'UPDATE', 'USER', userId, { targetUser: finalUpdated.profile?.fullName }, req.ip, req.headers['user-agent']);
 
         res.status(200).json({
-            user: {
-                id: finalUpdated.id,
-                email: finalUpdated.email,
-                fullName: finalUpdated.profile.fullName,
-                roles: finalUpdated.roles.map(r => r.role.name)
-            },
+            user: formatUser(finalUpdated)
         });
     } catch (error) {
         console.error('Error updating user:', error);
@@ -581,20 +598,25 @@ const createUser = async (req, res) => {
             const lower = 'abcdefghijklmnopqrstuvwxyz';
             const nums = '0123456789';
             const syms = '!@#$%^&*+-_';
+
+            let chars = [];
+            chars.push(upper[randomInt(0, upper.length)]);
+            chars.push(lower[randomInt(0, lower.length)]);
+            chars.push(nums[randomInt(0, nums.length)]);
+            chars.push(syms[randomInt(0, syms.length)]);
+
             const all = upper + lower + nums + syms;
-
-            let tempPass = '';
-            tempPass += upper.charAt(Math.floor(Math.random() * upper.length));
-            tempPass += lower.charAt(Math.floor(Math.random() * lower.length));
-            tempPass += nums.charAt(Math.floor(Math.random() * nums.length));
-            tempPass += syms.charAt(Math.floor(Math.random() * syms.length));
-
             for (let i = 0; i < 6; i++) {
-                tempPass += all.charAt(Math.floor(Math.random() * all.length));
+                chars.push(all[randomInt(0, all.length)]);
             }
-            // Mezclar caracteres
-            finalPassword = tempPass.split('').sort(() => 0.5 - Math.random()).join('');
-            shouldChangePassword = true; // Solo forzar cambio si es contraseña temporal
+
+            // Shuffle Fisher-Yates
+            for (let i = chars.length - 1; i > 0; i--) {
+                const j = randomInt(0, i + 1);
+                [chars[i], chars[j]] = [chars[j], chars[i]];
+            }
+            finalPassword = chars.join('');
+            shouldChangePassword = true;
         } else if (!password) {
             return res.status(400).json({ message: 'Password is required when not generating temporary password' });
         }
@@ -709,15 +731,15 @@ const createUser = async (req, res) => {
             return newUser;
         });
 
-        await logActivity(req.user.id, 'CREATE', 'USER', user.id, { targetUser: user.profile.fullName }, req.ip, req.headers['user-agent']);
+        const createdUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            include: { profile: true, roles: { include: { role: true } }, parents: true }
+        });
+
+        await logActivity(req.user.id, 'CREATE', 'USER', createdUser.id, { targetUser: createdUser.profile?.fullName }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({
-            user: {
-                id: user.id,
-                email: user.email,
-                fullName: user.profile.fullName,
-                roles: [role || 'DISCIPULO']
-            },
+            user: formatUser(createdUser)
         });
     } catch (error) {
         console.error('Error creating user:', error);
@@ -794,6 +816,10 @@ const deleteUser = async (req, res) => {
             // Eliminar roles y jerarquías
             prisma.userRole.deleteMany({ where: { userId } }),
             prisma.userHierarchy.deleteMany({ where: { OR: [{ parentId: userId }, { childId: userId }] } }),
+
+            // Eliminar coordinaciones
+            prisma.moduleCoordinator.deleteMany({ where: { userId } }),
+            prisma.moduleSubCoordinator.deleteMany({ where: { userId } }),
 
             // Eliminar asistencias y registros relacionados
             prisma.churchAttendance.deleteMany({ where: { userId } }),
@@ -945,6 +971,7 @@ const searchPublicUsers = async (req, res) => {
 
         const users = await prisma.user.findMany({
             where: {
+                isDeleted: false,
                 profile: {
                     fullName: {
                         contains: search,
@@ -977,19 +1004,34 @@ const searchPublicUsers = async (req, res) => {
 
 const searchUsers = async (req, res) => {
     try {
-        const { q, search, role, page = 1, limit = 20, allowAllRoles = false } = req.query;
+        const { q, search, role, page = 1, limit = 20, allowAllRoles = false, excludeRoles } = req.query;
         
         // Accept both 'q' and 'search' parameters for compatibility
         const searchQuery = q || search;
+        const allowAllRolesBool = allowAllRoles === 'true';
 
-        // Allow empty search when role is specified (for fetching all users of a specific role)
-        if (!searchQuery && !role && !allowAllRoles) {
+        // Allow empty search when role or excludeRoles is specified
+        if (!searchQuery && !role && !excludeRoles && !allowAllRolesBool) {
             return res.status(400).json({ message: 'Search query or role parameter is required' });
         }
 
         let where = {
             isDeleted: false
         };
+
+        // Add role exclusions if provided
+        if (excludeRoles) {
+            const excludedRolesArray = excludeRoles.split(',');
+            where['roles'] = {
+                none: {
+                    role: {
+                        name: {
+                            in: excludedRolesArray
+                        }
+                    }
+                }
+            };
+        }
 
         // Add search conditions only if search query is provided and has meaningful content
         if (searchQuery && searchQuery.trim() && searchQuery.trim().length >= 2) {
@@ -1003,15 +1045,21 @@ const searchUsers = async (req, res) => {
         }
 
         // Special case for Art School enrollment - allow all roles
-        if (allowAllRoles === 'true' && (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR') || req.user.isModuleCoordinator)) {
+        if (allowAllRolesBool && (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR') || req.user.isModuleCoordinator)) {
             // No role restrictions for Art School enrollment
             if (role) {
-                where['roles'] = { some: { role: { name: role } } };
+                where['roles'] = { 
+                    ...(where['roles'] || {}),
+                    some: { role: { name: role } } 
+                };
             }
         }
         else if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
             if (role) {
-                where['roles'] = { some: { role: { name: role } } };
+                where['roles'] = { 
+                    ...(where['roles'] || {}),
+                    some: { role: { name: role } } 
+                };
             }
         }
         else if (req.user.isModuleCoordinator) {
@@ -1024,7 +1072,10 @@ const searchUsers = async (req, res) => {
                 return res.status(403).json({ message: `You cannot search for role: ${role}` });
             }
             
-            where['roles'] = { some: { role: { name: role ? role : { in: allowedRoles } } } };
+            where['roles'] = { 
+                ...(where['roles'] || {}),
+                some: { role: { name: role ? role : { in: allowedRoles } } } 
+            };
         }
         else if (req.user.roles.includes('LIDER_DOCE')) {
             const requesterNetwork = await getUserNetwork(req.user.id);
@@ -1041,7 +1092,11 @@ const searchUsers = async (req, res) => {
             if (role && !allowedRoles.includes(role)) {
                 return res.status(403).json({ message: `You cannot search for role: ${role}` });
             }
-            where['roles'] = { some: { role: { name: role ? role : { in: allowedRoles } } } };
+            
+            where['roles'] = { 
+                ...(where['roles'] || {}),
+                some: { role: { name: role ? role : { in: allowedRoles } } } 
+            };
         }
         else {
             return res.json([]);
@@ -1051,13 +1106,14 @@ const searchUsers = async (req, res) => {
             where,
             include: {
                 roles: { include: { role: true } },
-                profile: true
+                profile: true,
+                parents: { include: { parent: { include: { profile: true } } } }
             },
             skip: (parseInt(page) - 1) * parseInt(limit),
             take: parseInt(limit)
         });
 
-        res.json(users);
+        res.json(users.map(formatUser));
 
     } catch (error) {
         console.error('Error searching users:', error);

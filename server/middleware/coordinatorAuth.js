@@ -1,4 +1,3 @@
-const { PrismaClient } = require('@prisma/client');
 const prisma = require('../utils/database');
 
 /**
@@ -33,38 +32,27 @@ const isModuleCoordinator = async (req, res, next) => {
             return next();
         }
 
-        const coordinator = await prisma.moduleCoordinator.findFirst({
-            where: {
-                userId: parseInt(req.user.id)
-            },
-            select: {
-                id: true,
-                moduleName: true
-            }
-        });
+        const [coordinator, subCoordinator] = await Promise.all([
+            prisma.moduleCoordinator.findFirst({
+                where: { userId: parseInt(req.user.id) },
+                select: { id: true, moduleName: true }
+            }),
+            prisma.moduleSubCoordinator.findFirst({
+                where: { userId: parseInt(req.user.id) },
+                select: { id: true, moduleName: true }
+            })
+        ]);
 
         if (coordinator) {
             req.user.isModuleCoordinator = true;
             req.user.coordinatedModule = coordinator.moduleName;
-            console.log(`User ${req.user.id} is active coordinator for module: ${coordinator.moduleName}`);
             return next();
         }
-
-        const subCoordinator = await prisma.moduleSubCoordinator.findFirst({
-            where: {
-                userId: parseInt(req.user.id)
-            },
-            select: {
-                id: true,
-                moduleName: true
-            }
-        });
 
         if (subCoordinator) {
             req.user.isModuleCoordinator = true;
             req.user.coordinatedModule = subCoordinator.moduleName;
             req.user.isSubCoordinator = true;
-            console.log(`User ${req.user.id} is active sub-coordinator for module: ${subCoordinator.moduleName}`);
             return next();
         }
 
@@ -78,9 +66,9 @@ const isModuleCoordinator = async (req, res, next) => {
 };
 
 /**
- * Obtiene la red del usuario
+ * Obtiene el ID de red del usuario (valor escalar del perfil)
  */
-const getUserNetwork = async (userId) => {
+const getUserNetworkId = async (userId) => {
     const user = await prisma.user.findUnique({
         where: { id: userId },
         include: {
@@ -124,7 +112,7 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId) => 
             return { canManage: false, reason: `Cannot manage ${targetUserRole} users` };
         }
 
-        const requesterNetworkId = await getUserNetwork(requester.id);
+        const requesterNetworkId = await getUserNetworkId(requester.id);
         if (targetUserNetworkId !== requesterNetworkId) {
             return { canManage: false, reason: 'Cannot manage users outside your network' };
         }
@@ -155,7 +143,7 @@ const canManageTargetUser = (getTargetUser) => {
             }
 
             const targetUserRole = targetUser.roles?.[0]?.role?.name || targetUser.role;
-            const targetUserNetworkId = targetUser.networkId;
+            const targetUserNetworkId = targetUser.profile?.network;
 
             const permission = await canManageUser(req.user, targetUserRole, targetUserNetworkId);
 
@@ -197,7 +185,7 @@ module.exports = {
     canManageUser,
     canManageTargetUser,
     getVisibleRoles,
-    getUserNetwork,
+    getUserNetworkId,
     MANAGABLE_ROLES,
     PROTECTED_ROLES,
     LEADERSHIP_ROLES

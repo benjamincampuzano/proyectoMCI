@@ -3,6 +3,15 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const helmet = require("helmet");
 const compression = require("compression");
+const { randomInt } = require('crypto');
+
+// Global log suppression
+if (process.env.NODE_ENV === 'production' || process.env.DISABLE_LOGS === 'true') {
+  console.log = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+  // Keep console.error for critical failures
+}
 
 dotenv.config();
 
@@ -35,9 +44,6 @@ app.use(
         callback(null, true);
       } else {
         const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
-        if (process.env.NODE_ENV !== "production") {
-          console.error(`❌ CORS BLOCKED: ${origin}`);
-        }
         callback(new Error(msg));
       }
     },

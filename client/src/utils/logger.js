@@ -29,11 +29,7 @@ const disableLogs = () => {
   }
 };
 
-// For development, we can still enable/disable logs with a flag
-if (import.meta.env.DEV && import.meta.env.VITE_DISABLE_LOGS === 'true') {
-  disableLogs();
-} else if (import.meta.env.PROD) {
-  disableLogs();
-}
+// For development and production, we disable logs as requested
+disableLogs();
 
 export default disableLogs;

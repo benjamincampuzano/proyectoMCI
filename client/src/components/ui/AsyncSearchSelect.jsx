@@ -27,7 +27,7 @@ const AsyncSearchSelect = ({
     className = "",
     disabled = false
 }) => {
-    const effectiveSelectedValue = typeof selectedValue === 'number' ? null : selectedValue;
+    const effectiveSelectedValue = selectedValue;
     const [searchTerm, setSearchTerm] = useState('');
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -86,7 +86,9 @@ const AsyncSearchSelect = ({
     const getLabel = (item) => {
         if (!item) return '';
         if (typeof labelKey === 'function') return labelKey(item);
-        return item[labelKey] || '';
+        
+        // Fallback for common user object structures
+        return item[labelKey] || item.profile?.[labelKey] || item.fullName || item.profile?.fullName || item.id || '';
     };
 
     // Determine if we have a valid selection to show

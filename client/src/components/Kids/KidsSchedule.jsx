@@ -481,7 +481,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                         selectedValue={formData.teacherId}
                                         onSelect={(user) => setFormData({ ...formData, teacherId: user })}
                                         placeholder="Buscar maestro..."
-                                        labelKey="fullName"
+                                        labelKey={(item) => item.fullName || item.profile?.fullName}
                                     />
                                 </div>
                                 <div className="lg:col-span-1 md:col-span-1">
@@ -496,7 +496,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                         selectedValue={formData.auxiliaryId}
                                         onSelect={(user) => setFormData({ ...formData, auxiliaryId: user })}
                                         placeholder="Buscar auxiliar..."
-                                        labelKey="fullName"
+                                        labelKey={(item) => item.fullName || item.profile?.fullName}
                                     />
                                 </div>
                                 <div className="lg:col-span-3 md:col-span-2">
