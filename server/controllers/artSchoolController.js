@@ -535,6 +535,41 @@ exports.registerSessionAttendance = async (req, res) => {
   }
 };
 
+exports.updateSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, topic } = req.body;
+
+    const session = await prisma.artSession.update({
+      where: { id: Number(id) },
+      data: {
+        date: date ? new Date(date) : undefined,
+        topic
+      }
+    });
+
+    res.status(200).json(session);
+  } catch (error) {
+    console.error('Error updating session:', error);
+    res.status(500).json({ error: 'Error al actualizar la sesión' });
+  }
+};
+
+exports.deleteSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.artSession.delete({
+      where: { id: Number(id) }
+    });
+
+    res.status(200).json({ message: 'Sesión eliminada correctamente' });
+  } catch (error) {
+    console.error('Error deleting session:', error);
+    res.status(500).json({ error: 'Error al eliminar la sesión' });
+  }
+};
+
 // ==========================================
 // REPORTES
 // ==========================================

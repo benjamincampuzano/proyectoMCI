@@ -31,6 +31,8 @@ router.post('/attendances', artSchoolController.registerAttendance);
 // Sesiones
 router.get('/classes/:id/sessions', artSchoolController.getSessions);
 router.post('/classes/:id/sessions', artSchoolController.createSession);
+router.put('/sessions/:id', artSchoolController.updateSession);
+router.delete('/sessions/:id', artSchoolController.deleteSession);
 router.post('/sessions/:id/attendance', artSchoolController.registerSessionAttendance);
 
 // Reportes

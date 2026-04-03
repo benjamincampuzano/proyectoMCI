@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Calendar, CheckCircle, XCircle, Clock, UserPlus, BookOpen, GuitarIcon } from '@phosphor-icons/react';
+import { Calendar, CheckCircle, XCircle, Clock, UserPlus, BookOpen, GuitarIcon, Pencil, Trash } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
-import { AsyncSearchSelect } from './ui';
+import { AsyncSearchSelect, ConfirmDialog } from './ui';
 
 const ArtClassAttendanceTracker = ({ classId, enrollments, onRefresh, onConvert, canModify }) => {
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showSessionModal, setShowSessionModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingSessionId, setEditingSessionId] = useState(null);
     const [selectedSession, setSelectedSession] = useState(null);
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [sessionToDelete, setSessionToDelete] = useState(null);
     const [sessionDate, setSessionDate] = useState('');
     const [sessionTopic, setSessionTopic] = useState('');
     const [attendanceData, setAttendanceData] = useState({});
@@ -33,21 +37,65 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, onRefresh, onConvert,
         }
     };
 
-    const handleCreateSession = async (e) => {
+    const handleOpenCreateModal = () => {
+        setIsEditing(false);
+        setEditingSessionId(null);
+        setSessionDate('');
+        setSessionTopic('');
+        setShowSessionModal(true);
+    };
+
+    const handleOpenEditModal = (session) => {
+        setIsEditing(true);
+        setEditingSessionId(session.id);
+        setSessionDate(new Date(session.date).toISOString().split('T')[0]);
+        setSessionTopic(session.topic || '');
+        setShowSessionModal(true);
+    };
+
+    const handleSubmitSession = async (e) => {
         e.preventDefault();
         try {
-            await api.post(`/arts/classes/${classId}/sessions`, {
-                date: sessionDate,
-                topic: sessionTopic
-            });
+            if (isEditing) {
+                await api.put(`/arts/sessions/${editingSessionId}`, {
+                    date: sessionDate,
+                    topic: sessionTopic
+                });
+                toast.success('Sesión actualizada exitosamente');
+            } else {
+                await api.post(`/arts/classes/${classId}/sessions`, {
+                    date: sessionDate,
+                    topic: sessionTopic
+                });
+                toast.success('Sesión creada exitosamente');
+            }
             setShowSessionModal(false);
             setSessionDate('');
             setSessionTopic('');
             fetchSessions();
-            toast.success('Sesión creada exitosamente');
         } catch (error) {
-            console.error('Error creating session:', error);
-            toast.error('Error creando la sesión');
+            console.error('Error submitting session:', error);
+            toast.error(isEditing ? 'Error actualizando la sesión' : 'Error creando la sesión');
+        }
+    };
+
+    const handleDeleteSession = (session) => {
+        setSessionToDelete(session);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!sessionToDelete) return;
+        
+        try {
+            await api.delete(`/arts/sessions/${sessionToDelete.id}`);
+            toast.success('Sesión eliminada correctamente');
+            setShowDeleteConfirm(false);
+            setSessionToDelete(null);
+            fetchSessions();
+        } catch (error) {
+            console.error('Error deleting session:', error);
+            toast.error('Error al eliminar la sesión');
         }
     };
 
@@ -126,7 +174,7 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, onRefresh, onConvert,
                 </div>
                 {canModify && (
                     <button
-                        onClick={() => setShowSessionModal(true)}
+                        onClick={handleOpenCreateModal}
                         className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                     >
                         <Calendar size={20} />
@@ -167,6 +215,24 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, onRefresh, onConvert,
                                             )}
                                         </div>
                                         <div className="flex items-center gap-3">
+                                            {canModify && (
+                                                <div className="flex items-center gap-1 mr-2 border-r border-gray-200 dark:border-gray-700 pr-3">
+                                                    <button
+                                                        onClick={() => handleOpenEditModal(session)}
+                                                        className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+                                                        title="Editar sesión"
+                                                    >
+                                                        <Pencil size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteSession(session)}
+                                                        className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+                                                        title="Eliminar sesión"
+                                                    >
+                                                        <Trash size={18} />
+                                                    </button>
+                                                </div>
+                                            )}
                                             <div className="text-sm text-gray-500 dark:text-gray-400">
                                                 <span className="font-medium">
                                                     {session.attendances?.filter(a => a.status === 'PRESENT').length || 0}
@@ -259,7 +325,9 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, onRefresh, onConvert,
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Nueva Sesión</h3>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                {isEditing ? 'Editar Sesión' : 'Nueva Sesión'}
+                            </h3>
                             <button
                                 onClick={() => setShowSessionModal(false)}
                                 className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
@@ -267,7 +335,7 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, onRefresh, onConvert,
                                 <XCircle size={24} />
                             </button>
                         </div>
-                        <form onSubmit={handleCreateSession} className="p-6 space-y-4">
+                        <form onSubmit={handleSubmitSession} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Fecha de la Sesión
@@ -304,7 +372,7 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, onRefresh, onConvert,
                                     type="submit"
                                     className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                                 >
-                                    Crear Sesión
+                                    {isEditing ? 'Actualizar Sesión' : 'Crear Sesión'}
                                 </button>
                             </div>
                         </form>
@@ -417,6 +485,19 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, onRefresh, onConvert,
                     </div>
                 </div>
             )}
+            <ConfirmDialog
+                isOpen={showDeleteConfirm}
+                onClose={() => {
+                    setShowDeleteConfirm(false);
+                    setSessionToDelete(null);
+                }}
+                onConfirm={confirmDelete}
+                title="Eliminar Sesión"
+                message={`¿Estás seguro de que deseas eliminar la sesión del tema "${sessionToDelete?.topic || 'Sin tema'}"? Todos los registros de asistencia asociados se perderán permanentemente.`}
+                confirmText="Eliminar"
+                cancelText="Cancelar"
+                variant="danger"
+            />
         </div>
     );
 };
