@@ -715,6 +715,7 @@ enum AttendanceStatus {
   PRESENTE
   AUSENTE
   JUSTIFICADO
+  TARDE
 }
 
 enum ClassAttendanceStatus {
@@ -831,7 +832,7 @@ model ArtClass {
   name        String
   description String?
   cost        Float           @default(0)
-  duration    Int             @default(60) // Duration in minutes
+  duration    Int             @default(60)
   schedule    String?
   startDate   DateTime?       @db.Timestamptz(6)
   endDate     DateTime?       @db.Timestamptz(6)
@@ -843,6 +844,20 @@ model ArtClass {
   professor   User?           @relation("ArtProfessor", fields: [professorId], references: [id])
   coordinator User?           @relation("ArtCoordinator", fields: [coordinatorId], references: [id])
   enrollments ArtEnrollment[]
+  sessions    ArtSession[]
+}
+
+model ArtSession {
+  id          Int             @id @default(autoincrement())
+  classId     Int
+  date        DateTime        @default(now()) @db.Timestamptz(6)
+  topic       String?         @db.Text
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
+  artClass    ArtClass        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  attendances ArtAttendance[]
+
+  @@index([classId])
 }
 
 model ArtEnrollment {
@@ -873,14 +888,18 @@ model ArtEnrollment {
 model ArtAttendance {
   id           Int           @id @default(autoincrement())
   enrollmentId Int
-  classNumber  Int
+  sessionId    Int?          // Link to ArtSession
+  classNumber  Int?          // Optional for transition
+  status       AttendanceStatus @default(AUSENTE)
   attended     Boolean       @default(false)
   date         DateTime      @default(now()) @db.Timestamptz(6)
   createdAt    DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt    DateTime      @updatedAt @db.Timestamptz(6)
+  
   enrollment   ArtEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  session      ArtSession?   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  @@unique([enrollmentId, classNumber])
+  @@unique([enrollmentId, sessionId])
 }
 
 model ArtPayment {

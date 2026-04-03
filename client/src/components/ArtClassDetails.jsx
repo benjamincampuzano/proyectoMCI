@@ -466,6 +466,7 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
                     {activeTab === 'attendance' && (
                         <div className="mt-4">
                             <ArtClassAttendanceTracker
+                                classId={artClass.id}
                                 enrollments={artClass.enrollments || []}
                                 onRefresh={onRefresh}
                                 onConvert={openConvertModal}

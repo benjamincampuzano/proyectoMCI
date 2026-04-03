@@ -28,6 +28,14 @@ router.delete('/enrollments/:id', isAdmin, artSchoolController.deleteEnrollment)
 // Asistencias — cualquier autenticado puede registrar asistencia
 router.post('/attendances', artSchoolController.registerAttendance);
 
+// Sesiones
+router.get('/classes/:id/sessions', artSchoolController.getSessions);
+router.post('/classes/:id/sessions', artSchoolController.createSession);
+router.post('/sessions/:id/attendance', artSchoolController.registerSessionAttendance);
+
+// Reportes
+router.get('/classes/:id/report/balance', artSchoolController.getClassBalanceReport);
+
 // Pagos — solo ADMIN puede registrar/eliminar abonos
 router.post('/payments', isAdmin, artSchoolController.registerPayment);
 router.post('/enrollments/:id/payments', isAdmin, artSchoolController.registerPayment);

@@ -452,3 +452,177 @@ exports.deletePayment = async (req, res) => {
     res.status(500).json({ error: 'Error al eliminar pago' });
   }
 };
+
+// ==========================================
+// SESIONES Y ASISTENCIA DINÁMICA
+// ==========================================
+
+exports.getSessions = async (req, res) => {
+  try {
+    const { id: classId } = req.params;
+    const sessions = await prisma.artSession.findMany({
+      where: { classId: Number(classId) },
+      include: {
+        attendances: true
+      },
+      orderBy: { date: 'asc' }
+    });
+    res.status(200).json(sessions);
+  } catch (error) {
+    console.error('Error fetching sessions:', error);
+    res.status(500).json({ error: 'Error al obtener las sesiones' });
+  }
+};
+
+exports.createSession = async (req, res) => {
+  try {
+    const { id: classId } = req.params;
+    const { date, topic } = req.body;
+
+    const newSession = await prisma.artSession.create({
+      data: {
+        classId: Number(classId),
+        date: date ? new Date(date) : new Date(),
+        topic: topic || ''
+      }
+    });
+
+    res.status(201).json(newSession);
+  } catch (error) {
+    console.error('Error creating session:', error);
+    res.status(500).json({ error: 'Error al crear la sesión' });
+  }
+};
+
+exports.registerSessionAttendance = async (req, res) => {
+  try {
+    const { id: sessionId } = req.params;
+    const { attendance } = req.body; // Map of { enrollmentId: status }
+
+    if (!attendance || typeof attendance !== 'object') {
+      return res.status(400).json({ error: 'attendance must be a valid object' });
+    }
+
+    const results = await Promise.all(
+      Object.entries(attendance).map(([enrollmentId, status]) => 
+        prisma.artAttendance.upsert({
+          where: {
+            enrollmentId_sessionId: {
+              enrollmentId: Number(enrollmentId),
+              sessionId: Number(sessionId)
+            }
+          },
+          update: { 
+            status, 
+            attended: status === 'PRESENTE' || status === 'TARDE',
+            date: new Date() 
+          },
+          create: {
+            enrollmentId: Number(enrollmentId),
+            sessionId: Number(sessionId),
+            status,
+            attended: status === 'PRESENTE' || status === 'TARDE',
+            date: new Date()
+          }
+        })
+      )
+    );
+
+    res.status(200).json({ message: 'Asistencia registrada', results });
+  } catch (error) {
+    console.error('Error registering session attendance:', error);
+    res.status(500).json({ error: 'Error al registrar asistencia' });
+  }
+};
+
+// ==========================================
+// REPORTES
+// ==========================================
+
+exports.getClassBalanceReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const artClass = await prisma.artClass.findUnique({
+      where: { id: Number(id) },
+      include: {
+        enrollments: {
+          include: {
+            user: {
+              include: {
+                profile: true,
+                parents: {
+                  include: {
+                    parent: {
+                      include: { profile: true }
+                    }
+                  }
+                }
+              }
+            },
+            guest: {
+              include: {
+                invitedBy: {
+                  include: {
+                    profile: true,
+                    parents: {
+                      include: {
+                        parent: {
+                          include: { profile: true }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            payments: true
+          }
+        }
+      }
+    });
+
+    if (!artClass) {
+      return res.status(404).json({ error: 'Clase no encontrada' });
+    }
+
+    const reportData = artClass.enrollments.map(reg => {
+      const totalPaid = reg.payments.reduce((acc, p) => acc + p.amount, 0);
+      const balance = reg.finalCost - totalPaid;
+
+      const responsibleUser = reg.user || reg.guest?.invitedBy;
+
+      const getParentName = (role) => {
+        if (!responsibleUser) return 'N/A';
+        const parentRecord = responsibleUser.parents?.find(p => p.role === role);
+        return parentRecord?.parent?.profile?.fullName || 'N/A';
+      };
+
+      return {
+        id: reg.id,
+        userName: reg.user?.profile?.fullName || reg.guest?.name,
+        userRole: 'ESTUDIANTE',
+        status: reg.status,
+        pastorName: getParentName('PASTOR'),
+        liderDoceName: getParentName('LIDER_DOCE'),
+        liderCelulaName: getParentName('LIDER_CELULA'),
+        cost: reg.finalCost,
+        paid: totalPaid,
+        balance,
+        baseCost: reg.finalCost, // No transport/accommodation for Arts module
+        transportCost: 0,
+        accommodationCost: 0,
+        paymentsByType: {
+          TUITION: totalPaid,
+          MATERIAL: 0,
+          OTHER: 0
+        }
+      };
+    });
+
+    res.json(reportData);
+  } catch (error) {
+    console.error('Error generating balance report:', error);
+    res.status(500).json({ error: 'Error al generar el reporte' });
+  }
+};

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { AsyncSearchSelect } from './ui';
 
-const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModify }) => {
+const ArtClassAttendanceTracker = ({ classId, enrollments, onRefresh, onConvert, canModify }) => {
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showSessionModal, setShowSessionModal] = useState(false);
@@ -15,13 +15,15 @@ const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModif
     const [attendanceData, setAttendanceData] = useState({});
 
     useEffect(() => {
-        fetchSessions();
-    }, []);
+        if (classId) {
+            fetchSessions();
+        }
+    }, [classId]);
 
     const fetchSessions = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/arts/sessions');
+            const response = await api.get(`/arts/classes/${classId}/sessions`);
             setSessions(response.data);
         } catch (error) {
             console.error('Error fetching sessions:', error);
@@ -34,7 +36,7 @@ const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModif
     const handleCreateSession = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/arts/sessions', {
+            await api.post(`/arts/classes/${classId}/sessions`, {
                 date: sessionDate,
                 topic: sessionTopic
             });
@@ -80,16 +82,16 @@ const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModif
 
     const getAttendanceStatus = (session, enrollmentId) => {
         const attendance = session.attendances?.find(a => a.enrollmentId === enrollmentId);
-        return attendance?.status || 'ABSENT';
+        return attendance?.status || 'AUSENTE';
     };
 
     const getAttendanceIcon = (status) => {
         switch (status) {
-            case 'PRESENT':
+            case 'PRESENTE':
                 return <CheckCircle size={16} className="text-emerald-500" />;
-            case 'ABSENT':
+            case 'AUSENTE':
                 return <XCircle size={16} className="text-red-500" />;
-            case 'LATE':
+            case 'TARDE':
                 return <Clock size={16} className="text-amber-500" />;
             default:
                 return <XCircle size={16} className="text-gray-400" />;
@@ -98,11 +100,11 @@ const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModif
 
     const getAttendanceBadge = (status) => {
         switch (status) {
-            case 'PRESENT':
+            case 'PRESENTE':
                 return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
-            case 'ABSENT':
+            case 'AUSENTE':
                 return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-            case 'LATE':
+            case 'TARDE':
                 return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
             default:
                 return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
@@ -192,7 +194,7 @@ const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModif
                                                 <div>
                                                     <p className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Presentes</p>
                                                     <p className="text-lg font-bold text-emerald-900 dark:text-emerald-100">
-                                                        {session.attendances?.filter(a => a.status === 'PRESENT').length || 0}
+                                                        {session.attendances?.filter(a => a.status === 'PRESENTE').length || 0}
                                                     </p>
                                                 </div>
                                             </div>
@@ -204,7 +206,7 @@ const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModif
                                                 <div>
                                                     <p className="text-xs font-medium text-amber-800 dark:text-amber-200">Tardanzas</p>
                                                     <p className="text-lg font-bold text-amber-900 dark:text-amber-100">
-                                                        {session.attendances?.filter(a => a.status === 'LATE').length || 0}
+                                                        {session.attendances?.filter(a => a.status === 'TARDE').length || 0}
                                                     </p>
                                                 </div>
                                             </div>
@@ -216,7 +218,7 @@ const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModif
                                                 <div>
                                                     <p className="text-xs font-medium text-red-800 dark:text-red-200">Ausentes</p>
                                                     <p className="text-lg font-bold text-red-900 dark:text-red-100">
-                                                        {session.attendances?.filter(a => a.status === 'ABSENT').length || 0}
+                                                        {session.attendances?.filter(a => a.status === 'AUSENTE').length || 0}
                                                     </p>
                                                 </div>
                                             </div>
@@ -354,9 +356,9 @@ const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModif
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleAttendanceChange(enrollment.id, 'PRESENT')}
+                                                    onClick={() => handleAttendanceChange(enrollment.id, 'PRESENTE')}
                                                     className={`p-2 rounded-lg transition-colors ${
-                                                        currentStatus === 'PRESENT'
+                                                        currentStatus === 'PRESENTE'
                                                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                                                             : 'bg-gray-200 text-gray-600 hover:bg-emerald-100 hover:text-emerald-700 dark:bg-gray-600 dark:text-gray-400 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-300'
                                                     }`}
@@ -366,9 +368,9 @@ const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModif
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleAttendanceChange(enrollment.id, 'LATE')}
+                                                    onClick={() => handleAttendanceChange(enrollment.id, 'TARDE')}
                                                     className={`p-2 rounded-lg transition-colors ${
-                                                        currentStatus === 'LATE'
+                                                        currentStatus === 'TARDE'
                                                             ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                                                             : 'bg-gray-200 text-gray-600 hover:bg-amber-100 hover:text-amber-700 dark:bg-gray-600 dark:text-gray-400 dark:hover:bg-amber-900/30 dark:hover:text-amber-300'
                                                     }`}
@@ -378,9 +380,9 @@ const ArtClassAttendanceTracker = ({ enrollments, onRefresh, onConvert, canModif
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleAttendanceChange(enrollment.id, 'ABSENT')}
+                                                    onClick={() => handleAttendanceChange(enrollment.id, 'AUSENTE')}
                                                     className={`p-2 rounded-lg transition-colors ${
-                                                        currentStatus === 'ABSENT'
+                                                        currentStatus === 'AUSENTE'
                                                             ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                                                             : 'bg-gray-200 text-gray-600 hover:bg-red-100 hover:text-red-700 dark:bg-gray-600 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-300'
                                                     }`}

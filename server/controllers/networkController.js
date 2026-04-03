@@ -249,10 +249,7 @@ const getNetwork = async (req, res) => {
         };
 
         const tree = buildNode(rootId);
-        console.log(`=== NETWORK RESPONSE FOR USER ${rootId} ===`);
-        console.log('Partners count:', tree.partners?.length || 0);
-        console.log('Partners:', tree.partners?.map(p => ({ id: p.id, fullName: p.fullName })) || []);
-        console.log('Full response:', JSON.stringify(tree, null, 2));
+
         res.json(tree);
 
     } catch (error) {

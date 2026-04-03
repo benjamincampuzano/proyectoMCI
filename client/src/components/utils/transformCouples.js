@@ -25,7 +25,7 @@ export function buildIdIndex(root) {
 
 export function buildCoupleNetwork(root) {
   if (!root) return null;
-  console.log('Building couple network from root:', root);
+
   const index = buildIdIndex(root);
   const visited = new Set();
   
@@ -39,7 +39,7 @@ export function buildCoupleNetwork(root) {
     }
   });
   
-  console.log('Spouse map:', Array.from(spouseMap.entries()));
+
 
   function toCoupleNode(person) {
     if (!person) return null;
@@ -108,7 +108,7 @@ export function buildCoupleNetwork(root) {
       guests: { assigned, invited },
     };
     
-    console.log('Couple node created:', result);
+
     return result;
   }
 
