@@ -170,6 +170,11 @@ exports.getClasses = async (req, res) => {
             payments: true
           }
         },
+        sessions: {
+          include: {
+            attendances: true
+          }
+        },
         _count: {
           select: { enrollments: true }
         }
