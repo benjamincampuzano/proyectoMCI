@@ -324,7 +324,10 @@ const getModuleCandidates = async (req, res) => {
         }
 
         // Add ArtEnrollment users for EscuelaDeArtes
-        if (module.toLowerCase() === 'escueladeartes' || module.toLowerCase() === 'artes') {
+        const isArtModule = module.toLowerCase().replace(/\s/g, '').includes('art') || 
+                          module.toLowerCase().includes('escuela de artes');
+        
+        if (isArtModule) {
             const artClasses = await prisma.artClass.findMany({
                 include: {
                     professor: { select: { id: true } },
@@ -338,7 +341,7 @@ const getModuleCandidates = async (req, res) => {
         }
 
         // Add Encuentro users
-        if (module.toLowerCase() === 'encuentros' || module.toLowerCase() === 'encuentro') {
+        if (module.toLowerCase().includes('encuentro')) {
             const encuentross = await prisma.encuentro.findMany({
                 include: {
                     leaders: { select: { userId: true } },
@@ -359,10 +362,10 @@ const getModuleCandidates = async (req, res) => {
         if (candidateIds.length > 0) {
             where.id = { in: Array.from(new Set(candidateIds)) };
         } else {
-            // Fallback: any user in the network
+            // Fallback: any user in the leader's network (descendants in hierarchy)
             const userNetwork = await getUserNetwork(req.user.id);
-            if (userNetwork) {
-                where.profile = { network: userNetwork };
+            if (userNetwork && userNetwork.length > 0) {
+                where.id = { in: userNetwork };
             }
         }
 
