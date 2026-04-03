@@ -1,11 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = require('../utils/database');
+const { getUserNetwork } = require('../utils/networkUtils');
 
 /**
  * Get module coordinators
- * Returns users assigned as coordinators for specific modules
- * Optionally filtered by module
+ * ADMIN/PASTOR ven todos, LIDER_DOCE solo ve los de su red
  */
 const getModuleCoordinators = async (req, res) => {
     try {
@@ -20,14 +20,17 @@ const getModuleCoordinators = async (req, res) => {
             }
         };
 
-        // If module is specified, filter by module coordinations
+        if (!req.user.roles.includes('ADMIN') && !req.user.roles.includes('PASTOR')) {
+            const userNetwork = await getUserNetwork(req.user.id);
+
+            if (userNetwork) {
+                where.profile = { network: userNetwork };
+            }
+        }
+
         if (module) {
             where.moduleCoordinations = {
-                some: {
-                    moduleName: {
-                        in: [module, module.toLowerCase(), module.toUpperCase()] // Buscar variantes
-                    }
-                }
+                some: { moduleName: module }
             };
         }
 
@@ -36,33 +39,28 @@ const getModuleCoordinators = async (req, res) => {
             select: {
                 id: true,
                 email: true,
-                profile: {
-                    select: {
-                        fullName: true
-                    }
+                profile: { 
+                    select: { 
+                        fullName: true,
+                        network: true
+                    } 
                 },
-                roles: {
-                    select: {
-                        role: {
-                            select: {
-                                name: true
-                            }
-                        }
-                    }
+                roles: { include: { role: { select: { name: true } } } },
+                moduleCoordinations: {
+                    select: { moduleName: true, createdAt: true }
                 }
             },
-            orderBy: {
-                profile: {
-                    fullName: 'asc'
-                }
-            }
+            orderBy: { profile: { fullName: 'asc' } }
         });
 
         const formatted = coordinators.map(c => ({
             id: c.id,
             email: c.email,
             fullName: c.profile?.fullName || 'Sin Nombre',
-            role: c.roles?.[0]?.role?.name || 'LIDER_DOCE'
+            role: c.roles?.[0]?.role?.name || 'LIDER_DOCE',
+            network: c.profile?.network || 'Sin Red',
+            coordinatedModules: c.moduleCoordinations.map(mc => mc.moduleName),
+            isCurrentlyCoordinating: c.moduleCoordinations.length > 0
         }));
 
         res.json(formatted);
@@ -197,9 +195,212 @@ const removeModuleCoordinator = async (req, res) => {
     }
 };
 
+/**
+ * Get SubCoordinator for a module
+ */
+const getModuleSubCoordinator = async (req, res) => {
+    try {
+        const { module } = req.params;
+        const subCoordinator = await prisma.moduleSubCoordinator.findFirst({
+            where: { moduleName: module },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        profile: { select: { fullName: true } }
+                    }
+                }
+            }
+        });
+        if (!subCoordinator) return res.json(null);
+        res.json({
+            id: subCoordinator.user.id,
+            email: subCoordinator.user.email,
+            fullName: subCoordinator.user.profile?.fullName || 'Sin Nombre'
+        });
+    } catch (error) {
+        console.error('Error getting subcoordinator:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+/**
+ * Assign SubCoordinator to a module
+ */
+const assignModuleSubCoordinator = async (req, res) => {
+    try {
+        const { module } = req.params;
+        const { userId } = req.body;
+
+        // Check if user is the module coordinator or admin/pastor
+        const isCoordinatorOfThisModule = req.user.isModuleCoordinator && req.user.coordinatedModule === module;
+        const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+        
+        if (!isCoordinatorOfThisModule && !isAdminOrPastor) {
+            return res.status(403).json({ message: 'Only the module coordinator or admin can assign a subcoordinator' });
+        }
+
+        // Verify the target user exists
+        const user = await prisma.user.findFirst({
+            where: { id: userId, isDeleted: false }
+        });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        await prisma.moduleSubCoordinator.deleteMany({ where: { moduleName: module } });
+
+        const subCoord = await prisma.moduleSubCoordinator.create({
+            data: {
+                userId,
+                moduleName: module,
+                coordinatorId: req.user.id
+            },
+            include: {
+                user: { select: { id: true, email: true, profile: { select: { fullName: true } } } }
+            }
+        });
+
+        res.json({
+            id: subCoord.user.id,
+            email: subCoord.user.email,
+            fullName: subCoord.user.profile?.fullName || 'Sin Nombre'
+        });
+    } catch (error) {
+        console.error('Error assigning subcoordinator:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+/**
+ * Remove SubCoordinator
+ */
+const removeModuleSubCoordinator = async (req, res) => {
+    try {
+        const { module } = req.params;
+        const isCoordinatorOfThisModule = req.user.isModuleCoordinator && req.user.coordinatedModule === module && !req.user.isSubCoordinator;
+        const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+        
+        if (!isCoordinatorOfThisModule && !isAdminOrPastor) {
+            return res.status(403).json({ message: 'Only the module coordinator or admin can remove a subcoordinator' });
+        }
+
+        await prisma.moduleSubCoordinator.deleteMany({ where: { moduleName: module } });
+        res.json({ message: 'Subcoordinator removed successfully' });
+    } catch (error) {
+        console.error('Error removing subcoordinator:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+/**
+ * Get Candidates for SubCoordinator
+ */
+const getModuleCandidates = async (req, res) => {
+    try {
+        const { module } = req.params;
+        const { search } = req.query;
+
+        // Base query to find specific module users or those enrolled/participated
+        let candidateIds = [];
+
+        // Try getting from SeminarModule if exists (Discipular, Kids, etc.)
+        const seminarModules = await prisma.seminarModule.findMany({
+            where: {
+                name: { contains: module, mode: 'insensitive' }
+            },
+            include: {
+                professors: { select: { id: true } },
+                auxiliaries: { select: { id: true } },
+                enrollments: { select: { userId: true } }
+            }
+        });
+
+        if (seminarModules.length > 0) {
+            seminarModules.forEach(sm => {
+                sm.professors.forEach(p => candidateIds.push(p.id));
+                sm.auxiliaries.forEach(a => candidateIds.push(a.id));
+                sm.enrollments.forEach(e => { if (e.userId) candidateIds.push(e.userId); });
+            });
+        }
+
+        // Add ArtEnrollment users for EscuelaDeArtes
+        if (module.toLowerCase() === 'escueladeartes' || module.toLowerCase() === 'artes') {
+            const artClasses = await prisma.artClass.findMany({
+                include: {
+                    professor: { select: { id: true } },
+                    enrollments: { select: { userId: true } }
+                }
+            });
+            artClasses.forEach(ac => {
+                if(ac.professorId) candidateIds.push(ac.professorId);
+                ac.enrollments.forEach(e => { if (e.userId) candidateIds.push(e.userId); });
+            });
+        }
+
+        // Add Encuentro users
+        if (module.toLowerCase() === 'encuentros' || module.toLowerCase() === 'encuentro') {
+            const encuentross = await prisma.encuentro.findMany({
+                include: {
+                    leaders: { select: { userId: true } },
+                    registrations: { select: { userId: true } }
+                }
+            });
+            encuentross.forEach(e => {
+                e.leaders.forEach(l => candidateIds.push(l.userId));
+                e.registrations.forEach(r => { if (r.userId) candidateIds.push(r.userId); });
+            });
+        }
+
+        // For Ganar, Consolidar, Enviar or if we found no one based on modules, just find users in network
+        // Note: For Gastar/Consolidar, typically any active user in the leader's network is a candidate
+        
+        let where = { isDeleted: false };
+        
+        if (candidateIds.length > 0) {
+            where.id = { in: Array.from(new Set(candidateIds)) };
+        } else {
+            // Fallback: any user in the network
+            const userNetwork = await getUserNetwork(req.user.id);
+            if (userNetwork) {
+                where.profile = { network: userNetwork };
+            }
+        }
+
+        if (search) {
+            where.OR = [
+                { profile: { fullName: { contains: search, mode: 'insensitive' } } },
+                { email: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+
+        const candidates = await prisma.user.findMany({
+            where,
+            select: {
+                id: true,
+                email: true,
+                profile: { select: { fullName: true } }
+            },
+            take: 20
+        });
+
+        res.json(candidates.map(c => ({
+            id: c.id,
+            email: c.email,
+            fullName: c.profile?.fullName || 'Sin Nombre'
+        })));
+    } catch (error) {
+        console.error('Error fetching candidates:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     getModuleCoordinators,
     getDefaultModuleCoordinator,
     assignModuleCoordinator,
-    removeModuleCoordinator
+    removeModuleCoordinator,
+    getModuleSubCoordinator,
+    assignModuleSubCoordinator,
+    removeModuleSubCoordinator,
+    getModuleCandidates
 };

@@ -10,7 +10,7 @@ function generateUserColors(userId) {
     hash = userId.charCodeAt(i) + ((hash << 5) - hash);
   }
 
-  const colorPalettes = [
+  const colorGuitarIcons = [
     { primary: '#374151', secondary: '#4B5563' },
     { primary: '#1E3A8A', secondary: '#2563EB' },
     { primary: '#1C4532', secondary: '#059669' },
@@ -24,7 +24,7 @@ function generateUserColors(userId) {
     { primary: '#1E293B', secondary: '#334155' },
   ];
 
-  return colorPalettes[Math.abs(hash) % colorPalettes.length];
+  return colorGuitarIcons[Math.abs(hash) % colorGuitarIcons.length];
 }
 
 function Avatar({ userId, name, size = 6 }) {

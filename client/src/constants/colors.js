@@ -1,4 +1,4 @@
-// Design System - Color Palette
+// Design System - Color GuitarIcon
 // Sistema de colores institucional para consistencia visual
 
 export const colors = {

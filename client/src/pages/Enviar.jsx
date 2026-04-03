@@ -11,9 +11,17 @@ import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const Enviar = () => {
-    const { hasAnyRole, isCoordinator } = useAuth();
-    const hasAdminOrCoordinator = hasAnyRole([ROLES.ADMIN]) || isCoordinator();
+    const { user, hasAnyRole, isCoordinator } = useAuth();
+    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
+
+    // Custom role checker for cells tab - allows coordinators to manage cells
+    const hasCellsTabAccess = () => {
+        const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_CELLS);
+        const isModuleCoord = moduleCoordinator && 
+            moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
+        return hasRoleAccess || isModuleCoord;
+    };
 
     // Handler for coordinator changes
     const handleCoordinatorChange = (newCoordinator) => {
@@ -62,7 +70,7 @@ const Enviar = () => {
     }, []);
     const tabs = [
         { id: 'attendance', label: 'Asistencia', component: CellAttendance },
-        { id: 'cells', label: 'Células', component: CellManagement, roles: ROLE_GROUPS.CAN_MANAGE_CELLS },
+        { id: 'cells', label: 'Células', component: (props) => <CellManagement {...props} moduleCoordinator={moduleCoordinator} />, customCheck: hasCellsTabAccess },
         { id: 'stats', label: 'Estadísticas', component: AttendanceChart, roles: ROLE_GROUPS.CAN_VIEW_STATS },
     ];
 
@@ -76,7 +84,9 @@ const Enviar = () => {
                         moduleCoordinator={moduleCoordinator}
                         moduleName="Enviar"
                         onCoordinatorChange={handleCoordinatorChange}
-                        disabled={!hasAnyRole([ROLES.ADMIN])}
+                        disabled={!hasAdminOrPastor}
+                        currentUserId={user?.id}
+                        isModuleCoordinator={user?.isCoordinator || isCoordinator()}
                     />
                 }
             />

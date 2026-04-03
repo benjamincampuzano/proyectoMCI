@@ -12,38 +12,31 @@ const {
     getMyNetwork,
     searchUsers // Added
 } = require('../controllers/userController');
-const { authenticate, isAdmin, authorize } = require('../middleware/auth');
+const { authenticate, isAdmin, authorize, checkCoordinatorStatus } = require('../middleware/auth');
 
 const router = express.Router();
 
-// User profile routes (authenticated users)
-router.get('/profile', authenticate, getProfile);
-router.put('/profile', authenticate, updateProfile);
-router.put('/password', authenticate, changePassword);
+router.use(authenticate);
+router.use(checkCoordinatorStatus);
 
-// Dedicated search endpoint for internal leaders (Must be before /:id)
-// Allows ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA
-router.get('/search', authenticate, (req, res, next) => {
-    // Custom inline middleware for specific role check
-    const roles = req.user.roles || [];
-    if (roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
-        next();
-    } else {
-        res.status(403).json({ message: 'Access denied. Requires leadership role.' });
-    }
-}, searchUsers);
+// User profile routes (authenticated users)
+router.get('/profile', getProfile);
+router.put('/profile', updateProfile);
+router.put('/password', changePassword);
+
+// Dedicated search endpoint for internal leaders
+router.get('/search', searchUsers);
 
 // Role-based routes
-// Read access: ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA (all leadership roles)
-router.get('/', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']), getAllUsers);
-router.get('/:id', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']), getUserById);
+router.get('/', getAllUsers);
+router.get('/:id', getUserById);
 
-// Write access: ADMIN, PASTOR, LIDER_DOCE
-router.post('/', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), createUser);
-router.put('/:id', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), updateUser);
-router.delete('/:id', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), deleteUser);
-router.post('/assign-leader/:id', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), assignLeader);
+// Write access
+router.post('/', authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), createUser);
+router.put('/:id', updateUser);
+router.delete('/:id', isAdmin, deleteUser);
+router.post('/assign-leader/:id', authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), assignLeader);
 
-router.get('/my-network/all', authenticate, getMyNetwork);
+router.get('/my-network/all', getMyNetwork);
 
 module.exports = router;

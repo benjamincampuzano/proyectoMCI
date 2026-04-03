@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const axios = require('axios');
 const { logActivity } = require('../utils/auditLogger');
 const { validatePassword } = require('../utils/passwordValidator');
+const { canManageUser, getVisibleRoles, MANAGABLE_ROLES, PROTECTED_ROLES } = require('../middleware/coordinatorAuth');
 
 const prisma = require('../utils/database');
 
@@ -218,132 +219,121 @@ const changePassword = async (req, res) => {
     }
 };
 
-// Admin: Obtener todos los usuarios
 const getAllUsers = async (req, res) => {
     try {
-        const currentUser = req.user;
-        const { role, sex, minBirthDate } = req.query;
-        let where = {};
+        const { role, page = 1, limit = 50 } = req.query;
 
-        // Security Filter based on RBAC and Hierarchy
-        // Note: currentUser.roles is an array from the token
-        if (currentUser.roles.includes('ADMIN')) {
-            where = {};
-        } else if (currentUser.roles.some(r => ['PASTOR', 'LIDER_DOCE'].includes(r))) {
-            const networkIds = await getUserNetwork(currentUser.id);
-            where = {
-                id: { in: [...networkIds, currentUser.id] },
-                roles: {
-                    none: {
-                        role: { name: 'ADMIN' }
-                    }
-                }
-            };
-        } else if (currentUser.roles.includes('LIDER_CELULA')) {
-            // LIDER_CELULA also sees their network
-            const networkIds = await getUserNetwork(currentUser.id);
-            where = {
-                id: { in: [...networkIds, currentUser.id] }
-            };
-        } else {
-            where = { id: currentUser.id };
-        }
-
-        // Apply role filter if provided (matching the new Role table)
-        if (role) {
-            const roleNames = role.split(',');
-            where.roles = {
-                some: {
-                    role: {
-                        name: { in: roleNames }
-                    }
-                }
-            };
-        }
-
-        if (sex || minBirthDate) {
-            where.profile = {
-                ...(where.profile || {}),
-                ...(sex ? { sex } : {}),
-                ...(minBirthDate ? { birthDate: { gt: new Date(minBirthDate) } } : {})
-            };
-        }
-
-        const users = await prisma.user.findMany({
-            where,
-            include: {
-                profile: true,
-                roles: { include: { role: true } },
-                spouse: { include: { profile: true } },
-                spouseOf: { include: { profile: true } },
-                parents: {
-                    include: {
-                        parent: {
-                            include: { profile: true }
-                        }
-                    }
+        if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
+            const roleFilter = role ? { role: { name: role } } : {};
+            const users = await prisma.user.findMany({
+                where: {
+                    isDeleted: false,
+                    role: roleFilter.role ? { name: roleFilter.role.name } : undefined
                 },
-                _count: {
-                    select: {
-                        invitedGuests: true
-                    }
+                include: {
+                    roles: { include: { role: true } },
+                    profile: true,
+                    network: true
                 },
-                moduleCoordinations: true
-            },
-            orderBy: { profile: { fullName: 'asc' } }
-        });
+                skip: (page - 1) * limit,
+                take: limit,
+                orderBy: { id: 'desc' }
+            });
 
-        // Format for frontend consumption
-        const formattedUsers = users.map(u => ({
-            ...u.profile,
-            id: u.id,  // Ensure User ID is not overwritten by Profile ID
-            email: u.email,
-            phone: u.phone,
-            roles: u.roles.map(r => r.role.name),
-            isCoordinator: u.isCoordinator || u.moduleCoordinations.length > 0,
-            spouseId: u.spouseId || (u.spouseOf ? u.spouseOf.id : null),
-            spouseName: u.spouse?.profile.fullName || u.spouseOf?.profile.fullName || null,
-            pastorIds: u.parents.filter(p => p.role === 'PASTOR').map(p => p.parentId),
-            liderDoceIds: u.parents.filter(p => p.role === 'LIDER_DOCE').map(p => p.parentId),
-            liderCelulaIds: u.parents.filter(p => p.role === 'LIDER_CELULA').map(p => p.parentId),
-            // Maintain single IDs for backward compatibility if needed, but using arrays primarily
-            pastorId: u.parents.find(p => p.role === 'PASTOR')?.parentId || null,
-            liderDoceId: u.parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null,
-            liderCelulaId: u.parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null,
-            parents: u.parents.map(p => ({
-                id: p.parentId,
-                fullName: p.parent.profile.fullName,
-                role: p.role
-            })),
-            invitedGuestsCount: u._count.invitedGuests
-        }));
+            const filteredUsers = users.filter(u =>
+                u.roles?.[0]?.role?.name !== 'ADMIN'
+            );
 
-        res.status(200).json(formattedUsers);
+            return res.json(filteredUsers);
+        }
+
+        if (req.user.isModuleCoordinator) {
+            const roleFilter = role ? { role: { name: role } } : {
+                role: { name: { in: MANAGABLE_ROLES } }
+            };
+
+            const users = await prisma.user.findMany({
+                where: {
+                    isDeleted: false,
+                    ...roleFilter
+                },
+                include: {
+                    roles: { include: { role: true } },
+                    profile: true,
+                    network: true
+                },
+                skip: (page - 1) * limit,
+                take: limit,
+                orderBy: { id: 'desc' }
+            });
+
+            return res.json(users);
+        }
+
+        if (req.user.roles.includes('LIDER_DOCE')) {
+            const requesterNetworkId = await getUserNetwork(req.user.id);
+
+            if (!requesterNetworkId) {
+                return res.json([]);
+            }
+
+            const roleFilter = role ? { role: { name: role } } : {
+                role: { name: { in: MANAGABLE_ROLES } }
+            };
+
+            const users = await prisma.user.findMany({
+                where: {
+                    isDeleted: false,
+                    networkId: requesterNetworkId,
+                    ...roleFilter
+                },
+                include: {
+                    roles: { include: { role: true } },
+                    profile: true,
+                    network: true
+                },
+                skip: (page - 1) * limit,
+                take: limit,
+                orderBy: { id: 'desc' }
+            });
+
+            return res.json(users);
+        }
+
+        return res.json([]);
+
     } catch (error) {
-        console.error(error);
+        console.error('Error fetching users:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
 
-// Admin: Obtener usuario específico
 const getUserById = async (req, res) => {
     try {
-        const { id } = req.params;
+        const userId = parseInt(req.params.id);
+
+        if (req.user.id === userId) {
+            return res.status(403).json({ message: 'Cannot access your own account via this endpoint' });
+        }
 
         const user = await prisma.user.findUnique({
-            where: { id: parseInt(id) },
+            where: { id: userId },
             include: {
-                profile: true,
                 roles: { include: { role: true } },
-                parents: { include: { parent: { include: { profile: true } } } },
-                spouse: { include: { profile: true } },
-                spouseOf: { include: { profile: true } },
-                moduleCoordinations: true
+                profile: true,
+                network: true
             }
         });
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
+        }
+
+        const targetRole = user.roles?.[0]?.role?.name;
+        const permission = await canManageUser(req.user, targetRole, user.networkId);
+
+        if (!permission.canManage) {
+            return res.status(403).json({ message: permission.reason });
         }
 
         const formattedUser = {
@@ -352,53 +342,46 @@ const getUserById = async (req, res) => {
             email: user.email,
             phone: user.phone,
             roles: user.roles.map(r => r.role.name),
-            isCoordinator: user.isCoordinator || user.moduleCoordinations.length > 0,
-            spouseId: user.spouseId || (user.spouseOf ? user.spouseOf.id : null),
-            spouseName: user.spouse?.profile.fullName || user.spouseOf?.profile.fullName || null,
-            pastorIds: user.parents.filter(p => p.role === 'PASTOR').map(p => p.parentId),
-            liderDoceIds: user.parents.filter(p => p.role === 'LIDER_DOCE').map(p => p.parentId),
-            liderCelulaIds: user.parents.filter(p => p.role === 'LIDER_CELULA').map(p => p.parentId),
-            pastorId: user.parents.find(p => p.role === 'PASTOR')?.parentId || null,
-            liderDoceId: user.parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null,
-            liderCelulaId: user.parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null,
-            parents: user.parents.map(p => ({
-                id: p.parentId,
-                fullName: p.parent.profile.fullName,
-                role: p.role
-            }))
+            networkId: user.networkId
         };
 
         res.status(200).json({ user: formattedUser });
+
     } catch (error) {
-        console.error(error);
+        console.error('Error fetching user:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
 
-// Admin: Actualizar usuario (rol, detalles, jerarquía)
 const updateUser = async (req, res) => {
     try {
-        const { id } = req.params;
-        const userId = parseInt(id);
-        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, maritalStatus, network, isCoordinator, spouseId } = req.body;
+        const userId = parseInt(req.params.id);
+        const currentUserId = req.user.id;
 
-        const userToUpdate = await prisma.user.findUnique({
+        if (userId === currentUserId) {
+            return res.status(403).json({ message: 'Cannot modify your own account' });
+        }
+
+        const targetUser = await prisma.user.findUnique({
             where: { id: userId },
-            include: { profile: true, roles: { include: { role: true } } }
+            include: {
+                roles: { include: { role: true } },
+                network: true
+            }
         });
 
-        if (!userToUpdate) {
+        if (!targetUser || targetUser.isDeleted) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Security: LIDER_DOCE or PASTOR can only update their network
-        if (req.user.roles.some(r => ['LIDER_DOCE', 'PASTOR'].includes(r)) && !req.user.roles.includes('ADMIN')) {
-            const networkIds = await getUserNetwork(req.user.id);
-            if (!networkIds.includes(userId) && userId !== req.user.id) {
-                console.warn(`Unauthorized update attempt by user ${req.user.id} on user ${userId}`);
-                return res.status(403).json({ message: 'No tienes permiso para editar usuarios fuera de tu red' });
-            }
+        const targetRole = targetUser.roles?.[0]?.role?.name;
+        const permission = await canManageUser(req.user, targetRole, targetUser.networkId);
+
+        if (!permission.canManage) {
+            return res.status(403).json({ message: permission.reason });
         }
+
+        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, maritalStatus, network, isCoordinator, spouseId } = req.body;
 
         if (email) {
             const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -540,15 +523,19 @@ const updateUser = async (req, res) => {
             return updated;
         });
 
-        // Audit Log (Simplified for brevity)
-        await logActivity(req.user.id, 'UPDATE', 'USER', userId, { targetUser: updatedUser.profile.fullName }, req.ip, req.headers['user-agent']);
+        const finalUpdated = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { profile: true, roles: { include: { role: true } } }
+        });
+
+        await logActivity(req.user.id, 'UPDATE', 'USER', userId, { targetUser: finalUpdated.profile.fullName }, req.ip, req.headers['user-agent']);
 
         res.status(200).json({
             user: {
-                id: updatedUser.id,
-                email: updatedUser.email,
-                fullName: updatedUser.profile.fullName,
-                roles: updatedUser.roles.map(r => r.role.name)
+                id: finalUpdated.id,
+                email: finalUpdated.email,
+                fullName: finalUpdated.profile.fullName,
+                roles: finalUpdated.roles.map(r => r.role.name)
             },
         });
     } catch (error) {
@@ -757,17 +744,22 @@ const createUser = async (req, res) => {
     }
 };
 
-// Admin: Eliminar usuario
 const deleteUser = async (req, res) => {
     try {
-        const { id } = req.params;
-        const userId = parseInt(id);
+        const userId = parseInt(req.params.id);
 
-        if (userId === req.user.id) return res.status(400).json({ message: 'Cannot delete your own account' });
+        if (!req.user.roles.includes('ADMIN')) {
+            return res.status(403).json({ message: 'Only administrators can delete users' });
+        }
+
+        if (userId === req.user.id) {
+            return res.status(403).json({ message: 'Cannot delete your own account' });
+        }
 
         const userToDelete = await prisma.user.findUnique({
             where: { id: userId },
             include: {
+                roles: { include: { role: true } },
                 _count: {
                     select: {
                         children: true,
@@ -789,13 +781,9 @@ const deleteUser = async (req, res) => {
 
         if (!userToDelete) return res.status(404).json({ message: 'User not found' });
 
-        // Security check for deletion
-        if (!req.user.roles.includes('ADMIN')) {
-            const networkIds = await getUserNetwork(req.user.id);
-            if (!networkIds.includes(userId)) {
-                console.warn(`Unauthorized delete attempt by user ${req.user.id} on user ${userId}`);
-                return res.status(403).json({ message: 'No tienes permiso para eliminar usuarios fuera de tu red' });
-            }
+        const targetRole = userToDelete.roles?.[0]?.role?.name;
+        if (targetRole === 'ADMIN') {
+            return res.status(403).json({ message: 'Cannot delete admin users' });
         }
 
         if (userToDelete._count.children > 0 || userToDelete._count.ledCells > 0 || userToDelete._count.invitedGuests > 0) {
@@ -987,61 +975,93 @@ const searchPublicUsers = async (req, res) => {
     }
 };
 
-// Internal search for coordinators (Pastors/Doce)
 const searchUsers = async (req, res) => {
     try {
-        const { search, role, excludeRoles } = req.query;
-        // Basic check: current user must be at least LIDER_DOCE, PASTOR, or ADMIN (enforced by route middleware)
+        const { q, search, role, page = 1, limit = 20, allowAllRoles = false } = req.query;
+        
+        // Accept both 'q' and 'search' parameters for compatibility
+        const searchQuery = q || search;
 
-        const where = {};
+        // Allow empty search when role is specified (for fetching all users of a specific role)
+        if (!searchQuery && !role && !allowAllRoles) {
+            return res.status(400).json({ message: 'Search query or role parameter is required' });
+        }
 
-        if (search) {
-            where.OR = [
-                { profile: { fullName: { contains: search, mode: 'insensitive' } } },
-                { email: { contains: search, mode: 'insensitive' } }
+        let where = {
+            isDeleted: false
+        };
+
+        // Add search conditions only if search query is provided and has meaningful content
+        if (searchQuery && searchQuery.trim() && searchQuery.trim().length >= 2) {
+            const trimmedQuery = searchQuery.trim();
+            where['OR'] = [
+                { email: { contains: trimmedQuery, mode: 'insensitive' } },
+                { profile: { fullName: { contains: trimmedQuery, mode: 'insensitive' } } }
             ];
+        } else if (searchQuery && searchQuery.trim() && searchQuery.trim().length > 0 && searchQuery.trim().length < 2) {
+            return res.status(400).json({ message: 'Search query must be at least 2 characters' });
         }
 
-        if (role) {
-            where.roles = {
-                some: {
-                    role: { name: role }
-                }
-            };
+        // Special case for Art School enrollment - allow all roles
+        if (allowAllRoles === 'true' && (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR') || req.user.isModuleCoordinator)) {
+            // No role restrictions for Art School enrollment
+            if (role) {
+                where['roles'] = { some: { role: { name: role } } };
+            }
         }
-
-        if (excludeRoles) {
-            const rolesToExclude = excludeRoles.split(',');
-            where.roles = {
-                ...where.roles,
-                none: {
-                    role: { name: { in: rolesToExclude } }
-                }
-            };
+        else if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
+            if (role) {
+                where['roles'] = { some: { role: { name: role } } };
+            }
+        }
+        else if (req.user.isModuleCoordinator) {
+            // Coordinators can search for LIDER_DOCE users to assign them as coordinators
+            const allowedRoles = role === 'LIDER_DOCE' 
+                ? [...MANAGABLE_ROLES, 'LIDER_DOCE'] 
+                : MANAGABLE_ROLES;
+            
+            if (role && !allowedRoles.includes(role)) {
+                return res.status(403).json({ message: `You cannot search for role: ${role}` });
+            }
+            
+            where['roles'] = { some: { role: { name: role ? role : { in: allowedRoles } } } };
+        }
+        else if (req.user.roles.includes('LIDER_DOCE')) {
+            const requesterNetwork = await getUserNetwork(req.user.id);
+            if (!requesterNetwork) {
+                return res.json([]);
+            }
+            where['profile'] = { network: requesterNetwork };
+            
+            // LIDER_DOCE can search for other LIDER_DOCE users in their network
+            const allowedRoles = role === 'LIDER_DOCE' 
+                ? [...MANAGABLE_ROLES, 'LIDER_DOCE'] 
+                : MANAGABLE_ROLES;
+            
+            if (role && !allowedRoles.includes(role)) {
+                return res.status(403).json({ message: `You cannot search for role: ${role}` });
+            }
+            where['roles'] = { some: { role: { name: role ? role : { in: allowedRoles } } } };
+        }
+        else {
+            return res.json([]);
         }
 
         const users = await prisma.user.findMany({
             where,
-            select: {
-                id: true,
-                email: true,
-                profile: { select: { fullName: true } },
-                roles: { select: { role: { select: { name: true } } } }
+            include: {
+                roles: { include: { role: true } },
+                profile: true
             },
-            take: 20
+            skip: (parseInt(page) - 1) * parseInt(limit),
+            take: parseInt(limit)
         });
 
-        const formatted = users.map(u => ({
-            id: u.id,
-            email: u.email,
-            fullName: u.profile?.fullName || 'Sin Nombre',
-            roles: u.roles.map(r => r.role.name)
-        }));
+        res.json(users);
 
-        res.json(formatted);
     } catch (error) {
-        console.error('Error searching users internal:', error);
-        res.status(500).json({ message: 'Server error searching users' });
+        console.error('Error searching users:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 };
 

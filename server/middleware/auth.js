@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { isModuleCoordinator } = require('./coordinatorAuth');
 
 // Middleware para verificar token JWT
 const authenticate = (req, res, next) => {
@@ -54,4 +55,21 @@ const authorize = (allowedRoles = []) => {
     };
 };
 
-module.exports = { authenticate, isAdmin, authorize };
+/**
+ * Middleware que verifica si el usuario es coordinador activo
+ * DEBE ejecutarse DESPUÉS de authenticate
+ */
+const checkCoordinatorStatus = async (req, res, next) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        await isModuleCoordinator(req, res, next);
+    } catch (error) {
+        console.error('Error in checkCoordinatorStatus:', error);
+        res.status(500).json({ message: 'Error checking coordinator status' });
+    }
+};
+
+module.exports = { authenticate, isAdmin, authorize, checkCoordinatorStatus, isModuleCoordinator };

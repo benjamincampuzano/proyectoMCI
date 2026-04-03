@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { House, Users, UserPlus, Heart, PaperPlaneTilt, Calendar, BookOpen, SignOut, TreeStructure, Target, ShieldCheck, Baby, CaretLeft, CaretRight, Palette } from '@phosphor-icons/react';
+import { House, Users, UserPlus, Heart, PaperPlaneTilt, Calendar, BookOpen, SignOut, TreeStructure, Target, ShieldCheck, Baby, CaretLeft, CaretRight, GuitarIcon } from '@phosphor-icons/react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';
 import PasswordChangeModal from '../components/auth/PasswordChangeModal';
@@ -61,7 +61,7 @@ const Layout = () => {
         { to: '/consolidar', icon: Heart, label: 'Consolidar' },
         { to: '/discipular', icon: BookOpen, label: 'Discipular' },
         ...(hasKidsAccess ? [{ to: '/kids', icon: Baby, label: 'Kids' }] : []),
-        { to: '/escuela-de-artes', icon: Palette, label: 'Artes' },
+        { to: '/escuela-de-artes', icon: GuitarIcon, label: 'Artes' },
         { to: '/enviar', icon: PaperPlaneTilt, label: 'Enviar' },
         { to: '/encuentros', icon: Users, label: 'Encuentros' },
         { to: '/convenciones', icon: Calendar, label: 'Convenciones' },

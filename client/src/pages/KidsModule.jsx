@@ -12,9 +12,10 @@ import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const KidsModule = () => {
-    const { hasAnyRole } = useAuth();
+    const { user, hasAnyRole, isCoordinator } = useAuth();
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [isKidsTeacherOrAuxiliary, setIsKidsTeacherOrAuxiliary] = useState(null);
+    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
 
     // Handler for coordinator changes
     const handleCoordinatorChange = (newCoordinator) => {
@@ -74,10 +75,10 @@ const KidsModule = () => {
     // Custom role checker for schedule and matrix tabs
     const hasScheduleOrMatrixAccess = () => {
         const userRoles = hasAnyRole(SCHEDULE_AND_MATRIX_ROLES);
-        const isCoordinator = moduleCoordinator && moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
+        const isCoord = moduleCoordinator && moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
         const isTeacherOrAuxiliary = isKidsTeacherOrAuxiliary === true;
         
-        return userRoles || isCoordinator || isTeacherOrAuxiliary;
+        return userRoles || isCoord || isTeacherOrAuxiliary;
     };
     
     const tabs = [
@@ -117,7 +118,9 @@ const KidsModule = () => {
                         moduleCoordinator={moduleCoordinator}
                         moduleName="Kids"
                         onCoordinatorChange={handleCoordinatorChange}
-                        disabled={!hasAnyRole([ROLES.ADMIN])}
+                        disabled={!hasAdminOrPastor}
+                        currentUserId={user?.id}
+                        isModuleCoordinator={user?.isCoordinator || isCoordinator()}
                     />
                 }
             />

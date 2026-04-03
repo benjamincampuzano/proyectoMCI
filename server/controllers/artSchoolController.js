@@ -78,6 +78,9 @@ exports.createClass = async (req, res) => {
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         professorId: professorId ? Number(professorId) : null,
+        coordinatorId: req.body.coordinatorId ? Number(req.body.coordinatorId) : null,
+        duration: req.body.duration ? Number(req.body.duration) : 60,
+        schedule: req.body.schedule || ''
       }
     });
 
@@ -100,7 +103,10 @@ exports.updateClass = async (req, res) => {
         cost: cost !== undefined ? Number(cost) : undefined,
         startDate: startDate ? new Date(startDate) : undefined,
         endDate: endDate ? new Date(endDate) : undefined,
-        professorId: professorId ? Number(professorId) : null,
+        professorId: professorId !== undefined ? (professorId ? Number(professorId) : null) : undefined,
+        coordinatorId: req.body.coordinatorId !== undefined ? (req.body.coordinatorId ? Number(req.body.coordinatorId) : null) : undefined,
+        duration: req.body.duration !== undefined ? Number(req.body.duration) : undefined,
+        schedule: req.body.schedule !== undefined ? req.body.schedule : undefined,
         isDeleted
       }
     });
@@ -108,6 +114,43 @@ exports.updateClass = async (req, res) => {
     res.status(200).json(updatedClass);
   } catch (error) {
     res.status(500).json({ error: 'Error al actualizar la clase' });
+  }
+};
+
+exports.deleteClass = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if class has enrollments
+    const classWithEnrollments = await prisma.artClass.findUnique({
+      where: { id: Number(id) },
+      include: {
+        _count: {
+          select: { enrollments: true }
+        }
+      }
+    });
+
+    if (!classWithEnrollments) {
+      return res.status(404).json({ error: 'Clase no encontrada' });
+    }
+
+    if (classWithEnrollments._count.enrollments > 0) {
+      return res.status(400).json({ 
+        error: `No se puede eliminar la clase porque tiene ${classWithEnrollments._count.enrollments} estudiante(s) inscrito(s)` 
+      });
+    }
+
+    // Soft delete the class
+    await prisma.artClass.update({
+      where: { id: Number(id) },
+      data: { isDeleted: true }
+    });
+
+    res.status(200).json({ message: 'Clase eliminada exitosamente' });
+  } catch (error) {
+    console.error('Error deleting class:', error);
+    res.status(500).json({ error: 'Error al eliminar la clase' });
   }
 };
 
@@ -119,12 +162,34 @@ exports.getClasses = async (req, res) => {
         professor: {
           select: { id: true, profile: { select: { fullName: true } } }
         },
+        coordinator: {
+          select: { id: true, profile: { select: { fullName: true } } }
+        },
+        enrollments: {
+          include: {
+            payments: true
+          }
+        },
         _count: {
           select: { enrollments: true }
         }
       }
     });
-    res.status(200).json(classes);
+
+    // Add totals to enrollments in each class
+    const classesWithTotals = classes.map(cls => ({
+      ...cls,
+      enrollments: (cls.enrollments || []).map(enr => {
+        const totalPaid = enr.payments.reduce((sum, p) => sum + p.amount, 0);
+        return {
+          ...enr,
+          totalPaid,
+          balance: enr.finalCost - totalPaid
+        };
+      })
+    }));
+
+    res.status(200).json(classesWithTotals);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener las clases' });
   }
@@ -139,9 +204,14 @@ exports.getClassById = async (req, res) => {
         professor: {
           select: { id: true, profile: { select: { fullName: true } } }
         },
+        coordinator: {
+          select: { id: true, profile: { select: { fullName: true } } }
+        },
         enrollments: {
           include: {
-            user: { select: { id: true, profile: { select: { fullName: true } } } }
+            user: { select: { id: true, profile: { select: { fullName: true } } } },
+            guest: { select: { id: true, name: true, phone: true } },
+            payments: true
           }
         }
       }
@@ -149,7 +219,21 @@ exports.getClassById = async (req, res) => {
 
     if (!artClass) return res.status(404).json({ error: 'Clase no encontrada' });
 
-    res.status(200).json(artClass);
+    // Calculate totals for each enrollment
+    const enrollmentsWithTotals = artClass.enrollments.map(enr => {
+      const totalPaid = enr.payments.reduce((sum, p) => sum + p.amount, 0);
+      const balance = enr.finalCost - totalPaid;
+      return {
+        ...enr,
+        totalPaid,
+        balance
+      };
+    });
+
+    res.status(200).json({
+      ...artClass,
+      enrollments: enrollmentsWithTotals
+    });
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener la clase' });
   }
@@ -161,25 +245,68 @@ exports.getClassById = async (req, res) => {
 
 exports.enrollStudent = async (req, res) => {
   try {
-    const { userId, classId } = req.body;
+    const { userId, guestId, discountPercentage = 0 } = req.body;
+    const { id: classId } = req.params; // Obtener classId de los parámetros de ruta
+
+    // Validar que se proporcione userId o guestId, pero no ambos
+    if (!userId && !guestId) {
+      return res.status(400).json({ error: 'Debe proporcionar userId o guestId' });
+    }
+    if (userId && guestId) {
+      return res.status(400).json({ error: 'No puede proporcionar userId y guestId simultáneamente' });
+    }
+
+    // Si no viene classId de params, buscarlo en body (para compatibilidad con ruta antigua)
+    const finalClassId = classId || req.body.classId;
+
+    if (!finalClassId) {
+      return res.status(400).json({ error: 'Debe proporcionar classId' });
+    }
+
+    // Obtener información de la clase para calcular costos
+    const artClass = await prisma.artClass.findUnique({
+      where: { id: Number(finalClassId) }
+    });
+
+    if (!artClass) {
+      return res.status(404).json({ error: 'Clase no encontrada' });
+    }
+
+    // Calcular costo final con descuento
+    const discount = Math.max(0, Math.min(100, Number(discountPercentage) || 0));
+    const finalCost = artClass.cost * (1 - discount / 100);
+
+    // Crear inscripción
+    const enrollmentData = {
+      classId: Number(finalClassId),
+      discountPercentage: discount,
+      finalCost: finalCost,
+      status: 'INSCRITO'
+    };
+
+    // Agregar userId o guestId según corresponda
+    if (userId) {
+      enrollmentData.userId = Number(userId);
+    } else {
+      enrollmentData.guestId = Number(guestId);
+    }
 
     const enrollment = await prisma.artEnrollment.create({
-      data: {
-        userId: Number(userId),
-        classId: Number(classId),
-        status: 'INSCRITO'
-      },
+      data: enrollmentData,
       include: {
-        user: { select: { id: true, profile: { select: { fullName: true } } } }
+        user: { select: { id: true, profile: { select: { fullName: true } } } },
+        guest: { select: { id: true, name: true, phone: true } },
+        artClass: { select: { id: true, name: true, cost: true } }
       }
     });
 
     res.status(201).json(enrollment);
   } catch (error) {
+    console.error('Error en enrollStudent:', error);
     if (error.code === 'P2002') {
-      return res.status(400).json({ error: 'El usuario ya está inscrito en esta clase' });
+      return res.status(400).json({ error: 'El usuario/invitado ya está inscrito en esta clase' });
     }
-    res.status(500).json({ error: 'Error al inscribir estudiante' });
+    res.status(500).json({ error: 'Error al crear inscripción' });
   }
 };
 
@@ -199,6 +326,21 @@ exports.updateEnrollmentStatus = async (req, res) => {
   }
 };
 
+exports.deleteEnrollment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.artEnrollment.delete({
+      where: { id: Number(id) }
+    });
+
+    res.status(200).json({ message: 'Inscripción eliminada correctamente' });
+  } catch (error) {
+    console.error('Error deleting enrollment:', error);
+    res.status(500).json({ error: 'Error al eliminar la inscripción' });
+  }
+};
+
 exports.getEnrollmentById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -206,6 +348,7 @@ exports.getEnrollmentById = async (req, res) => {
             where: { id: Number(id) },
             include: {
                 user: { select: { id: true, profile: { select: { fullName: true } } } },
+                guest: { select: { id: true, name: true, phone: true } },
                 artClass: true,
                 attendances: true,
                 payments: true
@@ -214,7 +357,14 @@ exports.getEnrollmentById = async (req, res) => {
 
         if (!enrollment) return res.status(404).json({ error: 'Inscripción no encontrada' });
 
-        res.status(200).json(enrollment);
+        const totalPaid = enrollment.payments.reduce((sum, p) => sum + p.amount, 0);
+        const balance = enrollment.finalCost - totalPaid;
+
+        res.status(200).json({
+            ...enrollment,
+            totalPaid,
+            balance
+        });
     } catch (error) {
         res.status(500).json({ error: 'Error al obtener inscripción' });
     }
@@ -263,12 +413,19 @@ exports.registerAttendance = async (req, res) => {
 
 exports.registerPayment = async (req, res) => {
   try {
+    const { id } = req.params;
     const { enrollmentId, amount, notes, date } = req.body;
-    const registeredById = req.user.id; // Asumiendo que req.user lo pone el authMiddleware
+    const registeredById = req.user.id;
+
+    const finalEnrollmentId = id ? Number(id) : Number(enrollmentId);
+
+    if (!finalEnrollmentId) {
+      return res.status(400).json({ error: 'La inscripción es requerida' });
+    }
 
     const payment = await prisma.artPayment.create({
       data: {
-        enrollmentId: Number(enrollmentId),
+        enrollmentId: finalEnrollmentId,
         amount: Number(amount),
         notes,
         date: date ? new Date(date) : new Date(),

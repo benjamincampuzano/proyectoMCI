@@ -12,8 +12,8 @@ import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const Consolidar = () => {
-    const { hasAnyRole, isCoordinator } = useAuth();
-    const hasAdminOrCoordinator = hasAnyRole([ROLES.ADMIN]) || isCoordinator();
+    const { user, hasAnyRole, isCoordinator } = useAuth();
+    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
 
     // Handler for coordinator changes
@@ -78,7 +78,9 @@ const Consolidar = () => {
                         moduleCoordinator={moduleCoordinator}
                         moduleName="Consolidar"
                         onCoordinatorChange={handleCoordinatorChange}
-                        disabled={!hasAnyRole([ROLES.ADMIN])}
+                        disabled={!hasAdminOrPastor}
+                        currentUserId={user?.id}
+                        isModuleCoordinator={user?.isCoordinator || isCoordinator()}
                     />
                 }
             />

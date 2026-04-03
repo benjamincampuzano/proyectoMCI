@@ -12,10 +12,11 @@ import CoordinatorSelector from '../components/CoordinatorSelector';
 import api from '../utils/api';
 
 const Ganar = () => {
-    const { user, hasRole } = useAuth();
+    const { user, hasRole, hasAnyRole } = useAuth();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showRegistration, setShowRegistration] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
+    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
 
     // Handler for coordinator changes
     const handleCoordinatorChange = (newCoordinator) => {
@@ -96,7 +97,9 @@ const Ganar = () => {
                             moduleCoordinator={moduleCoordinator}
                             moduleName="Ganar"
                             onCoordinatorChange={handleCoordinatorChange}
-                            disabled={!hasRole(ROLES.ADMIN)}
+                            disabled={!hasAdminOrPastor}
+                            currentUserId={user?.id}
+                            isModuleCoordinator={user?.isCoordinator || hasRole('LIDER_DOCE')}
                         />
                         {activeTab === 'list' && (
                             <Button

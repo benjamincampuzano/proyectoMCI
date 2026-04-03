@@ -33,6 +33,20 @@ model ModuleCoordinator {
   @@index([moduleName])
 }
 
+model ModuleSubCoordinator {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  moduleName    String
+  coordinatorId Int?
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+  user          User     @relation("SubCoordinatorUser", fields: [userId], references: [id], onDelete: Cascade)
+  coordinator   User?    @relation("SubCoordinatorAssigner", fields: [coordinatorId], references: [id])
+
+  @@unique([userId, moduleName])
+  @@index([moduleName])
+}
+
 model User {
   id                      Int                      @id @default(autoincrement())
   email                   String                   @unique
@@ -66,6 +80,8 @@ model User {
   guestCalls              GuestCall[]
   guestVisits             GuestVisit[]
   moduleCoordinations     ModuleCoordinator[]
+  moduleSubCoordinations  ModuleSubCoordinator[] @relation("SubCoordinatorUser")
+  assignedSubCoordinations ModuleSubCoordinator[] @relation("SubCoordinatorAssigner")
   oracionesLed            OracionDeTres[]          @relation("LiderDoceOracion")
   oracionesMiembro        OracionDeTresMiembro[]
   guidedEnrollments       SeminarEnrollment[]      @relation("AssignedAuxiliar")
@@ -85,6 +101,7 @@ model User {
   uploadedPhotos          KidsClassPhoto[]         @relation("UploadedPhotos")
   artRoles                ArtSchoolRole[]
   artClassesTaught        ArtClass[]               @relation("ArtProfessor")
+  artClassesCoordinated   ArtClass[]               @relation("ArtCoordinator")
   artEnrollments          ArtEnrollment[]
   registeredArtPayments   ArtPayment[]             @relation("UserRegistrar")
 
@@ -176,6 +193,7 @@ model Guest {
   invitedBy               User                    @relation("InvitedBy", fields: [invitedById], references: [id])
   calls                   GuestCall[]
   visits                  GuestVisit[]
+  artEnrollments           ArtEnrollment[]
 
   @@index([status])
   @@index([createdAt])
@@ -813,29 +831,41 @@ model ArtClass {
   name        String
   description String?
   cost        Float           @default(0)
+  duration    Int             @default(60) // Duration in minutes
+  schedule    String?
   startDate   DateTime?       @db.Timestamptz(6)
   endDate     DateTime?       @db.Timestamptz(6)
   professorId Int?
+  coordinatorId Int?
   isDeleted   Boolean         @default(false)
   createdAt   DateTime        @default(now()) @db.Timestamptz(6)
   updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
   professor   User?           @relation("ArtProfessor", fields: [professorId], references: [id])
+  coordinator User?           @relation("ArtCoordinator", fields: [coordinatorId], references: [id])
   enrollments ArtEnrollment[]
 }
 
 model ArtEnrollment {
-  id          Int             @id @default(autoincrement())
-  userId      Int
-  classId     Int
-  status      EnrollmentStatus @default(INSCRITO)
-  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  artClass    ArtClass        @relation(fields: [classId], references: [id], onDelete: Cascade)
-  attendances ArtAttendance[]
-  payments    ArtPayment[]
+  id                Int             @id @default(autoincrement())
+  userId            Int?            // Nullable para permitir invitados
+  guestId           Int?            // Para inscripciones de invitados
+  classId           Int
+  finalCost         Float           // Costo final después de descuentos
+  discountPercentage Float? @default(0) // Porcentaje de descuento aplicado
+  status            EnrollmentStatus @default(INSCRITO)
+  createdAt         DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt @db.Timestamptz(6)
+  
+  // Relaciones
+  user              User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guest             Guest?          @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  artClass          ArtClass        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  attendances       ArtAttendance[]
+  payments          ArtPayment[]
 
+  // Ajustar índices únicos para permitir invitados
   @@unique([userId, classId])
+  @@unique([guestId, classId])
   @@index([status])
   @@index([createdAt])
 }

@@ -6,6 +6,7 @@ import L from 'leaflet';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { AsyncSearchSelect, Button } from './ui';
+import { useAuth } from '../context/AuthContext';
 
 // Fix for default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -15,13 +16,22 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-const CellManagement = () => {
+const CellManagement = ({ moduleCoordinator }) => {
+    const { hasAnyRole, isCoordinator } = useAuth();
     const [cells, setCells] = useState([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editingCellId, setEditingCellId] = useState(null);
     const [assignedMembers, setAssignedMembers] = useState([]);
+
+    // Check if user can manage cells
+    const canManageCells = () => {
+        const hasRoleAccess = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
+        const isModuleCoordinator = moduleCoordinator && 
+            moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
+        return hasRoleAccess || isModuleCoordinator;
+    };
 
     // Form States
     const [formData, setFormData] = useState({
@@ -413,31 +423,33 @@ const CellManagement = () => {
                         Administra las células de tu red
                     </p>
                 </div>
-                <Button
-                    onClick={() => {
-                        setShowCreateForm(!showCreateForm);
-                        if (showCreateForm) {
-                            setIsEditing(false);
-                            setEditingCellId(null);
-                            setSelectedLeaderRole('');
-                            setFormData({
-                                name: '',
-                                leaderId: '',
-                                hostId: '',
-                                liderDoceId: '',
-                                address: '',
-                                city: 'Manizales',
-                                dayOfWeek: 'Lunes',
-                                time: '19:00',
-                                cellType: 'ABIERTA'
-                            });
-                        }
-                    }}
-                    icon={showCreateForm ? X : Plus}
-                    variant={showCreateForm ? "outline" : "primary"}
-                >
-                    {showCreateForm ? 'Cancelar' : 'Nueva Célula'}
-                </Button>
+                {canManageCells() && (
+                    <Button
+                        onClick={() => {
+                            setShowCreateForm(!showCreateForm);
+                            if (showCreateForm) {
+                                setIsEditing(false);
+                                setEditingCellId(null);
+                                setSelectedLeaderRole('');
+                                setFormData({
+                                    name: '',
+                                    leaderId: '',
+                                    hostId: '',
+                                    liderDoceId: '',
+                                    address: '',
+                                    city: 'Manizales',
+                                    dayOfWeek: 'Lunes',
+                                    time: '19:00',
+                                    cellType: 'ABIERTA'
+                                });
+                            }
+                        }}
+                        icon={showCreateForm ? X : Plus}
+                        variant={showCreateForm ? "outline" : "primary"}
+                    >
+                        {showCreateForm ? 'Cancelar' : 'Nueva Célula'}
+                    </Button>
+                )}
             </div>
 
             {/* Management Modal */}
@@ -1138,25 +1150,28 @@ const CellManagement = () => {
                                     >
                                         Administrar
                                     </Button>
+                                    {canManageCells() && (
+                                        <Button
+                                            onClick={() => handleEditClick(cell)}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-amber-600 hover:text-amber-800"
+                                        >
+                                            Editar
+                                        </Button>
+                                    )}
+                                </div>
+                                {canManageCells() && (
                                     <Button
-                                        onClick={() => handleEditClick(cell)}
+                                        onClick={() => handleDeleteCell(cell.id)}
                                         variant="ghost"
                                         size="sm"
-                                        className="text-amber-600 hover:text-amber-800"
+                                        className="text-red-500 hover:text-red-700"
+                                        icon={Trash}
                                     >
-                                        Editar
+                                        Eliminar
                                     </Button>
-                                </div>
-                                <Button
-                                    onClick={() => handleDeleteCell(cell.id)}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-red-500 hover:text-red-700"
-                                    icon={Trash}
-                                >
-                                    Eliminar
-                                </Button>
-                            </div>
+                                )}
                         </div>
                     ))}
                 </div>
@@ -1227,23 +1242,27 @@ const CellManagement = () => {
                                             >
                                                 Administrar
                                             </Button>
-                                            <Button
-                                                onClick={() => handleEditClick(cell)}
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-amber-600 hover:text-amber-800"
-                                            >
-                                                Editar
-                                            </Button>
-                                            <Button
-                                                onClick={() => handleDeleteCell(cell.id)}
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-500 hover:text-red-700"
-                                                icon={Trash}
-                                            >
-                                                Eliminar
-                                            </Button>
+                                            {canManageCells() && (
+                                                <Button
+                                                    onClick={() => handleEditClick(cell)}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-amber-600 hover:text-amber-800"
+                                                >
+                                                    Editar
+                                                </Button>
+                                            )}
+                                            {canManageCells() && (
+                                                <Button
+                                                    onClick={() => handleDeleteCell(cell.id)}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700"
+                                                    icon={Trash}
+                                                >
+                                                    Eliminar
+                                                </Button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

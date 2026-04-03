@@ -22,6 +22,7 @@ const Encuentros = () => {
     const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
+    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
 
     // Handler for coordinator changes
     const handleCoordinatorChange = (newCoordinator) => {
@@ -310,7 +311,9 @@ const Encuentros = () => {
                             moduleCoordinator={moduleCoordinator}
                             moduleName="Encuentros"
                             onCoordinatorChange={handleCoordinatorChange}
-                            disabled={!hasAnyRole([ROLES.ADMIN])}
+                            disabled={!hasAdminOrPastor}
+                            currentUserId={user?.id}
+                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
                         />
                         {canCreateOrDelete && (
                             <Button
