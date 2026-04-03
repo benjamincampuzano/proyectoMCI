@@ -9,6 +9,11 @@ import api from '../utils/api';
  * CoordinatorSelector - Component for selecting and assigning a LIDER_DOCE as coordinator
  * with module-specific admin privileges (keeps LIDER_DOCE role but gets isCoordinator flag)
  */
+const normalizeModule = (name) => {
+    if (!name) return '';
+    return name.toLowerCase().trim().replace(/\s+/g, '-');
+};
+
 const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChange, disabled = false, currentUserId, isModuleCoordinator }) => {
     const [isAssigning, setIsAssigning] = useState(false);
     const [selectedCoordinator, setSelectedCoordinator] = useState(null);
@@ -35,7 +40,7 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
 
     const fetchSubCoordinator = async () => {
         try {
-            const res = await api.get(`/coordinators/module/${moduleName.toLowerCase()}/subcoordinator`);
+            const res = await api.get(`/coordinators/module/${normalizeModule(moduleName)}/subcoordinator`);
             setSubCoordinator(res.data);
         } catch (error) {
             console.error('Error fetching subcoordinator:', error);
@@ -63,7 +68,7 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
     // Fetch Candidates for subcoordinator
     const fetchSubCandidates = async (searchTerm) => {
         try {
-            const response = await api.get(`/coordinators/module/${moduleName.toLowerCase()}/candidates`, {
+            const response = await api.get(`/coordinators/module/${normalizeModule(moduleName)}/candidates`, {
                 params: { search: searchTerm }
             });
             return response.data;
@@ -80,7 +85,7 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
         setIsAssigning(true);
         try {
             // Assign coordinator to specific module
-            const response = await api.post(`/coordinators/module/${moduleName.toLowerCase()}`, {
+            const response = await api.post(`/coordinators/module/${normalizeModule(moduleName)}`, {
                 userId: selectedCoordinator.id
             });
 
@@ -100,7 +105,7 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
 
         try {
             // Remove coordinator from specific module
-            await api.delete(`/coordinators/module/${moduleName.toLowerCase()}`);
+            await api.delete(`/coordinators/module/${normalizeModule(moduleName)}`);
             
             // Clear coordinator state
             onCoordinatorChange(null);
@@ -113,7 +118,7 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
         if (!selectedSubCoordinator) return;
         setIsAssigningSub(true);
         try {
-            const res = await api.post(`/coordinators/module/${moduleName.toLowerCase()}/subcoordinator`, {
+            const res = await api.post(`/coordinators/module/${normalizeModule(moduleName)}/subcoordinator`, {
                 userId: selectedSubCoordinator.id
             });
             setSubCoordinator(res.data);
@@ -128,7 +133,7 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
     const handleRemoveSubCoordinator = async () => {
         if (!subCoordinator) return;
         try {
-            await api.delete(`/coordinators/module/${moduleName.toLowerCase()}/subcoordinator`);
+            await api.delete(`/coordinators/module/${normalizeModule(moduleName)}/subcoordinator`);
             setSubCoordinator(null);
         } catch (error) {
             console.error('Error removing subcoordinator:', error);

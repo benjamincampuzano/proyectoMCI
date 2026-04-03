@@ -114,3 +114,5 @@ tabnine-config/
 cypress/
 BBDD_Prueba.md
 cypress.config.js
+tmp/check_modules.js
+tmp/migrate_modules.js

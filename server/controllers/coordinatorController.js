@@ -4,6 +4,14 @@ const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 
 /**
+ * Normaliza el nombre del módulo para consistencia (lowercase, hyphenated)
+ */
+const normalizeModuleName = (name) => {
+    if (!name) return '';
+    return name.toLowerCase().trim().replace(/\s+/g, '-');
+};
+
+/**
  * Get module coordinators
  * ADMIN/PASTOR ven todos, LIDER_DOCE solo ve los de su red
  */
@@ -30,7 +38,7 @@ const getModuleCoordinators = async (req, res) => {
 
         if (module) {
             where.moduleCoordinations = {
-                some: { moduleName: module }
+                some: { moduleName: normalizeModuleName(module) }
             };
         }
 
@@ -80,7 +88,7 @@ const getDefaultModuleCoordinator = async (req, res) => {
 
         const moduleCoordinator = await prisma.moduleCoordinator.findFirst({
             where: {
-                moduleName: module
+                moduleName: normalizeModuleName(module)
             },
             include: {
                 user: {
@@ -142,14 +150,14 @@ const assignModuleCoordinator = async (req, res) => {
 
         // Remove existing coordinator for this module
         await prisma.moduleCoordinator.deleteMany({
-            where: { moduleName: module }
+            where: { moduleName: normalizeModuleName(module) }
         });
 
         // Assign new coordinator
         const coordinator = await prisma.moduleCoordinator.create({
             data: {
                 userId,
-                moduleName: module
+                moduleName: normalizeModuleName(module)
             },
             include: {
                 user: {
@@ -185,7 +193,7 @@ const removeModuleCoordinator = async (req, res) => {
         const { module } = req.params;
 
         await prisma.moduleCoordinator.deleteMany({
-            where: { moduleName: module }
+            where: { moduleName: normalizeModuleName(module) }
         });
 
         res.json({ message: 'Coordinator removed successfully' });
@@ -202,7 +210,7 @@ const getModuleSubCoordinator = async (req, res) => {
     try {
         const { module } = req.params;
         const subCoordinator = await prisma.moduleSubCoordinator.findFirst({
-            where: { moduleName: module },
+            where: { moduleName: normalizeModuleName(module) },
             include: {
                 user: {
                     select: {
@@ -233,8 +241,10 @@ const assignModuleSubCoordinator = async (req, res) => {
         const { module } = req.params;
         const { userId } = req.body;
 
+        const normalizedModule = normalizeModuleName(module);
+
         // Check if user is the module coordinator or admin/pastor
-        const isCoordinatorOfThisModule = req.user.isModuleCoordinator && req.user.coordinatedModule === module;
+        const isCoordinatorOfThisModule = req.user.isModuleCoordinator && normalizeModuleName(req.user.coordinatedModule) === normalizedModule;
         const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
         
         if (!isCoordinatorOfThisModule && !isAdminOrPastor) {
@@ -247,12 +257,12 @@ const assignModuleSubCoordinator = async (req, res) => {
         });
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        await prisma.moduleSubCoordinator.deleteMany({ where: { moduleName: module } });
+        await prisma.moduleSubCoordinator.deleteMany({ where: { moduleName: normalizedModule } });
 
         const subCoord = await prisma.moduleSubCoordinator.create({
             data: {
                 userId,
-                moduleName: module,
+                moduleName: normalizedModule,
                 coordinatorId: req.user.id
             },
             include: {
@@ -277,14 +287,15 @@ const assignModuleSubCoordinator = async (req, res) => {
 const removeModuleSubCoordinator = async (req, res) => {
     try {
         const { module } = req.params;
-        const isCoordinatorOfThisModule = req.user.isModuleCoordinator && req.user.coordinatedModule === module && !req.user.isSubCoordinator;
+        const normalizedModule = normalizeModuleName(module);
+        const isCoordinatorOfThisModule = req.user.isModuleCoordinator && normalizeModuleName(req.user.coordinatedModule) === normalizedModule && !req.user.isSubCoordinator;
         const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
         
         if (!isCoordinatorOfThisModule && !isAdminOrPastor) {
             return res.status(403).json({ message: 'Only the module coordinator or admin can remove a subcoordinator' });
         }
 
-        await prisma.moduleSubCoordinator.deleteMany({ where: { moduleName: module } });
+        await prisma.moduleSubCoordinator.deleteMany({ where: { moduleName: normalizedModule } });
         res.json({ message: 'Subcoordinator removed successfully' });
     } catch (error) {
         console.error('Error removing subcoordinator:', error);
@@ -298,6 +309,7 @@ const removeModuleSubCoordinator = async (req, res) => {
 const getModuleCandidates = async (req, res) => {
     try {
         const { module } = req.params;
+        const normalizedModule = normalizeModuleName(module);
         const { search } = req.query;
 
         // Base query to find specific module users or those enrolled/participated
@@ -306,7 +318,7 @@ const getModuleCandidates = async (req, res) => {
         // Try getting from SeminarModule if exists (Discipular, Kids, etc.)
         const seminarModules = await prisma.seminarModule.findMany({
             where: {
-                name: { contains: module, mode: 'insensitive' }
+                name: { contains: normalizedModule, mode: 'insensitive' }
             },
             include: {
                 professors: { select: { id: true } },
@@ -324,8 +336,9 @@ const getModuleCandidates = async (req, res) => {
         }
 
         // Add ArtEnrollment users for EscuelaDeArtes
-        const isArtModule = module.toLowerCase().replace(/\s/g, '').includes('art') || 
-                          module.toLowerCase().includes('escuela de artes');
+        const isArtModule = normalizedModule.replace(/\s/g, '').includes('art') || 
+                          normalizedModule.includes('escuela-de-artes') ||
+                          normalizedModule.includes('escuela de artes');
         
         if (isArtModule) {
             const artClasses = await prisma.artClass.findMany({
@@ -341,7 +354,7 @@ const getModuleCandidates = async (req, res) => {
         }
 
         // Add Encuentro users
-        if (module.toLowerCase().includes('encuentro')) {
+        if (normalizedModule.includes('encuentro')) {
             const encuentross = await prisma.encuentro.findMany({
                 include: {
                     leaders: { select: { userId: true } },
