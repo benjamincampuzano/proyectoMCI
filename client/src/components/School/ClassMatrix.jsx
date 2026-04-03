@@ -382,7 +382,7 @@ const ClassMatrix = ({ courseId }) => {
                         </div>
                         <div>
                             <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
-                                ⚠️ Acción Irreversible
+                                ⚠️ Acción Irreversibl
                             </h4>
                             <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
                                 <li>• Se eliminará la inscripción del estudiante</li>
