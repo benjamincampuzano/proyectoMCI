@@ -252,17 +252,22 @@ const getAllUsers = async (req, res) => {
         const limitNum = parseInt(limit);
 
         if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
+            let rolesFilter = undefined;
+            if (req.user.roles.includes('ADMIN')) {
+                if (role) {
+                    rolesFilter = { some: { role: { name: role } } };
+                }
+            } else {
+                rolesFilter = {
+                    none: { role: { name: 'ADMIN' } },
+                    ...(role && { some: { role: { name: role } } })
+                };
+            }
+
             const users = await prisma.user.findMany({
                 where: {
                     isDeleted: false,
-                    roles: {
-                        none: { role: { name: 'ADMIN' } },
-                        ...(role && {
-                            some: {
-                                role: { name: role }
-                            }
-                        })
-                    }
+                    ...(rolesFilter && { roles: rolesFilter })
                 },
                 include: {
                     roles: { include: { role: true } },

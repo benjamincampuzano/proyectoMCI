@@ -108,15 +108,27 @@ const UserTable = ({ users, loading, canEdit, onEdit, onDelete, onResetPassword 
             header: 'Rol',
             headerClassName: 'px-6 py-4 text-xs font-semibold text-gray-500 uppercase',
             cellClassName: 'px-6 py-4',
-            render: (user) => (
-                <div className="flex flex-wrap gap-1">
-                    {user.roles?.map(role => (
-                        <span key={role} className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                            {role.replace('_', ' ')}
-                        </span>
-                    ))}
-                </div>
-            )
+            render: (user) => {
+                const needsLiderDoce = !user.liderDoceId && 
+                    !user.roles?.includes('ADMIN') && 
+                    !user.roles?.includes('PASTOR') && 
+                    !user.roles?.includes('LIDER_DOCE');
+                    
+                return (
+                    <div className="flex flex-wrap gap-1 items-center">
+                        {user.roles?.map(role => (
+                            <span key={role} className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                {role.replace('_', ' ')}
+                            </span>
+                        ))}
+                        {needsLiderDoce && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-700/50 shadow-sm" title="Requiere asignación de Líder de 12">
+                                ⚠️ Sin Líder 12
+                            </span>
+                        )}
+                    </div>
+                );
+            }
         },
         ...(canEdit ? [{
             key: 'actions',
