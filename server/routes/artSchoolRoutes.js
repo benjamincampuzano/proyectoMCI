@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const artSchoolController = require('../controllers/artSchoolController');
 const { authenticate, isAdmin, authorize } = require('../middleware/auth');
+const { canManageTreasurerActions } = require('../middleware/coordinatorAuth');
 
 // All routes require authentication
 router.use(authenticate);
@@ -38,9 +39,11 @@ router.post('/sessions/:id/attendance', artSchoolController.registerSessionAtten
 // Reportes
 router.get('/classes/:id/report/balance', artSchoolController.getClassBalanceReport);
 
-// Pagos — solo ADMIN puede registrar/eliminar abonos
-router.post('/payments', isAdmin, artSchoolController.registerPayment);
-router.post('/enrollments/:id/payments', isAdmin, artSchoolController.registerPayment);
-router.delete('/payments/:id', isAdmin, artSchoolController.deletePayment);
+// Pagos — Tesoreros y Coordinadores pueden gestionar pagos
+const canManageArtsPayments = canManageTreasurerActions('Escuela de Artes');
+
+router.post('/payments', canManageArtsPayments, artSchoolController.registerPayment);
+router.post('/enrollments/:id/payments', canManageArtsPayments, artSchoolController.registerPayment);
+router.delete('/payments/:id', canManageArtsPayments, artSchoolController.deletePayment);
 
 module.exports = router;

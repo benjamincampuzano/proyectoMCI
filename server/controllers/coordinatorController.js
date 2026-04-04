@@ -29,8 +29,13 @@ const getModuleCoordinators = async (req, res) => {
         };
 
         if (!req.user.roles.includes('ADMIN') && !req.user.roles.includes('PASTOR')) {
-            const userNetwork = await getUserNetwork(req.user.id);
-
+            // Get the requester's network from their profile
+            const userWithProfile = await prisma.user.findUnique({
+                where: { id: req.user.id },
+                include: { profile: { select: { network: true } } }
+            });
+            
+            const userNetwork = userWithProfile?.profile?.network;
             if (userNetwork) {
                 where.profile = { network: userNetwork };
             }
@@ -61,14 +66,18 @@ const getModuleCoordinators = async (req, res) => {
             orderBy: { profile: { fullName: 'asc' } }
         });
 
+        const canSeeSensitiveData = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+
         const formatted = coordinators.map(c => ({
             id: c.id,
-            email: c.email,
             fullName: c.profile?.fullName || 'Sin Nombre',
             role: c.roles?.[0]?.role?.name || 'LIDER_DOCE',
-            network: c.profile?.network || 'Sin Red',
-            coordinatedModules: c.moduleCoordinations.map(mc => mc.moduleName),
-            isCurrentlyCoordinating: c.moduleCoordinations.length > 0
+            isCurrentlyCoordinating: c.moduleCoordinations.length > 0,
+            ...(canSeeSensitiveData && {
+                email: c.email,
+                network: c.profile?.network || 'Sin Red',
+                coordinatedModules: c.moduleCoordinations.map(mc => mc.moduleName)
+            })
         }));
 
         res.json(formatted);
@@ -88,7 +97,8 @@ const getDefaultModuleCoordinator = async (req, res) => {
 
         const moduleCoordinator = await prisma.moduleCoordinator.findFirst({
             where: {
-                moduleName: normalizeModuleName(module)
+                moduleName: normalizeModuleName(module),
+                isDeleted: false
             },
             include: {
                 user: {
@@ -143,21 +153,98 @@ const assignModuleCoordinator = async (req, res) => {
                 }
             }
         });
-
         if (!user) {
             return res.status(400).json({ message: 'User must be a LIDER_DOCE' });
         }
 
-        // Remove existing coordinator for this module
-        await prisma.moduleCoordinator.deleteMany({
-            where: { moduleName: normalizeModuleName(module) }
+        // Hallazgo #9: Prevenir auto-asignación
+        if (userId === req.user.id) {
+            return res.status(400).json({ message: 'Cannot assign yourself as coordinator' });
+        }
+
+        const normalizedModule = normalizeModuleName(module);
+        const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+
+        // Hallazgo #4: Prevenir rotación circular de cargos en Coordinadores (30 días de espera)
+        const recentAssignment = await prisma.moduleCoordinator.findFirst({
+            where: {
+                moduleName: normalizedModule,
+                createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // 30 días
+            }
         });
+
+        if (recentAssignment && !isAdminOrPastor) {
+            return res.status(400).json({
+                message: 'Coordinator was recently assigned. Wait 30 days before changing.'
+            });
+        }
+
+        // Hallazgo #2: Verificar múltiples cargos en el mismo módulo
+        const existingRoles = await Promise.all([
+            prisma.moduleSubCoordinator.findFirst({ where: { userId, moduleName: normalizedModule, isDeleted: false } }),
+            prisma.moduleTreasurer.findFirst({ where: { userId, moduleName: normalizedModule, isDeleted: false } })
+        ]);
+
+        if (existingRoles.some(r => r !== null)) {
+            return res.status(400).json({ message: 'User already has a role in this module' });
+        }
+
+        // Hallazgo #11: Validar red en asignaciones
+        const requesterNetworkUser = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            include: { profile: { select: { network: true } } }
+        });
+        const requesterNetwork = requesterNetworkUser?.profile?.network;
+        const moduleNetworkMap = {
+            'ganar': 'HOMBRES',
+            'consolidar': 'HOMBRES',
+            'enviar': 'HOMBRES',
+            'discipular': 'HOMBRES',
+            'kids': 'KIDS'
+        };
+        const moduleNetwork = moduleNetworkMap[normalizedModule];
+        
+        if (moduleNetwork && requesterNetwork !== moduleNetwork && !isAdminOrPastor) {
+            return res.status(403).json({ message: 'Cannot assign coordinators outside your network' });
+        }
+
+        // Hallazgo #10: Soft Delete instead of deleteMany
+        const oldCoordinators = await prisma.moduleCoordinator.findMany({
+            where: { moduleName: normalizedModule, isDeleted: false }
+        });
+        
+        if (oldCoordinators.length > 0) {
+            await prisma.moduleCoordinator.updateMany({
+                where: { moduleName: normalizedModule, isDeleted: false },
+                data: { isDeleted: true, deletedAt: new Date() }
+            });
+            
+            // Hallazgo #7: AuditLog
+            for (const oldCoord of oldCoordinators) {
+                await prisma.auditLog.create({
+                    data: {
+                        userId: req.user.id,
+                        action: 'DELETE',
+                        entityType: 'MODULE_COORDINATOR',
+                        entityId: oldCoord.userId,
+                        details: {
+                            moduleName: normalizedModule,
+                            action: 'REMOVE_COORDINATOR',
+                            removedBy: req.user.id,
+                            timestamp: new Date().toISOString()
+                        },
+                        ipAddress: req.ip,
+                        userAgent: req.get('user-agent')
+                    }
+                });
+            }
+        }
 
         // Assign new coordinator
         const coordinator = await prisma.moduleCoordinator.create({
             data: {
                 userId,
-                moduleName: normalizeModuleName(module)
+                moduleName: normalizedModule
             },
             include: {
                 user: {
@@ -171,6 +258,24 @@ const assignModuleCoordinator = async (req, res) => {
                         }
                     }
                 }
+            }
+        });
+
+        // Hallazgo #7: AuditLog
+        await prisma.auditLog.create({
+            data: {
+                userId: req.user.id,
+                action: 'UPDATE',
+                entityType: 'MODULE_COORDINATOR',
+                entityId: userId,
+                details: {
+                    moduleName: normalizedModule,
+                    action: 'ASSIGN_COORDINATOR',
+                    assignedBy: req.user.id,
+                    timestamp: new Date().toISOString()
+                },
+                ipAddress: req.ip,
+                userAgent: req.get('user-agent')
             }
         });
 
@@ -192,9 +297,38 @@ const removeModuleCoordinator = async (req, res) => {
     try {
         const { module } = req.params;
 
-        await prisma.moduleCoordinator.deleteMany({
-            where: { moduleName: normalizeModuleName(module) }
+        const normalizedModule = normalizeModuleName(module);
+        
+        const oldCoordinators = await prisma.moduleCoordinator.findMany({
+            where: { moduleName: normalizedModule, isDeleted: false }
         });
+
+        if (oldCoordinators.length > 0) {
+            await prisma.moduleCoordinator.updateMany({
+                where: { moduleName: normalizedModule, isDeleted: false },
+                data: { isDeleted: true, deletedAt: new Date() }
+            });
+
+            // Hallazgo #7: AuditLog
+            for (const oldCoord of oldCoordinators) {
+                await prisma.auditLog.create({
+                    data: {
+                        userId: req.user.id,
+                        action: 'DELETE',
+                        entityType: 'MODULE_COORDINATOR',
+                        entityId: oldCoord.userId,
+                        details: {
+                            moduleName: normalizedModule,
+                            action: 'REMOVE_COORDINATOR',
+                            removedBy: req.user.id,
+                            timestamp: new Date().toISOString()
+                        },
+                        ipAddress: req.ip,
+                        userAgent: req.get('user-agent')
+                    }
+                });
+            }
+        }
 
         res.json({ message: 'Coordinator removed successfully' });
     } catch (error) {
@@ -210,7 +344,7 @@ const getModuleSubCoordinator = async (req, res) => {
     try {
         const { module } = req.params;
         const subCoordinator = await prisma.moduleSubCoordinator.findFirst({
-            where: { moduleName: normalizeModuleName(module) },
+            where: { moduleName: normalizeModuleName(module), isDeleted: false },
             include: {
                 user: {
                     select: {
@@ -243,12 +377,33 @@ const assignModuleSubCoordinator = async (req, res) => {
 
         const normalizedModule = normalizeModuleName(module);
 
-        // Check if user is the module coordinator or admin/pastor
-        const isCoordinatorOfThisModule = req.user.isModuleCoordinator && normalizeModuleName(req.user.coordinatedModule) === normalizedModule;
-        const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+        // Hallazgo #3: Validación de permisos antes de asignar subcoordinador
+        const assignerIsAdmin = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+        const assignerIsCoordinator = await prisma.moduleCoordinator.findFirst({
+            where: { userId: req.user.id, moduleName: normalizedModule }
+        });
+
+        if (!assignerIsAdmin && !assignerIsCoordinator) {
+            return res.status(403).json({ message: 'Not authorized to assign subcoordinators' });
+        }
+
+        // Hallazgo #11: Validar red en asignaciones
+        const requesterNetworkUser = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            include: { profile: { select: { network: true } } }
+        });
+        const requesterNetwork = requesterNetworkUser?.profile?.network;
+        const moduleNetworkMap = {
+            'ganar': 'HOMBRES',
+            'consolidar': 'HOMBRES',
+            'enviar': 'HOMBRES',
+            'discipular': 'HOMBRES',
+            'kids': 'KIDS'
+        };
+        const moduleNetwork = moduleNetworkMap[normalizedModule];
         
-        if (!isCoordinatorOfThisModule && !isAdminOrPastor) {
-            return res.status(403).json({ message: 'Only the module coordinator or admin can assign a subcoordinator' });
+        if (moduleNetwork && requesterNetwork !== moduleNetwork && !isAdminOrPastor) {
+            return res.status(403).json({ message: 'Cannot assign subcoordinators outside your network' });
         }
 
         // Verify the target user exists
@@ -257,16 +412,80 @@ const assignModuleSubCoordinator = async (req, res) => {
         });
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        await prisma.moduleSubCoordinator.deleteMany({ where: { moduleName: normalizedModule } });
+        // Hallazgo #9: Prevenir auto-asignación
+        if (userId === req.user.id) {
+            return res.status(400).json({ message: 'Cannot assign yourself as subcoordinator' });
+        }
+
+        // Hallazgo #2: Verificar múltiples cargos en el mismo módulo
+        const existingRoles = await Promise.all([
+            prisma.moduleCoordinator.findFirst({ where: { userId, moduleName: normalizedModule, isDeleted: false } }),
+            prisma.moduleSubCoordinator.findFirst({ where: { userId, moduleName: normalizedModule, isDeleted: false } }),
+            prisma.moduleTreasurer.findFirst({ where: { userId, moduleName: normalizedModule, isDeleted: false } })
+        ]);
+
+        if (existingRoles.some(r => r !== null)) {
+            return res.status(400).json({ message: 'User already has a role in this module' });
+        }
+
+        // Hallazgo #10: Soft Delete
+        const oldSubCoordinators = await prisma.moduleSubCoordinator.findMany({
+            where: { moduleName: normalizedModule, isDeleted: false }
+        });
+
+        if (oldSubCoordinators.length > 0) {
+            await prisma.moduleSubCoordinator.updateMany({
+                where: { moduleName: normalizedModule, isDeleted: false },
+                data: { isDeleted: true, deletedAt: new Date() }
+            });
+            
+            // Hallazgo #7: AuditLog
+            for (const old of oldSubCoordinators) {
+                await prisma.auditLog.create({
+                    data: {
+                        userId: req.user.id,
+                        action: 'DELETE',
+                        entityType: 'MODULE_SUBCOORDINATOR',
+                        entityId: old.userId,
+                        details: {
+                            moduleName: normalizedModule,
+                            action: 'REMOVE_SUBCOORDINATOR',
+                            removedBy: req.user.id,
+                            timestamp: new Date().toISOString()
+                        },
+                        ipAddress: req.ip,
+                        userAgent: req.get('user-agent')
+                    }
+                });
+            }
+        }
 
         const subCoord = await prisma.moduleSubCoordinator.create({
             data: {
                 userId,
                 moduleName: normalizedModule,
-                coordinatorId: req.user.id
+                coordinatorId: assignerIsCoordinator ? req.user.id : null // or keep req.user.id
             },
             include: {
                 user: { select: { id: true, email: true, profile: { select: { fullName: true } } } }
+            }
+        });
+
+        // Hallazgo #7: AuditLog
+        await prisma.auditLog.create({
+            data: {
+                userId: req.user.id,
+                action: 'UPDATE',
+                entityType: 'MODULE_SUBCOORDINATOR',
+                entityId: userId,
+                details: {
+                    moduleName: normalizedModule,
+                    action: 'ASSIGN_SUBCOORDINATOR',
+                    assignedBy: req.user.id,
+                    timestamp: new Date().toISOString()
+                },
+                ipAddress: req.ip,
+                userAgent: req.get('user-agent')
             }
         });
 
@@ -288,14 +507,43 @@ const removeModuleSubCoordinator = async (req, res) => {
     try {
         const { module } = req.params;
         const normalizedModule = normalizeModuleName(module);
-        const isCoordinatorOfThisModule = req.user.isModuleCoordinator && normalizeModuleName(req.user.coordinatedModule) === normalizedModule && !req.user.isSubCoordinator;
+        const isCoordinatorOfThisModule = req.user.isModuleCoordinatorOfCurrent && !req.user.isSubCoordinator;
         const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
         
         if (!isCoordinatorOfThisModule && !isAdminOrPastor) {
             return res.status(403).json({ message: 'Only the module coordinator or admin can remove a subcoordinator' });
         }
 
-        await prisma.moduleSubCoordinator.deleteMany({ where: { moduleName: normalizedModule } });
+        const oldSubCoordinators = await prisma.moduleSubCoordinator.findMany({
+            where: { moduleName: normalizedModule, isDeleted: false }
+        });
+
+        if (oldSubCoordinators.length > 0) {
+            await prisma.moduleSubCoordinator.updateMany({
+                where: { moduleName: normalizedModule, isDeleted: false },
+                data: { isDeleted: true, deletedAt: new Date() }
+            });
+
+            // Hallazgo #7: AuditLog
+            for (const old of oldSubCoordinators) {
+                await prisma.auditLog.create({
+                    data: {
+                        userId: req.user.id,
+                        action: 'DELETE',
+                        entityType: 'MODULE_SUBCOORDINATOR',
+                        entityId: old.userId,
+                        details: {
+                            moduleName: normalizedModule,
+                            action: 'REMOVE_SUBCOORDINATOR',
+                            removedBy: req.user.id,
+                            timestamp: new Date().toISOString()
+                        },
+                        ipAddress: req.ip,
+                        userAgent: req.get('user-agent')
+                    }
+                });
+            }
+        }
         res.json({ message: 'Subcoordinator removed successfully' });
     } catch (error) {
         console.error('Error removing subcoordinator:', error);
@@ -410,6 +658,236 @@ const getModuleCandidates = async (req, res) => {
     }
 };
 
+/**
+ * Get Treasurer for a module
+ */
+const getModuleTreasurer = async (req, res) => {
+    try {
+        const { module } = req.params;
+        const normalizedModule = normalizeModuleName(module);
+
+        const treasurer = await prisma.moduleTreasurer.findFirst({
+            where: { moduleName: normalizedModule, isDeleted: false },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        profile: { select: { fullName: true } }
+                    }
+                }
+            }
+        });
+
+        if (!treasurer) return res.json(null);
+
+        res.json({
+            id: treasurer.user.id,
+            email: treasurer.user.email,
+            fullName: treasurer.user.profile?.fullName || 'Sin Nombre'
+        });
+    } catch (error) {
+        console.error('Error getting treasurer:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+/**
+ * Assign Treasurer to a module
+ */
+const assignModuleTreasurer = async (req, res) => {
+    try {
+        const { module } = req.params;
+        const { userId } = req.body;
+        const normalizedModule = normalizeModuleName(module);
+
+        // Hallazgo #3: Validación de permisos antes de asignar tesorero
+        const assignerIsAdmin = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+        const assignerIsCoordinator = await prisma.moduleCoordinator.findFirst({
+            where: { userId: req.user.id, moduleName: normalizedModule }
+        });
+
+        if (!assignerIsAdmin && !assignerIsCoordinator) {
+            return res.status(403).json({ message: 'Only the module coordinator or admin can assign a treasurer' });
+        }
+
+        // Hallazgo #11: Validar red en asignaciones
+        const requesterNetworkUser = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            include: { profile: { select: { network: true } } }
+        });
+        const requesterNetwork = requesterNetworkUser?.profile?.network;
+        const moduleNetworkMap = {
+            'ganar': 'HOMBRES',
+            'consolidar': 'HOMBRES',
+            'enviar': 'HOMBRES',
+            'discipular': 'HOMBRES',
+            'kids': 'KIDS'
+        };
+        const moduleNetwork = moduleNetworkMap[normalizedModule];
+        
+        if (moduleNetwork && requesterNetwork !== moduleNetwork && !isAdminOrPastor) {
+            return res.status(403).json({ message: 'Cannot assign treasurers outside your network' });
+        }
+
+        // Verify user existence and valid role (LIDER_DOCE, LIDER_CELULA, DISCIPULO)
+        const user = await prisma.user.findFirst({
+            where: { 
+                id: userId, 
+                isDeleted: false,
+                roles: {
+                    some: {
+                        role: { 
+                            name: { in: ['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'] }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'User must be a LIDER_DOCE, LIDER_CELULA, or DISCIPULO' });
+        }
+
+        // Hallazgo #9: Prevenir auto-asignación
+        if (userId === req.user.id) {
+            return res.status(400).json({ message: 'Cannot assign yourself as treasurer' });
+        }
+
+        // Hallazgo #2: Verificar múltiples cargos en el mismo módulo
+        const existingRoles = await Promise.all([
+            prisma.moduleCoordinator.findFirst({ where: { userId, moduleName: normalizedModule, isDeleted: false } }),
+            prisma.moduleSubCoordinator.findFirst({ where: { userId, moduleName: normalizedModule, isDeleted: false } }),
+            prisma.moduleTreasurer.findFirst({ where: { userId, moduleName: normalizedModule, isDeleted: false } })
+        ]);
+
+        if (existingRoles.some(r => r !== null)) {
+            return res.status(400).json({ message: 'User already has a role in this module' });
+        }
+
+        // Hallazgo #10: Soft Delete
+        const oldTreasurers = await prisma.moduleTreasurer.findMany({
+            where: { moduleName: normalizedModule, isDeleted: false }
+        });
+
+        if (oldTreasurers.length > 0) {
+            await prisma.moduleTreasurer.updateMany({
+                where: { moduleName: normalizedModule, isDeleted: false },
+                data: { isDeleted: true, deletedAt: new Date() }
+            });
+
+            // Hallazgo #7: AuditLog
+            for (const old of oldTreasurers) {
+                await prisma.auditLog.create({
+                    data: {
+                        userId: req.user.id,
+                        action: 'DELETE',
+                        entityType: 'MODULE_TREASURER',
+                        entityId: old.userId,
+                        details: {
+                            moduleName: normalizedModule,
+                            action: 'REMOVE_TREASURER',
+                            removedBy: req.user.id,
+                            timestamp: new Date().toISOString()
+                        },
+                        ipAddress: req.ip,
+                        userAgent: req.get('user-agent')
+                    }
+                });
+            }
+        }
+
+        const treasurer = await prisma.moduleTreasurer.create({
+            data: {
+                userId,
+                moduleName: normalizedModule,
+            },
+            include: {
+                user: { select: { id: true, email: true, profile: { select: { fullName: true } } } }
+            }
+        });
+
+        // Hallazgo #7: AuditLog
+        await prisma.auditLog.create({
+            data: {
+                userId: req.user.id,
+                action: 'UPDATE',
+                entityType: 'MODULE_TREASURER',
+                entityId: userId,
+                details: {
+                    moduleName: normalizedModule,
+                    action: 'ASSIGN_TREASURER',
+                    assignedBy: req.user.id,
+                    timestamp: new Date().toISOString()
+                },
+                ipAddress: req.ip,
+                userAgent: req.get('user-agent')
+            }
+        });
+
+        res.json({
+            id: treasurer.user.id,
+            email: treasurer.user.email,
+            fullName: treasurer.user.profile?.fullName || 'Sin Nombre'
+        });
+    } catch (error) {
+        console.error('Error assigning treasurer:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+/**
+ * Remove Treasurer
+ */
+const removeModuleTreasurer = async (req, res) => {
+    try {
+        const { module } = req.params;
+        const normalizedModule = normalizeModuleName(module);
+
+        const isCoordinatorOfThisModule = req.user.isModuleCoordinatorOfCurrent && !req.user.isSubCoordinator && !req.user.isModuleTreasurer;
+        const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+        
+        if (!isCoordinatorOfThisModule && !isAdminOrPastor) {
+            return res.status(403).json({ message: 'Only the module coordinator or admin can remove a treasurer' });
+        }
+
+        const oldTreasurers = await prisma.moduleTreasurer.findMany({
+            where: { moduleName: normalizedModule, isDeleted: false }
+        });
+
+        if (oldTreasurers.length > 0) {
+            await prisma.moduleTreasurer.updateMany({
+                where: { moduleName: normalizedModule, isDeleted: false },
+                data: { isDeleted: true, deletedAt: new Date() }
+            });
+
+            // Hallazgo #7: AuditLog
+            for (const old of oldTreasurers) {
+                await prisma.auditLog.create({
+                    data: {
+                        userId: req.user.id,
+                        action: 'DELETE',
+                        entityType: 'MODULE_TREASURER',
+                        entityId: old.userId,
+                        details: {
+                            moduleName: normalizedModule,
+                            action: 'REMOVE_TREASURER',
+                            removedBy: req.user.id,
+                            timestamp: new Date().toISOString()
+                        },
+                        ipAddress: req.ip,
+                        userAgent: req.get('user-agent')
+                    }
+                });
+            }
+        }
+        res.json({ message: 'Treasurer removed successfully' });
+    } catch (error) {
+        console.error('Error removing treasurer:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     getModuleCoordinators,
     getDefaultModuleCoordinator,
@@ -418,5 +896,8 @@ module.exports = {
     getModuleSubCoordinator,
     assignModuleSubCoordinator,
     removeModuleSubCoordinator,
-    getModuleCandidates
+    getModuleCandidates,
+    getModuleTreasurer,
+    assignModuleTreasurer,
+    removeModuleTreasurer
 };

@@ -64,7 +64,10 @@ const createModule = async (req, res) => {
             description,
             type: type || 'SEMINARIO',
             code,
-            professorId: professorId ? parseInt(professorId) : null,
+            professorIds: professorId ? [parseInt(professorId)] : [],
+            professors: professorId ? {
+                connect: [{ id: parseInt(professorId) }]
+            } : undefined,
             // Handle multiple auxiliaries connection
             auxiliaries: auxiliaryIds && Array.isArray(auxiliaryIds) ? {
                 connect: auxiliaryIds.map(id => ({ id: parseInt(id) }))
@@ -114,7 +117,12 @@ const updateModule = async (req, res) => {
             ...(code && { code }),
             ...(type && { type }),
             ...(moduleNumber !== undefined && { moduleNumber: parseInt(moduleNumber) }),
-            professorId: professorId ? parseInt(professorId) : undefined
+            professorIds: professorId ? [parseInt(professorId)] : [],
+            professors: professorId ? {
+                set: [{ id: parseInt(professorId) }]
+            } : {
+                set: []
+            }
         };
 
         // Handle Auxiliaries Update (Disconnect all existing, connect new)

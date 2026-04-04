@@ -13,8 +13,11 @@ const {
     updateClassAttendance,
     getEncuentroBalanceReport
 } = require('../controllers/encuentroController');
+const { canManageTreasurerActions } = require('../middleware/coordinatorAuth');
 
 router.use(authenticate);
+
+const canManageEncuentroPayments = canManageTreasurerActions('Encuentros');
 
 router.get('/', getEncuentros);
 router.post('/', createEncuentro);
@@ -26,7 +29,7 @@ router.get('/:id/report/balance', getEncuentroBalanceReport);
 router.post('/:encuentroId/register', registerParticipant);
 router.delete('/registrations/:registrationId', deleteRegistration);
 
-router.post('/registrations/:registrationId/payments', addPayment);
+router.post('/registrations/:registrationId/payments', canManageEncuentroPayments, addPayment);
 
 // Class Attendance
 // classNumber should be 1-10

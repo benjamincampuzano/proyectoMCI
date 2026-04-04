@@ -116,3 +116,6 @@ BBDD_Prueba.md
 cypress.config.js
 tmp/check_modules.js
 tmp/migrate_modules.js
+AUDITORIA_SEGURIDAD_CARGOS.md
+AUDITORIA_IMPLEMENTACION_ESTADO.md
+server/test_prisma_fix.js

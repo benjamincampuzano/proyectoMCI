@@ -190,15 +190,24 @@ export const AuthProvider = ({ children }) => {
         return isAdmin();
     };
 
-    const isCoordinator = () => {
-        return user?.isCoordinator === true;
+    const isCoordinator = (moduleName) => {
+        if (!user) return false;
+        if (user.isCoordinator) return true;
+        if (!moduleName) return user.isCoordinator || (user.moduleCoordinations && user.moduleCoordinations.length > 0);
+        return user.moduleCoordinations?.some(m => m.toLowerCase() === moduleName.toLowerCase());
+    };
+
+    const isTreasurer = (moduleName) => {
+        if (!user) return false;
+        if (!moduleName) return user.isModuleTreasurer;
+        return user.moduleTreasurers?.some(m => m.toLowerCase() === moduleName.toLowerCase());
     };
 
     return (
         <AuthContext.Provider value={{
             user, login, register, setup, logout, updateProfile,
             loading, isInitialized,
-            hasRole, hasAnyRole, isAdmin, isSuperAdmin, isCoordinator,
+            hasRole, hasAnyRole, isAdmin, isSuperAdmin, isCoordinator, isTreasurer,
             changePassword
         }}>
             {children}

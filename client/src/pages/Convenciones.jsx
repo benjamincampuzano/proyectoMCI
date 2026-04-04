@@ -9,6 +9,10 @@ import ConvencionesReport from '../components/ConvencionesReport';
 import ActionModal from '../components/ActionModal';
 import { Button, Modal, Skeleton, PageHeader, AsyncSearchSelect } from '../components/ui';
 import ConfirmationModal from '../components/ConfirmationModal';
+import CoordinatorSelector from '../components/CoordinatorSelector';
+import TreasurerSelector from '../components/TreasurerSelector';
+import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
+import { ROLES } from '../constants/roles';
 
 const Convenciones = () => {
     const { user, hasAnyRole } = useAuth();
@@ -18,6 +22,11 @@ const Convenciones = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
+    const [moduleCoordinator, setModuleCoordinator] = useState(null);
+    const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
+    const [moduleTreasurer, setModuleTreasurer] = useState(null);
+    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
+    const { isCoordinator } = useAuth();
 
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -36,9 +45,66 @@ const Convenciones = () => {
         coordinatorId: null
     });
 
+    // Handler for coordinator changes
+    const handleCoordinatorChange = (newCoordinator) => {
+        setModuleCoordinator(newCoordinator);
+        setTimeout(() => {
+            fetchModuleCoordinator();
+        }, 500);
+    };
+
+    // Handler for treasurer changes
+    const handleTreasurerChange = (newTreasurer) => {
+        setModuleTreasurer(newTreasurer);
+        setTimeout(() => {
+            fetchModuleTreasurer();
+        }, 500);
+    };
+
+    // Handler for sub-coordinator changes
+    const handleSubCoordinatorChange = (newSubCoordinator) => {
+        setModuleSubCoordinator(newSubCoordinator);
+        setTimeout(() => {
+            fetchModuleSubCoordinator();
+        }, 500);
+    };
+
     useEffect(() => {
         fetchConventions();
+        fetchModuleCoordinator();
+        fetchModuleSubCoordinator();
+        fetchModuleTreasurer();
     }, []);
+
+    const fetchModuleCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/convenciones');
+            setModuleCoordinator(res.data);
+        } catch (error) {
+            console.error('Error fetching coordinator:', error);
+            setModuleCoordinator(null);
+        }
+    };
+
+    const fetchModuleSubCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/convenciones/subcoordinator');
+            setModuleSubCoordinator(res.data);
+        } catch (error) {
+            console.error('Error fetching subcoordinator:', error);
+            setModuleSubCoordinator(null);
+        }
+    };
+
+    const fetchModuleTreasurer = async () => {
+        try {
+            const res = await api.get('/coordinators/module/convenciones/treasurer');
+            setModuleTreasurer(res.data);
+        } catch (error) {
+            console.error('Error fetching treasurer:', error);
+            setModuleTreasurer(null);
+        }
+    };
 
     const fetchConventions = async () => {
         setLoading(true);
@@ -271,15 +337,41 @@ const Convenciones = () => {
             <PageHeader
                 title="Convenciones"
                 description="Seguimiento de Convenciones anuales"
-                action={canModify && (
-                    <Button
-                        onClick={() => setShowCreateModal(true)}
-                        icon={Plus}
-                        className="shadow-lg shadow-blue-500/30"
-                    >
-                        Nueva Convención
-                    </Button>
-                )}
+                action={
+                    <div className="flex items-center gap-4">
+                        <CoordinatorSelector 
+                            moduleCoordinator={moduleCoordinator}
+                            moduleName="Convenciones"
+                            onCoordinatorChange={handleCoordinatorChange}
+                            disabled={!hasAdminOrPastor}
+                        />
+                        <SubCoordinatorSelector 
+                            moduleSubCoordinator={moduleSubCoordinator}
+                            moduleName="Convenciones"
+                            onSubCoordinatorChange={handleSubCoordinatorChange}
+                            disabled={!hasAdminOrPastor}
+                            currentUserId={user?.id}
+                            isModuleCoordinator={user?.isCoordinator || isCoordinator}
+                        />
+                        <TreasurerSelector 
+                            moduleTreasurer={moduleTreasurer}
+                            moduleName="Convenciones"
+                            onTreasurerChange={handleTreasurerChange}
+                            disabled={!hasAdminOrPastor}
+                            currentUserId={user?.id}
+                            isModuleCoordinator={user?.isCoordinator || isCoordinator}
+                        />
+                        {canModify && (
+                            <Button
+                                onClick={() => setShowCreateModal(true)}
+                                icon={Plus}
+                                className="shadow-lg shadow-blue-500/30"
+                            >
+                                Nueva Convención
+                            </Button>
+                        )}
+                    </div>
+                }
             />
 
             {/* Floating Refresh Button */}

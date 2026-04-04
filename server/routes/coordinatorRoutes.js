@@ -1,5 +1,5 @@
 const express = require('express');
-const { getModuleCoordinators, getDefaultModuleCoordinator, assignModuleCoordinator, removeModuleCoordinator, getModuleSubCoordinator, assignModuleSubCoordinator, removeModuleSubCoordinator, getModuleCandidates } = require('../controllers/coordinatorController');
+const { getModuleCoordinators, getDefaultModuleCoordinator, assignModuleCoordinator, removeModuleCoordinator, getModuleSubCoordinator, assignModuleSubCoordinator, removeModuleSubCoordinator, getModuleCandidates, getModuleTreasurer, assignModuleTreasurer, removeModuleTreasurer } = require('../controllers/coordinatorController');
 const { authenticate, isAdmin, authorize, checkCoordinatorStatus } = require('../middleware/auth');
 
 const router = express.Router();
@@ -23,6 +23,12 @@ router.delete('/module/:module', authorize(['ADMIN', 'PASTOR']), removeModuleCoo
 router.get('/module/:module/subcoordinator', getModuleSubCoordinator);
 router.post('/module/:module/subcoordinator', assignModuleSubCoordinator);
 router.delete('/module/:module/subcoordinator', removeModuleSubCoordinator);
+
+// Treasurer routes
+router.get('/module/:module/treasurer', getModuleTreasurer);
+router.post('/module/:module/treasurer', assignModuleTreasurer);
+router.delete('/module/:module/treasurer', removeModuleTreasurer);
+
 router.get('/module/:module/candidates', getModuleCandidates);
 
 module.exports = router;

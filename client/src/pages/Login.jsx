@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Eye, EyeSlash, ArrowsClockwiseIcon } from '@phosphor-icons/react';
+import { Lock, Eye, EyeClosedIcon, ArrowsClockwiseIcon } from '@phosphor-icons/react';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import logo from '../assets/logo.jpg';
 
@@ -39,7 +39,7 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        
+
         // Verify captcha
         const expectedAnswer = captcha.operator === '+'
             ? captcha.num1 + captcha.num2
@@ -53,7 +53,7 @@ const Login = () => {
 
         try {
             const result = await login(email, password);
-            
+
             if (result.success) {
                 if (result.mustChangePassword) {
                     setShowPasswordChangeModal(true);
@@ -62,15 +62,15 @@ const Login = () => {
                 }
             } else {
                 // Handle different types of authentication errors
-                if (result.message?.toLowerCase().includes('credenciales') || 
-                    result.message?.toLowerCase().includes('incorrectas') || 
+                if (result.message?.toLowerCase().includes('credenciales') ||
+                    result.message?.toLowerCase().includes('incorrectas') ||
                     result.message?.toLowerCase().includes('invalid')) {
                     setError('❌ Correo electrónico o contraseña incorrectos. Por favor verifica tus credenciales.');
-                } else if (result.message?.toLowerCase().includes('inactiva') || 
-                         result.message?.toLowerCase().includes('deshabilitada')) {
+                } else if (result.message?.toLowerCase().includes('inactiva') ||
+                    result.message?.toLowerCase().includes('deshabilitada')) {
                     setError('❌ Tu cuenta está inactiva. Por favor contacta al administrador.');
-                } else if (result.message?.toLowerCase().includes('eliminada') || 
-                         result.message?.toLowerCase().includes('eliminado')) {
+                } else if (result.message?.toLowerCase().includes('eliminada') ||
+                    result.message?.toLowerCase().includes('eliminado')) {
                     setError('❌ Tu cuenta ha sido eliminada. Por favor contacta al administrador.');
                 } else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
                     setError('❌ No se puede conectar al servidor. Por favor verifica tu conexión a internet.');
@@ -81,7 +81,7 @@ const Login = () => {
             }
         } catch (error) {
             console.error('Login error:', error);
-            
+
             // Handle network errors specifically
             if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
                 setError('❌ No se puede conectar al servidor. Por favor verifica tu conexión a internet.');
@@ -146,7 +146,7 @@ const Login = () => {
                                 onClick={() => setShowPassword(!showPassword)}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
                             >
-                                {showPassword ? <Eye size={20} weight="bold" /> : <EyeSlash size={20} weight="bold" />}
+                                {showPassword ? <Eye size={20} weight="bold" /> : <EyeClosedIcon size={20} weight="bold" />}
                             </button>
                         </div>
                     </div>

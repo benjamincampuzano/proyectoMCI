@@ -77,9 +77,12 @@ const createModule = async (req, res) => {
             description,
             moduleNumber: moduleId ? parseInt(moduleId) : undefined,
             type: 'ESCUELA', // Distinguish from generic seminars
-            professorId: professorId ? parseInt(professorId) : undefined,
             startDate: startDate ? new Date(startDate) : undefined,
             endDate: endDate ? new Date(endDate) : undefined,
+            professorIds: professorId ? [parseInt(professorId)] : [],
+            professors: professorId ? {
+                connect: [{ id: parseInt(professorId) }]
+            } : undefined,
         };
 
         // Handle Auxiliaries (Many-to-Many)
@@ -187,9 +190,14 @@ const updateModule = async (req, res) => {
             ...(name && { name }),
             ...(description && { description }),
             ...(moduleId !== undefined && { moduleNumber: parseInt(moduleId) }),
-            ...(professorId && { professorId: parseInt(professorId) }),
             ...(startDate && { startDate: new Date(startDate) }),
             ...(endDate && { endDate: new Date(endDate) }),
+            professorIds: professorId ? [parseInt(professorId)] : [],
+            professors: professorId ? {
+                set: [{ id: parseInt(professorId) }]
+            } : {
+                set: []
+            }
         };
 
         if (auxiliarIds && Array.isArray(auxiliarIds)) {

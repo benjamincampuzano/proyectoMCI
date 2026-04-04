@@ -9,6 +9,7 @@ import OracionDeTresManagement from '../components/OracionDeTresManagement';
 import { PageHeader, Button } from '../components/ui';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import CoordinatorSelector from '../components/CoordinatorSelector';
+import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
 import api from '../utils/api';
 
 const Ganar = () => {
@@ -16,6 +17,7 @@ const Ganar = () => {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showRegistration, setShowRegistration] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
+    const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
 
     // Handler for coordinator changes
@@ -24,15 +26,18 @@ const Ganar = () => {
         setRefreshTrigger(prev => prev + 1); // Trigger refresh of components
         
         // After a short delay, refresh the coordinator data from server
-        if (newCoordinator) {
-            setTimeout(() => {
-                fetchCoordinator();
-            }, 500);
-        } else {
-            setTimeout(() => {
-                fetchCoordinator();
-            }, 500);
-        }
+        setTimeout(() => {
+            fetchCoordinator();
+        }, 500);
+    };
+
+    // Handler for sub-coordinator changes
+    const handleSubCoordinatorChange = (newSubCoordinator) => {
+        setModuleSubCoordinator(newSubCoordinator);
+        
+        setTimeout(() => {
+            fetchSubCoordinator();
+        }, 500);
     };
 
     const fetchCoordinator = async () => {
@@ -61,8 +66,19 @@ const Ganar = () => {
         }
     };
 
+    const fetchSubCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/ganar/subcoordinator');
+            setModuleSubCoordinator(res.data);
+        } catch (error) {
+            console.error('Error fetching subcoordinator:', error);
+            setModuleSubCoordinator(null);
+        }
+    };
+
     useEffect(() => {
         fetchCoordinator();
+        fetchSubCoordinator();
     }, []);
 
     // Check if user is pastor
@@ -97,6 +113,12 @@ const Ganar = () => {
                             moduleCoordinator={moduleCoordinator}
                             moduleName="Ganar"
                             onCoordinatorChange={handleCoordinatorChange}
+                            disabled={!hasAdminOrPastor}
+                        />
+                        <SubCoordinatorSelector 
+                            moduleSubCoordinator={moduleSubCoordinator}
+                            moduleName="Ganar"
+                            onSubCoordinatorChange={handleSubCoordinatorChange}
                             disabled={!hasAdminOrPastor}
                             currentUserId={user?.id}
                             isModuleCoordinator={user?.isCoordinator || hasRole('LIDER_DOCE')}

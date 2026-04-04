@@ -26,37 +26,42 @@ const isModuleCoordinator = async (req, res, next) => {
             return res.status(401).json({ message: 'Authentication required' });
         }
 
-        const hasProtectedRole = req.user.roles.some(role => LEADERSHIP_ROLES.includes(role));
-        if (hasProtectedRole) {
-            req.user.isModuleCoordinator = false;
-            return next();
-        }
-
-        const [coordinator, subCoordinator] = await Promise.all([
-            prisma.moduleCoordinator.findFirst({
+        const isAdminOrPastor = req.user.roles.some(role => ['ADMIN', 'PASTOR'].includes(role));
+        
+        // Fetch all roles for the user
+        const [coordinations, subCoordinations, treasurers] = await Promise.all([
+            prisma.moduleCoordinator.findMany({
                 where: { userId: parseInt(req.user.id) },
-                select: { id: true, moduleName: true }
+                select: { moduleName: true }
             }),
-            prisma.moduleSubCoordinator.findFirst({
+            prisma.moduleSubCoordinator.findMany({
                 where: { userId: parseInt(req.user.id) },
-                select: { id: true, moduleName: true }
+                select: { moduleName: true }
+            }),
+            prisma.moduleTreasurer.findMany({
+                where: { userId: parseInt(req.user.id) },
+                select: { moduleName: true }
             })
         ]);
 
-        if (coordinator) {
-            req.user.isModuleCoordinator = true;
-            req.user.coordinatedModule = coordinator.moduleName;
-            return next();
-        }
+        req.user.moduleCoordinations = coordinations.map(c => c.moduleName.toLowerCase());
+        req.user.moduleSubCoordinations = subCoordinations.map(sc => sc.moduleName.toLowerCase());
+        req.user.moduleTreasurers = treasurers.map(t => t.moduleName.toLowerCase());
 
-        if (subCoordinator) {
-            req.user.isModuleCoordinator = true;
-            req.user.coordinatedModule = subCoordinator.moduleName;
-            req.user.isSubCoordinator = true;
-            return next();
-        }
+        const currentModule = (req.params.module || req.query.module || '').toLowerCase().trim().replace(/\s+/g, '-');
 
-        req.user.isModuleCoordinator = false;
+        req.user.isModuleCoordinator = req.user.moduleCoordinations.length > 0 || req.user.moduleSubCoordinations.length > 0;
+        req.user.isModuleTreasurer = req.user.moduleTreasurers.length > 0 || isAdminOrPastor;
+
+        req.user.isModuleCoordinatorOfCurrent = (
+            req.user.moduleCoordinations.includes(currentModule) || 
+            req.user.moduleSubCoordinations.includes(currentModule) ||
+            isAdminOrPastor
+        );
+
+        // For backward compatibility (deprecated)
+        req.user.coordinatedModule = req.user.moduleCoordinations[0] || req.user.moduleSubCoordinations[0] || req.user.moduleTreasurers[0];
+
         return next();
 
     } catch (error) {
@@ -180,12 +185,45 @@ const getVisibleRoles = (user) => {
     return [];
 };
 
+/**
+ * Middleware para restringir acciones a tesoreros o coordinadores de un módulo específico
+ */
+const canManageTreasurerActions = (moduleName) => {
+    return async (req, res, next) => {
+        try {
+            // Asegurarnos de que isModuleCoordinator se haya ejecutado
+            if (req.user.isModuleTreasurer === undefined) {
+                await isModuleCoordinator(req, res, () => {});
+            }
+
+            const isAdminOrPastor = req.user.roles.some(role => ['ADMIN', 'PASTOR'].includes(role));
+            if (isAdminOrPastor) return next();
+
+            const isTreasurer = req.user.moduleTreasurers?.includes(moduleName.toLowerCase());
+            const isCoordinator = req.user.moduleCoordinations?.includes(moduleName.toLowerCase()) || 
+                                 req.user.moduleSubCoordinations?.includes(moduleName.toLowerCase());
+
+            if (isTreasurer || isCoordinator) {
+                return next();
+            }
+
+            return res.status(403).json({ 
+                message: `Acceso denegado. Se requiere ser Tesorero o Coordinador de ${moduleName}.` 
+            });
+        } catch (error) {
+            console.error('Error in canManageTreasurerActions:', error);
+            return res.status(500).json({ message: 'Error checking treasurer permissions' });
+        }
+    };
+};
+
 module.exports = {
     isModuleCoordinator,
     canManageUser,
     canManageTargetUser,
     getVisibleRoles,
     getUserNetworkId,
+    canManageTreasurerActions,
     MANAGABLE_ROLES,
     PROTECTED_ROLES,
     LEADERSHIP_ROLES

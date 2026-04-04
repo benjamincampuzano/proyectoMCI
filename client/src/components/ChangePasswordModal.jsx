@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Eye, EyeSlash, CheckCircle, XCircle, WarningCircle } from '@phosphor-icons/react';
+import { Lock, Eye, EyeClosedIcon, CheckCircle, XCircle, WarningCircle } from '@phosphor-icons/react';
 
 const validatePassword = (password, email = '', fullName = '') => {
     const requirements = [];
@@ -150,7 +150,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
                                 onClick={() => setShowCurrent(!showCurrent)}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                             >
-                                {showCurrent ? <Eye size={18} /> : <EyeSlash size={18} />}
+                                {showCurrent ? <Eye size={18} /> : <EyeClosedIcon size={18} />}
                             </button>
                         </div>
                     </div>
@@ -174,7 +174,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
                                 onClick={() => setShowNew(!showNew)}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                             >
-                                {showNew ? <Eye size={18} /> : <EyeSlash size={18} />}
+                                {showNew ? <Eye size={18} /> : <EyeClosedIcon size={18} />}
                             </button>
                         </div>
                     </div>
@@ -198,7 +198,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
                                 onClick={() => setShowConfirm(!showConfirm)}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                             >
-                                {showConfirm ? <Eye size={18} /> : <EyeSlash size={18} />}
+                                {showConfirm ? <Eye size={18} /> : <EyeClosedIcon size={18} />}
                             </button>
                         </div>
                     </div>

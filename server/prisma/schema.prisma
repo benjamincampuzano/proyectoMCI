@@ -25,11 +25,13 @@ model ModuleCoordinator {
   id         Int      @id @default(autoincrement())
   userId     Int
   moduleName String
-  createdAt  DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(6)
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime? @db.Timestamptz(6)
+  user       User      @relation(fields: [userId], references: [id])
 
-  @@unique([userId, moduleName])
+  @@index([userId, moduleName])
   @@index([moduleName])
 }
 
@@ -38,12 +40,29 @@ model ModuleSubCoordinator {
   userId        Int
   moduleName    String
   coordinatorId Int?
-  createdAt     DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
-  user          User     @relation("SubCoordinatorUser", fields: [userId], references: [id], onDelete: Cascade)
-  coordinator   User?    @relation("SubCoordinatorAssigner", fields: [coordinatorId], references: [id])
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime? @db.Timestamptz(6)
+  user          User      @relation("SubCoordinatorUser", fields: [userId], references: [id])
+  coordinator   User?     @relation("SubCoordinatorAssigner", fields: [coordinatorId], references: [id], onDelete: SetNull)
 
-  @@unique([userId, moduleName])
+  @@index([userId, moduleName])
+  @@index([moduleName])
+  @@index([coordinatorId])
+}
+
+model ModuleTreasurer {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  moduleName String
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(6)
+  isDeleted  Boolean   @default(false)
+  deletedAt  DateTime? @db.Timestamptz(6)
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, moduleName])
   @@index([moduleName])
 }
 
@@ -104,6 +123,7 @@ model User {
   artClassesCoordinated   ArtClass[]               @relation("ArtCoordinator")
   artEnrollments          ArtEnrollment[]
   registeredArtPayments   ArtPayment[]             @relation("UserRegistrar")
+  moduleTreasurers        ModuleTreasurer[]
 
   @@index([email])
   @@index([createdAt])
@@ -664,6 +684,9 @@ enum EntityType {
   KID
   KID_ATTENDANCE
   KIDS_SCHEDULE
+  MODULE_COORDINATOR
+  MODULE_SUBCOORDINATOR
+  MODULE_TREASURER
 }
 
 enum ResourceType {

@@ -11,6 +11,8 @@ import { AsyncSearchSelect, PageHeader, Button } from '../components/ui';
 import ActionModal from '../components/ActionModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CoordinatorSelector from '../components/CoordinatorSelector';
+import TreasurerSelector from '../components/TreasurerSelector';
+import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
 import { ROLES } from '../constants/roles';
 
 const EscuelaDeArtes = () => {
@@ -22,12 +24,24 @@ const EscuelaDeArtes = () => {
     const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
+    const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
+    const [moduleTreasurer, setModuleTreasurer] = useState(null);
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
     const hasAdminOrCoordinator = hasAnyRole(['ADMIN']) || isCoordinator();
 
     // Handler for coordinator changes
     const handleCoordinatorChange = (newCoordinator) => {
         setModuleCoordinator(newCoordinator);
+    };
+
+    // Handler for treasurer changes
+    const handleTreasurerChange = (newTreasurer) => {
+        setModuleTreasurer(newTreasurer);
+    };
+
+    // Handler for sub-coordinator changes
+    const handleSubCoordinatorChange = (newSubCoordinator) => {
+        setModuleSubCoordinator(newSubCoordinator);
     };
 
     // Delete Confirmation Modal State
@@ -60,6 +74,8 @@ const EscuelaDeArtes = () => {
     useEffect(() => {
         fetchClasses();
         fetchModuleCoordinator();
+        fetchModuleSubCoordinator();
+        fetchModuleTreasurer();
     }, []);
 
     const fetchModuleCoordinator = async () => {
@@ -69,6 +85,26 @@ const EscuelaDeArtes = () => {
         } catch (error) {
             console.error('Error fetching coordinator:', error);
             setModuleCoordinator(null);
+        }
+    };
+
+    const fetchModuleSubCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/escuela-de-artes/subcoordinator');
+            setModuleSubCoordinator(res.data);
+        } catch (error) {
+            console.error('Error fetching subcoordinator:', error);
+            setModuleSubCoordinator(null);
+        }
+    };
+
+    const fetchModuleTreasurer = async () => {
+        try {
+            const res = await api.get('/coordinators/module/escuela-de-artes/treasurer');
+            setModuleTreasurer(res.data);
+        } catch (error) {
+            console.error('Error fetching treasurer:', error);
+            setModuleTreasurer(null);
         }
     };
 
@@ -420,6 +456,20 @@ const EscuelaDeArtes = () => {
                             moduleCoordinator={moduleCoordinator}
                             moduleName="Escuela de Artes"
                             onCoordinatorChange={handleCoordinatorChange}
+                            disabled={!hasAdminOrPastor}
+                        />
+                        <SubCoordinatorSelector 
+                            moduleSubCoordinator={moduleSubCoordinator}
+                            moduleName="Escuela de Artes"
+                            onSubCoordinatorChange={handleSubCoordinatorChange}
+                            disabled={!hasAdminOrPastor}
+                            currentUserId={user?.id}
+                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
+                        />
+                        <TreasurerSelector 
+                            moduleTreasurer={moduleTreasurer}
+                            moduleName="Escuela de Artes"
+                            onTreasurerChange={handleTreasurerChange}
                             disabled={!hasAdminOrPastor}
                             currentUserId={user?.id}
                             isModuleCoordinator={user?.isCoordinator || isCoordinator()}

@@ -3,10 +3,27 @@ import { Card, Button, Input } from '../ui';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
+import { useAuth } from '../../context/AuthContext';
+import { ROLES } from '../../constants/roles';
+
 const PaymentManager = () => {
+    const { hasAnyRole, isCoordinator, isTreasurer } = useAuth();
     const [enrollmentId, setEnrollmentId] = useState('');
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
+
+    const canManagePayments = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isCoordinator('Escuela de Artes') || isTreasurer('Escuela de Artes');
+
+    if (!canManagePayments) {
+        return (
+            <Card title="Gestión de Pagos y Abonos">
+                <div className="p-8 text-center bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-800">
+                    <p className="text-red-800 dark:text-red-200 font-bold mb-2">Acceso Restringido</p>
+                    <p className="text-red-600 dark:text-red-400 text-sm">No tiene los permisos necesarios para realizar abonos. Esta función es exclusiva para el Tesorero del módulo, el Coordinador o Administradores.</p>
+                </div>
+            </Card>
+        );
+    }
 
     const handleRegisterPayment = async (e) => {
         e.preventDefault();

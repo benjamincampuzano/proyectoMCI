@@ -1,4 +1,4 @@
-import { Eye, EyeSlash } from '@phosphor-icons/react';
+import { Eye, EyeClosedIcon } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 
 const UserFormFields = ({
@@ -62,11 +62,11 @@ const UserFormFields = ({
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
                 <input required
-                type="email"
-                className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                value={formData.email}
-                placeholder="tu_email@email.com"
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    type="email"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    value={formData.email}
+                    placeholder="tu_email@email.com"
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
                 />
             </div>
 
@@ -90,7 +90,7 @@ const UserFormFields = ({
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                         >
-                            {showPassword ? <Eye size={20} /> : <EyeSlash  size={20} />}
+                            {showPassword ? <Eye size={20} /> : <EyeClosedIcon size={20} />}
                         </button>
                     </div>
                     {passwordErrors.length > 0 && (
@@ -208,22 +208,22 @@ const UserFormFields = ({
             {(formData.role === 'LIDER_DOCE' || formData.role === 'LIDER_CELULA' || formData.role === 'DISCIPULO') && (
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-700 pt-4">
                     <h3 className="md:col-span-2 font-semibold text-gray-900 dark:text-white">Asignación de Líderes Parejas</h3>
-                    
+
                     {/* PASTORES (for LIDER_DOCE) */}
                     {formData.role === 'LIDER_DOCE' && (
                         <>
                             {[0, 1].map(index => (
                                 <div key={`pastor-${index}`}>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Pastor ({index + 1})</label>
-                                    <select 
-                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" 
-                                        value={formData.pastorIds?.[index] || ''} 
+                                    <select
+                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        value={formData.pastorIds?.[index] || ''}
                                         onChange={e => {
                                             const val = e.target.value;
                                             const newIds = [...(formData.pastorIds || [])];
                                             newIds[index] = val;
                                             const filteredIds = newIds.filter(Boolean);
-                                            
+
                                             // Auto-select spouse
                                             if (val && filteredIds.length < 2) {
                                                 const selected = pastores.find(p => p.id === parseInt(val));
@@ -248,15 +248,15 @@ const UserFormFields = ({
                             {[0, 1].map(index => (
                                 <div key={`ld-${index}`}>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12 ({index + 1})</label>
-                                    <select 
-                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" 
-                                        value={formData.liderDoceIds?.[index] || ''} 
+                                    <select
+                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        value={formData.liderDoceIds?.[index] || ''}
                                         onChange={e => {
                                             const val = e.target.value;
                                             const newIds = [...(formData.liderDoceIds || [])];
                                             newIds[index] = val;
                                             const filteredIds = newIds.filter(Boolean);
-                                            
+
                                             if (val && filteredIds.length < 2) {
                                                 const selected = lideresDoce.find(l => l.id === parseInt(val));
                                                 if (selected?.spouseId && !filteredIds.includes(selected.spouseId.toString())) {
@@ -280,15 +280,15 @@ const UserFormFields = ({
                             {[0, 1].map(index => (
                                 <div key={`lc-${index}`}>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula ({index + 1})</label>
-                                    <select 
-                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" 
-                                        value={formData.liderCelulaIds?.[index] || ''} 
+                                    <select
+                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        value={formData.liderCelulaIds?.[index] || ''}
                                         onChange={e => {
                                             const val = e.target.value;
                                             const newIds = [...(formData.liderCelulaIds || [])];
                                             newIds[index] = val;
                                             const filteredIds = newIds.filter(Boolean);
-                                            
+
                                             if (val && filteredIds.length < 2) {
                                                 const selected = lideresCelula.find(lc => lc.id === parseInt(val));
                                                 if (selected?.spouseId && !filteredIds.includes(selected.spouseId.toString())) {

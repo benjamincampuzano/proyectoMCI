@@ -7,6 +7,7 @@ import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import { PageHeader, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import CoordinatorSelector from '../components/CoordinatorSelector';
+import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
@@ -14,6 +15,7 @@ const Enviar = () => {
     const { user, hasAnyRole, isCoordinator } = useAuth();
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
+    const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
 
     // Custom role checker for cells tab - allows coordinators to manage cells
     const hasCellsTabAccess = () => {
@@ -28,15 +30,18 @@ const Enviar = () => {
         setModuleCoordinator(newCoordinator);
         
         // After a short delay, refresh the coordinator data from server
-        if (newCoordinator) {
-            setTimeout(() => {
-                fetchCoordinator();
-            }, 500);
-        } else {
-            setTimeout(() => {
-                fetchCoordinator();
-            }, 500);
-        }
+        setTimeout(() => {
+            fetchCoordinator();
+        }, 500);
+    };
+
+    // Handler for sub-coordinator changes
+    const handleSubCoordinatorChange = (newSubCoordinator) => {
+        setModuleSubCoordinator(newSubCoordinator);
+        
+        setTimeout(() => {
+            fetchSubCoordinator();
+        }, 500);
     };
 
     const fetchCoordinator = async () => {
@@ -65,8 +70,19 @@ const Enviar = () => {
         }
     };
 
+    const fetchSubCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/enviar/subcoordinator');
+            setModuleSubCoordinator(res.data);
+        } catch (error) {
+            console.error('Error fetching subcoordinator:', error);
+            setModuleSubCoordinator(null);
+        }
+    };
+
     useEffect(() => {
         fetchCoordinator();
+        fetchSubCoordinator();
     }, []);
     const tabs = [
         { id: 'attendance', label: 'Asistencia', component: CellAttendance },
@@ -80,14 +96,22 @@ const Enviar = () => {
                 title="Enviar"
                 description="Gestión de asistencia a células y estadísticas"
                 action={
-                    <CoordinatorSelector 
-                        moduleCoordinator={moduleCoordinator}
-                        moduleName="Enviar"
-                        onCoordinatorChange={handleCoordinatorChange}
-                        disabled={!hasAdminOrPastor}
-                        currentUserId={user?.id}
-                        isModuleCoordinator={user?.isCoordinator || isCoordinator()}
-                    />
+                    <div className="flex items-center gap-4">
+                        <CoordinatorSelector 
+                            moduleCoordinator={moduleCoordinator}
+                            moduleName="Enviar"
+                            onCoordinatorChange={handleCoordinatorChange}
+                            disabled={!hasAdminOrPastor}
+                        />
+                        <SubCoordinatorSelector 
+                            moduleSubCoordinator={moduleSubCoordinator}
+                            moduleName="Enviar"
+                            onSubCoordinatorChange={handleSubCoordinatorChange}
+                            disabled={!hasAdminOrPastor}
+                            currentUserId={user?.id}
+                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
+                        />
+                    </div>
                 }
             />
 

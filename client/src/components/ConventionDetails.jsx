@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, MoneyIcon, XCircle, Trash, FileTextIcon, Users, Pen, MicrosoftExcelLogoIcon } from '@phosphor-icons/react';
+import { ROLES } from '../constants/roles';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import * as XLSX from 'xlsx';
@@ -10,12 +11,21 @@ import BalanceReport from './BalanceReport';
 import ConfirmationModal from './ConfirmationModal';
 
 const ConventionDetails = ({ convention, onBack, onRefresh }) => {
-    const { user, hasAnyRole } = useAuth();
+    const { user, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
 
-    // Check if current user is admin or coordinator
-    const isCoordinator = convention.coordinatorId === parseInt(user?.id);
-    const isAdmin = hasAnyRole(['ADMIN']);
-    const canModify = isAdmin || isCoordinator;
+    // Permissions
+    const hasAdminPower = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isCoordinator('Convenciones');
+    const isLocalCoordinator = convention.coordinatorId === parseInt(user?.id);
+    
+    // Can edit the convention itself or register people
+    const canManageConvention = hasAdminPower || isLocalCoordinator;
+    
+    // Can register payments
+    const canManagePayments = hasAdminPower || isTreasurer('Convenciones');
+
+    // Maintain compatibility with existing code
+    const canModify = canManageConvention;
+    const isAdmin = hasAnyRole([ROLES.ADMIN]);
     const [activeTab, setActiveTab] = useState('attendees'); // attendees, report
     const [reportData, setReportData] = useState([]);
     const [loadingReport, setLoadingReport] = useState(false);
@@ -421,7 +431,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
-                                                {canModify && (
+                                                {canManagePayments && (
                                                     <button
                                                         onClick={() => openPaymentModal(reg)}
                                                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"

@@ -64,7 +64,10 @@ const formatUser = (user) => {
         pastorId,
         liderDoceId,
         liderCelulaId,
-        isCoordinator: user.isCoordinator,
+        isCoordinator: user.isCoordinator || (user.moduleCoordinations && user.moduleCoordinations.length > 0),
+        isModuleTreasurer: user.moduleTreasurers && user.moduleTreasurers.length > 0,
+        moduleCoordinations: user.moduleCoordinations?.map(mc => mc.moduleName) || [],
+        moduleTreasurers: user.moduleTreasurers?.map(mt => mt.moduleName) || [],
         mustChangePassword: user.mustChangePassword,
         spouseId: user.spouseId,
         hierarchy: (user.parents || []).map(p => ({
@@ -83,7 +86,8 @@ const getProfile = async (req, res) => {
                 profile: true,
                 roles: { include: { role: true } },
                 parents: { include: { parent: { include: { profile: true } } } },
-                moduleCoordinations: true
+                moduleCoordinations: true,
+                moduleTreasurers: true
             }
         });
 
@@ -1010,7 +1014,7 @@ const searchUsers = async (req, res) => {
         const searchQuery = q || search;
         const allowAllRolesBool = allowAllRoles === 'true';
 
-        // Allow empty search when role or excludeRoles is specified
+        // Allow empty search when role, excludeRoles, or allowAllRoles is specified
         if (!searchQuery && !role && !excludeRoles && !allowAllRolesBool) {
             return res.status(400).json({ message: 'Search query or role parameter is required' });
         }
@@ -1044,21 +1048,24 @@ const searchUsers = async (req, res) => {
             return res.status(400).json({ message: 'Search query must be at least 2 characters' });
         }
 
+        // Pre-process role for multiple role support
+        const roleFilter = role ? (role.includes(',') ? { in: role.split(',') } : role) : null;
+
         // Special case for Art School enrollment - allow all roles
         if (allowAllRolesBool && (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR') || req.user.isModuleCoordinator)) {
             // No role restrictions for Art School enrollment
-            if (role) {
+            if (roleFilter) {
                 where['roles'] = { 
                     ...(where['roles'] || {}),
-                    some: { role: { name: role } } 
+                    some: { role: { name: roleFilter } } 
                 };
             }
         }
         else if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
-            if (role) {
+            if (roleFilter) {
                 where['roles'] = { 
                     ...(where['roles'] || {}),
-                    some: { role: { name: role } } 
+                    some: { role: { name: roleFilter } } 
                 };
             }
         }
@@ -1068,21 +1075,26 @@ const searchUsers = async (req, res) => {
                 ? [...MANAGABLE_ROLES, 'LIDER_DOCE'] 
                 : MANAGABLE_ROLES;
             
+            // If specific roles are requested, ensure they are allowed
             if (role && !allowedRoles.includes(role)) {
-                return res.status(403).json({ message: `You cannot search for role: ${role}` });
+                // If it's a list, check each one
+                const requestedRoles = role.split(',');
+                if (requestedRoles.some(r => !allowedRoles.includes(r))) {
+                    return res.status(403).json({ message: `You cannot search for one or more requested roles: ${role}` });
+                }
             }
             
             where['roles'] = { 
                 ...(where['roles'] || {}),
-                some: { role: { name: role ? role : { in: allowedRoles } } } 
+                some: { role: { name: roleFilter ? roleFilter : { in: allowedRoles } } } 
             };
         }
         else if (req.user.roles.includes('LIDER_DOCE')) {
             const requesterNetwork = await getUserNetwork(req.user.id);
-            if (!requesterNetwork) {
+            if (!requesterNetwork || requesterNetwork.length === 0) {
                 return res.json([]);
             }
-            where['profile'] = { network: requesterNetwork };
+            where['id'] = { in: requesterNetwork };
             
             // LIDER_DOCE can search for other LIDER_DOCE users in their network
             const allowedRoles = role === 'LIDER_DOCE' 
@@ -1090,12 +1102,16 @@ const searchUsers = async (req, res) => {
                 : MANAGABLE_ROLES;
             
             if (role && !allowedRoles.includes(role)) {
-                return res.status(403).json({ message: `You cannot search for role: ${role}` });
+                // If it's a list, check each one
+                const requestedRoles = role.split(',');
+                if (requestedRoles.some(r => !allowedRoles.includes(r))) {
+                    return res.status(403).json({ message: `You cannot search for one or more requested roles: ${role}` });
+                }
             }
             
             where['roles'] = { 
                 ...(where['roles'] || {}),
-                some: { role: { name: role ? role : { in: allowedRoles } } } 
+                some: { role: { name: roleFilter ? roleFilter : { in: allowedRoles } } } 
             };
         }
         else {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Lock, Eye, EyeSlash, WarningCircle, CheckCircle, ShieldCheck } from '@phosphor-icons/react';
+import { Lock, Eye, EyeClosedIcon, WarningCircle, CheckCircle, ShieldCheck } from '@phosphor-icons/react';
 
 const PasswordChangeModal = ({ isOpen, onClose }) => {
     const { user, changePassword } = useAuth();
@@ -110,7 +110,7 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
                                             onClick={() => setShowPasswords(!showPasswords)}
                                             className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                                         >
-                                            {showPasswords ? <EyeSlash size={18} /> : <Eye size={18} />}
+                                            {showPasswords ? <EyeClosedIcon size={18} /> : <Eye size={18} />}
                                         </button>
                                     </div>
                                 </div>
@@ -147,7 +147,7 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
                                         />
                                         <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                     </div>
-                                    
+
                                     {/* Password Requirements */}
                                     <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl space-y-2 border border-gray-100 dark:border-gray-800">
                                         <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Requisitos:</p>

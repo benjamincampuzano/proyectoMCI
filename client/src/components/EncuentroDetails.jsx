@@ -3,6 +3,7 @@ import { ArrowLeft, UserPlus, MoneyIcon, CheckCircle, XCircle, Trash, Calendar, 
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { ROLES } from '../constants/roles';
 import { AsyncSearchSelect } from './ui';
 import MultiUserSelect from './MultiUserSelect';
 import EncuentroClassTracker from './EncuentroClassTracker';
@@ -11,7 +12,7 @@ import { DATA_POLICY_URL } from '../constants/policies';
 import ConfirmationModal from './ConfirmationModal';
 
 const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
-    const { user, isSuperAdmin } = useAuth();
+    const { user, isSuperAdmin, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
     
     const [activeTab, setActiveTab] = useState('general'); // general | classes | report
     const [reportData, setReportData] = useState([]);
@@ -58,12 +59,19 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [needsTransport, setNeedsTransport] = useState(false);
     const [needsAccommodation, setNeedsAccommodation] = useState(false);
 
-    // Payment Form State
-    const [paymentAmount, setPaymentAmount] = useState('');
-    const [paymentType, setPaymentType] = useState('ENCUENTRO');
-    const [paymentNotes, setPaymentNotes] = useState('');
 
-    const canModify = parseInt(user?.id) === parseInt(encuentro?.coordinatorId) || user?.roles?.includes('ADMIN');
+    
+    // Administrative permission: Admin, Pastor, or Module Coordinator
+    const hasAdminPower = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isCoordinator('Encuentros');
+    
+    // Can edit the encounter itself or register people
+    const canManageEncuentro = hasAdminPower || parseInt(user?.id) === parseInt(encuentro?.coordinatorId);
+    
+    // Can register payments: Anyone with admin power OR the module treasurer
+    const canManagePayments = hasAdminPower || isTreasurer('Encuentros');
+    
+    // Legacy support or specific use cases
+    const canModify = canManageEncuentro;
 
     useEffect(() => {
         if (activeTab === 'report' && encuentro) {
@@ -445,7 +453,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
-                                                {canModify && (
+                                                {canManagePayments && (
                                                     <button
                                                         onClick={() => openPaymentModal(reg)}
                                                         className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 inline-flex items-center"

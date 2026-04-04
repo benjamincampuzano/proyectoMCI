@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LockIcon, User, Calendar, Check, Shield, X, EyeIcon, EyeClosedIcon, Plus, Envelope, ArrowsClockwiseIcon } from '@phosphor-icons/react';
+import { LockIcon, User, Calendar, Check, Shield, X, EyeIcon, EyeClosedIconIcon, Plus, Envelope, ArrowsClockwiseIcon } from '@phosphor-icons/react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
@@ -244,7 +244,7 @@ const Register = () => {
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                                     >
-                                        {showPassword ? <EyeIcon size={20} /> : <EyeClosedIcon size={20} />}
+                                        {showPassword ? <EyeIcon size={20} /> : <EyeClosedIconIcon size={20} />}
                                     </button>
                                 </div>
                                 {formData.password && (
