@@ -54,6 +54,43 @@ const formatUser = (user) => {
         liderCelulaId = user.parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null;
     }
 
+    // Roles secundarios derivados de relaciones funcionales (no de UserRole)
+    const secondaryRoles = [];
+
+    // Roles en Escuela de Artes
+    if (user.artRoles && user.artRoles.length > 0) {
+        user.artRoles.forEach(ar => {
+            const label = `ARTE_${ar.role}`;
+            if (!secondaryRoles.includes(label)) secondaryRoles.push(label);
+        });
+    }
+
+    // Coordinaciones de módulo
+    if (user.moduleCoordinations && user.moduleCoordinations.length > 0) {
+        user.moduleCoordinations.forEach(mc => {
+            const label = `COORD_${mc.moduleName.toUpperCase()}`;
+            if (!secondaryRoles.includes(label)) secondaryRoles.push(label);
+        });
+    }
+
+    // Tesorerías de módulo
+    if (user.moduleTreasurers && user.moduleTreasurers.length > 0) {
+        user.moduleTreasurers.forEach(mt => {
+            const label = `TES_${mt.moduleName.toUpperCase()}`;
+            if (!secondaryRoles.includes(label)) secondaryRoles.push(label);
+        });
+    }
+
+    // Módulos como profesor
+    if (user.professorModules && user.professorModules.length > 0) {
+        if (!secondaryRoles.includes('PROFESOR')) secondaryRoles.push('PROFESOR');
+    }
+
+    // Módulos como auxiliar
+    if (user.auxiliaryModules && user.auxiliaryModules.length > 0) {
+        if (!secondaryRoles.includes('AUXILIAR')) secondaryRoles.push('AUXILIAR');
+    }
+
     return {
         ...(user.profile || {}),
         id: user.id,
@@ -61,6 +98,7 @@ const formatUser = (user) => {
         phone: user.phone,
         isActive: user.isActive,
         roles: user.roles ? user.roles.map(r => r.role.name) : [],
+        secondaryRoles,
         pastorId,
         liderDoceId,
         liderCelulaId,
@@ -272,7 +310,12 @@ const getAllUsers = async (req, res) => {
                 include: {
                     roles: { include: { role: true } },
                     profile: true,
-                    parents: true
+                    parents: true,
+                    artRoles: true,
+                    moduleCoordinations: true,
+                    moduleTreasurers: true,
+                    professorModules: { select: { id: true, name: true } },
+                    auxiliaryModules: { select: { id: true, name: true } }
                 },
                 skip: (pageNum - 1) * limitNum,
                 take: limitNum,
@@ -473,14 +516,28 @@ const updateUser = async (req, res) => {
 
             // 2. Update Role if provided
             if (role) {
-                const targetRole = await tx.role.upsert({
-                    where: { name: role },
-                    update: {},
-                    create: { name: role }
+                const existingRoles = await tx.userRole.findMany({
+                    where: { userId },
+                    include: { role: true }
                 });
-                // Clear existing roles and assign new one (or handle multi-role if needed)
+                
+                const PRIMARY_ROLES = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'];
+                const secondaryRoles = existingRoles
+                    .map(ur => ur.role.name)
+                    .filter(name => !PRIMARY_ROLES.includes(name));
+                
+                const newRolesToAssign = [...new Set([role, ...secondaryRoles])];
+                
                 await tx.userRole.deleteMany({ where: { userId } });
-                await tx.userRole.create({ data: { userId, roleId: targetRole.id } });
+                
+                for (const roleName of newRolesToAssign) {
+                    const r = await tx.role.upsert({
+                        where: { name: roleName },
+                        update: {},
+                        create: { name: roleName }
+                    });
+                    await tx.userRole.create({ data: { userId, roleId: r.id } });
+                }
             }
 
             // 3. Update Hierarchy if leaders provided

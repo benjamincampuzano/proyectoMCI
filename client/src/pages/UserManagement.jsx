@@ -117,6 +117,8 @@ const UserManagement = () => {
                 liderDoceFilter={liderDoceFilter}
                 setLiderDoceFilter={setLiderDoceFilter}
                 lideresDoce={lideresDoce}
+                totalCount={users.length}
+                filteredCount={filteredUsers.length}
             />
 
             <UserTable
@@ -131,7 +133,7 @@ const UserManagement = () => {
                     liderCelulaIds: user.liderCelulaIds || (user.liderCelulaId ? [user.liderCelulaId] : []),
                     spouseId: user.spouseId || '',
                     neighborhood: user.neighborhood || '',
-                    role: user.roles?.[0] || 'DISCIPULO',
+                    role: user.roles?.find(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'].includes(r)) || user.roles?.[0] || 'DISCIPULO',
                     sex: user.sex || '',
                     documentType: user.documentType || ''
                 })}
