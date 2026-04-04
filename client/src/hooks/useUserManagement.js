@@ -11,6 +11,9 @@ const useUserManagement = () => {
     const [roleFilter, setRoleFilter] = useState('');
     const [sexFilter, setSexFilter] = useState('');
     const [liderDoceFilter, setLiderDoceFilter] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalUsers, setTotalUsers] = useState(0);
+    const [usersPerPage] = useState(50); // Límite para no ADMIN
     const [editingUser, setEditingUser] = useState(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -98,14 +101,41 @@ const useUserManagement = () => {
     const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await api.get('/users');
-            setUsers(response.data);
+            
+            // Para ADMIN, obtener todos los usuarios sin límite
+            // Para otros roles, usar paginación
+            const isAdminUser = currentUser?.roles?.includes('ADMIN') || 
+                               currentUser?.role === 'ADMIN' || 
+                               auth.isAdmin?.();
+            
+            const params = new URLSearchParams();
+            params.append('page', currentPage);
+            
+            if (!isAdminUser) {
+                params.append('limit', usersPerPage);
+            }
+            
+            // Enviar filtros al backend
+            if (roleFilter) params.append('role', roleFilter);
+            if (searchTerm) params.append('search', searchTerm);
+            if (sexFilter) params.append('sexFilter', sexFilter);
+            if (liderDoceFilter) params.append('liderDoceFilter', liderDoceFilter);
+            
+            const response = await api.get(`/users?${params.toString()}`);
+            
+            // El backend ahora devuelve { users: [...], pagination: {...} }
+            const { users: usersData, pagination } = response.data;
+            
+            setUsers(usersData || []);
+            setTotalUsers(pagination?.total || 0);
         } catch (err) {
             setError('Error al cargar usuarios');
+            setUsers([]);
+            setTotalUsers(0);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [currentPage, roleFilter, searchTerm, sexFilter, liderDoceFilter, usersPerPage, currentUser, auth]);
 
     useEffect(() => {
         fetchUsers();
@@ -247,18 +277,8 @@ const useUserManagement = () => {
     const lideresDoce = users.filter(u => u.roles?.includes('LIDER_DOCE'));
     const lideresCelula = users.filter(u => u.roles?.includes('LIDER_CELULA'));
 
-    const filteredUsers = useMemo(() => {
-        return users.filter(u => {
-            const fullName = u.fullName || '';
-            const email = u.email || '';
-            const matchesSearch = fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                email.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesRole = roleFilter === '' || u.roles?.includes(roleFilter);
-            const matchesSex = sexFilter === '' || u.sex === sexFilter;
-            const matchesLiderDoce = liderDoceFilter === '' || u.liderDoceId === parseInt(liderDoceFilter);
-            return matchesSearch && matchesRole && matchesSex && matchesLiderDoce;
-        });
-    }, [liderDoceFilter, roleFilter, searchTerm, sexFilter, users]);
+    // Ya no necesitamos filtrar localmente ya que el backend maneja los filtros
+    const filteredUsers = users;
 
     const canEdit = (() => {
         if (!currentUser) return false;
@@ -282,6 +302,36 @@ const useUserManagement = () => {
         if (currentUser.roles.includes('PASTOR')) return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
         return ['DISCIPULO', 'LIDER_CELULA'];
     }, [currentUser]);
+
+    // Funciones de paginación
+    const handlePageChange = useCallback((newPage) => {
+        setCurrentPage(newPage);
+    }, []);
+
+    const handleNextPage = useCallback(() => {
+        setCurrentPage(prev => prev + 1);
+    }, []);
+
+    const handlePrevPage = useCallback(() => {
+        setCurrentPage(prev => Math.max(1, prev - 1));
+    }, []);
+
+    // Calcular información de paginación
+    const totalPages = Math.ceil(totalUsers / usersPerPage) || 1;
+    const paginationInfo = {
+        page: currentPage,
+        pages: totalPages,
+        total: totalUsers,
+        hasNext: currentPage < totalPages,
+        hasPrev: currentPage > 1,
+        onNext: handleNextPage,
+        onPrev: handlePrevPage
+    };
+
+    // Resetear página cuando cambian los filtros
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, roleFilter, sexFilter, liderDoceFilter]);
 
     return {
         users,
@@ -323,6 +373,13 @@ const useUserManagement = () => {
         setShowErrorModal,
         errorDetails,
         handleError,
+        // Paginación
+        currentPage,
+        setCurrentPage: handlePageChange,
+        totalUsers,
+        usersPerPage,
+        totalPages,
+        pagination: paginationInfo
     };
 };
 

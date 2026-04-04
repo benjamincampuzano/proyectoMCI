@@ -285,9 +285,12 @@ const changePassword = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const { role, page = 1, limit = 50 } = req.query;
+        const { role, page = 1, limit, search, sexFilter, liderDoceFilter } = req.query;
         const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
+        
+        // Para ADMIN, no hay límite por defecto (pueden ver todos los usuarios)
+        // Para otros roles, mantener el límite de 50 por defecto
+        let limitNum = limit ? parseInt(limit) : (req.user.roles.includes('ADMIN') ? undefined : 50);
 
         if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
             let rolesFilter = undefined;
@@ -302,11 +305,52 @@ const getAllUsers = async (req, res) => {
                 };
             }
 
-            const users = await prisma.user.findMany({
-                where: {
-                    isDeleted: false,
-                    ...(rolesFilter && { roles: rolesFilter })
-                },
+            // Construir filtro de búsqueda
+            let searchFilter = {};
+            if (search) {
+                searchFilter = {
+                    OR: [
+                        { profile: { fullName: { contains: search, mode: 'insensitive' } } },
+                        { email: { contains: search, mode: 'insensitive' } }
+                    ]
+                };
+            }
+
+            // Filtro de sexo
+            let sexFilterObj = {};
+            if (sexFilter) {
+                sexFilterObj = { profile: { sex: sexFilter } };
+            }
+
+            // Filtro de líder de 12
+            let liderDoceFilterObj = {};
+            if (liderDoceFilter) {
+                liderDoceFilterObj = { 
+                    parents: { 
+                        some: { 
+                            parentId: parseInt(liderDoceFilter),
+                            role: 'LIDER_DOCE'
+                        } 
+                    } 
+                };
+            }
+
+            // Combinar todos los filtros
+            const whereClause = {
+                isDeleted: false,
+                ...(rolesFilter && { roles: rolesFilter }),
+                ...(Object.keys(searchFilter).length > 0 && searchFilter),
+                ...(Object.keys(sexFilterObj).length > 0 && sexFilterObj),
+                ...(Object.keys(liderDoceFilterObj).length > 0 && liderDoceFilterObj)
+            };
+
+            // Obtener total de usuarios para paginación
+            const totalCount = await prisma.user.count({
+                where: whereClause
+            });
+
+            const queryOptions = {
+                where: whereClause,
                 include: {
                     roles: { include: { role: true } },
                     profile: true,
@@ -317,69 +361,201 @@ const getAllUsers = async (req, res) => {
                     professorModules: { select: { id: true, name: true } },
                     auxiliaryModules: { select: { id: true, name: true } }
                 },
-                skip: (pageNum - 1) * limitNum,
-                take: limitNum,
                 orderBy: { id: 'desc' }
-            });
+            };
 
-            return res.json(users.map(formatUser));
+            // Aplicar paginación solo si hay un límite definido
+            if (limitNum !== undefined) {
+                queryOptions.skip = (pageNum - 1) * limitNum;
+                queryOptions.take = limitNum;
+            }
+
+            const users = await prisma.user.findMany(queryOptions);
+
+            return res.json({
+                users: users.map(formatUser),
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total: totalCount,
+                    pages: limitNum ? Math.ceil(totalCount / limitNum) : 1
+                }
+            });
         }
 
         if (req.user.isModuleCoordinator) {
-            const users = await prisma.user.findMany({
-                where: {
-                    isDeleted: false,
-                    roles: {
-                        some: {
-                            role: { 
-                                name: role || { in: MANAGABLE_ROLES }
-                            }
+            // Construir filtro de búsqueda
+            let searchFilter = {};
+            if (search) {
+                searchFilter = {
+                    OR: [
+                        { profile: { fullName: { contains: search, mode: 'insensitive' } } },
+                        { email: { contains: search, mode: 'insensitive' } }
+                    ]
+                };
+            }
+
+            // Filtro de sexo
+            let sexFilterObj = {};
+            if (sexFilter) {
+                sexFilterObj = { profile: { sex: sexFilter } };
+            }
+
+            // Filtro de líder de 12
+            let liderDoceFilterObj = {};
+            if (liderDoceFilter) {
+                liderDoceFilterObj = { 
+                    parents: { 
+                        some: { 
+                            parentId: parseInt(liderDoceFilter),
+                            role: 'LIDER_DOCE'
+                        } 
+                    } 
+                };
+            }
+
+            // Combinar todos los filtros
+            const whereClause = {
+                isDeleted: false,
+                roles: {
+                    some: {
+                        role: { 
+                            name: role || { in: MANAGABLE_ROLES }
                         }
                     }
                 },
+                ...(Object.keys(searchFilter).length > 0 && searchFilter),
+                ...(Object.keys(sexFilterObj).length > 0 && sexFilterObj),
+                ...(Object.keys(liderDoceFilterObj).length > 0 && liderDoceFilterObj)
+            };
+
+            // Obtener total de usuarios para paginación
+            const totalCount = await prisma.user.count({
+                where: whereClause
+            });
+
+            const queryOptions = {
+                where: whereClause,
                 include: {
                     roles: { include: { role: true } },
                     profile: true,
                     parents: true
                 },
-                skip: (pageNum - 1) * limitNum,
-                take: limitNum,
                 orderBy: { id: 'desc' }
-            });
+            };
 
-            return res.json(users.map(formatUser));
+            // Aplicar paginación solo si hay un límite definido
+            if (limitNum !== undefined) {
+                queryOptions.skip = (pageNum - 1) * limitNum;
+                queryOptions.take = limitNum;
+            }
+
+            const users = await prisma.user.findMany(queryOptions);
+
+            return res.json({
+                users: users.map(formatUser),
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total: totalCount,
+                    pages: limitNum ? Math.ceil(totalCount / limitNum) : 1
+                }
+            });
         }
 
         if (req.user.roles.includes('LIDER_DOCE')) {
             const requesterNetworkId = await getUserNetwork(req.user.id);
 
             if (!requesterNetworkId) {
-                return res.json([]);
+                return res.json({
+                    users: [],
+                    pagination: {
+                        page: pageNum,
+                        limit: limitNum,
+                        total: 0,
+                        pages: 0
+                    }
+                });
             }
 
-            const users = await prisma.user.findMany({
-                where: {
-                    isDeleted: false,
-                    id: { in: requesterNetworkId },
-                    ...(role && {
-                        roles: {
-                            some: {
-                                role: { name: role }
-                            }
+            // Construir filtro de búsqueda
+            let searchFilter = {};
+            if (search) {
+                searchFilter = {
+                    OR: [
+                        { profile: { fullName: { contains: search, mode: 'insensitive' } } },
+                        { email: { contains: search, mode: 'insensitive' } }
+                    ]
+                };
+            }
+
+            // Filtro de sexo
+            let sexFilterObj = {};
+            if (sexFilter) {
+                sexFilterObj = { profile: { sex: sexFilter } };
+            }
+
+            // Filtro de líder de 12
+            let liderDoceFilterObj = {};
+            if (liderDoceFilter) {
+                liderDoceFilterObj = { 
+                    parents: { 
+                        some: { 
+                            parentId: parseInt(liderDoceFilter),
+                            role: 'LIDER_DOCE'
+                        } 
+                    } 
+                };
+            }
+
+            // Combinar todos los filtros
+            const whereClause = {
+                isDeleted: false,
+                id: { in: requesterNetworkId },
+                ...(role && {
+                    roles: {
+                        some: {
+                            role: { name: role }
                         }
-                    })
-                },
+                    }
+                }),
+                ...(Object.keys(searchFilter).length > 0 && searchFilter),
+                ...(Object.keys(sexFilterObj).length > 0 && sexFilterObj),
+                ...(Object.keys(liderDoceFilterObj).length > 0 && liderDoceFilterObj)
+            };
+
+            // Obtener total de usuarios para paginación
+            const totalCount = await prisma.user.count({
+                where: whereClause
+            });
+
+            const queryOptions = {
+                where: whereClause,
                 include: {
                     roles: { include: { role: true } },
                     profile: true,
                     parents: true
                 },
-                skip: (pageNum - 1) * limitNum,
-                take: limitNum,
                 orderBy: { id: 'desc' }
-            });
+            };
 
-            return res.json(users.map(formatUser));
+            // Aplicar paginación solo si hay un límite definido
+            if (limitNum !== undefined) {
+                queryOptions.skip = (pageNum - 1) * limitNum;
+                queryOptions.take = limitNum;
+            }
+
+            const users = await prisma.user.findMany(queryOptions);
+
+            return res.json({
+                users: users.map(formatUser),
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total: totalCount,
+                    pages: limitNum ? Math.ceil(totalCount / limitNum) : 1
+                }
+            });
         }
 
         return res.json([]);

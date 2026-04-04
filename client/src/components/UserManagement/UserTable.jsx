@@ -33,7 +33,7 @@ const labelMap = (role) => {
     return role.replace(/_/g, ' ');
 };
 
-const UserTable = ({ users, loading, canEdit, onEdit, onDelete, onResetPassword }) => {
+const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onResetPassword }) => {
     const columns = [
         {
             key: 'user',
@@ -202,6 +202,7 @@ const UserTable = ({ users, loading, canEdit, onEdit, onDelete, onResetPassword 
             skeletonRowCount={3}
             emptyMessage="No hay datos para mostrar."
             tableClassName="w-full text-left table-fixed"
+            pagination={pagination}
         />
     );
 };
@@ -210,6 +211,13 @@ UserTable.propTypes = {
     users: PropTypes.array.isRequired,
     loading: PropTypes.bool.isRequired,
     canEdit: PropTypes.bool.isRequired,
+    pagination: PropTypes.shape({
+        page: PropTypes.number.isRequired,
+        pages: PropTypes.number.isRequired,
+        total: PropTypes.number.isRequired,
+        onNext: PropTypes.func.isRequired,
+        onPrev: PropTypes.func.isRequired
+    }),
     onEdit: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
     onResetPassword: PropTypes.func.isRequired,

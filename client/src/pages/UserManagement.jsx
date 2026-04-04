@@ -45,6 +45,9 @@ const UserManagement = () => {
         showErrorModal,
         setShowErrorModal,
         errorDetails,
+        pagination,
+        currentPage,
+        totalUsers
     } = useUserManagement();
 
     // Validate password in real-time
@@ -117,14 +120,15 @@ const UserManagement = () => {
                 liderDoceFilter={liderDoceFilter}
                 setLiderDoceFilter={setLiderDoceFilter}
                 lideresDoce={lideresDoce}
-                totalCount={users.length}
-                filteredCount={filteredUsers.length}
+                totalCount={totalUsers}
+                filteredCount={users.length}
             />
 
             <UserTable
-                users={filteredUsers}
+                users={users}
                 loading={loading}
                 canEdit={canEdit}
+                pagination={pagination}
                 onEdit={(user) => setEditingUser({
                     ...user,
                     birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : '',
