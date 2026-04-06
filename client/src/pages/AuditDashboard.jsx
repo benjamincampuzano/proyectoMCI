@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import useAuditDashboard from '../hooks/useAuditDashboard';
 import DataTable from '../components/DataTable';
 import ConfirmationModal from '../components/ConfirmationModal';
+import api from '../utils/api';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -22,6 +23,9 @@ const AuditDashboard = () => {
     const [isRestoring, setIsRestoring] = useState(false);
     const [restoreProgress, setRestoreProgress] = useState(0);
     const [restoreStatus, setRestoreStatus] = useState('');
+    const [restorePassword, setRestorePassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [requirePasswordConfirm, setRequirePasswordConfirm] = useState(true);
     const memoizedStats = useMemo(() => stats, [stats]);
 
     const handleDownloadBackup = async (event) => {
@@ -31,22 +35,11 @@ const AuditDashboard = () => {
             button.innerHTML = `<span class="animate-spin">⏳</span> Creando backup SQL...`;
             button.disabled = true;
 
-            const baseURL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-            const url = `${baseURL}/api/audit/backup`;
-                
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+            const response = await api.get('/audit/backup', {
+                responseType: 'blob'
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Error al descargar el backup');
-            }
-
-            const contentDisposition = response.headers.get('content-disposition');
+            const contentDisposition = response.headers['content-disposition'];
             let fileName = `backup_${new Date().toISOString().replace(/[:.]/g, '-')}.sql`;
 
             if (contentDisposition) {
@@ -56,7 +49,7 @@ const AuditDashboard = () => {
                 }
             }
 
-            const blob = await response.blob();
+            const blob = new Blob([response.data], { type: 'application/sql' });
             const url_window = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url_window;
@@ -98,6 +91,8 @@ const AuditDashboard = () => {
         toast.success('✅ Archivo SQL detectado - Iniciando restauración...');
 
         setPendingRestoreFile(file);
+        setRestorePassword('');
+        setPasswordError('');
         setShowRestoreConfirm(true);
         event.target.value = '';
     };
@@ -105,6 +100,12 @@ const AuditDashboard = () => {
     const performRestoreBackup = async () => {
         const file = pendingRestoreFile;
         if (!file) return;
+
+        // Validar contraseña si está habilitado
+        if (requirePasswordConfirm && !restorePassword) {
+            setPasswordError('⚠️ Debes ingresar tu contraseña para confirmar esta acción destructiva');
+            return;
+        }
 
         setIsRestoring(true);
         setRestoreProgress(0);
@@ -120,24 +121,23 @@ const AuditDashboard = () => {
 
         try {
             setRestoreStatus('Subiendo archivo y procesando base de datos...');
-            const baseURL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-            const response = await fetch(`${baseURL}/api/audit/restore`, {
-                method: 'POST',
+            
+            const formData = new FormData();
+            formData.append('backupFile', file);
+            
+            const response = await api.post('/audit/restore', formData, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'X-Restore-Password': restorePassword,
+                    'Content-Type': 'multipart/form-data'
                 },
-                body: (() => {
-                    const formData = new FormData();
-                    formData.append('backupFile', file);
-                    return formData;
-                })()
+                timeout: 300000 // 5 minutos para archivos grandes
             });
 
-            const data = await response.json();
+            const data = response.data;
 
             clearInterval(progressInterval);
 
-            if (!response.ok) {
+            if (response.status !== 200) {
                 throw new Error(data.error || 'Error al restaurar el backup');
             }
 
@@ -313,8 +313,8 @@ const AuditDashboard = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Inicios de Sesión (Últimos 30 días)</h3>
-                        <div className="h-64 w-full min-h-[250px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <div className="h-64 w-full">
+                            <ResponsiveContainer width={400} height={250}>
                                 <AreaChart data={memoizedStats.loginsPerDay}>
                                     <defs>
                                         <linearGradient id="colorLogin" x1="0" y1="0" x2="0" y2="1">
@@ -334,8 +334,8 @@ const AuditDashboard = () => {
 
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Distribución de Acciones</h3>
-                        <div className="h-64 w-full min-h-[250px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <div className="h-64 w-full">
+                            <ResponsiveContainer width={400} height={250}>
                                 <BarChart data={memoizedStats.actionDistribution}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                                     <XAxis dataKey="action" />
@@ -692,6 +692,8 @@ const AuditDashboard = () => {
                 onClose={() => {
                     setShowRestoreConfirm(false);
                     setPendingRestoreFile(null);
+                    setRestorePassword('');
+                    setPasswordError('');
                 }}
                 onConfirm={performRestoreBackup}
                 title={isRestoring ? "Restaurando Base de Datos..." : "⚠️ Restaurar Copia de Seguridad"}
@@ -711,6 +713,37 @@ const AuditDashboard = () => {
                                 <span className="font-medium text-gray-900 dark:text-white">{(pendingRestoreFile.size / 1024 / 1024).toFixed(2)} MB</span>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {!isRestoring && requirePasswordConfirm && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-lg">
+                        <label className="block text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">
+                            🔐 Confirmación de Seguridad
+                        </label>
+                        <p className="text-xs text-amber-700 dark:text-amber-300 mb-3">
+                            Ingresa tu contraseña de administrador para confirmar esta acción destructiva.
+                        </p>
+                        <input
+                            type="password"
+                            value={restorePassword}
+                            onChange={(e) => {
+                                setRestorePassword(e.target.value);
+                                setPasswordError('');
+                            }}
+                            placeholder="Contraseña de administrador"
+                            className="w-full px-3 py-2 border border-amber-300 dark:border-amber-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    performRestoreBackup();
+                                }
+                            }}
+                        />
+                        {passwordError && (
+                            <p className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-1">
+                                <span>⚠️</span> {passwordError}
+                            </p>
+                        )}
                     </div>
                 )}
 

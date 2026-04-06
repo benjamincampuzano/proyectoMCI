@@ -17,7 +17,7 @@ if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_API) {
 
 const api = axios.create({
     baseURL: `${baseURL}/api`,
-    timeout: 10000, // Timeout de 10 segundos
+    timeout: 300000, // Timeout de 5 minutos para operaciones largas
 });
 
 // Flag para evitar múltiples refresh simultáneos

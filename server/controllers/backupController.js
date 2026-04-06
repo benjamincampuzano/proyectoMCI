@@ -1,6 +1,8 @@
 const { execSync, execFileSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 require("dotenv").config();
 const { Client } = require('pg');
 
@@ -298,6 +300,23 @@ const executeSqlFileWithTransaction = async (databaseUrl, filePath, res) => {
     }
 };
 
+const logBackupActivity = async (userId, action, details, ip) => {
+    try {
+        await prisma.auditLog.create({
+            data: {
+                userId,
+                action,
+                entityType: 'DATABASE',
+                details,
+                ipAddress: ip
+            }
+        });
+        console.log(`📝 Auditoría registrada: ${action} por usuario ${userId}`);
+    } catch (error) {
+        console.error('❌ Error registrando auditoría de backup:', error);
+    }
+};
+
 const downloadBackup = async (req, res) => {
     try {
         const DATABASE_URL = process.env.PG_DUMP_URL || process.env.DATABASE_URL;
@@ -318,6 +337,13 @@ const downloadBackup = async (req, res) => {
         console.log("🚀 Iniciando generación de backup...");
         await generateSqlBackup(DATABASE_URL, filePath);
 
+        await logBackupActivity(req.user.id, 'BACKUP_DOWNLOAD', {
+            fileName,
+            fileSize: fs.statSync(filePath).size,
+            ip: req.ip,
+            userAgent: req.headers['user-agent']
+        }, req.ip);
+
         res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
         
         res.download(filePath, fileName, (err) => {
@@ -331,12 +357,108 @@ const downloadBackup = async (req, res) => {
         });
     } catch (error) {
         console.error("Error en downloadBackup:", error);
-        return res.status(500).json({ error: "Error interno del servidor", details: error.message });
+        return res.status(500).json({ error: "Error interno del servidor", code: 'BACKUP_ERROR' });
     }
 };
 
+const validateSqlContent = (filePath) => {
+    try {
+        const content = fs.readFileSync(filePath, 'utf8');
+        
+        const dangerousPatterns = [
+            { pattern: /DROP\s+DATABASE/i, name: "DROP DATABASE" },
+            { pattern: /CREATE\s+USER/i, name: "CREATE USER" },
+            { pattern: /ALTER\s+USER/i, name: "ALTER USER" },
+            { pattern: /GRANT\s+ALL/i, name: "GRANT ALL" },
+            { pattern: /REVOKE\s+/i, name: "REVOKE" },
+            { pattern: /COPY\s+.*\s+FROM\s+`/i, name: "COPY FROM" },
+            { pattern: /;\s*--\s*bypass/i, name: "Comentario bypass" },
+            { pattern: /EXEC\s*\(/i, name: "EXEC" },
+            { pattern: /xp_cmdshell/i, name: "xp_cmdshell" }
+        ];
+        
+        for (const { pattern, name } of dangerousPatterns) {
+            if (pattern.test(content)) {
+                console.error(`⚠️ Patrón peligroso detectado: ${name}`);
+                return { 
+                    valid: false, 
+                    reason: `El archivo contiene comandos peligrosos: ${name}. Por seguridad, este tipo de comandos no están permitidos.` 
+                };
+            }
+        }
+        
+        const hasValidSql = /(INSERT\s+INTO|CREATE\s+TABLE|SET\s+session_replication_role)/i.test(content);
+        if (!hasValidSql) {
+            return { 
+                valid: false, 
+                reason: "El archivo no parece contener SQL válido de backup. Debe incluir sentencias INSERT, CREATE TABLE o configuración de sesión."
+            };
+        }
+        
+        console.log("✅ Validación de contenido SQL completada");
+        return { valid: true };
+    } catch (error) {
+        console.error("❌ Error validando contenido SQL:", error);
+        return { 
+            valid: false, 
+            reason: "No se pudo leer o validar el archivo SQL."
+        };
+    }
+};
+
+const verifyRestoreIntegrity = async (client) => {
+    const requiredTables = [
+        'User', 'UserProfile', 'Cell', 'Convention', 
+        'Encuentro', 'Role', 'UserRole'
+    ];
+    
+    const missingTables = [];
+    const emptyTables = [];
+    
+    console.log("🔍 Verificando integridad del restore...");
+    
+    for (const table of requiredTables) {
+        const existsResult = await client.query(
+            `SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = $1 AND table_schema = 'public'
+            )`,
+            [table]
+        );
+        
+        if (!existsResult.rows[0].exists) {
+            missingTables.push(table);
+            console.error(`❌ Tabla crítica faltante: ${table}`);
+            continue;
+        }
+        
+        const countResult = await client.query(
+            `SELECT COUNT(*) as count FROM "${table}"` 
+        );
+        
+        const count = parseInt(countResult.rows[0].count);
+        if (count === 0 && table !== 'Role') {
+            emptyTables.push(table);
+            console.warn(`⚠️ Tabla crítica vacía: ${table}`);
+        }
+        
+        console.log(`✅ Tabla ${table}: ${count} registros`);
+    }
+    
+    const isValid = missingTables.length === 0;
+    
+    return {
+        valid: isValid,
+        missingTables,
+        emptyTables,
+        message: isValid 
+            ? 'Restore verificado correctamente' 
+            : `Faltan tablas críticas: ${missingTables.join(', ')}` 
+    };
+};
+
 const restoreBackup = async (req, res) => {
-    const tempFilePath = null;
+    let tempFilePath = null;
     
     try {
         const DATABASE_URL = process.env.PG_DUMP_URL || process.env.DATABASE_URL;
@@ -348,14 +470,15 @@ const restoreBackup = async (req, res) => {
         if (!req.file) {
             return res.status(400).json({ error: "Debes proporcionar un archivo de backup" });
         }
+        
+        tempFilePath = req.file.path;
 
-        const filePath = req.file.path;
         const fileName = req.file.originalname;
         
         console.log(`📂 Archivo recibido: ${fileName} (${req.file.size} bytes)`);
         
         if (!fileName.toLowerCase().endsWith('.sql')) {
-            fs.unlinkSync(filePath);
+            fs.unlinkSync(tempFilePath);
             return res.status(400).json({ 
                 error: "Formato no válido",
                 details: "Solo se aceptan archivos .sql. Por favor descarga un backup en formato SQL e intenta nuevamente."
@@ -364,19 +487,57 @@ const restoreBackup = async (req, res) => {
 
         const maxSize = 100 * 1024 * 1024;
         if (req.file.size > maxSize) {
-            fs.unlinkSync(filePath);
+            fs.unlinkSync(tempFilePath);
             return res.status(400).json({ 
                 error: "Archivo demasiado grande",
                 details: `Máximo permitido: 100MB. Tu archivo: ${(req.file.size / 1024 / 1024).toFixed(2)}MB`
             });
         }
 
+        // Validar contenido del archivo SQL
+        const validationResult = validateSqlContent(tempFilePath);
+        if (!validationResult.valid) {
+            fs.unlinkSync(tempFilePath);
+            return res.status(400).json({ 
+                error: "Archivo SQL inválido",
+                details: validationResult.reason
+            });
+        }
+
         console.log("🔄 Iniciando restauración...");
         
-        const result = await executeSqlFileWithTransaction(DATABASE_URL, filePath, res);
+        const result = await executeSqlFileWithTransaction(DATABASE_URL, tempFilePath, res);
 
-        fs.unlinkSync(filePath);
+        // Verificación post-restore
+        const client = new Client({
+            connectionString: DATABASE_URL,
+            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+        });
+
+        try {
+            await client.connect();
+            const verification = await verifyRestoreIntegrity(client);
+            
+            if (!verification.valid) {
+                throw new Error(`Restore incompleto: ${verification.message}`);
+            }
+            
+            console.log("✅ Verificación de integridad completada");
+        } finally {
+            await client.end();
+        }
+
+        fs.unlinkSync(tempFilePath);
         console.log("🗑️ Archivo temporal eliminado");
+
+        await logBackupActivity(req.user.id, 'BACKUP_RESTORE', {
+            fileName,
+            fileSize: req.file.size,
+            statementsExecuted: result.executed,
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+            success: true
+        }, req.ip);
 
         return res.status(200).json({ 
             message: "Base de datos restaurada exitosamente",
@@ -384,18 +545,62 @@ const restoreBackup = async (req, res) => {
         });
 
     } catch (error) {
+        // Log completo solo en servidor (nunca al cliente)
         console.error("❌ Error en restoreBackup:", error);
+        console.error("Stack trace:", error.stack);
         
-        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        if (tempFilePath && fs.existsSync(tempFilePath)) {
             try {
-                fs.unlinkSync(req.file.path);
-            } catch (e) {}
+                fs.unlinkSync(tempFilePath);
+                console.log("🗑️ Archivo temporal eliminado en cleanup");
+            } catch (e) {
+                console.error("❌ Error limpiando archivo temporal:", e);
+            }
         }
 
+        // Determinar si es un error que podemos mostrar
+        let userMessage = "Error al restaurar la base de datos. Por favor verifica que el archivo sea válido.";
+        let errorCode = "RESTORE_ERROR";
+        
+        // Errores conocidos con mensajes amigables
+        if (error.code === 'ECONNREFUSED') {
+            userMessage = "No se pudo conectar a la base de datos. Verifica la configuración del servidor.";
+            errorCode = "DB_CONNECTION_ERROR";
+        } else if (error.code === '28P01') {
+            userMessage = "Error de autenticación con la base de datos.";
+            errorCode = "DB_AUTH_ERROR";
+        } else if (error.code === '42P01') {
+            userMessage = "Error en la estructura del archivo SQL.";
+            errorCode = "SQL_STRUCTURE_ERROR";
+        } else if (error.message.includes('permission denied')) {
+            userMessage = "Error de permisos. Verifica que el usuario de base de datos tenga los privilegios necesarios.";
+            errorCode = "PERMISSION_ERROR";
+        } else if (error.message.includes('syntax error')) {
+            userMessage = "Error de sintaxis en el archivo SQL. El archivo puede estar corrupto o ser incompatible.";
+            errorCode = "SQL_SYNTAX_ERROR";
+        }
+
+        await logBackupActivity(req.user.id, 'BACKUP_RESTORE', {
+            fileName: req.file?.originalname || 'unknown',
+            fileSize: req.file?.size || 0,
+            error: error.message,
+            ip: req.ip,
+            success: false
+        }, req.ip);
+
         return res.status(500).json({ 
-            error: "Error al restaurar la base de datos",
-            details: error.message
+            error: userMessage,
+            code: errorCode
         });
+    } finally {
+        if (tempFilePath && fs.existsSync(tempFilePath)) {
+            try {
+                fs.unlinkSync(tempFilePath);
+                console.log("🗑️ Archivo temporal eliminado en cleanup");
+            } catch (e) {
+                console.error("❌ Error limpiando archivo temporal:", e);
+            }
+        }
     }
 };
 

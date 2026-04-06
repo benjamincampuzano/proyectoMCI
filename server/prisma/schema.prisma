@@ -662,6 +662,8 @@ enum AuditAction {
   LOGOUT
   CONSOLIDATE
   EXPORT
+  BACKUP_DOWNLOAD
+  BACKUP_RESTORE
 }
 
 enum EntityType {
@@ -688,6 +690,7 @@ enum EntityType {
   MODULE_COORDINATOR
   MODULE_SUBCOORDINATOR
   MODULE_TREASURER
+  DATABASE
 }
 
 enum ResourceType {

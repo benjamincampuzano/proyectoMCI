@@ -53,13 +53,14 @@ app.use(
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Restore-Password"],
     exposedHeaders: ["Content-Disposition"]
   })
 );
 
 /* ✅ JSON parser */
 app.use(express.json());
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 /* ✅ Rate Limiting */
 const authLimiter = rateLimit({
@@ -104,6 +105,24 @@ const kidsScheduleRoutes = require("./routes/kidsSchedule");
 const kidsClassPhotosRoutes = require("./routes/kidsClassPhotos");
 const coordinatorRoutes = require("./routes/coordinatorRoutes");
 const artSchoolRoutes = require("./routes/artSchoolRoutes");
+
+/* ✅ Proteger directorios sensibles */
+app.use('/backups', (req, res) => {
+    res.status(403).json({ 
+        error: 'Acceso prohibido',
+        message: 'Este directorio no es accesible vía web'
+    });
+});
+
+app.use('/uploads', (req, res, next) => {
+    // Permitir solo si es procesamiento interno de multer
+    const isInternalMulter = req.method === 'POST' && 
+                              req.originalUrl.includes('/api/audit/restore');
+    if (!isInternalMulter) {
+        return res.status(403).json({ error: 'Acceso prohibido' });
+    }
+    next();
+});
 
 /* ✅ API endpoints */
 app.use("/api/auth", authRoutes);
