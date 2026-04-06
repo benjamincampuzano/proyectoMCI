@@ -119,3 +119,5 @@ tmp/migrate_modules.js
 AUDITORIA_SEGURIDAD_CARGOS.md
 AUDITORIA_IMPLEMENTACION_ESTADO.md
 server/test_prisma_fix.js
+MIGRACION_RAILWAY_A_SUPABASE.md
+.gitignore

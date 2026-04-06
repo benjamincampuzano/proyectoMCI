@@ -233,17 +233,36 @@ const CellManagement = ({ moduleCoordinator }) => {
         setMapLoading(true);
         setMapError('');
         try {
+            // Add delay to respect rate limiting
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
             const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10`,
-                { headers: { 'User-Agent': 'ProyectoIglesia/1.0' } }
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
+                { 
+                    headers: { 
+                        'User-Agent': 'ProyectoIglesia/1.0',
+                        'Accept': 'application/json'
+                    } 
+                }
             );
+            
+            // Handle rate limiting
+            if (response.status === 429) {
+                setMapError('Demasiadas solicitudes. Por favor espera unos segundos y vuelve a intentar.');
+                return;
+            }
+            
             const data = await response.json();
             setMapResults(data);
             if (data.length === 0) {
                 setMapError('No se encontraron resultados para esta dirección');
             }
         } catch (error) {
-            setMapError('Error al buscar dirección');
+            if (error.message.includes('429')) {
+                setMapError('Demasiadas solicitudes. Por favor espera unos segundos y vuelve a intentar.');
+            } else {
+                setMapError('Error al buscar dirección');
+            }
             console.error('Error searching address:', error);
         } finally {
             setMapLoading(false);
@@ -259,10 +278,25 @@ const CellManagement = ({ moduleCoordinator }) => {
         
         // Reverse geocode to get address
         try {
+            // Add delay to respect rate limiting
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
             const response = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`,
-                { headers: { 'User-Agent': 'ProyectoIglesia/1.0' } }
+                { 
+                    headers: { 
+                        'User-Agent': 'ProyectoIglesia/1.0',
+                        'Accept': 'application/json'
+                    } 
+                }
             );
+            
+            // Handle rate limiting
+            if (response.status === 429) {
+                console.warn('Rate limit hit on reverse geocoding');
+                return;
+            }
+            
             const data = await response.json();
             if (data.display_name) {
                 setSelectedCoords(prev => ({
@@ -271,7 +305,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                 }));
             }
         } catch (error) {
-            console.error('Error reverse geocoding:', error);
+            console.warn('Error getting address from coordinates:', error);
         }
     };
 
