@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import * as XLSX from 'xlsx';
 
 const useUserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -333,6 +334,122 @@ const useUserManagement = () => {
         setCurrentPage(1);
     }, [searchTerm, roleFilter, sexFilter, liderDoceFilter]);
 
+    // Helper para calcular edad (usado en exportToExcel)
+    const calculateAge = (birthDate) => {
+        if (!birthDate) return null;
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
+    // Función para exportar usuarios a Excel
+    const exportToExcel = useCallback(async () => {
+        if (!isUserAdmin) {
+            setError('No tienes permisos para exportar datos');
+            return;
+        }
+
+        try {
+            // Obtener todos los usuarios (sin paginación para ADMIN)
+            const params = new URLSearchParams();
+            params.append('export', 'true');
+            if (roleFilter) params.append('role', roleFilter);
+            if (searchTerm) params.append('search', searchTerm);
+            if (sexFilter) params.append('sexFilter', sexFilter);
+            if (liderDoceFilter) params.append('liderDoceFilter', liderDoceFilter);
+
+            const response = await api.get(`/users?${params.toString()}`);
+            const usersData = response.data.users || response.data || [];
+
+            // Preparar datos para Excel
+            const excelData = usersData.map(user => {
+                const age = calculateAge(user.birthDate);
+                const primaryRole = user.roles?.find(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'].includes(r)) || 'SIN_ROL';
+
+                return {
+                    'ID': user.id,
+                    'Documento': user.documentNumber || '',
+                    'Nombre Completo': user.fullName,
+                    'Email': user.email,
+                    'Teléfono': user.phone || '',
+                    'Sexo': user.sex === 'HOMBRE' ? 'Hombre' : user.sex === 'MUJER' ? 'Mujer' : '',
+                    'Fecha de Nacimiento': user.birthDate ? new Date(user.birthDate).toLocaleDateString('es-ES') : '',
+                    'Edad': age || '',
+                    'Ciudad': user.city || '',
+                    'Dirección': user.address || '',
+                    'Barrio': user.neighborhood || '',
+                    'Estado Civil': user.maritalStatus ? user.maritalStatus.replace(/_/g, ' ') : '',
+                    'Rol Principal': primaryRole.replace(/_/g, ' '),
+                    'Roles Secundarios': (user.secondaryRoles || []).map(r => r.replace(/_/g, ' ')).join(', ') || '',
+                    'Es Coordinador': user.isCoordinator ? 'Sí' : 'No',
+                    'Política de Datos': user.dataPolicyAccepted ? 'Sí' : 'No',
+                    'Tratamiento de Datos': user.dataTreatmentAuthorized ? 'Sí' : 'No',
+                    'Consentimiento Menor': user.minorConsentAuthorized ? 'Sí' : user.sex === 'MENOR' ? 'No' : 'N/A',
+                    'Fecha Registro': user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : ''
+                };
+            });
+
+            // Crear hoja de trabajo
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+            // Ajustar ancho de columnas
+            const colWidths = [
+                { wch: 10 }, // ID
+                { wch: 15 }, // Documento
+                { wch: 30 }, // Nombre Completo
+                { wch: 25 }, // Email
+                { wch: 15 }, // Teléfono
+                { wch: 10 }, // Sexo
+                { wch: 15 }, // Fecha Nacimiento
+                { wch: 8 },  // Edad
+                { wch: 20 }, // Ciudad
+                { wch: 30 }, // Dirección
+                { wch: 20 }, // Barrio
+                { wch: 15 }, // Estado Civil
+                { wch: 15 }, // Rol Principal
+                { wch: 25 }, // Roles Secundarios
+                { wch: 12 }, // Es Coordinador
+                { wch: 12 }, // Política de Datos
+                { wch: 15 }, // Tratamiento de Datos
+                { wch: 15 }, // Consentimiento Menor
+                { wch: 15 }  // Fecha Registro
+            ];
+            worksheet['!cols'] = colWidths;
+
+            // Estilar encabezados
+            const range = XLSX.utils.decode_range(worksheet['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const addr = XLSX.utils.encode_col(C) + "1";
+                if (!worksheet[addr]) continue;
+                worksheet[addr].s = {
+                    font: { bold: true, color: { rgb: "FFFFFF" } },
+                    fill: { fgColor: { rgb: "2563EB" } },
+                    alignment: { horizontal: "center", vertical: "center" }
+                };
+            }
+
+            // Crear libro de trabajo
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Usuarios");
+
+            // Generar nombre de archivo con fecha
+            const date = new Date().toISOString().split('T')[0];
+            const filename = `Usuarios_Iglesia_${date}.xlsx`;
+
+            // Descargar archivo
+            XLSX.writeFile(workbook, filename);
+
+            setSuccess(`Exportados ${usersData.length} usuarios exitosamente`);
+        } catch (err) {
+            handleError(err, 'export');
+        }
+    }, [isUserAdmin, roleFilter, searchTerm, sexFilter, liderDoceFilter, handleError]);
+
     return {
         users,
         loading,
@@ -379,7 +496,8 @@ const useUserManagement = () => {
         totalUsers,
         usersPerPage,
         totalPages,
-        pagination: paginationInfo
+        pagination: paginationInfo,
+        exportToExcel
     };
 };
 

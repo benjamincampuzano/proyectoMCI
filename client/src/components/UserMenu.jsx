@@ -1,22 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Gear, Users, SignOut, ShieldCheck } from '@phosphor-icons/react';
+import { User, Gear, Users, SignOut, ShieldCheck, DevicesIcon } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 import { DATA_POLICY_URL } from '../constants/policies';
+import toast from 'react-hot-toast';
 
 const UserMenu = ({ onOpenProfile }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const { user, logout, isAdmin: contextIsAdmin } = useAuth();
+    const [showSessions, setShowSessions] = useState(false);
+    const [sessions, setSessions] = useState([]);
+    const [loadingSessions, setLoadingSessions] = useState(false);
+    const { user, logout, getSessions, logoutAll, isAdmin: contextIsAdmin } = useAuth();
     const menuRef = useRef(null);
 
     const isAdmin = contextIsAdmin();
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (menuRef.current && !menuRef.current.contains(event.target)) {
                 setIsOpen(false);
+                setShowSessions(false);
             }
         };
 
@@ -32,6 +36,54 @@ const UserMenu = ({ onOpenProfile }) => {
     const handleMenuItemClick = (action) => {
         setIsOpen(false);
         action();
+    };
+
+    const loadSessions = async () => {
+        setLoadingSessions(true);
+        const data = await getSessions();
+        setSessions(data);
+        setLoadingSessions(false);
+    };
+
+    const handleShowSessions = async () => {
+        if (!showSessions) {
+            await loadSessions();
+            setShowSessions(true);
+        } else {
+            setShowSessions(false);
+        }
+    };
+
+    const handleLogoutAll = async () => {
+        if (window.confirm('¿Estás seguro de que quieres cerrar todas las sesiones? Esto te desconectará de todos tus dispositivos.')) {
+            const result = await logoutAll();
+            if (result.success) {
+                toast.success('Todas las sesiones han sido cerradas');
+                setIsOpen(false);
+            } else {
+                toast.error(result.message || 'Error al cerrar sesiones');
+            }
+        }
+    };
+
+    const formatDate = (dateStr) => {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('es-CO', {
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const getDeviceInfo = (userAgent) => {
+        if (!userAgent) return 'Dispositivo desconocido';
+        if (userAgent.includes('Chrome')) return 'Chrome';
+        if (userAgent.includes('Firefox')) return 'Firefox';
+        if (userAgent.includes('Safari')) return 'Safari';
+        if (userAgent.includes('Edge')) return 'Edge';
+        if (userAgent.includes('Mobile')) return 'Móvil';
+        return userAgent.substring(0, 30);
     };
 
     return (
@@ -95,6 +147,41 @@ const UserMenu = ({ onOpenProfile }) => {
                             <ThemeToggle />
                         </div>
                     </div>
+
+                    <button
+                        onClick={handleShowSessions}
+                        className="w-full flex items-center space-x-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                    >
+                        <DevicesIcon size={18} className="text-gray-500 dark:text-gray-400" />
+                        <span className="text-sm text-gray-700 dark:text-gray-200">Mis Sesiones</span>
+                    </button>
+
+                    {showSessions && (
+                        <div className="px-2 py-2 border-t border-b border-gray-200 dark:border-gray-700 mx-2 my-1">
+                            {loadingSessions ? (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">Cargando...</p>
+                            ) : sessions.length === 0 ? (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">No hay sesiones activas</p>
+                            ) : (
+                                <div className="max-h-40 overflow-y-auto">
+                                    {sessions.map((session) => (
+                                        <div key={session.id} className="text-xs py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                                            <p className="font-medium text-gray-700 dark:text-gray-200">{getDeviceInfo(session.userAgent)}</p>
+                                            <p className="text-gray-500 dark:text-gray-400">IP: {session.ipAddress || 'Desconocida'}</p>
+                                            <p className="text-gray-500 dark:text-gray-400">Expira: {formatDate(session.expiresAt)}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <button
+                                onClick={handleLogoutAll}
+                                className="w-full mt-2 flex items-center justify-center space-x-2 px-3 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 rounded text-red-600 dark:text-red-400 text-xs transition-colors"
+                            >
+                                <SignOut size={14} />
+                                <span>Cerrar todas las sesiones</span>
+                            </button>
+                        </div>
+                    )}
 
                     <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
                         <button

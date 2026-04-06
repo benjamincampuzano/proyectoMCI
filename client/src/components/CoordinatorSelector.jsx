@@ -21,19 +21,18 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
     // Permission check for coordinator assignment: must be Admin or Pastor (disabled=false)
     const canManageCoordinator = !disabled;
 
-    // Fetch LIDER_DOCE users for selection
+    // Fetch any user for selection (only Admin/Pastor can assign)
     const fetchLiderDoceUsers = async (searchTerm) => {
         try {
             const response = await api.get('/users/search', {
                 params: {
-                    role: 'LIDER_DOCE',
                     search: searchTerm,
-                    limit: 10
+                    limit: 20
                 }
             });
             return response.data;
         } catch (error) {
-            console.error('Error fetching LIDER_DOCE users:', error);
+            console.error('Error fetching users:', error);
             throw error;
         }
     };
@@ -150,7 +149,7 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
                             fetchItems={fetchLiderDoceUsers}
                             onSelect={setSelectedCoordinator}
                             selectedValue={selectedCoordinator}
-                            placeholder="Buscar LIDER_DOCE..."
+                            placeholder="Buscar usuario..."
                             labelKey="fullName"
                             renderItem={renderUserItem}
                             renderSelected={renderSelectedUser}

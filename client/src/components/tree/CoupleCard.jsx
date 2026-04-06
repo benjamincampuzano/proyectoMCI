@@ -89,6 +89,10 @@ export default function CoupleCard({
 
   const roles = node.roles || [];
   const names = node.partners.map(p => p.fullName).join(' y ');
+  
+  console.log('CoupleCard - DEBUG INFO:');
+  console.log('- node:', node);
+  console.log('- roles:', roles);
 
   return (
     <div

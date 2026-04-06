@@ -1,10 +1,41 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { logActivity } = require('../utils/auditLogger');
 const { validatePassword } = require('../utils/passwordValidator');
 
 const prisma = require('../utils/database');
+
+// Helper function to generate refresh token
+const generateRefreshToken = async (userId, userAgent, ipAddress) => {
+    const token = crypto.randomBytes(64).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiration
+    
+    await prisma.refreshToken.create({
+        data: {
+            token,
+            userId,
+            expiresAt,
+            userAgent,
+            ipAddress
+        }
+    });
+    
+    return token;
+};
+
+// Helper function to clean expired refresh tokens
+const cleanExpiredTokens = async () => {
+    await prisma.refreshToken.deleteMany({
+        where: {
+            expiresAt: {
+                lt: new Date()
+            }
+        }
+    });
+};
 
 const register = async (req, res) => {
     try {
@@ -139,11 +170,18 @@ const register = async (req, res) => {
 
         const roles = user.roles.map(r => r.role.name);
         const token = jwt.sign({ userId: user.id, roles }, process.env.JWT_SECRET, {
-            expiresIn: '1d',
+            expiresIn: '30m',
         });
+        
+        // Generate refresh token
+        const refreshToken = await generateRefreshToken(user.id, req.headers['user-agent'], req.ip);
+        
+        // Clean expired tokens periodically
+        await cleanExpiredTokens();
 
         res.status(201).json({
             token,
+            refreshToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -205,6 +243,11 @@ const login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
+            await logActivity(user.id, 'LOGIN_FAILED', 'USER', user.id, { 
+                reason: 'Invalid password',
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent']
+            }, req.ip, req.headers['user-agent']);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
@@ -216,11 +259,25 @@ const login = async (req, res) => {
                 mustChangePassword: user.mustChangePassword
             },
             process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+            { expiresIn: '30m' }
         );
+        
+        // Generate refresh token
+        const refreshToken = await generateRefreshToken(user.id, req.headers['user-agent'], req.ip);
+        
+        // Clean expired tokens periodically
+        await cleanExpiredTokens();
+
+        // Auditoría de login exitoso
+        await logActivity(user.id, 'LOGIN', 'USER', user.id, { 
+            method: 'password',
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent']
+        }, req.ip, req.headers['user-agent']);
 
         res.json({
             token,
+            refreshToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -392,13 +449,20 @@ const registerSetup = async (req, res) => {
 
         const roles = ['ADMIN'];
         const token = jwt.sign({ userId: user.id, roles }, process.env.JWT_SECRET, {
-            expiresIn: '1d',
+            expiresIn: '30m',
         });
+        
+        // Generate refresh token
+        const refreshToken = await generateRefreshToken(user.id, req.headers['user-agent'], req.ip);
+        
+        // Clean expired tokens periodically
+        await cleanExpiredTokens();
 
         await logActivity(user.id, 'CREATE', 'USER', user.id, { message: 'Inicialización del sistema: Primer Usuario (ADMIN)' }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({
             token,
+            refreshToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -544,6 +608,142 @@ const forcePasswordChange = async (req, res) => {
     }
 };
 
+// Refresh token endpoint
+const refreshToken = async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(401).json({ message: 'Refresh token is required' });
+        }
+
+        const storedToken = await prisma.refreshToken.findUnique({
+            where: { token: refreshToken },
+            include: { user: { include: { roles: { include: { role: true } } } } }
+        });
+
+        if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date()) {
+            return res.status(401).json({ message: 'Invalid or expired refresh token' });
+        }
+
+        const roles = storedToken.user.roles.map(r => r.role.name);
+        const newAccessToken = jwt.sign(
+            { 
+                userId: storedToken.user.id, 
+                email: storedToken.user.email, 
+                roles,
+                mustChangePassword: storedToken.user.mustChangePassword
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '30m' }
+        );
+
+        await prisma.refreshToken.update({
+            where: { id: storedToken.id },
+            data: { isRevoked: true }
+        });
+
+        const newRefreshToken = await generateRefreshToken(
+            storedToken.user.id, 
+            req.headers['user-agent'], 
+            req.ip
+        );
+
+        await cleanExpiredTokens();
+
+        await logActivity(
+            storedToken.user.id, 
+            'TOKEN_REFRESH', 
+            'REFRESH_TOKEN', 
+            storedToken.id, 
+            { 
+                oldTokenId: storedToken.id,
+                newTokenCreated: true,
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent']
+            }, 
+            req.ip, 
+            req.headers['user-agent']
+        );
+
+        res.json({
+            token: newAccessToken,
+            refreshToken: newRefreshToken
+        });
+
+    } catch (error) {
+        console.error('Refresh token error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Logout endpoint
+const logout = async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (refreshToken) {
+            await prisma.refreshToken.updateMany({
+                where: { token: refreshToken },
+                data: { isRevoked: true }
+            });
+        }
+
+        res.json({ message: 'Logged out successfully' });
+
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Get active sessions for current user
+const getSessions = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const sessions = await prisma.refreshToken.findMany({
+            where: {
+                userId,
+                isRevoked: false,
+                expiresAt: { gt: new Date() }
+            },
+            select: {
+                id: true,
+                userAgent: true,
+                ipAddress: true,
+                createdAt: true,
+                expiresAt: true
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json(sessions);
+    } catch (error) {
+        console.error('Get sessions error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Logout from all devices
+const logoutAll = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        await prisma.refreshToken.updateMany({
+            where: { userId },
+            data: { isRevoked: true }
+        });
+
+        await logActivity(userId, 'LOGOUT_ALL', 'SESSION', userId, { message: 'Cierre de todas las sesiones' }, req.ip, req.headers['user-agent']);
+
+        res.json({ message: 'Todas las sesiones han sido cerradas' });
+    } catch (error) {
+        console.error('Logout all error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     register,
     login,
@@ -551,5 +751,9 @@ module.exports = {
     checkInitStatus,
     registerSetup,
     changePassword,
-    forcePasswordChange
+    forcePasswordChange,
+    refreshToken,
+    logout,
+    getSessions,
+    logoutAll
 };

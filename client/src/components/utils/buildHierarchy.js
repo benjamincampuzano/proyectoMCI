@@ -16,9 +16,13 @@ export function buildCustomHierarchy(network, currentUser) {
   function findNodeById(node, targetId) {
     if (!node) return null;
     
+    console.log('findNodeById - buscando targetId:', targetId, 'en node:', node);
+    
     if (node.partners) {
       // Es un CoupleNode
+      console.log('findNodeById - es CoupleNode, partners:', node.partners);
       if (node.partners.some(p => p.id === targetId)) {
+        console.log('findNodeById - encontrado en partners:', node);
         return node;
       }
       
@@ -28,7 +32,9 @@ export function buildCustomHierarchy(network, currentUser) {
       }
     } else {
       // Es un nodo individual
+      console.log('findNodeById - es nodo individual, node.id:', node.id);
       if (node.id === targetId) {
+        console.log('findNodeById - encontrado por ID:', node);
         return node;
       }
       
@@ -43,72 +49,30 @@ export function buildCustomHierarchy(network, currentUser) {
 
   // Función auxiliar para encontrar el pastor de un nodo
   function findPastor(node, root) {
-    if (!node || !root) return null;
+    if (!node) return null;
     
-    // Buscar recursivamente si el nodo está bajo algún pastor
-    function searchInTree(currentNode, targetNode, path = []) {
-      if (!currentNode) return null;
-      
-      // Si encontramos el nodo objetivo, retornamos el path
-      if (currentNode.partners) {
-        if (currentNode.partners.some(p => p.id === targetNode.partners?.[0]?.id || targetNode.id)) {
-          return path;
-        }
-      } else {
-        if (currentNode.id === targetNode.id) {
-          return path;
-        }
-      }
-      
-      // Buscar en los discípulos
-      const disciples = currentNode.disciples || [];
-      for (const disciple of disciples) {
-        const result = searchInTree(disciple, targetNode, [...path, currentNode]);
-        if (result) return result;
-      }
-      
-      return null;
+    // Usar directamente los datos del nodo transformado
+    if (node.pastor && node.pastor.fullName) {
+      console.log('findPastor - encontrado pastor en node:', node.pastor);
+      return node.pastor;
     }
     
-    const path = searchInTree(root, node);
-    return path && path.length > 0 ? path[0] : null;
+    console.log('findPastor - no se encontró pastor en node');
+    return null;
   }
-
+  
   // Función auxiliar para encontrar el líder de doce de un nodo
   function findLiderDoce(node, root) {
-    if (!node || !root) return null;
+    if (!node) return null;
     
-    function searchInTree(currentNode, targetNode, path = []) {
-      if (!currentNode) return null;
-      
-      // Verificar si el nodo actual es un LIDER_DOCE
-      const isLiderDoce = currentNode.partners 
-        ? currentNode.partners.some(p => p.roles?.includes(ROLES.LIDER_DOCE))
-        : currentNode.roles?.includes(ROLES.LIDER_DOCE);
-      
-      // Si encontramos el nodo objetivo y el actual es LIDER_DOCE, retornar
-      if (currentNode.partners) {
-        if (currentNode.partners.some(p => p.id === targetNode.partners?.[0]?.id || targetNode.id)) {
-          return isLiderDoce ? path : null;
-        }
-      } else {
-        if (currentNode.id === targetNode.id) {
-          return isLiderDoce ? path : null;
-        }
-      }
-      
-      // Buscar en los discípulos
-      const disciples = currentNode.disciples || [];
-      for (const disciple of disciples) {
-        const result = searchInTree(disciple, targetNode, [...path, currentNode]);
-        if (result) return result;
-      }
-      
-      return null;
+    // Usar directamente los datos del nodo transformado
+    if (node.liderDoce && node.liderDoce.fullName) {
+      console.log('findLiderDoce - encontrado liderDoce en node:', node.liderDoce);
+      return node.liderDoce;
     }
     
-    const path = searchInTree(root, node);
-    return path && path.length > 0 ? path[0] : null;
+    console.log('findLiderDoce - no se encontró liderDoce en node');
+    return null;
   }
 
   // Función auxiliar para encontrar el líder de célula de un nodo
@@ -188,8 +152,17 @@ export function buildCustomHierarchy(network, currentUser) {
   // Construir jerarquía según el rol
   switch (userRole) {
     case ROLES.PASTOR:
-      // Si es PASTOR, aparecería su red hacia abajo
-      return userNode;
+      // Si es PASTOR, mostrar la red completa con él como raíz
+      // Buscar el nodo del pastor en la red y usarlo como raíz
+      const pastorNode = findNodeById(network, userId);
+      console.log('PASTOR - userId:', userId);
+      console.log('PASTOR - pastorNode:', pastorNode);
+      console.log('PASTOR - network:', network);
+      if (pastorNode) {
+        console.log('PASTOR - pastorNode.partners:', pastorNode.partners);
+        return pastorNode;
+      }
+      return network;
       
     case ROLES.LIDER_DOCE:
       // Si es LIDER_DOCE, aparecerían su PASTOR -> Mismo Usuario -> Todos sus discípulos (incluyendo LÍDERES DE CÉLULA) -> Invitados
@@ -212,14 +185,25 @@ export function buildCustomHierarchy(network, currentUser) {
       const liderDoceLC = findLiderDoce(userNode, network);
       const disciplesLC = findDisciples(userNode);
       
+      console.log('LIDER_CELULA - userNode:', userNode);
+      console.log('LIDER_CELULA - userNode.pastor:', userNode.pastor);
+      console.log('LIDER_CELULA - userNode.liderDoce:', userNode.liderDoce);
+      console.log('LIDER_CELULA - pastorLC:', pastorLC);
+      console.log('LIDER_CELULA - liderDoceLC:', liderDoceLC);
+      
+      // Crear un nodo raíz que incluya los líderes superiores
       const customRootLC = {
         ...userNode,
-        disciples: [
-          ...(pastorLC ? [pastorLC] : []),
-          ...(liderDoceLC ? [liderDoceLC] : []),
-          ...disciplesLC
-        ]
+        // Asignar los líderes superiores directamente
+        pastor: userNode.pastor || null,
+        liderDoce: userNode.liderDoce || null,
+        liderCelula: null, // El usuario actual es LIDER_CELULA
+        // Mantener los discípulos originales
+        disciples: disciplesLC
       };
+      console.log('LIDER_CELULA - customRootLC.pastor:', customRootLC.pastor);
+      console.log('LIDER_CELULA - customRootLC.liderDoce:', customRootLC.liderDoce);
+      console.log('LIDER_CELULA - customRootLC:', customRootLC);
       return customRootLC;
       
     case ROLES.DISCIPULO:
@@ -228,14 +212,28 @@ export function buildCustomHierarchy(network, currentUser) {
       const liderDoceD = findLiderDoce(userNode, network);
       const liderCelulaD = findLiderCelula(userNode, network);
       
+      console.log('DISCIPULO - userNode:', userNode);
+      console.log('DISCIPULO - userNode.pastor:', userNode.pastor);
+      console.log('DISCIPULO - userNode.liderDoce:', userNode.liderDoce);
+      console.log('DISCIPULO - userNode.liderCelula:', userNode.liderCelula);
+      console.log('DISCIPULO - pastorD:', pastorD);
+      console.log('DISCIPULO - liderDoceD:', liderDoceD);
+      console.log('DISCIPULO - liderCelulaD:', liderCelulaD);
+      
+      // Crear un nodo raíz que incluya los líderes superiores
       const customRootD = {
         ...userNode,
-        disciples: [
-          ...(pastorD ? [pastorD] : []),
-          ...(liderDoceD ? [liderDoceD] : []),
-          ...(liderCelulaD ? [liderCelulaD] : [])
-        ]
+        // Asignar los líderes superiores directamente
+        pastor: userNode.pastor || null,
+        liderDoce: userNode.liderDoce || null,
+        liderCelula: userNode.liderCelula || null,
+        // Los discípulos no tienen discípulos (solo invitados)
+        disciples: []
       };
+      console.log('DISCIPULO - customRootD.pastor:', customRootD.pastor);
+      console.log('DISCIPULO - customRootD.liderDoce:', customRootD.liderDoce);
+      console.log('DISCIPULO - customRootD.liderCelula:', customRootD.liderCelula);
+      console.log('DISCIPULO - customRootD:', customRootD);
       return customRootD;
       
     default:

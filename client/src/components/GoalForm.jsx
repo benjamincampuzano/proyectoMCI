@@ -50,7 +50,7 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
             }
             try {
                 const res = await api.get('/users');
-                const selected = res.data.filter(u => formData.userIds.includes(u.id));
+                const selected = Array.isArray(res.data?.users) ? res.data.users.filter(u => formData.userIds.includes(u.id)) : [];
                 setSelectedUsersDetails(selected);
 
                 // Initialize targetValues for new selections if they don't exist

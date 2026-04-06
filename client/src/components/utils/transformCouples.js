@@ -106,8 +106,19 @@ export function buildCoupleNetwork(root) {
       roles: roleUnion,
       disciples: children,
       guests: { assigned, invited },
+      // Preserve leader information from the original person
+      pastor: person.pastor,
+      liderDoce: person.liderDoce,
+      liderCelula: person.liderCelula,
+      pastores: person.pastores,
+      lideresDoce: person.lideresDoce,
+      lideresCelula: person.lideresCelula,
     };
     
+    console.log('transformCouples - person.pastor:', person.pastor);
+    console.log('transformCouples - person.liderDoce:', person.liderDoce);
+    console.log('transformCouples - result.pastor:', result.pastor);
+    console.log('transformCouples - result.liderDoce:', result.liderDoce);
 
     return result;
   }

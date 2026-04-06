@@ -35,9 +35,10 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     (async () => {
       try {
         const response = await api.get('/users');
-        setAllUsers(response.data || []);
+        setAllUsers(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error('Error loading users:', error);
+        setAllUsers([]);
       }
     })();
   }, []);
@@ -52,7 +53,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
         leaderId: pendingAssign.leaderId
       });
 
-      setAllUsers(prev => prev.filter(u => u.id !== pendingAssign.userId));
+      setAllUsers(prev => Array.isArray(prev) ? prev.filter(u => u.id !== pendingAssign.userId) : []);
       setPendingAssign(null);
       onNetworkChange?.();
     } catch (error) {
@@ -65,7 +66,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   const handleAssignUser = async (userId, leaderId) => {
     try {
       await api.post('/network/assign', { userId, leaderId });
-      setAllUsers(prev => prev.filter(u => u.id !== userId));
+      setAllUsers(prev => Array.isArray(prev) ? prev.filter(u => u.id !== userId) : []);
       onNetworkChange?.();
     } catch (error) {
       console.error('Error assigning user:', error);
@@ -90,7 +91,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
       await api.delete(`/network/remove/${partner.id}`);
       onNetworkChange?.();
       const response = await api.get('/users');
-      setAllUsers(response.data || []);
+      setAllUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error removing user:', error);
     } finally {

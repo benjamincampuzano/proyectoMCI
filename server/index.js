@@ -4,6 +4,10 @@ const dotenv = require("dotenv");
 const helmet = require("helmet");
 const compression = require("compression");
 const { randomInt } = require('crypto');
+const cron = require('node-cron');
+const rateLimit = require('express-rate-limit');
+
+// Trigger restart after fixing Prisma client
 
 // Global log suppression
 if (process.env.NODE_ENV === 'production' || process.env.DISABLE_LOGS === 'true') {
@@ -56,6 +60,23 @@ app.use(
 
 /* ✅ JSON parser */
 app.use(express.json());
+
+/* ✅ Rate Limiting */
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // 10 intentos por ventana
+  message: { message: 'Demasiados intentos de login. Intenta en 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 30, // 30 refresh por ventana (por usuario)
+  message: { message: 'Demasiadas solicitudes de token. Intenta más tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 /* ✅ Request logger (commented out to reduce console noise) */
 // app.use((req, res, next) => {
@@ -114,6 +135,20 @@ app.get("/", (req, res) => {
   });
 });
 
+/* ✅ Scheduled Tasks */
+const { cleanupExpiredTokens } = require('./scripts/cleanupExpiredTokens');
+
+// Schedule cleanup of expired refresh tokens every hour
+cron.schedule('0 * * * *', async () => {
+  try {
+    const count = await cleanupExpiredTokens();
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`🧹 Scheduled cleanup: Removed ${count} expired refresh tokens`);
+    }
+  } catch (error) {
+    console.error('❌ Scheduled cleanup failed:', error);
+  }
+});
 
 /* ✅ Global Error Handler */
 app.use((err, req, res, next) => {

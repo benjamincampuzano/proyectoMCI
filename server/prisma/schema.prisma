@@ -124,6 +124,7 @@ model User {
   artEnrollments          ArtEnrollment[]
   registeredArtPayments   ArtPayment[]             @relation("UserRegistrar")
   moduleTreasurers        ModuleTreasurer[]
+  refreshTokens           RefreshToken[]
 
   @@index([email])
   @@index([createdAt])
@@ -936,4 +937,21 @@ model ArtPayment {
   updatedAt      DateTime      @updatedAt @db.Timestamptz(6)
   enrollment     ArtEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   registeredBy   User?         @relation("UserRegistrar", fields: [registeredById], references: [id])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  isRevoked Boolean  @default(false)
+  userAgent String?
+  ipAddress String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isRevoked])
 }

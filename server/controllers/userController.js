@@ -285,12 +285,20 @@ const changePassword = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const { role, page = 1, limit, search, sexFilter, liderDoceFilter } = req.query;
+        const { role, page = 1, limit, search, sexFilter, liderDoceFilter, export: exportAll } = req.query;
         const pageNum = parseInt(page);
-        
+
         // Para ADMIN, no hay límite por defecto (pueden ver todos los usuarios)
         // Para otros roles, mantener el límite de 50 por defecto
-        let limitNum = limit ? parseInt(limit) : (req.user.roles.includes('ADMIN') ? undefined : 50);
+        // Si export=true, siempre devolver todos los usuarios (solo ADMIN puede usar esto)
+        const isExport = exportAll === 'true';
+
+        // Solo ADMIN puede exportar todos los usuarios
+        if (isExport && !req.user.roles.includes('ADMIN')) {
+            return res.status(403).json({ message: 'Solo los administradores pueden exportar todos los usuarios' });
+        }
+
+        let limitNum = isExport ? undefined : (limit ? parseInt(limit) : (req.user.roles.includes('ADMIN') ? undefined : 50));
 
         if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
             let rolesFilter = undefined;

@@ -71,7 +71,6 @@ export default function RadialView({ root, currentUser, onAddUser, onRemoveUser,
 
   // Zoom handler
   const handleWheel = (e) => {
-    e.preventDefault();
     const zoomSpeed = 0.001;
     const delta = -e.deltaY * zoomSpeed;
     setTransform(prev => ({

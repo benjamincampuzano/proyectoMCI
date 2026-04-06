@@ -101,6 +101,7 @@ const getNetwork = async (req, res) => {
             select: {
                 id: true,
                 spouseId: true,
+                cellId: true,
                 profile: true,
                 roles: { include: { role: true } },
                 children: { // Get direct children for linkage
@@ -137,6 +138,20 @@ const getNetwork = async (req, res) => {
                         status: true,
                         invitedBy: {
                             select: { profile: { select: { fullName: true } } }
+                        }
+                    }
+                },
+                cell: { // Include cell data to get liderDoceId if needed
+                    select: {
+                        id: true,
+                        liderDoceId: true,
+                        liderDoce: {
+                            select: {
+                                id: true,
+                                profile: {
+                                    select: { fullName: true }
+                                }
+                            }
                         }
                     }
                 }
@@ -186,6 +201,16 @@ const getNetwork = async (req, res) => {
                 lideresDoce: parentEntries.filter(p => p.role === 'LIDER_DOCE').map(p => p.parent),
                 lideresCelula: parentEntries.filter(p => p.role === 'LIDER_CELULA').map(p => p.parent)
             };
+            
+            // If no LIDER_DOCE found in hierarchy, try to get it from cell
+            if (leaders.lideresDoce.length === 0 && currentUser.cell && currentUser.cell.liderDoce) {
+                leaders.lideresDoce.push(currentUser.cell.liderDoce);
+            }
+            
+            console.log('networkController - parentEntries:', parentEntries);
+            console.log('networkController - leaders.pastores:', leaders.pastores);
+            console.log('networkController - leaders.lideresDoce:', leaders.lideresDoce);
+            console.log('networkController - leaders.lideresCelula:', leaders.lideresCelula);
 
             // Combine children from both members of the couple
             const allChildrenEdges = [...(currentUser.children || []), ...(spouseNode?.children || [])];

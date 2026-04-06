@@ -1,5 +1,5 @@
 import useUserManagement from '../hooks/useUserManagement';
-import { Users, UserPlus } from '@phosphor-icons/react';
+import { Users, UserPlus, Download } from '@phosphor-icons/react';
 import { PageHeader, Button } from '../components/ui';
 import UserFilters from '../components/UserManagement/UserFilters';
 import UserTable from '../components/UserManagement/UserTable';
@@ -47,7 +47,8 @@ const UserManagement = () => {
         errorDetails,
         pagination,
         currentPage,
-        totalUsers
+        totalUsers,
+        exportToExcel
     } = useUserManagement();
 
     // Validate password in real-time
@@ -95,15 +96,27 @@ const UserManagement = () => {
                 title={<div className="flex items-center gap-3"><Users className="text-blue-600" size={32} />Gestión de Usuarios</div>}
                 description="Administra perfiles, roles y jerarquía de la iglesia."
                 action={
-                    canCreateUsers && (
-                        <Button
-                            onClick={() => setShowCreateForm(true)}
-                            icon={UserPlus}
-                            className="shadow-lg shadow-blue-500/20"
-                        >
-                            Nuevo Usuario
-                        </Button>
-                    )
+                    <div className="flex gap-2">
+                        {isAdmin && (
+                            <Button
+                                onClick={exportToExcel}
+                                icon={Download}
+                                variant="secondary"
+                                className="shadow-lg shadow-green-500/20"
+                            >
+                                Exportar Excel
+                            </Button>
+                        )}
+                        {canCreateUsers && (
+                            <Button
+                                onClick={() => setShowCreateForm(true)}
+                                icon={UserPlus}
+                                className="shadow-lg shadow-blue-500/20"
+                            >
+                                Nuevo Usuario
+                            </Button>
+                        )}
+                    </div>
                 }
             />
 

@@ -5,7 +5,7 @@ import api from '../utils/api';
 import NetworkTree from '../components/NetworkTree';
 import UserActivityList from '../components/UserActivityList';
 import { PageHeader, Button } from '../components/ui';
-import { ArrowsClockwise, Users, Calendar, CaretDown } from '@phosphor-icons/react';
+import { ArrowsClockwise, Users, Calendar, CaretDown, StarIcon, Crown } from '@phosphor-icons/react';
 
 const ConsolidatedStatsReport = lazy(() => import('../components/ConsolidatedStatsReport'));
 
@@ -32,7 +32,11 @@ const Home = () => {
         } else if (hasAnyRole(['LIDER_CELULA', 'DISCIPULO'])) {
             let leaderId = user.id;
             if (hasRole('DISCIPULO')) {
+                // Para DISCIPULO: PASTOR -> LIDER_DOCE -> LIDER_CELULA -> DISCIPULO
                 leaderId = user.liderCelulaId || user.liderDoceId || user.pastorId || user.id;
+            } else if (hasRole('LIDER_CELULA')) {
+                // Para LIDER_CELULA: PASTOR -> LIDER_DOCE -> LIDER_CELULA
+                leaderId = user.liderDoceId || user.pastorId || user.id;
             }
             handleSelectLeader({ id: leaderId, fullName: user.fullName, roles: user.roles });
             setLoading(false);
@@ -57,43 +61,43 @@ const Home = () => {
         try {
             setLoading(true);
             if (hasAnyRole(['PASTOR'])) {
-                // Para PASTOR, cargar todos sus LIDER_DOCE y luego sus redes
-                const response = await api.get('/network/los-doce');
-                const lideresDoceData = response.data;
-                setLideresDoce(lideresDoceData);
-                
-                if (lideresDoceData.length > 0) {
-                    // Crear una red combinada con todos los LIDER_DOCE del PASTOR
-                    const combinedNetwork = {
-                        id: user.id,
-                        fullName: user.fullName,
-                        roles: user.roles,
-                        disciples: []
-                    };
+                // Para PASTOR, obtener su propia red primero
+                try {
+                    const pastorNetworkResponse = await api.get(`/network/${user.id}`);
+                    console.log('Home.jsx - fetchLideresDoce - pastorNetworkResponse.data:', pastorNetworkResponse.data);
                     
-                    // Cargar la red de cada LIDER_DOCE
-                    const networkPromises = lideresDoceData.map(async (lider) => {
-                        try {
-                            const networkResponse = await api.get(`/network/${lider.id}`);
-                            return networkResponse.data;
-                        } catch (err) {
-                            console.warn(`No se pudo cargar la red de ${lider.fullName}:`, err);
-                            return null;
-                        }
-                    });
+                    // Obtener los LIDER_DOCE del pastor
+                    const response = await api.get('/network/los-doce');
+                    const lideresDoceData = response.data;
+                    setLideresDoce(lideresDoceData);
                     
-                    const networks = await Promise.all(networkPromises);
-                    
-                    // Combinar todas las redes en una sola estructura
-                    networks.forEach(network => {
-                        if (network) {
-                            combinedNetwork.disciples.push(network);
-                        }
-                    });
-                    
-                    setNetwork(combinedNetwork);
-                    setSelectedLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
-                } else {
+                    if (pastorNetworkResponse.data && lideresDoceData.length > 0) {
+                        // Usar la red del pastor como base y agregar los LIDER_DOCE como discípulos
+                        const pastorNetwork = {
+                            ...pastorNetworkResponse.data,
+                            disciples: [
+                                ...(pastorNetworkResponse.data.disciples || []),
+                                ...lideresDoceData.map(lider => ({
+                                    id: lider.id,
+                                    fullName: lider.fullName,
+                                    roles: lider.roles
+                                }))
+                            ]
+                        };
+                        
+                        console.log('Home.jsx - fetchLideresDoce - pastorNetwork final:', pastorNetwork);
+                        setNetwork(pastorNetwork);
+                        setSelectedLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
+                    } else if (pastorNetworkResponse.data) {
+                        // Si no tiene LIDER_DOCE, usar solo su red
+                        setNetwork(pastorNetworkResponse.data);
+                        setSelectedLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
+                    } else {
+                        setLoading(false);
+                    }
+                } catch (err) {
+                    console.error('Error obteniendo red del pastor:', err);
+                    setError(err.response?.data?.message || err.message);
                     setLoading(false);
                 }
             } else {
@@ -116,7 +120,9 @@ const Home = () => {
             setNetworkLoading(true);
             setSelectedLeader(leader);
             setError(null);
+            console.log('Home.jsx - handleSelectLeader - leader:', leader);
             const response = await api.get(`/network/${leader.id}`);
+            console.log('Home.jsx - handleSelectLeader - response.data:', response.data);
             setNetwork(response.data);
         } catch (err) {
             if (err.response?.status === 404) {
@@ -181,6 +187,63 @@ const Home = () => {
                                             }
                                         </h2>
                                     </div>
+                                    {network && (hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) && (
+                                        <div className="mb-6 p-6 bg-gradient-to-r from-emerald-50 to-amber-50 dark:from-emerald-900/20 dark:to-amber-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-12 h-12 bg-emerald-600 dark:bg-emerald-700 rounded-full flex items-center justify-center text-white shadow-lg">
+                                                    <Users size={24} weight="fill" />
+                                                </div>
+                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Mis Líderes</h3>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                {/* Tarjeta PASTOR - se muestra para todos los roles */}
+                                                {network.pastor && (
+                                                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-emerald-200 dark:border-emerald-700 shadow-sm hover:shadow-md transition-all duration-200">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900 rounded-full flex items-center justify-center">
+                                                                <Crown size={16} className="text-emerald-600 dark:text-emerald-400" weight="fill" />
+                                                            </div>
+                                                            <span className="font-bold text-emerald-700 dark:text-emerald-400 text-lg">PASTOR</span>
+                                                        </div>
+                                                        <div className="text-gray-900 dark:text-white font-medium">
+                                                            {network.pastor.fullName}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Tarjeta LIDER_DOCE - se muestra para LIDER_CELULA y DISCIPULO */}
+                                                {network.liderDoce && (hasAnyRole(['LIDER_CELULA', 'DISCIPULO'])) && (
+                                                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-amber-200 dark:border-amber-700 shadow-sm hover:shadow-md transition-all duration-200">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900 rounded-full flex items-center justify-center">
+                                                                <StarIcon size={16} className="text-amber-600 dark:text-amber-400" weight="fill" />
+                                                            </div>
+                                                            <span className="font-bold text-amber-700 dark:text-amber-400 text-lg">LIDER 12</span>
+                                                        </div>
+                                                        <div className="text-gray-900 dark:text-white font-medium">
+                                                            {network.liderDoce.fullName}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Tarjeta LIDER_CELULA - se muestra solo para DISCIPULO */}
+                                                {network.liderCelula && hasRole('DISCIPULO') && (
+                                                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700 shadow-sm hover:shadow-md transition-all duration-200">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                                                <Users size={16} className="text-blue-600 dark:text-blue-400" weight="fill" />
+                                                            </div>
+                                                            <span className="font-bold text-blue-700 dark:text-blue-400 text-lg">LIDER CELULA</span>
+                                                        </div>
+                                                        <div className="text-gray-900 dark:text-white font-medium">
+                                                            {network.liderCelula.fullName}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                     <NetworkTree
                                         network={network}
                                         currentUser={user}

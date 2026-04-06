@@ -767,8 +767,8 @@ const checkKidsAccess = async (req, res) => {
         const userId = req.user.id;
         const userRoles = req.user.roles || [];
 
-        // Admin always has access
-        if (userRoles.includes('ADMIN')) {
+        // Admin and Pastor always have access
+        if (userRoles.includes('ADMIN') || userRoles.includes('PASTOR')) {
             return res.json({ hasAccess: true });
         }
 

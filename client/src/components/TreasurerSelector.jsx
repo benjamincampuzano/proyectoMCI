@@ -21,20 +21,18 @@ const TreasurerSelector = ({ moduleTreasurer, moduleName, onTreasurerChange, dis
     // Permission check: Admin/Pastor (disabled=false) or the Module Coordinator
     const canManageTreasurer = !disabled || isModuleCoordinator;
 
-    // Fetch candidate users
+    // Fetch any user for selection (only Admin/Pastor can assign)
     const fetchCandidateUsers = async (searchTerm) => {
         try {
             const response = await api.get('/users/search', {
                 params: {
                     search: searchTerm,
-                    limit: 10,
-                    role: 'LIDER_DOCE,LIDER_CELULA,DISCIPULO'
+                    limit: 20
                 }
             });
-            // Initial filtering for UI, but backend enforces strictly
             return response.data;
         } catch (error) {
-            console.error('Error fetching candidate users:', error);
+            console.error('Error fetching users:', error);
             throw error;
         }
     };
@@ -122,7 +120,7 @@ const TreasurerSelector = ({ moduleTreasurer, moduleName, onTreasurerChange, dis
                             fetchItems={fetchCandidateUsers}
                             onSelect={setSelectedTreasurer}
                             selectedValue={selectedTreasurer}
-                            placeholder="Buscar tesorero (Líder/Discípulo)..."
+                            placeholder="Buscar tesorero..."
                             labelKey="fullName"
                             renderItem={renderUserItem}
                             renderSelected={renderSelectedUser}

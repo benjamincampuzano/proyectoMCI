@@ -90,6 +90,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await api.post('/auth/login', { email, password });
             localStorage.setItem('token', res.data.token);
+            localStorage.setItem('refreshToken', res.data.refreshToken);
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);
@@ -117,6 +118,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await api.post('/auth/register', userData);
             localStorage.setItem('token', res.data.token);
+            localStorage.setItem('refreshToken', res.data.refreshToken);
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);
@@ -130,6 +132,7 @@ export const AuthProvider = ({ children }) => {
         try {
             const res = await api.post('/auth/setup', userData);
             localStorage.setItem('token', res.data.token);
+            localStorage.setItem('refreshToken', res.data.refreshToken);
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);
@@ -140,27 +143,56 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
+    const logout = async () => {
+        const refreshToken = localStorage.getItem('refreshToken');
+        
+        try {
+            if (refreshToken) {
+                await api.post('/auth/logout', { refreshToken });
+            }
+        } catch (error) {
+            console.error('Logout API error:', error);
+        }
+
         localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         setUser(null);
         
-        // Re-check initialization status after logout to ensure proper routing
         const checkInitAfterLogout = async () => {
             try {
                 const res = await api.get('/auth/init-status');
                 setIsInitialized(res.data.isInitialized);
             } catch (error) {
-                // Silently handle network errors (server not available)
                 if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
                     console.log('Server not available - skipping init status check after logout');
-                    setIsInitialized(false); // Default to false when server is unavailable
+                    setIsInitialized(false);
                 } else {
                     console.error('Error checking init status after logout:', error);
                 }
             }
         };
         checkInitAfterLogout();
+    };
+
+    const getSessions = async () => {
+        try {
+            const res = await api.get('/auth/sessions');
+            return res.data;
+        } catch (error) {
+            console.error('Get sessions error:', error);
+            return [];
+        }
+    };
+
+    const logoutAll = async () => {
+        try {
+            await api.post('/auth/logout-all');
+            logout();
+            return { success: true };
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message || 'Error al cerrar sesiones' };
+        }
     };
 
     const updateProfile = (updatedUser) => {
@@ -208,7 +240,7 @@ export const AuthProvider = ({ children }) => {
             user, login, register, setup, logout, updateProfile,
             loading, isInitialized,
             hasRole, hasAnyRole, isAdmin, isSuperAdmin, isCoordinator, isTreasurer,
-            changePassword
+            changePassword, getSessions, logoutAll
         }}>
             {children}
         </AuthContext.Provider>

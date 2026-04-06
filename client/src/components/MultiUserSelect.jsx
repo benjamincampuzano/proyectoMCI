@@ -53,7 +53,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
             const url = `/users${params.toString() ? '?' + params.toString() : ''}`;
             const res = await api.get(url);
 
-            let filteredUsers = res.data;
+            let filteredUsers = Array.isArray(res.data?.users) ? res.data.users : [];
             if (searchTerm) {
                 filteredUsers = filteredUsers.filter(user =>
                     user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,7 +76,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
         try {
             const res = await api.get('/users');
 
-            const selected = res.data.filter(user => userIds.includes(user.id));
+            const selected = Array.isArray(res.data?.users) ? res.data.users.filter(user => userIds.includes(user.id)) : [];
             setSelectedUsers(selected);
         } catch (error) {
             console.error('Error fetching selected users:', error);

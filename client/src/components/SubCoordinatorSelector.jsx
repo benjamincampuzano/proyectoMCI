@@ -21,15 +21,18 @@ const SubCoordinatorSelector = ({ moduleSubCoordinator, moduleName, onSubCoordin
     // Permission check: Admin/Pastor (disabled=false) or the Module Coordinator
     const canManageSubCoordinator = !disabled || isModuleCoordinator;
 
-    // Fetch candidate users for subcoordinator
+    // Fetch any user for selection (only Admin/Pastor can assign)
     const fetchCandidateUsers = async (searchTerm) => {
         try {
-            const response = await api.get(`/coordinators/module/${normalizeModule(moduleName)}/candidates`, {
-                params: { search: searchTerm }
+            const response = await api.get('/users/search', {
+                params: {
+                    search: searchTerm,
+                    limit: 20
+                }
             });
             return response.data;
         } catch (error) {
-            console.error('Error fetching candidate users:', error);
+            console.error('Error fetching users:', error);
             throw error;
         }
     };
@@ -112,7 +115,7 @@ const SubCoordinatorSelector = ({ moduleSubCoordinator, moduleName, onSubCoordin
                                 fetchItems={fetchCandidateUsers}
                                 onSelect={setSelectedSubCoordinator}
                                 selectedValue={selectedSubCoordinator}
-                                placeholder="Subcoordinador..."
+                                placeholder="Buscar usuario..."
                                 labelKey="fullName"
                                 renderItem={renderUserItem}
                                 renderSelected={renderSelectedUser}
