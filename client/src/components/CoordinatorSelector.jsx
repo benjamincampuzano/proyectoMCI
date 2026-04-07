@@ -21,7 +21,7 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
     // Permission check for coordinator assignment: must be Admin or Pastor (disabled=false)
     const canManageCoordinator = !disabled;
 
-    // Fetch any user for selection (only Admin/Pastor can assign)
+    // Fetch LIDER_DOCE users for coordinator selection
     const fetchLiderDoceUsers = async (searchTerm) => {
         try {
             // Don't search if term is too short
@@ -29,9 +29,10 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
                 return [];
             }
             
-            const response = await api.get('/public/users/search', {
+            const response = await api.get('/users/search', {
                 params: {
-                    search: searchTerm
+                    search: searchTerm,
+                    role: 'LIDER_DOCE'
                 }
             });
             return response.data || [];
@@ -90,7 +91,7 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
             </div>
             <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
                 <Shield size={12} />
-                <span>USER</span>
+                <span>LIDER_DOCE</span>
             </div>
         </div>
     );

@@ -108,6 +108,7 @@ const kidsScheduleRoutes = require("./routes/kidsSchedule");
 const kidsClassPhotosRoutes = require("./routes/kidsClassPhotos");
 const coordinatorRoutes = require("./routes/coordinatorRoutes");
 const artSchoolRoutes = require("./routes/artSchoolRoutes");
+const publicRoutes = require("./routes/publicRoutes");
 
 /* ✅ Proteger directorios sensibles */
 app.use('/backups', (req, res) => {
@@ -147,6 +148,7 @@ app.use("/api/kids-schedule", kidsScheduleRoutes);
 app.use("/api/kids-class-photos", kidsClassPhotosRoutes);
 app.use("/api/coordinators", coordinatorRoutes);
 app.use("/api/arts", artSchoolRoutes);
+app.use("/api/public", publicRoutes);
 
 /* ✅ Healthcheck */
 app.get("/", (req, res) => {

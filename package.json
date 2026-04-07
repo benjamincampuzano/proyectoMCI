@@ -9,6 +9,12 @@
     "install:all": "npm install && cd client && npm install && cd server && npm install",
     "backup": "node scripts/backup-db.js",
     "restore": "node scripts/restore-db.js",
+    "create-test-users": "node scripts/create-test-users.js",
+    "delete-test-users": "node scripts/delete-test-users.js",
+    "verify-users": "node scripts/verify-users.js",
+    "check-roles": "node scripts/check-roles.js",
+    "manage-users": "node scripts/manage-test-users.js",
+    "menu-usuarios": "node scripts/menu-usuarios.js",
     "test:open": "cypress open",
     "test:run": "cypress run"
   },

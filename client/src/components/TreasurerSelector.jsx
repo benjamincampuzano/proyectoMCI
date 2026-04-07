@@ -21,7 +21,7 @@ const TreasurerSelector = ({ moduleTreasurer, moduleName, onTreasurerChange, dis
     // Permission check: Admin/Pastor (disabled=false) or the Module Coordinator
     const canManageTreasurer = !disabled || isModuleCoordinator;
 
-    // Fetch any user for selection (only Admin/Pastor can assign)
+    // Fetch users with specific roles for treasurer selection
     const fetchCandidateUsers = async (searchTerm) => {
         try {
             // Don't search if term is too short
@@ -29,9 +29,10 @@ const TreasurerSelector = ({ moduleTreasurer, moduleName, onTreasurerChange, dis
                 return [];
             }
             
-            const response = await api.get('/public/users/search', {
+            const response = await api.get('/users/search', {
                 params: {
-                    search: searchTerm
+                    search: searchTerm,
+                    role: 'LIDER_DOCE,LIDER_CELULA,DISCIPULO'
                 }
             });
             return response.data || [];
@@ -75,7 +76,7 @@ const TreasurerSelector = ({ moduleTreasurer, moduleName, onTreasurerChange, dis
             </div>
             <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                 <Shield size={12} />
-                <span>USUARIO</span>
+                <span>{user.roles ? user.roles.join(', ') : 'USUARIO'}</span>
             </div>
         </div>
     );

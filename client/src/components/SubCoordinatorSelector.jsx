@@ -21,7 +21,7 @@ const SubCoordinatorSelector = ({ moduleSubCoordinator, moduleName, onSubCoordin
     // Permission check: Admin/Pastor (disabled=false) or the Module Coordinator
     const canManageSubCoordinator = !disabled || isModuleCoordinator;
 
-    // Fetch any user for selection (only Admin/Pastor can assign)
+    // Fetch users with specific roles for sub-coordinator selection
     const fetchCandidateUsers = async (searchTerm) => {
         try {
             // Don't search if term is too short
@@ -29,9 +29,10 @@ const SubCoordinatorSelector = ({ moduleSubCoordinator, moduleName, onSubCoordin
                 return [];
             }
             
-            const response = await api.get('/public/users/search', {
+            const response = await api.get('/users/search', {
                 params: {
-                    search: searchTerm
+                    search: searchTerm,
+                    role: 'LIDER_DOCE,LIDER_CELULA,DISCIPULO'
                 }
             });
             return response.data || [];
@@ -77,7 +78,7 @@ const SubCoordinatorSelector = ({ moduleSubCoordinator, moduleName, onSubCoordin
             </div>
             <div className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400">
                 <Shield size={12} />
-                <span>DESCENDIENTE</span>
+                <span>{user.roles ? user.roles.join(', ') : 'USUARIO'}</span>
             </div>
         </div>
     );

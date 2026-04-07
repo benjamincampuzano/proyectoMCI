@@ -141,20 +141,22 @@ const assignModuleCoordinator = async (req, res) => {
         const { module } = req.params;
         const { userId } = req.body;
 
-        // Verify user is LIDER_DOCE
+        // Verify user has valid role (LIDER_DOCE, LIDER_CELULA, DISCIPULO)
         const user = await prisma.user.findFirst({
             where: {
                 id: userId,
                 isDeleted: false,
                 roles: {
                     some: {
-                        role: { name: 'LIDER_DOCE' }
+                        role: { 
+                            name: { in: ['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'] }
+                        }
                     }
                 }
             }
         });
         if (!user) {
-            return res.status(400).json({ message: 'User must be a LIDER_DOCE' });
+            return res.status(400).json({ message: 'User must be a LIDER_DOCE, LIDER_CELULA, or DISCIPULO' });
         }
 
         // Hallazgo #9: Prevenir auto-asignación
@@ -623,10 +625,14 @@ const getModuleCandidates = async (req, res) => {
         if (candidateIds.length > 0) {
             where.id = { in: Array.from(new Set(candidateIds)) };
         } else {
-            // Fallback: any user in the leader's network (descendants in hierarchy)
-            const userNetwork = await getUserNetwork(req.user.id);
-            if (userNetwork && userNetwork.length > 0) {
-                where.id = { in: userNetwork };
+            // Fallback: For ADMIN/PASTOR, get all active users; for others, get users in network
+            if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
+                // No restriction for ADMIN and PASTOR - they can see all users
+            } else {
+                const userNetwork = await getUserNetwork(req.user.id);
+                if (userNetwork && userNetwork.length > 0) {
+                    where.id = { in: userNetwork };
+                }
             }
         }
 
