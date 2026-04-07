@@ -1,8 +1,7 @@
 const { execSync, execFileSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/database');
 require("dotenv").config();
 const { Client } = require('pg');
 

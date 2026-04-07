@@ -30,10 +30,10 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
                     limit: 20
                 }
             });
-            return response.data;
+            return response.data || [];
         } catch (error) {
             console.error('Error fetching users:', error);
-            throw error;
+            return [];
         }
     };
 

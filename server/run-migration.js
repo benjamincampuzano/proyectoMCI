@@ -1,9 +1,8 @@
-const { PrismaClient } = require('@prisma/client');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const prisma = new PrismaClient();
+const prisma = require('./utils/database');
 
 async function runMigration() {
     try {

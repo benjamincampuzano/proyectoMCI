@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/database');
 
 /**
  * Middleware para verificar si el usuario tiene permiso para acceder al cronograma de kids

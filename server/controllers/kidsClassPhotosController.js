@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../utils/database');
 
 exports.createClassPhoto = async (req, res) => {
     try {

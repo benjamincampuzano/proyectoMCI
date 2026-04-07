@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = require('../prisma/client');
+const prisma = require('../utils/database');
 
 /**
  * Logs an action to the AuditLog table using the new hierarchical schema.

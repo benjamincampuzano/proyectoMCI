@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = require('../prisma/client');
+const prisma = require('../utils/database');
 
 /**
  * Get all descendant user IDs in the network of a leader (recursive).

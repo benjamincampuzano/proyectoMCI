@@ -64,7 +64,7 @@ const AsyncSearchSelect = ({
             const data = await fetchItems(term);
             setItems(Array.isArray(data) ? data : []);
         } catch (err) {
-            console.error("AsyncSearchSelect fetch error:", err);
+            console.warn("AsyncSearchSelect fetch error:", err);
             setError("Error al cargar datos");
             setItems([]);
         } finally {

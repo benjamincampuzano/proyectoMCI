@@ -1,5 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = require('../prisma/client');
+const prisma = new PrismaClient();
 
 /**
  * Checks if targetId is a descendant of ancestorId.
