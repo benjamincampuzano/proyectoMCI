@@ -96,8 +96,10 @@ const getUserNetworkId = async (userId) => {
  */
 const canManageUser = async (requester, targetUserRole, targetUserNetworkId) => {
     if (requester.roles.includes('ADMIN') || requester.roles.includes('PASTOR')) {
-        if (targetUserRole === 'ADMIN') {
-            return { canManage: false, reason: 'Cannot manage ADMIN users' };
+        // Los ADMIN pueden gestionar todos los usuarios, incluyendo otros ADMIN
+        // Los PASTOR no pueden gestionar ADMIN
+        if (requester.roles.includes('PASTOR') && targetUserRole === 'ADMIN') {
+            return { canManage: false, reason: 'PASTOR cannot manage ADMIN users' };
         }
         return { canManage: true };
     }

@@ -578,8 +578,9 @@ const getUserById = async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
 
-        if (req.user.id === userId) {
-            return res.status(403).json({ message: 'Cannot access your own account via this endpoint' });
+        // Permitir que los ADMIN accedan a su propia cuenta, otros roles no pueden
+        if (req.user.id === userId && !req.user.roles.includes('ADMIN')) {
+            return res.status(403).json({ message: 'Cannot access your own account via this endpoint. Use /profile instead.' });
         }
 
         const user = await prisma.user.findUnique({
@@ -615,8 +616,9 @@ const updateUser = async (req, res) => {
         const userId = parseInt(req.params.id);
         const currentUserId = req.user.id;
 
-        if (userId === currentUserId) {
-            return res.status(403).json({ message: 'Cannot modify your own account' });
+        // Permitir que los ADMIN se modifiquen a sí mismos, otros roles no pueden
+        if (userId === currentUserId && !req.user.roles.includes('ADMIN')) {
+            return res.status(403).json({ message: 'Cannot modify your own account through this endpoint. Use /profile instead.' });
         }
 
         const targetUser = await prisma.user.findUnique({

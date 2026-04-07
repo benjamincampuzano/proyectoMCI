@@ -24,10 +24,14 @@ const TreasurerSelector = ({ moduleTreasurer, moduleName, onTreasurerChange, dis
     // Fetch any user for selection (only Admin/Pastor can assign)
     const fetchCandidateUsers = async (searchTerm) => {
         try {
-            const response = await api.get('/users/search', {
+            // Don't search if term is too short
+            if (!searchTerm || searchTerm.length < 3) {
+                return [];
+            }
+            
+            const response = await api.get('/public/users/search', {
                 params: {
-                    search: searchTerm,
-                    limit: 20
+                    search: searchTerm
                 }
             });
             return response.data || [];
