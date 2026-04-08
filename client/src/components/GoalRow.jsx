@@ -27,7 +27,7 @@ const COLOR_CLASSES = {
     }
 };
 
-const getGoalStatus = (goal, percent) => {
+const calculateGoalStatus = (goal, percent) => {
     const isMet = percent >= 100;
     let deadline = null;
 
@@ -46,7 +46,7 @@ const getGoalStatus = (goal, percent) => {
     return { label: 'EN PROGRESO', color: 'blue', icon: Clock };
 };
 
-const getDeadlineText = (goal) => {
+const formatDeadlineText = (goal) => {
     if (goal.encuentro) return new Date(goal.encuentro.startDate).toLocaleDateString();
     if (goal.convention) return new Date(goal.convention.startDate).toLocaleDateString();
     if (goal.month && goal.year) return `${goal.month}/${goal.year}`;
@@ -56,7 +56,7 @@ const getDeadlineText = (goal) => {
 const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const percent = Math.min(Math.round((goal.currentValue / goal.targetValue) * 100), 100);
-    const status = getGoalStatus(goal, percent);
+    const status = calculateGoalStatus(goal, percent);
     const StatusIcon = status.icon;
     const colors = COLOR_CLASSES[status.color];
 
@@ -111,7 +111,7 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
                 </div>
             </td>
             <td className="p-4 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
-                {getDeadlineText(goal)}
+                {formatDeadlineText(goal)}
             </td>
             <td className="p-4">
                 <div className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full ${colors.bgLight} ${colors.textDark} text-xs font-bold ${colors.border} w-fit mx-auto`}>

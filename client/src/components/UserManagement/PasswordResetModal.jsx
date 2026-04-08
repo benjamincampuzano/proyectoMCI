@@ -24,14 +24,14 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
         
         const finalPassword = tempPass.split('').sort(() => 0.5 - Math.random()).join('');
         
-        console.log('🔐 Generated temporary password:', {
-            password: finalPassword,
-            length: finalPassword.length,
-            hasUpper: /[A-Z]/.test(finalPassword),
-            hasLower: /[a-z]/.test(finalPassword),
-            hasNumbers: /\d/.test(finalPassword),
-            hasSymbols: /[!@#$%^&*+-_]/.test(finalPassword)
-        });
+        // console.log('🔐 Generated temporary password:', {
+        //     password: finalPassword,
+        //     length: finalPassword.length,
+        //     hasUpper: /[A-Z]/.test(finalPassword),
+        //     hasLower: /[a-z]/.test(finalPassword),
+        //     hasNumbers: /\d/.test(finalPassword),
+        //     hasSymbols: /[!@#$%^&*+-_]/.test(finalPassword)
+        // });
         
         return finalPassword;
     };
@@ -55,7 +55,7 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
         try {
             await navigator.clipboard.writeText(tempPassword);
             setCopied(true);
-            console.log('📋 Contraseña copiada al portapapeles:', tempPassword);
+            // console.log('📋 Contraseña copiada al portapapeles:', tempPassword);
             
             // Resetear el estado después de 2 segundos
             setTimeout(() => setCopied(false), 2000);
@@ -83,7 +83,7 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
                 if (successful) {
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
-                    console.log('📋 Contraseña copiada con fallback:', tempPassword);
+                    // console.log('📋 Contraseña copiada con fallback:', tempPassword);
                 } else {
                     console.error('❌ Falló el fallback de copia');
                 }

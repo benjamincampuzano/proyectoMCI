@@ -654,7 +654,7 @@ const refreshToken = async (req, res) => {
         await logActivity(
             storedToken.user.id, 
             'TOKEN_REFRESH', 
-            'REFRESH_TOKEN', 
+            'USER', 
             storedToken.id, 
             { 
                 oldTokenId: storedToken.id,

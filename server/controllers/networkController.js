@@ -207,10 +207,10 @@ const getNetwork = async (req, res) => {
                 leaders.lideresDoce.push(currentUser.cell.liderDoce);
             }
             
-            console.log('networkController - parentEntries:', parentEntries);
-            console.log('networkController - leaders.pastores:', leaders.pastores);
-            console.log('networkController - leaders.lideresDoce:', leaders.lideresDoce);
-            console.log('networkController - leaders.lideresCelula:', leaders.lideresCelula);
+            // console.log('networkController - parentEntries:', parentEntries);
+            // console.log('networkController - leaders.pastores:', leaders.pastores);
+            // console.log('networkController - leaders.lideresDoce:', leaders.lideresDoce);
+            // console.log('networkController - leaders.lideresCelula:', leaders.lideresCelula);
 
             // Combine children from both members of the couple
             const allChildrenEdges = [...(currentUser.children || []), ...(spouseNode?.children || [])];

@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
@@ -22,13 +22,13 @@ model UserHierarchy {
 }
 
 model ModuleCoordinator {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   userId     Int
   moduleName String
   createdAt  DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt  DateTime  @updatedAt @db.Timestamptz(6)
-  isDeleted  Boolean   @default(false)
   deletedAt  DateTime? @db.Timestamptz(6)
+  isDeleted  Boolean   @default(false)
   user       User      @relation(fields: [userId], references: [id])
 
   @@index([userId, moduleName])
@@ -36,16 +36,16 @@ model ModuleCoordinator {
 }
 
 model ModuleSubCoordinator {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   userId        Int
   moduleName    String
   coordinatorId Int?
   createdAt     DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
-  isDeleted     Boolean   @default(false)
   deletedAt     DateTime? @db.Timestamptz(6)
+  isDeleted     Boolean   @default(false)
+  coordinator   User?     @relation("SubCoordinatorAssigner", fields: [coordinatorId], references: [id])
   user          User      @relation("SubCoordinatorUser", fields: [userId], references: [id])
-  coordinator   User?     @relation("SubCoordinatorAssigner", fields: [coordinatorId], references: [id], onDelete: SetNull)
 
   @@index([userId, moduleName])
   @@index([moduleName])
@@ -53,13 +53,13 @@ model ModuleSubCoordinator {
 }
 
 model ModuleTreasurer {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   userId     Int
   moduleName String
   createdAt  DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt  DateTime  @updatedAt @db.Timestamptz(6)
-  isDeleted  Boolean   @default(false)
   deletedAt  DateTime? @db.Timestamptz(6)
+  isDeleted  Boolean   @default(false)
   user       User      @relation(fields: [userId], references: [id])
 
   @@index([userId, moduleName])
@@ -67,64 +67,64 @@ model ModuleTreasurer {
 }
 
 model User {
-  id                      Int                      @id @default(autoincrement())
-  email                   String                   @unique
-  phone                   String?                  @unique
-  password                String
-  isActive                Boolean                  @default(true)
-  isDeleted               Boolean                  @default(false)
-  cellId                  Int?
-  createdAt               DateTime                 @default(now()) @db.Timestamptz(6)
-  updatedAt               DateTime                 @updatedAt @db.Timestamptz(6)
-  mustChangePassword      Boolean                  @default(false)
-  isCoordinator           Boolean                  @default(false)
-  spouseId                Int?                     @unique
-  auditLogs               AuditLog[]
-  hostedCells             Cell[]                   @relation("CellHost")
-  ledCells                Cell[]                   @relation("CellLeader")
-  doceNetworkCells        Cell[]                   @relation("CellLiderDoce")
-  cellAttendances         CellAttendance[]
-  churchAttendances       ChurchAttendance[]
-  classAttendances        ClassAttendance[]
-  coordinatedConventions  Convention[]             @relation("ConventionCoordinator")
-  conventionLeaderships   ConventionLeader[]
-  registeredConventions   ConventionRegistration[] @relation("ConventionRegistrar")
-  conventionRegistrations ConventionRegistration[]
-  coordinatedEncuentros   Encuentro[]              @relation("EncuentroCoordinator")
-  encuentroLeaderships    EncuentroLeader[]
-  encuentroRegistrations  EncuentroRegistration[]
-  goals                   Goal[]                   @relation("UserGoals")
-  assignedGuests          Guest[]                  @relation("AssignedTo")
-  invitedGuests           Guest[]                  @relation("InvitedBy")
-  guestCalls              GuestCall[]
-  guestVisits             GuestVisit[]
-  moduleCoordinations     ModuleCoordinator[]
-  moduleSubCoordinations  ModuleSubCoordinator[] @relation("SubCoordinatorUser")
-  assignedSubCoordinations ModuleSubCoordinator[] @relation("SubCoordinatorAssigner")
-  oracionesLed            OracionDeTres[]          @relation("LiderDoceOracion")
-  oracionesMiembro        OracionDeTresMiembro[]
-  guidedEnrollments       SeminarEnrollment[]      @relation("AssignedAuxiliar")
-  seminarEnrollments      SeminarEnrollment[]
-  guardianEnrollments    SeminarEnrollment[]      @relation("EnrollmentGuardian")
-  cell                    Cell?                    @relation("CellMembers", fields: [cellId], references: [id])
-  spouse                  User?                    @relation("SpouseRelation", fields: [spouseId], references: [id])
-  spouseOf                User?                    @relation("SpouseRelation")
-  parents                 UserHierarchy[]          @relation("HierarchyChild")
-  children                UserHierarchy[]          @relation("HierarchyParent")
-  profile                 UserProfile?
-  roles                   UserRole[]
-  professorModules        SeminarModule[]          @relation("ModuleProfessors")
-  auxiliaryModules        SeminarModule[]          @relation("ModuleAuxiliaries")
-  kidsSchedulesAsTeacher  KidsSchedule[]           @relation("TeacherSchedule")
-  kidsSchedulesAsAuxiliary KidsSchedule[]          @relation("AuxiliarySchedule")
-  uploadedPhotos          KidsClassPhoto[]         @relation("UploadedPhotos")
-  artRoles                ArtSchoolRole[]
-  artClassesTaught        ArtClass[]               @relation("ArtProfessor")
-  artClassesCoordinated   ArtClass[]               @relation("ArtCoordinator")
-  artEnrollments          ArtEnrollment[]
-  registeredArtPayments   ArtPayment[]             @relation("UserRegistrar")
-  moduleTreasurers        ModuleTreasurer[]
-  refreshTokens           RefreshToken[]
+  id                       Int                      @id @default(autoincrement())
+  email                    String                   @unique
+  phone                    String?                  @unique
+  password                 String
+  isActive                 Boolean                  @default(true)
+  isDeleted                Boolean                  @default(false)
+  cellId                   Int?
+  createdAt                DateTime                 @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime                 @updatedAt @db.Timestamptz(6)
+  mustChangePassword       Boolean                  @default(false)
+  isCoordinator            Boolean                  @default(false)
+  spouseId                 Int?                     @unique
+  artClassesCoordinated    ArtClass[]               @relation("ArtCoordinator")
+  artClassesTaught         ArtClass[]               @relation("ArtProfessor")
+  artEnrollments           ArtEnrollment[]
+  registeredArtPayments    ArtPayment[]             @relation("UserRegistrar")
+  artRoles                 ArtSchoolRole[]
+  auditLogs                AuditLog[]
+  hostedCells              Cell[]                   @relation("CellHost")
+  ledCells                 Cell[]                   @relation("CellLeader")
+  doceNetworkCells         Cell[]                   @relation("CellLiderDoce")
+  cellAttendances          CellAttendance[]
+  churchAttendances        ChurchAttendance[]
+  classAttendances         ClassAttendance[]
+  coordinatedConventions   Convention[]             @relation("ConventionCoordinator")
+  conventionLeaderships    ConventionLeader[]
+  registeredConventions    ConventionRegistration[] @relation("ConventionRegistrar")
+  conventionRegistrations  ConventionRegistration[]
+  coordinatedEncuentros    Encuentro[]              @relation("EncuentroCoordinator")
+  encuentroLeaderships     EncuentroLeader[]
+  encuentroRegistrations   EncuentroRegistration[]
+  goals                    Goal[]                   @relation("UserGoals")
+  assignedGuests           Guest[]                  @relation("AssignedTo")
+  invitedGuests            Guest[]                  @relation("InvitedBy")
+  guestCalls               GuestCall[]
+  guestVisits              GuestVisit[]
+  uploadedPhotos           KidsClassPhoto[]         @relation("UploadedPhotos")
+  kidsSchedulesAsAuxiliary KidsSchedule[]           @relation("AuxiliarySchedule")
+  kidsSchedulesAsTeacher   KidsSchedule[]           @relation("TeacherSchedule")
+  moduleCoordinations      ModuleCoordinator[]
+  assignedSubCoordinations ModuleSubCoordinator[]   @relation("SubCoordinatorAssigner")
+  moduleSubCoordinations   ModuleSubCoordinator[]   @relation("SubCoordinatorUser")
+  moduleTreasurers         ModuleTreasurer[]
+  oracionesLed             OracionDeTres[]          @relation("LiderDoceOracion")
+  oracionesMiembro         OracionDeTresMiembro[]
+  refreshTokens            RefreshToken[]
+  guidedEnrollments        SeminarEnrollment[]      @relation("AssignedAuxiliar")
+  guardianEnrollments      SeminarEnrollment[]      @relation("EnrollmentGuardian")
+  seminarEnrollments       SeminarEnrollment[]
+  cell                     Cell?                    @relation("CellMembers", fields: [cellId], references: [id])
+  spouse                   User?                    @relation("SpouseRelation", fields: [spouseId], references: [id])
+  spouseOf                 User?                    @relation("SpouseRelation")
+  parents                  UserHierarchy[]          @relation("HierarchyChild")
+  children                 UserHierarchy[]          @relation("HierarchyParent")
+  profile                  UserProfile?
+  roles                    UserRole[]
+  auxiliaryModules         SeminarModule[]          @relation("ModuleAuxiliaries")
+  professorModules         SeminarModule[]          @relation("ModuleProfessors")
 
   @@index([email])
   @@index([createdAt])
@@ -209,12 +209,12 @@ model Guest {
   dataPolicyAccepted      Boolean                 @default(false)
   dataTreatmentAuthorized Boolean                 @default(false)
   minorConsentAuthorized  Boolean                 @default(false)
+  artEnrollments          ArtEnrollment[]
   encuentroRegistrations  EncuentroRegistration[]
   assignedTo              User?                   @relation("AssignedTo", fields: [assignedToId], references: [id])
   invitedBy               User                    @relation("InvitedBy", fields: [invitedById], references: [id])
   calls                   GuestCall[]
   visits                  GuestVisit[]
-  artEnrollments           ArtEnrollment[]
 
   @@index([status])
   @@index([createdAt])
@@ -305,24 +305,24 @@ model CellAttendance {
 }
 
 model SeminarModule {
-  id                Int                 @id @default(autoincrement())
-  name              String
-  description       String?
-  moduleNumber      Int?
-  code              String?             @unique
-  type              String              @default("SEMINARIO")
-  startDate         DateTime?           @db.Timestamptz(6)
-  endDate           DateTime?           @db.Timestamptz(6)
-  classCount        Int?
-  professorIds      Int[]               // Array de coordinadores
-  createdAt         DateTime            @default(now()) @db.Timestamptz(6)
-  isDeleted         Boolean             @default(false)
-  updatedAt         DateTime            @updatedAt @db.Timestamptz(6)
-  materials         ClassMaterial[]
-  enrollments       SeminarEnrollment[]
-  professors        User[]              @relation("ModuleProfessors")
-  auxiliaries       User[]              @relation("ModuleAuxiliaries")
-  kidsSchedules     KidsSchedule[]
+  id            Int                 @id @default(autoincrement())
+  name          String
+  description   String?
+  moduleNumber  Int?
+  code          String?             @unique
+  type          String              @default("SEMINARIO")
+  startDate     DateTime?           @db.Timestamptz(6)
+  endDate       DateTime?           @db.Timestamptz(6)
+  createdAt     DateTime            @default(now()) @db.Timestamptz(6)
+  isDeleted     Boolean             @default(false)
+  updatedAt     DateTime            @updatedAt @db.Timestamptz(6)
+  classCount    Int?
+  professorIds  Int[]
+  materials     ClassMaterial[]
+  kidsSchedules KidsSchedule[]
+  enrollments   SeminarEnrollment[]
+  auxiliaries   User[]              @relation("ModuleAuxiliaries")
+  professors    User[]              @relation("ModuleProfessors")
 }
 
 model ClassMaterial {
@@ -342,8 +342,8 @@ model ClassResource {
   id         Int           @id @default(autoincrement())
   materialId Int
   type       ResourceType
-  name       String?
   url        String
+  name       String?
   material   ClassMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
 
   @@index([type])
@@ -353,7 +353,6 @@ model SeminarEnrollment {
   id                 Int               @id @default(autoincrement())
   userId             Int
   moduleId           Int
-  guardianId         Int?
   status             EnrollmentStatus  @default(INSCRITO)
   assignmentsDone    Int               @default(0)
   finalProjectGrade  Float?
@@ -362,6 +361,7 @@ model SeminarEnrollment {
   finalGrade         Float?
   createdAt          DateTime          @default(now()) @db.Timestamptz(6)
   updatedAt          DateTime          @updatedAt @db.Timestamptz(6)
+  guardianId         Int?
   classAttendances   ClassAttendance[]
   assignedAuxiliar   User?             @relation("AssignedAuxiliar", fields: [assignedAuxiliarId], references: [id])
   guardian           User?             @relation("EnrollmentGuardian", fields: [guardianId], references: [id])
@@ -639,6 +639,153 @@ model PasswordReset {
   @@index([token])
 }
 
+model KidsSchedule {
+  id           Int           @id @default(autoincrement())
+  moduleId     Int
+  unit         String
+  date         DateTime      @db.Timestamptz(6)
+  lesson       String
+  bibleReading String
+  memoryVerse  String
+  activity     String
+  teacherId    Int?
+  auxiliaryId  Int?
+  observations String?
+  createdAt    DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(6)
+  auxiliary    User?         @relation("AuxiliarySchedule", fields: [auxiliaryId], references: [id])
+  module       SeminarModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  teacher      User?         @relation("TeacherSchedule", fields: [teacherId], references: [id])
+
+  @@index([moduleId])
+  @@index([date])
+}
+
+model KidsClassPhoto {
+  id          Int      @id @default(autoincrement())
+  url         String
+  description String?
+  uploadedBy  Int
+  uploadDate  DateTime @default(now()) @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  uploader    User     @relation("UploadedPhotos", fields: [uploadedBy], references: [id])
+
+  @@index([uploadedBy])
+  @@index([uploadDate])
+}
+
+model ArtSchoolRole {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  role      ArtRole
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([role])
+}
+
+model ArtClass {
+  id            Int             @id @default(autoincrement())
+  name          String
+  description   String?
+  cost          Float           @default(0)
+  startDate     DateTime?       @db.Timestamptz(6)
+  endDate       DateTime?       @db.Timestamptz(6)
+  professorId   Int?
+  isDeleted     Boolean         @default(false)
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime        @updatedAt @db.Timestamptz(6)
+  duration      Int             @default(60)
+  schedule      String?
+  coordinatorId Int?
+  coordinator   User?           @relation("ArtCoordinator", fields: [coordinatorId], references: [id])
+  professor     User?           @relation("ArtProfessor", fields: [professorId], references: [id])
+  enrollments   ArtEnrollment[]
+  sessions      ArtSession[]
+}
+
+model ArtSession {
+  id          Int             @id @default(autoincrement())
+  classId     Int
+  date        DateTime        @default(now()) @db.Timestamptz(6)
+  topic       String?
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
+  attendances ArtAttendance[]
+  artClass    ArtClass        @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@index([classId])
+}
+
+model ArtEnrollment {
+  id                 Int              @id @default(autoincrement())
+  userId             Int?
+  classId            Int
+  status             EnrollmentStatus @default(INSCRITO)
+  createdAt          DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime         @updatedAt @db.Timestamptz(6)
+  discountPercentage Float?           @default(0)
+  finalCost          Float
+  guestId            Int?
+  attendances        ArtAttendance[]
+  artClass           ArtClass         @relation(fields: [classId], references: [id], onDelete: Cascade)
+  guest              Guest?           @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  user               User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments           ArtPayment[]
+
+  @@unique([userId, classId])
+  @@unique([guestId, classId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ArtAttendance {
+  id           Int              @id @default(autoincrement())
+  enrollmentId Int
+  classNumber  Int?
+  attended     Boolean          @default(false)
+  date         DateTime         @default(now()) @db.Timestamptz(6)
+  createdAt    DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime         @updatedAt @db.Timestamptz(6)
+  sessionId    Int?
+  status       AttendanceStatus @default(AUSENTE)
+  enrollment   ArtEnrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  session      ArtSession?      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, sessionId])
+}
+
+model ArtPayment {
+  id             Int           @id @default(autoincrement())
+  enrollmentId   Int
+  amount         Float
+  date           DateTime      @default(now()) @db.Timestamptz(6)
+  notes          String?
+  registeredById Int?
+  createdAt      DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(6)
+  enrollment     ArtEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  registeredBy   User?         @relation("UserRegistrar", fields: [registeredById], references: [id])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  isRevoked Boolean  @default(false)
+  userAgent String?
+  ipAddress String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isRevoked])
+}
 
 enum EncuentroPaymentType {
   ENCUENTRO
@@ -664,6 +811,7 @@ enum AuditAction {
   EXPORT
   BACKUP_DOWNLOAD
   BACKUP_RESTORE
+  TOKEN_REFRESH
 }
 
 enum EntityType {
@@ -798,163 +946,9 @@ enum OracionDeTresStatus {
   FINALIZADO
 }
 
-model KidsSchedule {
-  id           Int           @id @default(autoincrement())
-  moduleId     Int
-  unit         String
-  date         DateTime      @db.Timestamptz(6)
-  lesson       String
-  bibleReading String
-  memoryVerse  String
-  activity     String
-  teacherId    Int?
-  auxiliaryId  Int?
-  observations String?       @db.Text
-  createdAt    DateTime      @default(now()) @db.Timestamptz(6)
-  updatedAt    DateTime      @updatedAt @db.Timestamptz(6)
-
-  module       SeminarModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  teacher      User?         @relation("TeacherSchedule", fields: [teacherId], references: [id])
-  auxiliary    User?         @relation("AuxiliarySchedule", fields: [auxiliaryId], references: [id])
-
-  @@index([moduleId])
-  @@index([date])
-}
-
-model KidsClassPhoto {
-  id           Int      @id @default(autoincrement())
-  url          String
-  description  String?  @db.Text
-  uploadedBy   Int
-  uploadDate   DateTime @default(now()) @db.Timestamptz(6)
-  createdAt    DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
-
-  uploader     User     @relation("UploadedPhotos", fields: [uploadedBy], references: [id])
-
-  @@index([uploadedBy])
-  @@index([uploadDate])
-}
-
 enum ArtRole {
   COORDINADOR
   TESORERO
   PROFESOR
   ESTUDIANTE
-}
-
-model ArtSchoolRole {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  role      ArtRole
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, role])
-  @@index([role])
-}
-
-model ArtClass {
-  id          Int             @id @default(autoincrement())
-  name        String
-  description String?
-  cost        Float           @default(0)
-  duration    Int             @default(60)
-  schedule    String?
-  startDate   DateTime?       @db.Timestamptz(6)
-  endDate     DateTime?       @db.Timestamptz(6)
-  professorId Int?
-  coordinatorId Int?
-  isDeleted   Boolean         @default(false)
-  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
-  professor   User?           @relation("ArtProfessor", fields: [professorId], references: [id])
-  coordinator User?           @relation("ArtCoordinator", fields: [coordinatorId], references: [id])
-  enrollments ArtEnrollment[]
-  sessions    ArtSession[]
-}
-
-model ArtSession {
-  id          Int             @id @default(autoincrement())
-  classId     Int
-  date        DateTime        @default(now()) @db.Timestamptz(6)
-  topic       String?         @db.Text
-  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
-  artClass    ArtClass        @relation(fields: [classId], references: [id], onDelete: Cascade)
-  attendances ArtAttendance[]
-
-  @@index([classId])
-}
-
-model ArtEnrollment {
-  id                Int             @id @default(autoincrement())
-  userId            Int?            // Nullable para permitir invitados
-  guestId           Int?            // Para inscripciones de invitados
-  classId           Int
-  finalCost         Float           // Costo final después de descuentos
-  discountPercentage Float? @default(0) // Porcentaje de descuento aplicado
-  status            EnrollmentStatus @default(INSCRITO)
-  createdAt         DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime        @updatedAt @db.Timestamptz(6)
-  
-  // Relaciones
-  user              User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  guest             Guest?          @relation(fields: [guestId], references: [id], onDelete: Cascade)
-  artClass          ArtClass        @relation(fields: [classId], references: [id], onDelete: Cascade)
-  attendances       ArtAttendance[]
-  payments          ArtPayment[]
-
-  // Ajustar índices únicos para permitir invitados
-  @@unique([userId, classId])
-  @@unique([guestId, classId])
-  @@index([status])
-  @@index([createdAt])
-}
-
-model ArtAttendance {
-  id           Int           @id @default(autoincrement())
-  enrollmentId Int
-  sessionId    Int?          // Link to ArtSession
-  classNumber  Int?          // Optional for transition
-  status       AttendanceStatus @default(AUSENTE)
-  attended     Boolean       @default(false)
-  date         DateTime      @default(now()) @db.Timestamptz(6)
-  createdAt    DateTime      @default(now()) @db.Timestamptz(6)
-  updatedAt    DateTime      @updatedAt @db.Timestamptz(6)
-  
-  enrollment   ArtEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  session      ArtSession?   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@unique([enrollmentId, sessionId])
-}
-
-model ArtPayment {
-  id             Int           @id @default(autoincrement())
-  enrollmentId   Int
-  amount         Float
-  date           DateTime      @default(now()) @db.Timestamptz(6)
-  notes          String?
-  registeredById Int?
-  createdAt      DateTime      @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime      @updatedAt @db.Timestamptz(6)
-  enrollment     ArtEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  registeredBy   User?         @relation("UserRegistrar", fields: [registeredById], references: [id])
-}
-
-model RefreshToken {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique
-  userId    Int
-  expiresAt DateTime @db.Timestamptz(6)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  isRevoked Boolean  @default(false)
-  userAgent String?
-  ipAddress String?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([token])
-  @@index([expiresAt])
-  @@index([isRevoked])
 }

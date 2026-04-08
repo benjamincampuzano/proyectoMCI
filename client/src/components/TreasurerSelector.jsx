@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import AsyncSearchSelect from './ui/AsyncSearchSelect';
 import { Button } from './ui';
 import api from '../utils/api';
+import toast from 'react-hot-toast';
 
 /**
  * TreasurerSelector - Component for selecting and assigning a Treasurer for a module
@@ -51,8 +52,18 @@ const TreasurerSelector = ({ moduleTreasurer, moduleName, onTreasurerChange, dis
             });
             onTreasurerChange(response.data);
             setSelectedTreasurer(null);
+            toast.success('Tesorero asignado exitosamente');
         } catch (error) {
             console.error('Error assigning treasurer:', error);
+            if (error.response?.status === 403 && error.response?.data?.message?.includes('outside your network')) {
+                toast.error('No puedes asignar tesorores fuera de tu red. Por favor, selecciona un usuario de tu red.');
+            } else if (error.response?.status === 400 && error.response?.data?.message?.includes('already has a role')) {
+                toast.error('Este usuario ya tiene un rol asignado en este módulo.');
+            } else if (error.response?.status === 400 && error.response?.data?.message?.includes('Cannot assign yourself')) {
+                toast.error('No puedes asignarte a ti mismo como tesorero. Por favor, selecciona a otro usuario.');
+            } else {
+                toast.error('Error al asignar tesorero: ' + (error.response?.data?.message || error.message));
+            }
         } finally {
             setIsAssigning(false);
         }
@@ -63,8 +74,10 @@ const TreasurerSelector = ({ moduleTreasurer, moduleName, onTreasurerChange, dis
         try {
             await api.delete(`/coordinators/module/${normalizeModule(moduleName)}/treasurer`);
             onTreasurerChange(null);
+            toast.success('Tesorero removido exitosamente');
         } catch (error) {
             console.error('Error removing treasurer:', error);
+            toast.error('Error al remover tesorero: ' + (error.response?.data?.message || error.message));
         }
     };
 

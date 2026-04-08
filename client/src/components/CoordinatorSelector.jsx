@@ -4,6 +4,8 @@ import PropTypes from 'prop-types';
 import AsyncSearchSelect from './ui/AsyncSearchSelect';
 import { Button } from './ui';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 /**
  * CoordinatorSelector - Component for selecting and assigning a LIDER_DOCE as coordinator
@@ -15,6 +17,7 @@ const normalizeModule = (name) => {
 };
 
 const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChange, disabled = false }) => {
+    const { user } = useAuth();
     const [isAssigning, setIsAssigning] = useState(false);
     const [selectedCoordinator, setSelectedCoordinator] = useState(null);
     
@@ -35,7 +38,9 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
                     role: 'LIDER_DOCE'
                 }
             });
-            return response.data || [];
+            // Filter out current user to prevent self-assignment
+            const users = response.data || [];
+            return users.filter(u => u.id !== user.id);
         } catch (error) {
             console.error('Error fetching users:', error);
             return [];
@@ -45,6 +50,12 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
     // Assign coordinator with module-specific admin profile
     const handleAssignCoordinator = async () => {
         if (!selectedCoordinator) return;
+
+        // Prevent self-assignment
+        if (selectedCoordinator.id === user.id) {
+            toast.error('No puedes asignarte a ti mismo como coordinador. Por favor, selecciona a otro usuario.');
+            return;
+        }
 
         setIsAssigning(true);
         try {
@@ -58,6 +69,11 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
             setSelectedCoordinator(null);
         } catch (error) {
             console.error('Error assigning coordinator:', error);
+            if (error.response?.status === 400 && error.response?.data?.message?.includes('Cannot assign yourself')) {
+                toast.error('No puedes asignarte a ti mismo como coordinador. Por favor, selecciona a otro usuario.');
+            } else {
+                toast.error('Error al asignar coordinador: ' + (error.response?.data?.message || error.message));
+            }
         } finally {
             setIsAssigning(false);
         }

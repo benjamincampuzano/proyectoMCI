@@ -176,6 +176,7 @@ const CellManagement = ({ moduleCoordinator }) => {
             }
         } catch (error) {
             console.error('Error fetching cells:', error);
+            toast.error('Error al cargar células. Por favor intenta nuevamente.');
         }
     };
 
@@ -193,6 +194,7 @@ const CellManagement = ({ moduleCoordinator }) => {
             setEligibleLeaders(response.data);
         } catch (error) {
             console.error('Error fetching leaders:', error);
+            toast.error('Error al cargar líderes disponibles. Por favor intenta nuevamente.');
         }
     };
 
@@ -206,6 +208,7 @@ const CellManagement = ({ moduleCoordinator }) => {
             setEligibleHosts(response.data);
         } catch (error) {
             console.error('Error fetching hosts:', error);
+            toast.error('Error al cargar anfitriones disponibles. Por favor intenta nuevamente.');
         }
     };
 
@@ -215,6 +218,7 @@ const CellManagement = ({ moduleCoordinator }) => {
             setAssignedMembers(response.data);
         } catch (error) {
             console.error('Error fetching assigned members:', error);
+            toast.error('Error al cargar miembros asignados. Por favor intenta nuevamente.');
         }
     };
 
@@ -224,6 +228,7 @@ const CellManagement = ({ moduleCoordinator }) => {
             setEligibleDoceLeaders(response.data);
         } catch (error) {
             console.error('Error fetching doce leaders:', error);
+            toast.error('Error al cargar líderes de 12 disponibles. Por favor intenta nuevamente.');
         }
     };
 

@@ -208,6 +208,49 @@ const getAttendanceStats = async (req, res) => {
     }
 };
 
+// Delete church attendance for a specific date
+const deleteAttendanceByDate = async (req, res) => {
+    try {
+        const { date } = req.params;
+
+        // Validate date
+        const parsedDate = new Date(date);
+        if (isNaN(parsedDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid date format' });
+        }
+
+        // Check if user has permission to delete (admin or leader)
+        const { id, roles } = req.user;
+        const userRoles = roles || [];
+        const isAdmin = userRoles.includes('ADMIN');
+        const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
+
+        if (!isAdmin && !isLeader) {
+            return res.status(403).json({ error: 'Insufficient permissions to delete attendance' });
+        }
+
+        // Build where clause with network filtering for leaders
+        let where = { date: parsedDate };
+
+        if (isLeader && !isAdmin) {
+            const networkIds = await getUserNetwork(parseInt(id));
+            networkIds.push(parseInt(id));
+            where.userId = { in: networkIds };
+        }
+
+        // Delete attendance records
+        const result = await prisma.churchAttendance.deleteMany({ where });
+
+        res.json({ 
+            message: 'Attendance records deleted successfully', 
+            deletedCount: result.count 
+        });
+    } catch (error) {
+        console.error('Error deleting church attendance:', error);
+        res.status(500).json({ error: 'Error deleting attendance records' });
+    }
+};
+
 // Get daily attendance statistics for chart
 const getDailyStats = async (req, res) => {
     try {
@@ -283,5 +326,6 @@ module.exports = {
     getAttendanceByDate,
     getAllMembers,
     getAttendanceStats,
-    getDailyStats
+    getDailyStats,
+    deleteAttendanceByDate
 };

@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 
 const useUserManagement = () => {
     const [users, setUsers] = useState([]);
+    const [allLeaders, setAllLeaders] = useState({ pastores: [], lideresDoce: [], lideresCelula: [] });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -99,34 +100,51 @@ const useUserManagement = () => {
         return { title, message, type };
     };
 
+    // Fetch leaders separately - independent of filters
+    const fetchAllLeaders = useCallback(async () => {
+        try {
+            const response = await api.get('/users?leadersOnly=true');
+            const leadersData = response.data.users || response.data || [];
+
+            setAllLeaders({
+                pastores: leadersData.filter(u => u.roles?.includes('PASTOR')),
+                lideresDoce: leadersData.filter(u => u.roles?.includes('LIDER_DOCE')),
+                lideresCelula: leadersData.filter(u => u.roles?.includes('LIDER_CELULA'))
+            });
+        } catch (err) {
+            console.error('Error fetching leaders:', err);
+            // Keep existing leaders on error
+        }
+    }, []);
+
     const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
-            
+
             // Para ADMIN, obtener todos los usuarios sin límite
             // Para otros roles, usar paginación
-            const isAdminUser = currentUser?.roles?.includes('ADMIN') || 
-                               currentUser?.role === 'ADMIN' || 
+            const isAdminUser = currentUser?.roles?.includes('ADMIN') ||
+                               currentUser?.role === 'ADMIN' ||
                                auth.isAdmin?.();
-            
+
             const params = new URLSearchParams();
             params.append('page', currentPage);
-            
+
             if (!isAdminUser) {
                 params.append('limit', usersPerPage);
             }
-            
+
             // Enviar filtros al backend
             if (roleFilter) params.append('role', roleFilter);
             if (searchTerm) params.append('search', searchTerm);
             if (sexFilter) params.append('sexFilter', sexFilter);
             if (liderDoceFilter) params.append('liderDoceFilter', liderDoceFilter);
-            
+
             const response = await api.get(`/users?${params.toString()}`);
-            
+
             // El backend ahora devuelve { users: [...], pagination: {...} }
             const { users: usersData, pagination } = response.data;
-            
+
             setUsers(usersData || []);
             setTotalUsers(pagination?.total || 0);
         } catch (err) {
@@ -141,6 +159,11 @@ const useUserManagement = () => {
     useEffect(() => {
         fetchUsers();
     }, [fetchUsers]);
+
+    // Fetch leaders once on mount
+    useEffect(() => {
+        fetchAllLeaders();
+    }, [fetchAllLeaders]);
 
     const handleCreateUser = useCallback(async (e) => {
         e.preventDefault();
@@ -274,9 +297,11 @@ const useUserManagement = () => {
 
     const handlePasswordReset = resetPassword;
 
-    const pastores = users.filter(u => u.roles?.includes('PASTOR'));
-    const lideresDoce = users.filter(u => u.roles?.includes('LIDER_DOCE'));
-    const lideresCelula = users.filter(u => u.roles?.includes('LIDER_CELULA'));
+    // Use allLeaders state (fetched separately) instead of filtering from users
+    // This ensures leaders are always available regardless of current filters
+    const pastores = allLeaders.pastores;
+    const lideresDoce = allLeaders.lideresDoce;
+    const lideresCelula = allLeaders.lideresCelula;
 
     // Ya no necesitamos filtrar localmente ya que el backend maneja los filtros
     const filteredUsers = users;

@@ -438,7 +438,12 @@ const deleteCell = async (req, res) => {
             }
         }
 
-        // 2. Cleanup transaction
+        // 2. Get count of members before deletion for notification
+        const membersToUnassign = await prisma.user.count({
+            where: { cellId: cellId }
+        });
+
+        // 3. Cleanup transaction
         await prisma.$transaction(async (tx) => {
             // A. Unassign members
             await tx.user.updateMany({
@@ -459,7 +464,11 @@ const deleteCell = async (req, res) => {
 
         await logActivity(userId, 'DELETE', 'CELL', cellId, { name: cell.name }, req.ip, req.headers['user-agent']);
 
-        res.json({ message: 'Cell deleted successfully' });
+        const message = membersToUnassign > 0 
+            ? `Cell deleted successfully. ${membersToUnassign} member(s) were automatically unassigned.`
+            : 'Cell deleted successfully';
+
+        res.json({ message, membersUnassigned: membersToUnassign });
 
     } catch (error) {
         console.error('Error deleting cell:', error);

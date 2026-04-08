@@ -64,7 +64,7 @@ const Home = () => {
                 // Para PASTOR, obtener su propia red primero
                 try {
                     const pastorNetworkResponse = await api.get(`/network/${user.id}`);
-                    console.log('Home.jsx - fetchLideresDoce - pastorNetworkResponse.data:', pastorNetworkResponse.data);
+                    // console.log('Home.jsx - fetchLideresDoce - pastorNetworkResponse.data:', pastorNetworkResponse.data);
                     
                     // Obtener los LIDER_DOCE del pastor
                     const response = await api.get('/network/los-doce');
@@ -85,7 +85,7 @@ const Home = () => {
                             ]
                         };
                         
-                        console.log('Home.jsx - fetchLideresDoce - pastorNetwork final:', pastorNetwork);
+                        // console.log('Home.jsx - fetchLideresDoce - pastorNetwork final:', pastorNetwork);
                         setNetwork(pastorNetwork);
                         setSelectedLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
                     } else if (pastorNetworkResponse.data) {
@@ -120,9 +120,9 @@ const Home = () => {
             setNetworkLoading(true);
             setSelectedLeader(leader);
             setError(null);
-            console.log('Home.jsx - handleSelectLeader - leader:', leader);
+            // console.log('Home.jsx - handleSelectLeader - leader:', leader);
             const response = await api.get(`/network/${leader.id}`);
-            console.log('Home.jsx - handleSelectLeader - response.data:', response.data);
+            // console.log('Home.jsx - handleSelectLeader - response.data:', response.data);
             setNetwork(response.data);
         } catch (err) {
             if (err.response?.status === 404) {

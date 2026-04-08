@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone, House, User, WhatsappLogoIcon,ChatCircle, ChatCircleDots, WarningCircleIcon, Plus, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon } from '@phosphor-icons/react';
+import { Phone, House, User, WhatsappLogoIcon,ChatCircle, ChatCircleDots, WarningCircleIcon, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -16,18 +16,29 @@ const GuestTracking = () => {
         date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
         observation: ''
     });
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [pageSize] = useState(10);
 
     useEffect(() => {
         fetchGuests();
-    }, []);
+    }, [currentPage]);
 
     const fetchGuests = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/guests');
+            const response = await api.get('/guests', {
+                params: {
+                    page: currentPage,
+                    limit: pageSize
+                }
+            });
             setGuests(response.data.guests || []);
+            setTotalPages(response.data.totalPages || 1);
         } catch (error) {
             console.error('Error fetching guests:', error);
+            toast.error('Error al cargar invitados. Por favor intenta nuevamente.');
         } finally {
             setLoading(false);
         }
@@ -59,6 +70,8 @@ const GuestTracking = () => {
         }
     };
 
+
+
     const getAlerts = (guest) => {
         const createdAt = new Date(guest.createdAt);
         const now = new Date();
@@ -78,11 +91,38 @@ const GuestTracking = () => {
     };
 
     if (loading) {
-        return <div className="text-center py-8">Cargando invitados...</div>;
+        return (
+            <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-48 animate-pulse"></div>
+                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-32 animate-pulse"></div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
+                    <div className="p-6 space-y-4">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className="space-y-3">
+                                <div className="flex items-center space-x-4">
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 animate-pulse"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/6 animate-pulse"></div>
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/5 animate-pulse"></div>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
+                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4 animate-pulse"></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     return (
         <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Seguimiento de Invitados</h2>
+            </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -227,6 +267,34 @@ const GuestTracking = () => {
                 </div>
             </div>
 
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between bg-white dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                        Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, guests.length)} de {guests.length} invitados
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-200"
+                        >
+                            Anterior
+                        </button>
+                        <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
+                            Página {currentPage} de {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-200"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Add Action Modal (Call or Visit) */}
             {(modalType === 'call' || modalType === 'visit') && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -271,12 +339,9 @@ const GuestTracking = () => {
                             >
                                 Cancelar
                             </button>
-                            <button
-                                onClick={handleAction}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm flex items-center gap-2"
-                            >
+                            <button onClick={handleAction} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm flex items-center gap-2">
                                 <CheckCircle className="w-4 h-4" />
-                                Guardar Registro
+                                Crear Invitado
                             </button>
                         </div>
                     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Check, X } from '@phosphor-icons/react';
+import { Calendar, Check, X, Trash } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
@@ -9,6 +9,8 @@ const ChurchAttendance = () => {
     const [attendances, setAttendances] = useState({});
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         fetchMembers();
@@ -86,6 +88,20 @@ const ChurchAttendance = () => {
         }
     };
 
+    const handleDeleteAttendance = async () => {
+        try {
+            setDeleting(true);
+            await api.delete(`/consolidar/church-attendance/${date}`);
+            setAttendances({});
+            setShowDeleteConfirm(false);
+            toast.success('Registros de asistencia eliminados exitosamente');
+        } catch (error) {
+            toast.error('Error al eliminar registros de asistencia. Por favor intenta nuevamente.');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     if (loading) {
         return <div className="text-center py-8">Cargando...</div>;
     }
@@ -102,13 +118,23 @@ const ChurchAttendance = () => {
                         className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-200"
                     />
                 </div>
-                <button
-                    onClick={handleSubmit}
-                    disabled={saving}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-                >
-                    {saving ? 'Guardando...' : 'Guardar Asistencia'}
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={Object.keys(attendances).length === 0}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 transition-colors flex items-center gap-2"
+                    >
+                        <Trash className="w-4 h-4" />
+                        Eliminar Registros
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={saving}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                    >
+                        {saving ? 'Guardando...' : 'Guardar Asistencia'}
+                    </button>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -180,6 +206,59 @@ const ChurchAttendance = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Eliminar Registros de Asistencia</h3>
+                            <button 
+                                onClick={() => setShowDeleteConfirm(false)} 
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                                <div className="flex items-start gap-3">
+                                    <div className="text-red-600 dark:text-red-400 mt-0.5">
+                                        <Trash className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-red-800 dark:text-red-200 font-semibold mb-2">
+                                            ¿Estás seguro de eliminar todos los registros?
+                                        </h4>
+                                        <p className="text-red-700 dark:text-red-300 text-sm">
+                                            Se eliminarán todos los registros de asistencia del día <strong>{new Date(date).toLocaleDateString()}</strong>. 
+                                            Esta acción no se puede deshacer.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                                <p>Registros a eliminar: <strong>{Object.keys(attendances).length}</strong></p>
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleDeleteAttendance}
+                                disabled={deleting}
+                                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-400 rounded-lg transition-colors flex items-center gap-2"
+                            >
+                                {deleting ? 'Eliminando...' : 'Eliminar Registros'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

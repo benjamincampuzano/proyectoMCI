@@ -167,6 +167,24 @@ const assignModuleCoordinator = async (req, res) => {
         const normalizedModule = normalizeModuleName(module);
         const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
 
+        // Validación de duplicados: Evitar que un usuario sea coordinador de múltiples módulos simultáneamente
+        const existingCoordinatorRoles = await prisma.moduleCoordinator.findMany({
+            where: {
+                userId: userId,
+                isDeleted: false
+            },
+            select: {
+                moduleName: true
+            }
+        });
+
+        if (existingCoordinatorRoles.length > 0 && !isAdminOrPastor) {
+            const currentModules = existingCoordinatorRoles.map(role => role.moduleName).join(', ');
+            return res.status(400).json({ 
+                message: `User is already coordinator of: ${currentModules}. Cannot assign to multiple modules simultaneously.` 
+            });
+        }
+
         // Hallazgo #4: Prevenir rotación circular de cargos en Coordinadores (30 días de espera)
         const recentAssignment = await prisma.moduleCoordinator.findFirst({
             where: {
@@ -404,7 +422,7 @@ const assignModuleSubCoordinator = async (req, res) => {
         };
         const moduleNetwork = moduleNetworkMap[normalizedModule];
         
-        if (moduleNetwork && requesterNetwork !== moduleNetwork && !isAdminOrPastor) {
+        if (moduleNetwork && requesterNetwork !== moduleNetwork && !assignerIsAdmin) {
             return res.status(403).json({ message: 'Cannot assign subcoordinators outside your network' });
         }
 
@@ -732,7 +750,7 @@ const assignModuleTreasurer = async (req, res) => {
         };
         const moduleNetwork = moduleNetworkMap[normalizedModule];
         
-        if (moduleNetwork && requesterNetwork !== moduleNetwork && !isAdminOrPastor) {
+        if (moduleNetwork && requesterNetwork !== moduleNetwork && !assignerIsAdmin) {
             return res.status(403).json({ message: 'Cannot assign treasurers outside your network' });
         }
 

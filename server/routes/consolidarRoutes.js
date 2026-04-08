@@ -19,6 +19,7 @@ router.get('/church-attendance/members/all', churchAttendanceController.getAllMe
 router.get('/church-attendance/stats', churchAttendanceController.getAttendanceStats);
 router.get('/church-attendance/daily-stats', churchAttendanceController.getDailyStats);
 router.get('/church-attendance/:date', churchAttendanceController.getAttendanceByDate);
+router.delete('/church-attendance/:date', churchAttendanceController.deleteAttendanceByDate);
 
 // Consolidated Stats Routes
 router.get('/stats/general', consolidarStatsController.getGeneralStats);

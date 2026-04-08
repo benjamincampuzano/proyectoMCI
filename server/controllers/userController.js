@@ -48,10 +48,12 @@ const formatUser = (user) => {
     let liderDoceId = null;
     let liderCelulaId = null;
 
-    if (user.parents) {
-        pastorId = user.parents.find(p => p.role === 'PASTOR')?.parentId || null;
-        liderDoceId = user.parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null;
-        liderCelulaId = user.parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null;
+    // Handle parents field gracefully - default to empty array if not included
+    const parents = user.parents || [];
+    if (parents.length > 0) {
+        pastorId = parents.find(p => p.role === 'PASTOR')?.parentId || null;
+        liderDoceId = parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null;
+        liderCelulaId = parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null;
     }
 
     // Roles secundarios derivados de relaciones funcionales (no de UserRole)
@@ -108,7 +110,7 @@ const formatUser = (user) => {
         moduleTreasurers: user.moduleTreasurers?.map(mt => mt.moduleName) || [],
         mustChangePassword: user.mustChangePassword,
         spouseId: user.spouseId,
-        hierarchy: (user.parents || []).map(p => ({
+        hierarchy: parents.map(p => ({
             parentId: p.parentId,
             parentName: p.parent?.profile?.fullName || '(sin nombre)',
             role: p.role
@@ -123,7 +125,6 @@ const getProfile = async (req, res) => {
             include: {
                 profile: true,
                 roles: { include: { role: true } },
-                parents: { include: { parent: { include: { profile: true } } } },
                 moduleCoordinations: true,
                 moduleTreasurers: true
             }
@@ -285,8 +286,34 @@ const changePassword = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const { role, page = 1, limit, search, sexFilter, liderDoceFilter, export: exportAll } = req.query;
+        const { role, page = 1, limit, search, sexFilter, liderDoceFilter, export: exportAll, leadersOnly } = req.query;
         const pageNum = parseInt(page);
+
+        // Handle leadersOnly request - return all leaders regardless of other filters
+        if (leadersOnly === 'true') {
+            const leaderRoles = ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'];
+
+            const leaders = await prisma.user.findMany({
+                where: {
+                    isDeleted: false,
+                    roles: {
+                        some: {
+                            role: { name: { in: leaderRoles } }
+                        }
+                    }
+                },
+                include: {
+                    profile: true,
+                    roles: { include: { role: true } },
+                    parents: { include: { parent: { include: { profile: true } } } }
+                },
+                orderBy: { profile: { fullName: 'asc' } }
+            });
+
+            return res.json({
+                users: leaders.map(formatUser)
+            });
+        }
 
         // Para ADMIN, no hay límite por defecto (pueden ver todos los usuarios)
         // Para otros roles, mantener el límite de 50 por defecto
@@ -362,7 +389,6 @@ const getAllUsers = async (req, res) => {
                 include: {
                     roles: { include: { role: true } },
                     profile: true,
-                    parents: true,
                     artRoles: true,
                     moduleCoordinations: true,
                     moduleTreasurers: true,
@@ -446,8 +472,7 @@ const getAllUsers = async (req, res) => {
                 where: whereClause,
                 include: {
                     roles: { include: { role: true } },
-                    profile: true,
-                    parents: true
+                    profile: true
                 },
                 orderBy: { id: 'desc' }
             };
@@ -541,8 +566,7 @@ const getAllUsers = async (req, res) => {
                 where: whereClause,
                 include: {
                     roles: { include: { role: true } },
-                    profile: true,
-                    parents: true
+                    profile: true
                 },
                 orderBy: { id: 'desc' }
             };
@@ -587,8 +611,7 @@ const getUserById = async (req, res) => {
             where: { id: userId },
             include: {
                 roles: { include: { role: true } },
-                profile: true,
-                parents: true
+                profile: true
             }
         });
 
@@ -799,7 +822,7 @@ const updateUser = async (req, res) => {
 
         const finalUpdated = await prisma.user.findUnique({
             where: { id: userId },
-            include: { profile: true, roles: { include: { role: true } }, parents: true }
+            include: { profile: true, roles: { include: { role: true } } }
         });
 
         await logActivity(req.user.id, 'UPDATE', 'USER', userId, { targetUser: finalUpdated.profile?.fullName }, req.ip, req.headers['user-agent']);
@@ -985,7 +1008,7 @@ const createUser = async (req, res) => {
 
         const createdUser = await prisma.user.findUnique({
             where: { id: user.id },
-            include: { profile: true, roles: { include: { role: true } }, parents: true }
+            include: { profile: true, roles: { include: { role: true } } }
         });
 
         await logActivity(req.user.id, 'CREATE', 'USER', createdUser.id, { targetUser: createdUser.profile?.fullName }, req.ip, req.headers['user-agent']);

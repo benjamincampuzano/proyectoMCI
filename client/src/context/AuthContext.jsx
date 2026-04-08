@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
                 } catch (error) {
                     // Silently handle network errors (server not available)
                     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-                        console.log('Server not available - using stored user data');
+                        // console.log('Server not available - using stored user data');
                         // Fallback to stored user if server fails
                         const storedUser = JSON.parse(localStorage.getItem('user'));
                         if (storedUser) setUser(normalizeUserRoles(storedUser));
@@ -165,7 +165,7 @@ export const AuthProvider = ({ children }) => {
                 setIsInitialized(res.data.isInitialized);
             } catch (error) {
                 if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-                    console.log('Server not available - skipping init status check after logout');
+                    // console.log('Server not available - skipping init status check after logout');
                     setIsInitialized(false);
                 } else {
                     console.error('Error checking init status after logout:', error);

@@ -63,6 +63,7 @@ const CourseManagement = () => {
             setCourses(res.data);
         } catch (error) {
             console.error('Error fetching courses', error);
+            toast.error('Error al cargar cursos. Por favor intenta nuevamente.');
         }
     };
 
@@ -70,6 +71,13 @@ const CourseManagement = () => {
         e.stopPropagation();
         // Find the course to show details in the confirmation modal
         const course = courses.find(c => c.id === id);
+        
+        // Check if course has students or grades before allowing deletion
+        if (course._count?.enrollments > 0) {
+            toast.error('No se puede eliminar la clase porque tiene estudiantes inscritos. Primero debe desvincular a todos los estudiantes.');
+            return;
+        }
+        
         setCourseToDelete(course);
         setShowDeleteConfirm(true);
     };
@@ -104,7 +112,7 @@ const CourseManagement = () => {
             fetchCourses();
         } catch (error) {
             console.error('Error creating course:', error);
-            toast.error('Error creating course');
+            toast.error('Error al crear curso: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -146,7 +154,7 @@ const CourseManagement = () => {
             fetchCourses();
         } catch (error) {
             console.error('Error updating course:', error);
-            toast.error('Error updating course');
+            toast.error('Error al actualizar curso: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -478,7 +486,7 @@ const CourseManagement = () => {
                 }}
                 onConfirm={performDelete}
                 title="Eliminar Clase"
-                message="¿Estás seguro de eliminar esta clase?"
+                message="¿Estás seguro de eliminar esta clase? Esta acción es irreversible."
                 confirmText="Eliminar Clase"
                 confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
             >

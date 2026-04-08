@@ -136,3 +136,16 @@ scripts/README.md
 scripts/manage-test-users.js
 scripts/menu-usuarios.js
 scripts/README-MENU.md
+
+# Módulo testing scripts
+scripts/module-testing-script.js
+scripts/full-module-testing-script.js
+scripts/manage-test-users.js
+scripts/delete-test-users.js
+scripts/create-test-users.js
+scripts/check-roles.js
+scripts/verify-users.js
+scripts/create-roles.js
+client/tests/test-*.js
+client/tests/test-*.json
+client/tests/run-all-tests.*

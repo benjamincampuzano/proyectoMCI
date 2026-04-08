@@ -51,7 +51,7 @@ const generateSqlBackup = async (databaseUrl, filePath) => {
     const ssl = process.env.NODE_ENV === 'production' ? 'require' : 'disable';
     
     try {
-        console.log("📦 Generando backup SQL con pg_dump...");
+        // console.log("📦 Generando backup SQL con pg_dump...");
         
         execFileSync(pgDumpPath, [
             '--host', dbConfig.host,
@@ -71,7 +71,7 @@ const generateSqlBackup = async (databaseUrl, filePath) => {
             }
         });
         
-        console.log("✅ Backup SQL generado exitosamente");
+        // console.log("✅ Backup SQL generado exitosamente");
     } catch (error) {
         console.error("❌ Error con pg_dump, intentando con cliente Node.js:", error.message);
         await generateSqlBackupWithNodeClient(databaseUrl, filePath);
@@ -149,7 +149,7 @@ const generateSqlBackupWithNodeClient = async (databaseUrl, filePath) => {
     
     try {
         await client.connect();
-        console.log("📦 Generando backup con cliente Node.js...");
+        // console.log("📦 Generando backup con cliente Node.js...");
         
         const tablesResult = await client.query(`
             SELECT tablename 
@@ -159,7 +159,7 @@ const generateSqlBackupWithNodeClient = async (databaseUrl, filePath) => {
         `);
         
         const tables = tablesResult.rows.map(row => row.tablename);
-        console.log(`📊 Tablas encontradas: ${tables.length}`);
+        // console.log(`📊 Tablas encontradas: ${tables.length}`);
         
         let sqlContent = "-- Backup generado automáticamente\n";
         sqlContent += "-- Fecha: " + new Date().toISOString() + "\n";
@@ -170,7 +170,7 @@ const generateSqlBackupWithNodeClient = async (databaseUrl, filePath) => {
         sqlContent += "SET session_replication_role = replica;\n\n";
         
         for (const table of tables) {
-            console.log(`📝 Procesando tabla: ${table}`);
+            // console.log(`📝 Procesando tabla: ${table}`);
             
             const createTableResult = await client.query(`
                 SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
@@ -222,7 +222,7 @@ const generateSqlBackupWithNodeClient = async (databaseUrl, filePath) => {
         sqlContent += "SET session_replication_role = DEFAULT;\n\n";
         
         fs.writeFileSync(filePath, sqlContent, 'utf8');
-        console.log(`✅ Backup SQL generado: ${filePath} (${fs.statSync(filePath).size} bytes)`);
+        // console.log(`✅ Backup SQL generado: ${filePath} (${fs.statSync(filePath).size} bytes)`);
         
     } catch (error) {
         console.error("❌ Error generando backup:", error);
@@ -241,21 +241,21 @@ const executeSqlFileWithTransaction = async (databaseUrl, filePath, res) => {
     });
     
     try {
-        console.log("🔄 Conectando a la base de datos...");
+        // console.log("🔄 Conectando a la base de datos...");
         await client.connect();
         
         const sqlContent = fs.readFileSync(filePath, 'utf8');
-        console.log(`📁 Archivo SQL leído: ${sqlContent.length} caracteres`);
+        // console.log(`📁 Archivo SQL leído: ${sqlContent.length} caracteres`);
         
         await client.query('BEGIN');
-        console.log("📝 Transacción iniciada");
+        // console.log("📝 Transacción iniciada");
         
         const statements = sqlContent
             .split(/;\s*$/m)
             .map(stmt => stmt.trim())
             .filter(stmt => stmt && !stmt.startsWith('--') && stmt.length > 0);
         
-        console.log(`📊 Ejecutando ${statements.length} sentencias...`);
+        // console.log(`📊 Ejecutando ${statements.length} sentencias...`);
         
         let executed = 0;
         let lastProgress = 0;
@@ -269,7 +269,7 @@ const executeSqlFileWithTransaction = async (databaseUrl, filePath, res) => {
                     
                     const progress = Math.floor((executed / statements.length) * 100);
                     if (progress - lastProgress >= 10) {
-                        console.log(`📈 Progreso: ${progress}% (${executed}/${statements.length})`);
+                        // console.log(`📈 Progreso: ${progress}% (${executed}/${statements.length})`);
                         lastProgress = progress;
                     }
                 } catch (stmtError) {
@@ -280,7 +280,7 @@ const executeSqlFileWithTransaction = async (databaseUrl, filePath, res) => {
         }
         
         await client.query('COMMIT');
-        console.log("✅ Transacción confirmada");
+        // console.log("✅ Transacción confirmada");
         
         return { success: true, executed };
         
@@ -288,14 +288,14 @@ const executeSqlFileWithTransaction = async (databaseUrl, filePath, res) => {
         console.error("❌ Error en restauración, ejecutando ROLLBACK...");
         try {
             await client.query('ROLLBACK');
-            console.log("🔄 Rollback ejecutado");
+            // console.log("🔄 Rollback ejecutado");
         } catch (rollbackError) {
             console.error("❌ Error en rollback:", rollbackError);
         }
         throw error;
     } finally {
         await client.end();
-        console.log("🔌 Conexión cerrada");
+        // console.log("🔌 Conexión cerrada");
     }
 };
 
@@ -310,7 +310,7 @@ const logBackupActivity = async (userId, action, details, ip) => {
                 ipAddress: ip
             }
         });
-        console.log(`📝 Auditoría registrada: ${action} por usuario ${userId}`);
+        // console.log(`📝 Auditoría registrada: ${action} por usuario ${userId}`);
     } catch (error) {
         console.error('❌ Error registrando auditoría de backup:', error);
     }
@@ -333,7 +333,7 @@ const downloadBackup = async (req, res) => {
         const fileName = `backup_${new Date().toISOString().replace(/[:.]/g, "-")}.sql`;
         const filePath = path.join(backupsDir, fileName);
 
-        console.log("🚀 Iniciando generación de backup...");
+        // console.log("🚀 Iniciando generación de backup...");
         await generateSqlBackup(DATABASE_URL, filePath);
 
         await logBackupActivity(req.user.id, 'BACKUP_DOWNLOAD', {
@@ -394,7 +394,7 @@ const validateSqlContent = (filePath) => {
             };
         }
         
-        console.log("✅ Validación de contenido SQL completada");
+        // console.log("✅ Validación de contenido SQL completada");
         return { valid: true };
     } catch (error) {
         console.error("❌ Error validando contenido SQL:", error);
@@ -414,7 +414,7 @@ const verifyRestoreIntegrity = async (client) => {
     const missingTables = [];
     const emptyTables = [];
     
-    console.log("🔍 Verificando integridad del restore...");
+    // console.log("🔍 Verificando integridad del restore...");
     
     for (const table of requiredTables) {
         const existsResult = await client.query(
@@ -441,7 +441,7 @@ const verifyRestoreIntegrity = async (client) => {
             console.warn(`⚠️ Tabla crítica vacía: ${table}`);
         }
         
-        console.log(`✅ Tabla ${table}: ${count} registros`);
+        // console.log(`✅ Tabla ${table}: ${count} registros`);
     }
     
     const isValid = missingTables.length === 0;
@@ -474,7 +474,7 @@ const restoreBackup = async (req, res) => {
 
         const fileName = req.file.originalname;
         
-        console.log(`📂 Archivo recibido: ${fileName} (${req.file.size} bytes)`);
+        // console.log(`📂 Archivo recibido: ${fileName} (${req.file.size} bytes)`);
         
         if (!fileName.toLowerCase().endsWith('.sql')) {
             fs.unlinkSync(tempFilePath);
@@ -503,7 +503,7 @@ const restoreBackup = async (req, res) => {
             });
         }
 
-        console.log("🔄 Iniciando restauración...");
+        // console.log("🔄 Iniciando restauración...");
         
         const result = await executeSqlFileWithTransaction(DATABASE_URL, tempFilePath, res);
 
@@ -521,13 +521,13 @@ const restoreBackup = async (req, res) => {
                 throw new Error(`Restore incompleto: ${verification.message}`);
             }
             
-            console.log("✅ Verificación de integridad completada");
+            // console.log("✅ Verificación de integridad completada");
         } finally {
             await client.end();
         }
 
         fs.unlinkSync(tempFilePath);
-        console.log("🗑️ Archivo temporal eliminado");
+        // console.log("🗑️ Archivo temporal eliminado");
 
         await logBackupActivity(req.user.id, 'BACKUP_RESTORE', {
             fileName,
@@ -551,7 +551,7 @@ const restoreBackup = async (req, res) => {
         if (tempFilePath && fs.existsSync(tempFilePath)) {
             try {
                 fs.unlinkSync(tempFilePath);
-                console.log("🗑️ Archivo temporal eliminado en cleanup");
+                // console.log("🗑️ Archivo temporal eliminado en cleanup");
             } catch (e) {
                 console.error("❌ Error limpiando archivo temporal:", e);
             }
@@ -595,7 +595,7 @@ const restoreBackup = async (req, res) => {
         if (tempFilePath && fs.existsSync(tempFilePath)) {
             try {
                 fs.unlinkSync(tempFilePath);
-                console.log("🗑️ Archivo temporal eliminado en cleanup");
+                // console.log("🗑️ Archivo temporal eliminado en cleanup");
             } catch (e) {
                 console.error("❌ Error limpiando archivo temporal:", e);
             }
