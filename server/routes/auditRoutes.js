@@ -18,11 +18,11 @@ router.get('/logs', authenticate, authorize(['ADMIN', 'PASTOR']), auditControlle
 router.get('/stats', authenticate, authorize(['ADMIN', 'PASTOR']), auditController.getAuditStats);
 
 // Database Backup Routes - Restricted to ADMIN only for safety
-router.get('/backup', 
+router.post('/backup', 
     authenticate, 
     authorize(['ADMIN']), 
-    backupLimiter,  // ← AGREGAR: Rate limiter
-    backupController.downloadBackup
+    // backupLimiter,  // Temporalmente deshabilitado para pruebas
+    backupController.generateBackup
 );
 
 router.post('/restore', 

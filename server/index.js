@@ -176,22 +176,24 @@ app.get("/", (req, res) => {
   });
 });
 
-/* ✅ Scheduled Tasks */
+/* Scheduled Tasks */
 const { cleanupExpiredTokens } = require('./scripts/cleanupExpiredTokens');
+const { cleanupOrphanedTokens } = require('./scripts/cleanupOrphanedTokens');
 
 // Schedule cleanup of expired refresh tokens every hour
 cron.schedule('0 * * * *', async () => {
   try {
-    const count = await cleanupExpiredTokens();
+    const expiredCount = await cleanupExpiredTokens();
+    const orphanedCount = await cleanupOrphanedTokens();
     if (process.env.NODE_ENV !== "production") {
-      console.log(`🧹 Scheduled cleanup: Removed ${count} expired refresh tokens`);
+      console.log(`🧹 Scheduled cleanup: Removed ${expiredCount} expired and ${orphanedCount} orphaned refresh tokens`);
     }
   } catch (error) {
-    console.error('❌ Scheduled cleanup failed:', error);
+    console.error('Scheduled cleanup failed:', error);
   }
 });
 
-/* ✅ Global Error Handler */
+/* Global Error Handler */
 app.use((err, req, res, next) => {
   if (process.env.NODE_ENV !== "production") {
     console.error("❌ Global Error Handler:", err.stack);

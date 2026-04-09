@@ -11,8 +11,8 @@ import TransitionLoader from './components/TransitionLoader';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import api from './utils/api';
 // import MobileDebugger from './components/MobileDebugger';
-import './utils/logger'; // Import logger to disable console logs in production
-import mobileDebug from './utils/mobileDebug'; // Import mobile debugging
+import './utils/logger';
+import mobileDebug from './utils/mobileDebug';
 
 // Lazy load pages
 const Login = lazy(() => import('./pages/Login'));
@@ -34,7 +34,7 @@ const Metas = lazy(() => import('./pages/Metas'));
 const PublicGuestRegistration = lazy(() => import('./pages/PublicGuestRegistration'));
 const LegalDocuments = lazy(() => import('./pages/LegalDocuments'));
 
-// Placeholder components for now
+// 
 
 const PrivateRoute = ({ children }) => {
   const { user, loading, isInitialized } = useAuth();

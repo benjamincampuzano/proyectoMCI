@@ -811,7 +811,6 @@ enum AuditAction {
   EXPORT
   BACKUP_DOWNLOAD
   BACKUP_RESTORE
-  TOKEN_REFRESH
 }
 
 enum EntityType {

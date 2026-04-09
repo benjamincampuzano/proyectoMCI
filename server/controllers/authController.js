@@ -622,7 +622,7 @@ const refreshToken = async (req, res) => {
             include: { user: { include: { roles: { include: { role: true } } } } }
         });
 
-        if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date()) {
+        if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date() || !storedToken.user) {
             return res.status(401).json({ message: 'Invalid or expired refresh token' });
         }
 
