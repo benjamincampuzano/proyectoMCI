@@ -2,6 +2,7 @@ const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const os = require("os");
 require("dotenv").config();
 
 const DEFAULT_ENCRYPTION_KEY = process.env.BACKUP_ENCRYPTION_KEY || 'default-backup-key-32chars!!';
@@ -57,13 +58,13 @@ const findExecutable = (exeName) => {
 };
 
 /* =========================
-   📦 BACKUP (pg_dump -Fc)
+   📦 BACKUP (pg_dump plain SQL)
 ========================= */
 
-const generateBackup = (databaseUrl, filePath, options = {}) => {
+const generateBackupFile = (databaseUrl, filePath, options = {}) => {
     const pgDump = findExecutable('pg_dump');
 
-    console.log("📦 Generando backup en formato binario (PRO)...");
+    console.log("📦 Generando backup en SQL (plain)...");
 
     const outputDir = path.dirname(filePath);
     if (outputDir && outputDir !== "." && !fs.existsSync(outputDir)) {
@@ -72,7 +73,7 @@ const generateBackup = (databaseUrl, filePath, options = {}) => {
 
     execFileSync(pgDump, [
         '--dbname', databaseUrl,
-        '--format=custom', // 🔥 CLAVE
+        '--format=plain',
         '--no-owner',
         '--no-privileges',
         '--file', filePath
@@ -99,13 +100,12 @@ const generateBackup = (databaseUrl, filePath, options = {}) => {
 };
 
 /* =========================
-   🔄 RESTORE (pg_restore PRO)
+   🔄 RESTORE (psql para SQL plain)
 ========================= */
 
-const restoreBackup = async (databaseUrl, filePath, options = {}) => {
-    const pgRestore = findExecutable('pg_restore');
-
-    let tempFile = filePath;
+const restoreBackupFile = async (databaseUrl, filePath, options = {}) => {
+    const psql = findExecutable('psql');
+    let tempFile = String(filePath);
 
     try {
         console.log("🔄 Restauración PRO iniciada...");
@@ -113,14 +113,14 @@ const restoreBackup = async (databaseUrl, filePath, options = {}) => {
         /* =========================
            🔓 DESENCRIPTAR SI ES NECESARIO
         ========================= */
-        if (filePath.endsWith('.enc')) {
+        if (tempFile.endsWith('.enc')) {
             console.log("🔐 Desencriptando backup...");
 
-            const encrypted = fs.readFileSync(filePath, 'utf8');
+            const encrypted = fs.readFileSync(tempFile, 'utf8');
             const decryptionKey = options.decryptionKey || options.encryptionKey || DEFAULT_ENCRYPTION_KEY;
             const decryptedBuffer = decryptData(encrypted, decryptionKey);
 
-            tempFile = path.join(__dirname, `temp_restore_${Date.now()}.dump`);
+            tempFile = path.join(__dirname, `temp_restore_${Date.now()}.sql`);
             fs.writeFileSync(tempFile, decryptedBuffer);
 
             console.log("✅ Desencriptado OK");
@@ -130,32 +130,11 @@ const restoreBackup = async (databaseUrl, filePath, options = {}) => {
            💣 RESTORE REAL (PRO)
         ========================= */
 
-        const restoreArgs = [
+        execFileSync(psql, [
             '--dbname', databaseUrl,
-
-            '--clean',            // 🔥 DROP antes de crear
-            '--if-exists',        // evita errores si no existe
-            '--no-owner',
-            '--no-privileges',
-        ];
-
-        // Nota: `pg_restore --jobs` solo funciona con formato "directory".
-        // Si el backup es un archivo (custom), omite jobs para evitar fallos.
-        if (Number.isInteger(options.jobs) && options.jobs > 1) {
-            try {
-                if (fs.statSync(tempFile).isDirectory()) {
-                    restoreArgs.push(`--jobs=${options.jobs}`);
-                } else {
-                    console.warn("⚠️ Se ignoró options.jobs: el backup no es formato directory.");
-                }
-            } catch {
-                // si no se puede stat, no arriesgarse a romper el restore
-            }
-        }
-
-        restoreArgs.push(tempFile);
-
-        execFileSync(pgRestore, restoreArgs, {
+            '--set', 'ON_ERROR_STOP=on',
+            '--file', tempFile
+        ], {
             stdio: 'inherit' // 🔥 MUESTRA ERRORES REALES
         });
 
@@ -174,13 +153,86 @@ const restoreBackup = async (databaseUrl, filePath, options = {}) => {
         };
 
     } finally {
-        if (tempFile !== filePath && fs.existsSync(tempFile)) {
+        if (tempFile !== String(filePath) && fs.existsSync(tempFile)) {
             fs.unlinkSync(tempFile);
         }
     }
 };
 
+/* =========================
+   🌐 EXPRESS HANDLERS
+========================= */
+
+const getDatabaseUrl = () => {
+    const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL;
+    if (!databaseUrl) {
+        throw new Error("DATABASE_URL no está configurada en el servidor.");
+    }
+    return databaseUrl;
+};
+
+const generateBackup = async (req, res) => {
+    try {
+        const databaseUrl = getDatabaseUrl();
+        const encrypt = Boolean(req.body?.encrypt);
+        const encryptionKey = req.body?.encryptionKey;
+
+        const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const baseName = `backup_${stamp}.sql`;
+        const tempDir = fs.existsSync(path.join(process.cwd(), "uploads"))
+            ? path.join(process.cwd(), "uploads")
+            : os.tmpdir();
+        const outPath = path.join(tempDir, baseName);
+
+        const generatedPath = generateBackupFile(databaseUrl, outPath, { encrypt, encryptionKey });
+        const downloadName = encrypt ? `${baseName}.enc` : baseName;
+
+        res.setHeader("Content-Disposition", `attachment; filename="${downloadName}"`);
+        res.setHeader("Content-Type", encrypt ? "application/octet-stream" : "application/sql");
+
+        const stream = fs.createReadStream(generatedPath);
+        stream.on("close", () => {
+            fs.unlink(generatedPath, () => {});
+        });
+        stream.on("error", (e) => {
+            fs.unlink(generatedPath, () => {});
+            res.status(500).json({ error: e.message });
+        });
+        stream.pipe(res);
+    } catch (error) {
+        console.error("❌ Error generating backup:", error.message);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+const restoreBackup = async (req, res) => {
+    try {
+        const databaseUrl = getDatabaseUrl();
+        const filePath = req.file?.path;
+        if (!filePath) {
+            return res.status(400).json({ error: "No se recibió archivo (campo: backupFile)." });
+        }
+
+        const decryptionKey = req.body?.decryptionKey || req.body?.encryptionKey;
+        await restoreBackupFile(databaseUrl, filePath, { decryptionKey });
+
+        // borrar archivo subido por multer
+        fs.unlink(filePath, () => {});
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error("❌ Error restoring backup:", error.message);
+        if (req.file?.path) fs.unlink(req.file.path, () => {});
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 module.exports = {
+    // handlers (usados por Express routes)
     generateBackup,
-    restoreBackup
+    restoreBackup,
+
+    // helpers (por si se usan en otros módulos)
+    generateBackupFile,
+    restoreBackupFile,
 };
