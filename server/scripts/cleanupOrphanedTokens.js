@@ -3,15 +3,25 @@ const prisma = require('../utils/database');
 // Clean orphaned refresh tokens (tokens without valid user)
 const cleanupOrphanedTokens = async () => {
     try {
-        // Find tokens where userId doesn't exist in User table
-        const orphanedTokens = await prisma.refreshToken.findMany({
-            where: {
-                user: null
-            },
+        // Find all refresh tokens and check if their users exist
+        const allTokens = await prisma.refreshToken.findMany({
+            select: {
+                id: true,
+                userId: true
+            }
+        });
+
+        // Get all valid user IDs
+        const validUserIds = await prisma.user.findMany({
             select: {
                 id: true
             }
-        });
+        }).then(users => users.map(u => u.id));
+
+        // Filter tokens where userId doesn't exist in User table
+        const orphanedTokens = allTokens.filter(token => 
+            token.userId && !validUserIds.includes(token.userId)
+        );
 
         if (orphanedTokens.length > 0) {
             const tokenIds = orphanedTokens.map(t => t.id);
