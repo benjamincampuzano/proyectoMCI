@@ -49,11 +49,11 @@ const useUserManagement = () => {
         maritalStatus: '',
         network: '',
         pastorIds: [],
+        pastorSpouseIds: [],
         liderDoceIds: [],
+        liderDoceSpouseIds: [],
         liderCelulaIds: [],
-        pastorId: '', // Keep for backward compatibility if needed by components
-        liderDoceId: '',
-        liderCelulaId: '',
+        liderCelulaSpouseIds: [],
         spouseId: '',
         isCoordinator: false,
         dataPolicyAccepted: false,
@@ -105,7 +105,7 @@ const useUserManagement = () => {
         try {
             const response = await api.get('/users?leadersOnly=true');
             const leadersData = response.data.users || response.data || [];
-
+            
             setAllLeaders({
                 pastores: leadersData.filter(u => u.roles?.includes('PASTOR')),
                 lideresDoce: leadersData.filter(u => u.roles?.includes('LIDER_DOCE')),
@@ -113,7 +113,6 @@ const useUserManagement = () => {
             });
         } catch (err) {
             console.error('Error fetching leaders:', err);
-            // Keep existing leaders on error
         }
     }, []);
 
@@ -177,22 +176,25 @@ const useUserManagement = () => {
                 payload.pastorIds = payload.pastorIds.map(id => parseInt(id)).filter(id => !isNaN(id));
             } else delete payload.pastorIds;
 
+            if (payload.pastorSpouseIds && payload.pastorSpouseIds.length > 0) {
+                payload.pastorSpouseIds = payload.pastorSpouseIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+            } else delete payload.pastorSpouseIds;
+
             if (payload.liderDoceIds && payload.liderDoceIds.length > 0) {
                 payload.liderDoceIds = payload.liderDoceIds.map(id => parseInt(id)).filter(id => !isNaN(id));
             } else delete payload.liderDoceIds;
+
+            if (payload.liderDoceSpouseIds && payload.liderDoceSpouseIds.length > 0) {
+                payload.liderDoceSpouseIds = payload.liderDoceSpouseIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+            } else delete payload.liderDoceSpouseIds;
 
             if (payload.liderCelulaIds && payload.liderCelulaIds.length > 0) {
                 payload.liderCelulaIds = payload.liderCelulaIds.map(id => parseInt(id)).filter(id => !isNaN(id));
             } else delete payload.liderCelulaIds;
 
-            // Handle legacy single IDs if they were set instead of arrays
-            if (payload.pastorId && (!payload.pastorIds || payload.pastorIds.length === 0)) payload.pastorIds = [parseInt(payload.pastorId)].filter(id => !isNaN(id));
-            if (payload.liderDoceId && (!payload.liderDoceIds || payload.liderDoceIds.length === 0)) payload.liderDoceIds = [parseInt(payload.liderDoceId)].filter(id => !isNaN(id));
-            if (payload.liderCelulaId && (!payload.liderCelulaIds || payload.liderCelulaIds.length === 0)) payload.liderCelulaIds = [parseInt(payload.liderCelulaId)].filter(id => !isNaN(id));
-
-            delete payload.pastorId;
-            delete payload.liderDoceId;
-            delete payload.liderCelulaId;
+            if (payload.liderCelulaSpouseIds && payload.liderCelulaSpouseIds.length > 0) {
+                payload.liderCelulaSpouseIds = payload.liderCelulaSpouseIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+            } else delete payload.liderCelulaSpouseIds;
 
             if (payload.spouseId) payload.spouseId = parseInt(payload.spouseId);
             else delete payload.spouseId;
@@ -209,8 +211,9 @@ const useUserManagement = () => {
                 email: '', password: '', role: 'DISCIPULO',
                 sex: '', phone: '', address: '', city: '', neighborhood: '',
                 maritalStatus: '', network: '',
-                pastorIds: [], liderDoceIds: [], liderCelulaIds: [],
-                pastorId: '', liderDoceId: '', liderCelulaId: '',
+                pastorIds: [], pastorSpouseIds: [],
+                liderDoceIds: [], liderDoceSpouseIds: [],
+                liderCelulaIds: [], liderCelulaSpouseIds: [],
                 spouseId: '',
                 dataPolicyAccepted: false, dataTreatmentAuthorized: false, minorConsentAuthorized: false
             });
@@ -239,8 +242,11 @@ const useUserManagement = () => {
                 maritalStatus: editingUser.maritalStatus || null,
                 network: editingUser.network || null,
                 pastorIds: (editingUser.pastorIds || []).map(id => parseInt(id)).filter(id => !isNaN(id)),
+                pastorSpouseIds: (editingUser.pastorSpouseIds || []).map(id => parseInt(id)).filter(id => !isNaN(id)),
                 liderDoceIds: (editingUser.liderDoceIds || []).map(id => parseInt(id)).filter(id => !isNaN(id)),
+                liderDoceSpouseIds: (editingUser.liderDoceSpouseIds || []).map(id => parseInt(id)).filter(id => !isNaN(id)),
                 liderCelulaIds: (editingUser.liderCelulaIds || []).map(id => parseInt(id)).filter(id => !isNaN(id)),
+                liderCelulaSpouseIds: (editingUser.liderCelulaSpouseIds || []).map(id => parseInt(id)).filter(id => !isNaN(id)),
                 spouseId: editingUser.spouseId ? parseInt(editingUser.spouseId) : null,
                 isCoordinator: editingUser.isCoordinator || false,
                 birthDate: editingUser.birthDate,

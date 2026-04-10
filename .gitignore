@@ -151,4 +151,4 @@ client/tests/test-*.json
 client/tests/run-all-tests.*
 
 server/nul
-error.txt
+

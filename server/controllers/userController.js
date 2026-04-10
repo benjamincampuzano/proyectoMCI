@@ -47,13 +47,34 @@ const formatUser = (user) => {
     let pastorId = null;
     let liderDoceId = null;
     let liderCelulaId = null;
+    let pastorIds = [];
+    let liderDoceIds = [];
+    let liderCelulaIds = [];
+    let pastorSpouseIds = [];
+    let liderDoceSpouseIds = [];
+    let liderCelulaSpouseIds = [];
 
     // Handle parents field gracefully - default to empty array if not included
     const parents = user.parents || [];
     if (parents.length > 0) {
+        // Legacy single IDs
         pastorId = parents.find(p => p.role === 'PASTOR')?.parentId || null;
         liderDoceId = parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null;
         liderCelulaId = parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null;
+        
+        // New array format
+        pastorIds = parents.filter(p => p.role === 'PASTOR').map(p => p.parentId);
+        liderDoceIds = parents.filter(p => p.role === 'LIDER_DOCE').map(p => p.parentId);
+        liderCelulaIds = parents.filter(p => p.role === 'LIDER_CELULA').map(p => p.parentId);
+    }
+
+    // Get spouse info from the user object
+    if (user.spouse && user.spouse.id) {
+        const spouseId = user.spouse.id;
+        // Add spouse ID to the appropriate spouse array as array
+        pastorSpouseIds = [spouseId];
+        liderDoceSpouseIds = [spouseId];
+        liderCelulaSpouseIds = [spouseId];
     }
 
     // Roles secundarios derivados de relaciones funcionales (no de UserRole)
@@ -104,6 +125,12 @@ const formatUser = (user) => {
         pastorId,
         liderDoceId,
         liderCelulaId,
+        pastorIds,
+        liderDoceIds,
+        liderCelulaIds,
+        pastorSpouseIds,
+        liderDoceSpouseIds,
+        liderCelulaSpouseIds,
         isCoordinator: user.isCoordinator || (user.moduleCoordinations && user.moduleCoordinations.length > 0),
         isModuleTreasurer: user.moduleTreasurers && user.moduleTreasurers.length > 0,
         moduleCoordinations: user.moduleCoordinations?.map(mc => mc.moduleName) || [],
@@ -305,7 +332,8 @@ const getAllUsers = async (req, res) => {
                 include: {
                     profile: true,
                     roles: { include: { role: true } },
-                    parents: { include: { parent: { include: { profile: true } } } }
+                    parents: { include: { parent: { include: { profile: true } } } },
+                    spouse: true
                 },
                 orderBy: { profile: { fullName: 'asc' } }
             });
@@ -393,7 +421,9 @@ const getAllUsers = async (req, res) => {
                     moduleCoordinations: true,
                     moduleTreasurers: true,
                     professorModules: { select: { id: true, name: true } },
-                    auxiliaryModules: { select: { id: true, name: true } }
+                    auxiliaryModules: { select: { id: true, name: true } },
+                    parents: { include: { parent: { include: { profile: true } } } },
+                    spouse: true
                 },
                 orderBy: { id: 'desc' }
             };
@@ -663,7 +693,7 @@ const updateUser = async (req, res) => {
             return res.status(403).json({ message: permission.reason });
         }
 
-        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, maritalStatus, network, isCoordinator, spouseId } = req.body;
+        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, isCoordinator, spouseId } = req.body;
 
         if (email) {
             const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -751,13 +781,13 @@ const updateUser = async (req, res) => {
 
             // 3. Update Hierarchy if leaders provided
             const hierarchyEntries = [
-                { ids: pastorIds || (pastorId ? [pastorId] : undefined), role: 'PASTOR' },
-                { ids: liderDoceIds || (liderDoceId ? [liderDoceId] : undefined), role: 'LIDER_DOCE' },
-                { ids: liderCelulaIds || (liderCelulaId ? [liderCelulaId] : undefined), role: 'LIDER_CELULA' }
+                { ids: pastorIds || (pastorId ? [pastorId] : undefined), spouseIds: pastorSpouseIds || [], role: 'PASTOR' },
+                { ids: liderDoceIds || (liderDoceId ? [liderDoceId] : undefined), spouseIds: liderDoceSpouseIds || [], role: 'LIDER_DOCE' },
+                { ids: liderCelulaIds || (liderCelulaId ? [liderCelulaId] : undefined), spouseIds: liderCelulaSpouseIds || [], role: 'LIDER_CELULA' }
             ];
 
             // If any of these are explicitly passed (even as null/empty to remove), we update
-            if (pastorId !== undefined || liderDoceId !== undefined || liderCelulaId !== undefined || pastorIds !== undefined || liderDoceIds !== undefined || liderCelulaIds !== undefined || parentId !== undefined) {
+            if (pastorId !== undefined || liderDoceId !== undefined || liderCelulaId !== undefined || pastorIds !== undefined || liderDoceIds !== undefined || liderCelulaIds !== undefined || parentId !== undefined || pastorSpouseIds !== undefined || liderDoceSpouseIds !== undefined || liderCelulaSpouseIds !== undefined) {
                 // For backward compatibility or general cleanup, if parentId is passed as the primary way
                 if (parentId !== undefined && !pastorId && !liderDoceId && !liderCelulaId && !pastorIds && !liderDoceIds && !liderCelulaIds) {
                     await tx.userHierarchy.deleteMany({ where: { childId: userId } });
@@ -779,11 +809,27 @@ const updateUser = async (req, res) => {
                                 where: { childId: userId, role: entry.role }
                             });
 
+                            // Process main leaders
                             const ids = Array.isArray(entry.ids) ? entry.ids : [entry.ids];
                             for (const idToAssign of ids.filter(Boolean)) {
                                 await tx.userHierarchy.create({
                                     data: {
                                         parentId: parseInt(idToAssign),
+                                        childId: userId,
+                                        role: entry.role
+                                    }
+                                });
+                            }
+
+                            // Process spouse IDs - filter out duplicates with main leaders
+                            const spouseIds = Array.isArray(entry.spouseIds) ? entry.spouseIds : [entry.spouseIds];
+                            const mainIds = (Array.isArray(entry.ids) ? entry.ids : [entry.ids]).map(id => parseInt(id));
+                            for (const spouseIdToAssign of spouseIds.filter(Boolean)) {
+                                // Skip if this spouse is already in the main IDs (compare as integers)
+                                if (mainIds.includes(parseInt(spouseIdToAssign))) continue;
+                                await tx.userHierarchy.create({
+                                    data: {
+                                        parentId: parseInt(spouseIdToAssign),
                                         childId: userId,
                                         role: entry.role
                                     }
@@ -858,7 +904,7 @@ const updateUser = async (req, res) => {
 // Admin: Crear nuevo usuario
 const createUser = async (req, res) => {
     try {
-        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, maritalStatus, network, generateTempPassword, mustChangePassword, spouseId } = req.body;
+        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, generateTempPassword, mustChangePassword, spouseId } = req.body;
 
         if (!email || !fullName) {
             return res.status(400).json({ message: 'Email and full name are required' });
@@ -964,17 +1010,33 @@ const createUser = async (req, res) => {
 
             // Create hierarchy for all provided leaders
             const hierarchyEntries = [
-                { ids: pastorIds || (pastorId ? [pastorId] : []), role: 'PASTOR' },
-                { ids: liderDoceIds || (liderDoceId ? [liderDoceId] : []), role: 'LIDER_DOCE' },
-                { ids: liderCelulaIds || (liderCelulaId ? [liderCelulaId] : []), role: 'LIDER_CELULA' }
+                { ids: pastorIds || (pastorId ? [pastorId] : []), spouseIds: pastorSpouseIds || [], role: 'PASTOR' },
+                { ids: liderDoceIds || (liderDoceId ? [liderDoceId] : []), spouseIds: liderDoceSpouseIds || [], role: 'LIDER_DOCE' },
+                { ids: liderCelulaIds || (liderCelulaId ? [liderCelulaId] : []), spouseIds: liderCelulaSpouseIds || [], role: 'LIDER_CELULA' }
             ];
 
             for (const entry of hierarchyEntries) {
+                // Process main leaders
                 const ids = Array.isArray(entry.ids) ? entry.ids : [entry.ids];
                 for (const idToAssign of ids.filter(Boolean)) {
                     await tx.userHierarchy.create({
                         data: {
                             parentId: parseInt(idToAssign),
+                            childId: newUser.id,
+                            role: entry.role
+                        }
+                    });
+                }
+
+                // Process spouse IDs - filter out duplicates with main leaders
+                const spouseIds = Array.isArray(entry.spouseIds) ? entry.spouseIds : [entry.spouseIds];
+                const mainIds = (Array.isArray(entry.ids) ? entry.ids : [entry.ids]).map(id => parseInt(id));
+                for (const spouseIdToAssign of spouseIds.filter(Boolean)) {
+                    // Skip if this spouse is already in the main IDs (compare as integers)
+                    if (mainIds.includes(parseInt(spouseIdToAssign))) continue;
+                    await tx.userHierarchy.create({
+                        data: {
+                            parentId: parseInt(spouseIdToAssign),
                             childId: newUser.id,
                             role: entry.role
                         }

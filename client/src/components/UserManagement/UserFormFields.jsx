@@ -217,21 +217,25 @@ const UserFormFields = ({
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Pastor ({index + 1})</label>
                                     <select
                                         className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                        value={formData.pastorIds?.[index] || ''}
+                                        value={(formData.pastorIds || [])[index] || ''}
                                         onChange={e => {
                                             const val = e.target.value;
-                                            const newIds = [...(formData.pastorIds || [])];
-                                            newIds[index] = val;
-                                            const filteredIds = newIds.filter(Boolean);
-
-                                            // Auto-select spouse
-                                            if (val && filteredIds.length < 2) {
+                                            const newPastorIds = [...(formData.pastorIds || [])];
+                                            newPastorIds[index] = val;
+                                            
+                                            let newPastorSpouseIds = [...(formData.pastorSpouseIds || [])];
+                                            if (val) {
                                                 const selected = pastores.find(p => p.id === parseInt(val));
-                                                if (selected?.spouseId && !filteredIds.includes(selected.spouseId.toString())) {
-                                                    filteredIds.push(selected.spouseId.toString());
+                                                if (selected?.spouseId) {
+                                                    newPastorSpouseIds[index] = selected.spouseId.toString();
                                                 }
                                             }
-                                            setFormData({ ...formData, pastorIds: Array.from(new Set(filteredIds)) });
+                                            
+                                            setFormData({
+                                                ...formData,
+                                                pastorIds: newPastorIds,
+                                                pastorSpouseIds: newPastorSpouseIds,
+                                            });
                                         }}
                                     >
                                         <option value="">-- Sin Asignar --</option>
@@ -250,20 +254,25 @@ const UserFormFields = ({
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12 ({index + 1})</label>
                                     <select
                                         className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                        value={formData.liderDoceIds?.[index] || ''}
+                                        value={(formData.liderDoceIds || [])[index] || ''}
                                         onChange={e => {
                                             const val = e.target.value;
-                                            const newIds = [...(formData.liderDoceIds || [])];
-                                            newIds[index] = val;
-                                            const filteredIds = newIds.filter(Boolean);
-
-                                            if (val && filteredIds.length < 2) {
+                                            const newLiderDoceIds = [...(formData.liderDoceIds || [])];
+                                            newLiderDoceIds[index] = val;
+                                            
+                                            let newLiderDoceSpouseIds = [...(formData.liderDoceSpouseIds || [])];
+                                            if (val) {
                                                 const selected = lideresDoce.find(l => l.id === parseInt(val));
-                                                if (selected?.spouseId && !filteredIds.includes(selected.spouseId.toString())) {
-                                                    filteredIds.push(selected.spouseId.toString());
+                                                if (selected?.spouseId) {
+                                                    newLiderDoceSpouseIds[index] = selected.spouseId.toString();
                                                 }
                                             }
-                                            setFormData({ ...formData, liderDoceIds: Array.from(new Set(filteredIds)) });
+                                            
+                                            setFormData({
+                                                ...formData,
+                                                liderDoceIds: newLiderDoceIds,
+                                                liderDoceSpouseIds: newLiderDoceSpouseIds,
+                                            });
                                         }}
                                     >
                                         <option value="">-- Sin Asignar --</option>
@@ -282,20 +291,25 @@ const UserFormFields = ({
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula ({index + 1})</label>
                                     <select
                                         className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                        value={formData.liderCelulaIds?.[index] || ''}
+                                        value={(formData.liderCelulaIds || [])[index] || ''}
                                         onChange={e => {
                                             const val = e.target.value;
-                                            const newIds = [...(formData.liderCelulaIds || [])];
-                                            newIds[index] = val;
-                                            const filteredIds = newIds.filter(Boolean);
-
-                                            if (val && filteredIds.length < 2) {
+                                            const newLiderCelulaIds = [...(formData.liderCelulaIds || [])];
+                                            newLiderCelulaIds[index] = val;
+                                            
+                                            let newLiderCelulaSpouseIds = [...(formData.liderCelulaSpouseIds || [])];
+                                            if (val) {
                                                 const selected = lideresCelula.find(lc => lc.id === parseInt(val));
-                                                if (selected?.spouseId && !filteredIds.includes(selected.spouseId.toString())) {
-                                                    filteredIds.push(selected.spouseId.toString());
+                                                if (selected?.spouseId) {
+                                                    newLiderCelulaSpouseIds[index] = selected.spouseId.toString();
                                                 }
                                             }
-                                            setFormData({ ...formData, liderCelulaIds: Array.from(new Set(filteredIds)) });
+                                            
+                                            setFormData({
+                                                ...formData,
+                                                liderCelulaIds: newLiderCelulaIds,
+                                                liderCelulaSpouseIds: newLiderCelulaSpouseIds,
+                                            });
                                         }}
                                     >
                                         <option value="">-- Sin Asignar --</option>

@@ -12,7 +12,12 @@ export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allU
   // Verificar permisos del usuario actual
   const hasAssignmentPermission = currentUser ? canManageAssignments(currentUser) : false;
   
-  const unassigned = useMemo(() => getUnassignedUsers({ allUsers, coupleRoot }), [allUsers, coupleRoot]);
+  const unassigned = useMemo(() => {
+    console.log('UnassignedUsersModal - allUsers:', allUsers?.length, 'coupleRoot:', coupleRoot?.id);
+    const result = getUnassignedUsers({ allUsers, coupleRoot });
+    console.log('UnassignedUsersModal - result:', result.length, 'users');
+    return result;
+  }, [allUsers, coupleRoot]);
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     if (!s) return unassigned;

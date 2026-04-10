@@ -29,13 +29,21 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     const fullNetwork = buildCoupleNetwork(network);
     return getRootNodeForRole(fullNetwork, currentUser);
   }, [network, currentUser]);
-  const unassigned = useMemo(() => getUnassignedUsers({ allUsers, coupleRoot }), [allUsers, coupleRoot]);
+  
+  const unassigned = useMemo(() => {
+    const result = getUnassignedUsers({ allUsers, coupleRoot });
+    console.log('NetworkTree - getUnassignedUsers:', result.length, 'users');
+    return result;
+  }, [allUsers, coupleRoot]);
 
   useEffect(() => {
     (async () => {
       try {
-        const response = await api.get('/users');
-        setAllUsers(Array.isArray(response.data) ? response.data : []);
+        // Obtener todos los usuarios sin límite (usar limite muy alto)
+        const response = await api.get('/users?limit=99999');
+        const usersData = response.data?.users || response.data || [];
+        setAllUsers(Array.isArray(usersData) ? usersData : []);
+        console.log('NetworkTree - loaded users:', usersData.length);
       } catch (error) {
         console.error('Error loading users:', error);
         setAllUsers([]);
