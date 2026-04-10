@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "postgresql"]
+nixPkgs = ["postgresql"]
 aptPkgs = ["postgresql-client"]
 
 [phases.build]
@@ -11,3 +11,4 @@ cmds = [
 
 [start]
 cmd = "cd server && npm start"
+
