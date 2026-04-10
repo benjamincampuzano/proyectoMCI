@@ -1,6 +1,6 @@
-FROM node:18-alpine
+FROM node:18-bookworm
 
-RUN apk add --no-cache postgresql17-client
+RUN apt-get update && apt-get install -y postgresql-client-18 && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
