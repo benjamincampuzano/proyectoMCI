@@ -1,47 +1,8 @@
 const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 const os = require("os");
 require("dotenv").config();
-
-const DEFAULT_ENCRYPTION_KEY = process.env.BACKUP_ENCRYPTION_KEY || 'default-backup-key-32chars!!';
-const IV_LENGTH = 16;
-const ALGORITHM = 'aes-256-cbc';
-
-/* =========================
-   🔐 ENCRIPTACIÓN
-========================= */
-
-const encryptData = (data, encryptionKey) => {
-    const key = encryptionKey || DEFAULT_ENCRYPTION_KEY;
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const derivedKey = crypto.scryptSync(key, 'salt', 32);
-
-    const cipher = crypto.createCipheriv(ALGORITHM, derivedKey, iv);
-    let encrypted = cipher.update(data);
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-
-    return iv.toString('hex') + ':' + encrypted.toString('hex');
-};
-
-const decryptData = (encryptedData, encryptionKey) => {
-    const key = encryptionKey || DEFAULT_ENCRYPTION_KEY;
-    const [ivHex, contentHex] = String(encryptedData).split(':');
-    if (!ivHex || !contentHex) {
-        throw new Error("Formato de backup encriptado inválido (se esperaba 'iv:contenido').");
-    }
-
-    const iv = Buffer.from(ivHex, 'hex');
-    const content = Buffer.from(contentHex, 'hex');
-    const derivedKey = crypto.scryptSync(key, 'salt', 32);
-
-    const decipher = crypto.createDecipheriv(ALGORITHM, derivedKey, iv);
-    let decrypted = decipher.update(content);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-
-    return decrypted;
-};
 
 /* =========================
    🔍 UTILIDAD
@@ -61,7 +22,7 @@ const findExecutable = (exeName) => {
    📦 BACKUP (pg_dump plain SQL)
 ========================= */
 
-const generateBackupFile = (databaseUrl, filePath, options = {}) => {
+const generateBackupFile = (databaseUrl, filePath) => {
     const pgDump = findExecutable('pg_dump');
 
     console.log("📦 Generando backup en SQL (plain)...");
@@ -83,19 +44,6 @@ const generateBackupFile = (databaseUrl, filePath, options = {}) => {
 
     console.log("✅ Backup generado:", filePath);
 
-    /* 🔐 Encriptar opcional */
-    if (options.encrypt) {
-        const encryptionKey = options.encryptionKey || DEFAULT_ENCRYPTION_KEY;
-        const raw = fs.readFileSync(filePath);
-        const encrypted = encryptData(raw, encryptionKey);
-
-        fs.writeFileSync(filePath + '.enc', encrypted);
-        fs.unlinkSync(filePath);
-
-        console.log("🔐 Backup encriptado generado");
-        return filePath + '.enc';
-    }
-
     return filePath;
 };
 
@@ -105,30 +53,26 @@ const generateBackupFile = (databaseUrl, filePath, options = {}) => {
 
 const restoreBackupFile = async (databaseUrl, filePath, options = {}) => {
     const psql = findExecutable('psql');
-    let tempFile = String(filePath);
+    const tempFile = String(filePath);
+    const shouldClean = options.cleanBeforeRestore !== false;
 
     try {
         console.log("🔄 Restauración PRO iniciada...");
 
         /* =========================
-           🔓 DESENCRIPTAR SI ES NECESARIO
-        ========================= */
-        if (tempFile.endsWith('.enc')) {
-            console.log("🔐 Desencriptando backup...");
-
-            const encrypted = fs.readFileSync(tempFile, 'utf8');
-            const decryptionKey = options.decryptionKey || options.encryptionKey || DEFAULT_ENCRYPTION_KEY;
-            const decryptedBuffer = decryptData(encrypted, decryptionKey);
-
-            tempFile = path.join(__dirname, `temp_restore_${Date.now()}.sql`);
-            fs.writeFileSync(tempFile, decryptedBuffer);
-
-            console.log("✅ Desencriptado OK");
-        }
-
-        /* =========================
            💣 RESTORE REAL (PRO)
         ========================= */
+
+        if (shouldClean) {
+            console.log("🧹 Limpiando esquema public antes de restaurar...");
+            execFileSync(psql, [
+                '--dbname', databaseUrl,
+                '--set', 'ON_ERROR_STOP=on',
+                '--command', 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;'
+            ], {
+                stdio: 'inherit'
+            });
+        }
 
         execFileSync(psql, [
             '--dbname', databaseUrl,
@@ -151,11 +95,6 @@ const restoreBackupFile = async (databaseUrl, filePath, options = {}) => {
             success: false,
             error: error.message
         };
-
-    } finally {
-        if (tempFile !== String(filePath) && fs.existsSync(tempFile)) {
-            fs.unlinkSync(tempFile);
-        }
     }
 };
 
@@ -171,11 +110,20 @@ const getDatabaseUrl = () => {
     return databaseUrl;
 };
 
+const toCliDatabaseUrl = (rawUrl) => {
+    try {
+        const parsed = new URL(rawUrl);
+        // `schema` es válido para algunos ORMs (ej. Prisma), pero no para `psql/pg_dump`.
+        parsed.searchParams.delete("schema");
+        return parsed.toString();
+    } catch {
+        return rawUrl;
+    }
+};
+
 const generateBackup = async (req, res) => {
     try {
-        const databaseUrl = getDatabaseUrl();
-        const encrypt = Boolean(req.body?.encrypt);
-        const encryptionKey = req.body?.encryptionKey;
+        const databaseUrl = toCliDatabaseUrl(getDatabaseUrl());
 
         const stamp = new Date().toISOString().replace(/[:.]/g, "-");
         const baseName = `backup_${stamp}.sql`;
@@ -184,11 +132,10 @@ const generateBackup = async (req, res) => {
             : os.tmpdir();
         const outPath = path.join(tempDir, baseName);
 
-        const generatedPath = generateBackupFile(databaseUrl, outPath, { encrypt, encryptionKey });
-        const downloadName = encrypt ? `${baseName}.enc` : baseName;
+        const generatedPath = generateBackupFile(databaseUrl, outPath);
 
-        res.setHeader("Content-Disposition", `attachment; filename="${downloadName}"`);
-        res.setHeader("Content-Type", encrypt ? "application/octet-stream" : "application/sql");
+        res.setHeader("Content-Disposition", `attachment; filename="${baseName}"`);
+        res.setHeader("Content-Type", "application/sql");
 
         const stream = fs.createReadStream(generatedPath);
         stream.on("close", () => {
@@ -207,14 +154,14 @@ const generateBackup = async (req, res) => {
 
 const restoreBackup = async (req, res) => {
     try {
-        const databaseUrl = getDatabaseUrl();
+        const databaseUrl = toCliDatabaseUrl(getDatabaseUrl());
         const filePath = req.file?.path;
         if (!filePath) {
             return res.status(400).json({ error: "No se recibió archivo (campo: backupFile)." });
         }
 
-        const decryptionKey = req.body?.decryptionKey || req.body?.encryptionKey;
-        await restoreBackupFile(databaseUrl, filePath, { decryptionKey });
+        const cleanBeforeRestore = req.body?.cleanBeforeRestore !== "false" && req.body?.cleanBeforeRestore !== false;
+        await restoreBackupFile(databaseUrl, filePath, { cleanBeforeRestore });
 
         // borrar archivo subido por multer
         fs.unlink(filePath, () => {});

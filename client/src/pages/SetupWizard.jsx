@@ -171,7 +171,7 @@ const SetupWizard = () => {
                                         onChange={handleChange}
                                         disabled={isFormDisabled()}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        placeholder="12345678"
+                                        placeholder="Numero de Documento"
                                     />
                                 </div>
                             </div>
@@ -187,7 +187,7 @@ const SetupWizard = () => {
                                         onChange={handleChange}
                                         disabled={isFormDisabled()}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        placeholder="Ej: Juan Pérez"
+                                        placeholder="Nombre Completo"
                                         required
                                     />
                                 </div>
@@ -233,7 +233,7 @@ const SetupWizard = () => {
                                         onChange={handleChange}
                                         disabled={isFormDisabled()}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        placeholder="admin@iglesia.com"
+                                        placeholder="Correo Electrónico"
                                         required
                                     />
                                 </div>
@@ -288,7 +288,7 @@ const SetupWizard = () => {
                                         onChange={handleChange}
                                         disabled={isFormDisabled()}
                                         className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        placeholder="+123456789"
+                                        placeholder="Telefono"
                                     />
                                 </div>
                             </div>
@@ -305,7 +305,7 @@ const SetupWizard = () => {
                                             onChange={handleChange}
                                             disabled={isFormDisabled()}
                                             className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            placeholder="Calle 123..."
+                                            placeholder="Direccion"
                                         />
                                     </div>
                                 </div>
@@ -321,7 +321,7 @@ const SetupWizard = () => {
                                             onChange={handleChange}
                                             disabled={isFormDisabled()}
                                             className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            placeholder="Bogotá"
+                                            placeholder="Ciudad"
                                         />
                                     </div>
                                 </div>

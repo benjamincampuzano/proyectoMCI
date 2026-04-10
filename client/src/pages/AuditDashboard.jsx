@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
     User, Calendar, FunnelIcon, MagnifyingGlassIcon, Download, Trash,
-    Pen, PlusCircle, CaretCircleDownIcon, ShieldCheck, SignInIcon, PulseIcon, BarbellIcon
+    Pen, PlusCircle, CaretCircleDownIcon, SignInIcon, PulseIcon, BarbellIcon, ShieldCheck
 } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import useAuditDashboard from '../hooks/useAuditDashboard';
@@ -26,22 +26,7 @@ const AuditDashboard = () => {
     const [restorePassword, setRestorePassword] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [requirePasswordConfirm, setRequirePasswordConfirm] = useState(true);
-    const [showEncryptionModal, setShowEncryptionModal] = useState(false);
-    const [encryptionKey, setEncryptionKey] = useState('');
-    const [shouldEncrypt, setShouldEncrypt] = useState(false);
-    const [decryptionKey, setDecryptionKey] = useState('');
     const memoizedStats = useMemo(() => stats, [stats]);
-
-    const handleDownloadBackupClick = () => {
-        setShouldEncrypt(false);
-        setEncryptionKey('');
-        setShowEncryptionModal(true);
-    };
-
-    const handleConfirmEncryption = async () => {
-        setShowEncryptionModal(false);
-        await performBackupDownload();
-    };
 
     const performBackupDownload = async () => {
         const button = document.getElementById('downloadBackupBtn');
@@ -53,12 +38,7 @@ const AuditDashboard = () => {
                 button.disabled = true;
             }
 
-            const requestBody = shouldEncrypt && encryptionKey ? {
-                encrypt: true,
-                encryptionKey: encryptionKey
-            } : {};
-
-            const response = await api.post('/audit/backup', requestBody, {
+            const response = await api.post('/audit/backup', {}, {
                 responseType: 'blob'
             });
 
@@ -82,9 +62,7 @@ const AuditDashboard = () => {
             a.remove();
             window.URL.revokeObjectURL(url_window);
 
-            toast.success(shouldEncrypt ? 
-                '✅ Backup encriptado descargado correctamente' : 
-                '✅ Backup SQL descargado - Compatible con cualquier PostgreSQL');
+            toast.success('✅ Backup SQL descargado - Compatible con cualquier PostgreSQL');
         } catch (error) {
             console.error('Error downloading backup:', error);
             toast.error(`❌ Error: ${error.response?.data?.error || error.message}`);
@@ -93,8 +71,6 @@ const AuditDashboard = () => {
                 button.innerHTML = originalText;
                 button.disabled = false;
             }
-            setShouldEncrypt(false);
-            setEncryptionKey('');
         }
     };
 
@@ -102,8 +78,8 @@ const AuditDashboard = () => {
         const file = event.target.files[0];
         if (!file) return;
 
-        if (!file.name.toLowerCase().endsWith('.sql') && !file.name.toLowerCase().endsWith('.enc')) {
-            toast.error('❌ Error: Solo se permiten archivos de backup SQL (.sql) o encriptados (.enc)');
+        if (!file.name.toLowerCase().endsWith('.sql')) {
+            toast.error('❌ Error: Solo se permiten archivos de backup SQL (.sql)');
             event.target.value = '';
             return;
         }
@@ -115,23 +91,7 @@ const AuditDashboard = () => {
             return;
         }
 
-        const isEncrypted = file.name.toLowerCase().endsWith('.enc');
-        
-        if (isEncrypted) {
-            const decryptionKey = window.prompt('El archivo está encriptado. Ingresa la clave de desencriptación:');
-            if (!decryptionKey) {
-                toast.error('❌ Necesitas la clave para restaurar un archivo encriptado');
-                event.target.value = '';
-                return;
-            }
-            setDecryptionKey(decryptionKey);
-        } else {
-            setDecryptionKey('');
-        }
-
-        toast.success(isEncrypted ? 
-            '✅ Archivo encriptado detectado - Iniciando restauración...' : 
-            '✅ Archivo SQL detectado - Iniciando restauración...');
+        toast.success('✅ Archivo SQL detectado - Iniciando restauración...');
 
         setPendingRestoreFile(file);
         setRestorePassword('');
@@ -166,10 +126,6 @@ const AuditDashboard = () => {
             const formData = new FormData();
             formData.append('backupFile', file);
             formData.append('password', restorePassword);
-            
-            if (decryptionKey) {
-                formData.append('decryptionKey', decryptionKey);
-            }
             
             const response = await api.post('/audit/restore', formData, {
                 timeout: 300000
@@ -682,7 +638,7 @@ const AuditDashboard = () => {
                         <div className="space-y-2">
                             <button
                                 id="downloadBackupBtn"
-                                onClick={handleDownloadBackupClick}
+                                onClick={performBackupDownload}
                                 className="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                             >
                                 <Download size={18} />
@@ -834,87 +790,6 @@ const AuditDashboard = () => {
                     </div>
             )}
         </ConfirmationModal>
-
-        {/* Modal para encriptación de backup */}
-        {showEncryptionModal && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                            <ShieldCheck size={24} className="text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                Encriptar Backup
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Opcional: Protege tu backup con una clave
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="flex items-center gap-2 mb-3 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={shouldEncrypt}
-                                onChange={(e) => {
-                                    setShouldEncrypt(e.target.checked);
-                                    if (!e.target.checked) setEncryptionKey('');
-                                }}
-                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                            />
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Encriptar archivo de backup
-                            </span>
-                        </label>
-
-                        {shouldEncrypt && (
-                            <div className="mt-3">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Clave de encriptación
-                                </label>
-                                <input
-                                    type="password"
-                                    value={encryptionKey}
-                                    onChange={(e) => setEncryptionKey(e.target.value)}
-                                    placeholder="Ingresa una clave segura"
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    minLength={4}
-                                />
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Mínimo 4 caracteres. Guarda esta clave, la necesitarás para restaurar.
-                                </p>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => {
-                                setShowEncryptionModal(false);
-                                setShouldEncrypt(false);
-                                setEncryptionKey('');
-                            }}
-                            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handleConfirmEncryption}
-                            disabled={shouldEncrypt && encryptionKey.length < 4}
-                            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                                shouldEncrypt && encryptionKey.length < 4
-                                    ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed'
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                            }`}
-                        >
-                            {shouldEncrypt ? 'Descargar Encriptado' : 'Descargar Backup'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
     </div >
 );
 };
