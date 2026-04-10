@@ -18,6 +18,16 @@ const findExecutable = (exeName) => {
     }
 };
 
+const withPgBinaryHint = (error, binaryName) => {
+    if (error && error.code === "ENOENT") {
+        throw new Error(
+            `No se encontró '${binaryName}' en el servidor. ` +
+            `En Railway instala postgresql-client (Nixpacks aptPkgs) y redeploy.`
+        );
+    }
+    throw error;
+};
+
 /* =========================
    📦 BACKUP (pg_dump plain SQL)
 ========================= */
@@ -32,15 +42,19 @@ const generateBackupFile = (databaseUrl, filePath) => {
         fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    execFileSync(pgDump, [
-        '--dbname', databaseUrl,
-        '--format=plain',
-        '--no-owner',
-        '--no-privileges',
-        '--file', filePath
-    ], {
-        stdio: 'inherit'
-    });
+    try {
+        execFileSync(pgDump, [
+            '--dbname', databaseUrl,
+            '--format=plain',
+            '--no-owner',
+            '--no-privileges',
+            '--file', filePath
+        ], {
+            stdio: 'inherit'
+        });
+    } catch (error) {
+        withPgBinaryHint(error, "pg_dump");
+    }
 
     console.log("✅ Backup generado:", filePath);
 
@@ -65,22 +79,30 @@ const restoreBackupFile = async (databaseUrl, filePath, options = {}) => {
 
         if (shouldClean) {
             console.log("🧹 Limpiando esquema public antes de restaurar...");
+            try {
+                execFileSync(psql, [
+                    '--dbname', databaseUrl,
+                    '--set', 'ON_ERROR_STOP=on',
+                    '--command', 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;'
+                ], {
+                    stdio: 'inherit'
+                });
+            } catch (error) {
+                withPgBinaryHint(error, "psql");
+            }
+        }
+
+        try {
             execFileSync(psql, [
                 '--dbname', databaseUrl,
                 '--set', 'ON_ERROR_STOP=on',
-                '--command', 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;'
+                '--file', tempFile
             ], {
-                stdio: 'inherit'
+                stdio: 'inherit' // 🔥 MUESTRA ERRORES REALES
             });
+        } catch (error) {
+            withPgBinaryHint(error, "psql");
         }
-
-        execFileSync(psql, [
-            '--dbname', databaseUrl,
-            '--set', 'ON_ERROR_STOP=on',
-            '--file', tempFile
-        ], {
-            stdio: 'inherit' // 🔥 MUESTRA ERRORES REALES
-        });
 
         console.log("✅ Restauración COMPLETA exitosa");
 

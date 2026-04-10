@@ -51,14 +51,14 @@ export function buildCoupleNetwork(root) {
     const partners = [];
     const pushPartner = (p) => {
       if (!p) return;
-      partners.push({ id: p.id, fullName: p.fullName, roles: Array.isArray(p.roles) ? p.roles : [] });
+      partners.push({ id: p.id, fullName: p.fullName, roles: Array.isArray(p.roles) ? p.roles : [], sex: p.profile?.sex });
     };
 
     if (Array.isArray(person.partners) && person.partners.length > 0) {
       // Use pre-grouped partners from API if available
       person.partners.forEach(p => {
         visited.add(String(p.id));
-        partners.push({ ...p, roles: Array.isArray(p.roles) ? p.roles : [] });
+        partners.push({ ...p, roles: Array.isArray(p.roles) ? p.roles : [], sex: p.profile?.sex });
       });
     } else {
       visited.add(pId);
@@ -74,6 +74,23 @@ export function buildCoupleNetwork(root) {
         }
       }
     }
+
+    // Sort partners: men (HOMBRE) first, then women (MUJER)
+    partners.sort((a, b) => {
+      // If both have the same sex, maintain original order
+      if (a.sex === b.sex) return 0;
+      
+      // HOMBRE comes before MUJER
+      if (a.sex === 'HOMBRE' && b.sex === 'MUJER') return -1;
+      if (a.sex === 'MUJER' && b.sex === 'HOMBRE') return 1;
+      
+      // If one has no sex, put it after the one with sex
+      if (a.sex && !b.sex) return -1;
+      if (!a.sex && b.sex) return 1;
+      
+      // If neither has sex, maintain original order
+      return 0;
+    });
 
     const roleUnion = Array.from(new Set(partners.flatMap(p => p.roles)));
 
