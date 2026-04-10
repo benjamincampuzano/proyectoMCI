@@ -1,6 +1,6 @@
 FROM node:18-alpine
 
-RUN apk add --no-cache postgresql18-client
+RUN apk add --no-cache postgresql17-client
 
 WORKDIR /app
 
