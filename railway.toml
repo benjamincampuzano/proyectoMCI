@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 
 [build.env]
-NIXPACKS_PKGS = "postgresql"
+NIXPACKS_APT_PKGS = "postgresql-client"
 
 [deploy]
 healthcheckPath = "/"
