@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["postgresql"]
+nixPkgs = ["postgresql", "nodejs"]
 aptPkgs = ["postgresql-client"]
 
 [phases.build]
