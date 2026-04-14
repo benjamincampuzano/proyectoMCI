@@ -1,6 +1,6 @@
-import { useReducer, useEffect, useRef, useState } from 'react';
+import { useReducer, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FloppyDisk, Spinner, X, MagnifyingGlassIcon, CaretDownIcon, UserPlus, ArrowLeft, ArrowsClockwiseIcon } from '@phosphor-icons/react';
+import { FloppyDisk, Spinner, X, MagnifyingGlassIcon, CaretDownIcon, UserPlus, ArrowLeft } from '@phosphor-icons/react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { DATA_POLICY_URL } from '../constants/policies';
@@ -18,10 +18,10 @@ const INITIAL_STATE = {
         neighborhood: '',
         prayerRequest: '',
         invitedById: null,
+        assignedToId: null,
         dataPolicyAccepted: false,
         dataTreatmentAuthorized: false,
         minorConsentAuthorized: false,
-        captchaAnswer: '',
     },
     loading: false,
     searchLoading: false,
@@ -58,7 +58,11 @@ const reducer = (state, action) => {
             return {
                 ...state,
                 selectedInviter: action.payload,
-                formData: { ...state.formData, invitedById: action.payload?.id || null }
+                formData: { 
+                    ...state.formData, 
+                    invitedById: action.payload?.id || null,
+                    assignedToId: action.payload?.id || null
+                }
             };
         case 'SET_DROPDOWN_OPEN':
             return { ...state, isDropdownOpen: action.payload };
@@ -73,26 +77,8 @@ const PublicGuestRegistration = () => {
     const navigate = useNavigate();
     const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
     const dropdownRef = useRef(null);
-    const [captcha, setCaptcha] = useState({ num1: 0, num2: 0, operator: '+' });
-
-    // Generate random captcha
-    const generateCaptcha = () => {
-        const operators = ['+', '-'];
-        const operator = operators[Math.floor(Math.random() * operators.length)];
-        let num1 = Math.floor(Math.random() * 10) + 1;
-        let num2 = Math.floor(Math.random() * 10) + 1;
-        
-        // Ensure subtraction doesn't result in negative
-        if (operator === '-' && num2 > num1) {
-            [num1, num2] = [num2, num1];
-        }
-        
-        setCaptcha({ num1, num2, operator });
-        dispatch({ type: 'SET_FIELD', field: 'captchaAnswer', value: '' });
-    };
 
     useEffect(() => {
-        generateCaptcha();
         
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -174,23 +160,10 @@ const PublicGuestRegistration = () => {
             return;
         }
 
-        // Verify captcha
-        const expectedAnswer = captcha.operator === '+' 
-            ? captcha.num1 + captcha.num2 
-            : captcha.num1 - captcha.num2;
-        
-        if (parseInt(formData.captchaAnswer) !== expectedAnswer) {
-            dispatch({ type: 'SET_ERROR', payload: 'Por favor resuelve correctamente el captcha' });
-            generateCaptcha();
-            return;
-        }
-
         dispatch({ type: 'SET_LOADING', payload: true });
 
         try {
-            // Remove captchaAnswer from data sent to backend
-            const { captchaAnswer, ...dataToSend } = formData;
-            await axios.post(`${API_URL}/auth/public/guests`, dataToSend);
+            await axios.post(`${API_URL}/auth/public/guests`, formData);
             const successMsg = '¡Invitado registrado exitosamente! Pronto nos pondremos en contacto contigo.';
             dispatch({ type: 'RESET_FORM', success: successMsg });
 
@@ -259,6 +232,7 @@ const PublicGuestRegistration = () => {
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
+                                placeholder={"Nombre"}
                                 className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
                                 required
                             />
@@ -271,6 +245,7 @@ const PublicGuestRegistration = () => {
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleChange}
+                                placeholder="Teléfono"
                                 className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
                                 required
                             />
@@ -315,7 +290,7 @@ const PublicGuestRegistration = () => {
                                 value={formData.address}
                                 onChange={handleChange}
                                 className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
-                                placeholder="Calle 123 #45-67"
+                                placeholder="Dirección"
                             />
                         </div>
                         <div>
@@ -327,10 +302,12 @@ const PublicGuestRegistration = () => {
                                 value={formData.city}
                                 onChange={handleChange}
                                 className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
-                                placeholder="Manizales"
+                                placeholder="Ciudad"
                             />
                         </div>
-                        <div>
+                        
+                    </div>
+<div>
                             <label htmlFor="neighborhood" className="block text-sm font-medium text-gray-400 mb-2">Barrio</label>
                             <input
                                 id="neighborhood"
@@ -342,8 +319,6 @@ const PublicGuestRegistration = () => {
                                 placeholder="Nombre del barrio"
                             />
                         </div>
-                    </div>
-
                     <div className="relative" ref={dropdownRef}>
                         <label className="block text-sm font-medium text-gray-400 mb-2">¿Quién te invitó? *</label>
                         <div
@@ -441,36 +416,7 @@ const PublicGuestRegistration = () => {
                         />
                     </div>
 
-                    {/* Captcha */}
-                    <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-700">
-                        <label className="block text-sm font-medium text-gray-400 mb-4">Verificación de Seguridad</label>
-                        <div className="flex items-center gap-4">
-                            <div className="bg-gray-800 px-4 py-2 rounded-lg border border-gray-600">
-                                <span className="text-white font-mono text-lg">
-                                    {captcha.num1} {captcha.operator} {captcha.num2} = ?
-                                </span>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={generateCaptcha}
-                                className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-                                title="Generar nuevo captcha"
-                            >
-                                <ArrowsClockwiseIcon size={20} />
-                            </button>
-                            <input
-                                type="text"
-                                name="captchaAnswer"
-                                value={formData.captchaAnswer}
-                                onChange={handleChange}
-                                placeholder="Respuesta"
-                                className="flex-1 bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
-                                required
-                            />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">Resuelve la operación para continuar</p>
-                    </div>
-
+                    
                     {/* Data Authorization Checks */}
                     <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-700 space-y-4">
                         <label className="flex items-start gap-4 cursor-pointer group">

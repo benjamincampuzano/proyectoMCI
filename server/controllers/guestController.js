@@ -799,7 +799,7 @@ const deleteVisit = async (req, res) => {
 // Crear invitado público (desde página de login)
 const createPublicGuest = async (req, res) => {
     try {
-        const { name, phone, address, city, prayerRequest, invitedById, sex, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
+        const { name, phone, address, city, prayerRequest, invitedById, sex, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized, assignedToId } = req.body;
 
         if (!name || !phone || !invitedById) {
             return res.status(400).json({ message: 'Name, phone and inviter are required' });
@@ -815,12 +815,13 @@ const createPublicGuest = async (req, res) => {
                 invitedById: parseInt(invitedById),
                 status: 'NUEVO',
                 sex: sex || null,
-                documentType: documentType && documentType.trim() !== "" ? documentType : null,
+                documentType: documentType && documentType.trim() !== "" && documentType !== "NO_SPECIFIED" ? documentType : null,
                 documentNumber: documentNumber || null,
                 birthDate: birthDate ? new Date(birthDate) : null,
                 dataPolicyAccepted: dataPolicyAccepted || false,
                 dataTreatmentAuthorized: dataTreatmentAuthorized || false,
                 minorConsentAuthorized: minorConsentAuthorized || false,
+                assignedToId: assignedToId ? parseInt(assignedToId) : null,
             }
         });
 
