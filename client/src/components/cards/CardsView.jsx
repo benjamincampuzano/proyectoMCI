@@ -25,7 +25,7 @@ export default function CardsView({ root, currentUser, onAddUser, onRemoveUser }
                     </div>
                     <div className="min-w-0">
                       <h4 className="font-semibold truncate text-gray-900 dark:text-gray-100">
-                        {node.partners.map(p => p.fullName).join(' & ')}
+                        {(node.partners || []).map(p => p.fullName).join(' & ')}
                       </h4>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {(node.roles || []).map(r => (
@@ -70,7 +70,7 @@ export default function CardsView({ root, currentUser, onAddUser, onRemoveUser }
                         <UserPlus size={12} />Agregar
                       </button>
                     )}
-                    {canRemove && node.partners.map(p => (
+                    {canRemove && (node.partners || []).map(p => (
                       <button 
                         key={p.id} 
                         onClick={() => onRemoveUser(p)} 

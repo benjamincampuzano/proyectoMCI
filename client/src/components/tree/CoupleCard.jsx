@@ -88,7 +88,7 @@ export default function CoupleCard({
   };
 
   const roles = node.roles || [];
-  const names = node.partners.map(p => p.fullName).join(' y ');
+  const names = (node.partners || []).map(p => p.fullName).join(' y ');
   
   // console.log('CoupleCard - DEBUG INFO:');
   // console.log('- node:', node);
@@ -109,8 +109,8 @@ export default function CoupleCard({
 
         {/* Avatars (semi-stacked) */}
         <div className="relative shrink-0 flex items-center pr-2">
-          <Avatar userId={node.partners[0]?.id} name={node.partners[0]?.fullName} size={10} />
-          {node.partners[1] && (
+          <Avatar userId={node.partners?.[0]?.id} name={node.partners?.[0]?.fullName} size={10} />
+          {node.partners?.[1] && (
             <div className="-ml-2 transition-transform group-hover:translate-x-1.5">
               <Avatar userId={node.partners[1]?.id} name={node.partners[1]?.fullName} size={10} />
             </div>
@@ -162,7 +162,7 @@ export default function CoupleCard({
             </button>
           )}
           {/* Remove buttons — inline, only when canRemove */}
-          {canRemove && node.partners.map(partner => (
+          {canRemove && (node.partners || []).map(partner => (
             <button
               key={partner.id}
               onClick={(e) => { e.stopPropagation(); onRemovePartner?.(partner); }}
