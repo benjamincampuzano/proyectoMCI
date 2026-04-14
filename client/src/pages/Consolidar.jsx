@@ -78,8 +78,6 @@ const Consolidar = () => {
         fetchSubCoordinator();
     }, []);
     const tabs = [
-        { id: 'tracking', label: 'Seguimiento de Invitados', component: GuestTracking },
-        { id: 'stats-tracking', label: 'Estadísticas de Invitados', component: GuestTrackingStats, roles: ROLE_GROUPS.CAN_VIEW_STATS },
         { id: 'attendance', label: 'Asistencia a la Iglesia', component: ChurchAttendance },
         { id: 'stats', label: 'Estadísticas de Asistencia', component: ChurchAttendanceChart, roles: ROLE_GROUPS.ALL_LEADERS }
     ];
@@ -122,7 +120,7 @@ const Consolidar = () => {
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="tracking" />
+            <TabNavigator tabs={tabs} initialTabId="attendance" />
         </div>
     );
 };

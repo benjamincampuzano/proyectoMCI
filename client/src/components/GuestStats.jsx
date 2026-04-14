@@ -8,6 +8,7 @@ import api from '../utils/api';
 const GuestStats = () => {
     const { user: currentUser } = useAuth();
     const [stats, setStats] = useState(null);
+    const [trackingStats, setTrackingStats] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [startDate, setStartDate] = useState('');
@@ -40,6 +41,14 @@ const GuestStats = () => {
             const res = await api.get(`/guests/stats?${params.toString()}`);
 
             setStats(res.data);
+            
+            try {
+                const url = `/consolidar/stats/guest-tracking${params.toString() ? '?' + params.toString() : ''}`;
+                const trackingRes = await api.get(url);
+                setTrackingStats(Array.isArray(trackingRes.data) ? trackingRes.data : []);
+            } catch (err) {
+                console.error('Error fetching guest tracking stats:', err);
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'Error al cargar estadísticas');
         } finally {
@@ -327,6 +336,65 @@ const GuestStats = () => {
                                                     <td className="px-4 py-3 text-gray-500 dark:text-gray-300">{index + 1}</td>
                                                     <td className="px-4 py-3 text-gray-900 dark:text-white">{inviter.name}</td>
                                                     <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-semibold">{inviter.count}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Reporte de Seguimiento por Líder */}
+                        {trackingStats && trackingStats.length > 0 && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-100 dark:border-gray-700 mt-6">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Reporte de Seguimiento por Líder</h3>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead className="bg-gray-50 dark:bg-gray-900/50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Líder</th>
+                                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
+                                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Llamadas (Sí/No)</th>
+                                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Visitas (Sí/No)</th>
+                                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">% Efectividad</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                            {trackingStats.map((row, idx) => (
+                                                <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                        {row.leaderName}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center text-sm text-gray-600 dark:text-gray-300">
+                                                        {row.total}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <span className="text-sm font-bold text-green-600 dark:text-green-400">{row.withCall}</span>
+                                                            <span className="text-gray-300 dark:text-gray-600">/</span>
+                                                            <span className="text-sm font-bold text-red-400 dark:text-red-500">{row.withoutCall}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <span className="text-sm font-bold text-purple-600 dark:text-purple-400">{row.withVisit}</span>
+                                                            <span className="text-gray-300 dark:text-gray-600">/</span>
+                                                            <span className="text-sm font-bold text-red-400 dark:text-red-500">{row.withoutVisit}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                                                                <div
+                                                                    className="bg-blue-600 h-full"
+                                                                    style={{ width: `${(row.total > 0 ? ((row.withCall + row.withVisit) / (row.total * 2)) * 100 : 0)}%` }}
+                                                                />
+                                                            </div>
+                                                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                                {row.total > 0 ? (((row.withCall + row.withVisit) / (row.total * 2)) * 100).toFixed(1) : 0}%
+                                                            </span>
+                                                        </div>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>

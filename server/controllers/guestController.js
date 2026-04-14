@@ -80,31 +80,44 @@ const getAllGuests = async (req, res) => {
         // Allow ADMIN to see everything like ADMIN
         if (roles.includes('ADMIN')) {
             securityFilter = {};
-        } else if (roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
-            const networkUserIds = await getUserNetwork(currentUserId);
-            securityFilter = {
-                OR: [
-                    { invitedById: { in: [...networkUserIds, currentUserId] } },
-                    { assignedToId: { in: [...networkUserIds, currentUserId] } }
-                ]
-            };
+        } else if (roles.includes('PASTOR')) {
+            // PASTOR can see all guests (like ADMIN)
+            securityFilter = {};
         } else {
-            securityFilter = {
-                OR: [
-                    {
-                        AND: [
-                            { invitedById: currentUserId },
-                            {
-                                OR: [
-                                    { assignedToId: null },
-                                    { assignedToId: currentUserId }
-                                ]
-                            }
-                        ]
-                    },
-                    { assignedToId: currentUserId }
-                ]
-            };
+            // Check if user is a module coordinator
+            const isModuleCoordinator = req.user.isModuleCoordinator || false;
+            
+            if (isModuleCoordinator && roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
+                // Module coordinators can see ALL guests in the system (for their module management)
+                securityFilter = {};
+            } else if (roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
+                // Regular leaders can only see guests from their network hierarchy
+                const networkUserIds = await getUserNetwork(currentUserId);
+                securityFilter = {
+                    OR: [
+                        { invitedById: { in: [...networkUserIds, currentUserId] } },
+                        { assignedToId: { in: [...networkUserIds, currentUserId] } }
+                    ]
+                };
+            } else {
+                // DISCIPULO and other roles can only see their own guests
+                securityFilter = {
+                    OR: [
+                        {
+                            AND: [
+                                { invitedById: currentUserId },
+                                {
+                                    OR: [
+                                        { assignedToId: null },
+                                        { assignedToId: currentUserId }
+                                    ]
+                                }
+                            ]
+                        },
+                        { assignedToId: currentUserId }
+                    ]
+                };
+            }
         }
 
         // Construir filtros de consulta
@@ -285,19 +298,44 @@ const updateGuest = async (req, res) => {
 
         let updateData = {};
         const isAdminValue = roles.includes('ADMIN');
-        const isNetworkLeader = roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
+        const isPastor = roles.includes('PASTOR');
+        const isModuleCoordinator = req.user.isModuleCoordinator || false;
+        const isNetworkLeader = roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA'].includes(r));
 
-        if (isAdminValue || isNetworkLeader) {
-            if (!isAdminValue) {
-                const networkUserIds = await getUserNetwork(currentUserId);
-                const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
-                    (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
-                    existingGuest.invitedById === currentUserId ||
-                    existingGuest.assignedToId === currentUserId;
+        if (isAdminValue || isPastor || (isModuleCoordinator && isNetworkLeader)) {
+            // Admin, Pastor, and Coordinators can edit any guest
+            // No additional checks needed for these roles
+            updateData = {
+                ...(name && { name }),
+                ...(phone && { phone }),
+                ...(address !== undefined && { address }),
+                ...(prayerRequest !== undefined && { prayerRequest }),
+                ...(status && { status }),
+                ...(invitedById && { invitedById: parseInt(invitedById) }),
+                ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
+                ...(called !== undefined && { called: Boolean(called) }),
+                ...(callObservation !== undefined && { callObservation }),
+                ...(visited !== undefined && { visited: Boolean(visited) }),
+                ...(visitObservation !== undefined && { visitObservation }),
+                ...(documentType !== undefined && { documentType: documentType && documentType.trim() !== "" ? documentType : null }),
+                ...(documentNumber !== undefined && { documentNumber }),
+                ...(birthDate !== undefined && { birthDate: birthDate ? new Date(birthDate) : null }),
+                ...(sex !== undefined && { sex }),
+                ...(city !== undefined && { city }),
+                ...(dataPolicyAccepted !== undefined && { dataPolicyAccepted: Boolean(dataPolicyAccepted) }),
+                ...(dataTreatmentAuthorized !== undefined && { dataTreatmentAuthorized: Boolean(dataTreatmentAuthorized) }),
+                ...(minorConsentAuthorized !== undefined && { minorConsentAuthorized: Boolean(minorConsentAuthorized) }),
+            };
+        } else if (isNetworkLeader) {
+            // Regular leaders can only edit guests in their network
+            const networkUserIds = await getUserNetwork(currentUserId);
+            const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
+                (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
+                existingGuest.invitedById === currentUserId ||
+                existingGuest.assignedToId === currentUserId;
 
-                if (!isInNetwork) {
-                    return res.status(403).json({ message: 'You can only update guests in your network' });
-                }
+            if (!isInNetwork) {
+                return res.status(403).json({ message: 'You can only update guests in your network' });
             }
 
             updateData = {
@@ -322,6 +360,7 @@ const updateGuest = async (req, res) => {
                 ...(minorConsentAuthorized !== undefined && { minorConsentAuthorized: Boolean(minorConsentAuthorized) }),
             };
         } else {
+            // DISCIPULO and other roles can only edit limited fields of guests they invited or are assigned to
             const canEdit = existingGuest.invitedById === currentUserId || existingGuest.assignedToId === currentUserId;
 
             if (!canEdit) {
@@ -376,12 +415,17 @@ const deleteGuest = async (req, res) => {
         }
 
         const isAdminValue = roles.includes('ADMIN');
-        const isNetworkLeader = roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
+        const isPastor = roles.includes('PASTOR');
+        const isModuleCoordinator = req.user.isModuleCoordinator || false;
+        const isNetworkLeader = roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA'].includes(r));
 
-        if (!isAdminValue) {
-            const networkUserIds = isNetworkLeader ? await getUserNetwork(currentUserId) : [];
-            const canDelete = isAdminValue ||
-                networkUserIds.includes(existingGuest.invitedById) ||
+        if (isAdminValue || isPastor || (isModuleCoordinator && isNetworkLeader)) {
+            // Admin, Pastor, and Coordinators can delete any guest
+            // No additional checks needed for these roles
+        } else if (isNetworkLeader) {
+            // Regular leaders can only delete guests in their network
+            const networkUserIds = await getUserNetwork(currentUserId);
+            const canDelete = networkUserIds.includes(existingGuest.invitedById) ||
                 (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
                 existingGuest.invitedById === currentUserId ||
                 existingGuest.assignedToId === currentUserId;
@@ -389,6 +433,9 @@ const deleteGuest = async (req, res) => {
             if (!canDelete) {
                 return res.status(403).json({ message: 'You can only delete guests in your network or that you invited' });
             }
+        } else {
+            // DISCIPULO and other roles cannot delete guests
+            return res.status(403).json({ message: 'DISCIPULO role does not have permission to delete guests' });
         }
 
         await prisma.guest.delete({
@@ -613,6 +660,142 @@ const addVisit = async (req, res) => {
     }
 };
 
+// Eliminar llamada de invitado
+const deleteCall = async (req, res) => {
+    try {
+        const { id, callId } = req.params;
+        const { roles, id: currentUserId } = req.user;
+
+        const guest = await prisma.guest.findUnique({
+            where: { id: parseInt(id) }
+        });
+
+        if (!guest) {
+            return res.status(404).json({ message: 'Guest not found' });
+        }
+
+        const call = await prisma.guestCall.findUnique({
+            where: { id: parseInt(callId) }
+        });
+
+        if (!call) {
+            return res.status(404).json({ message: 'Call not found' });
+        }
+
+        // Check permissions: ADMIN or module coordinator can delete
+        const isAdmin = roles.includes('ADMIN');
+        const isCoordinator = roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
+
+        if (!isAdmin && !isCoordinator) {
+            return res.status(403).json({ message: 'Only Admin or coordinators can delete calls' });
+        }
+
+        // If coordinator, check if the guest is in their network
+        if (!isAdmin && isCoordinator) {
+            const networkUserIds = await getUserNetwork(currentUserId);
+            const isInNetwork = networkUserIds.includes(guest.invitedById) ||
+                (guest.assignedToId && networkUserIds.includes(guest.assignedToId)) ||
+                guest.invitedById === currentUserId ||
+                guest.assignedToId === currentUserId;
+
+            if (!isInNetwork) {
+                return res.status(403).json({ message: 'You can only delete calls from guests in your network' });
+            }
+        }
+
+        await prisma.guestCall.delete({
+            where: { id: parseInt(callId) }
+        });
+
+        // Update guest status if there are no more calls
+        const remainingCalls = await prisma.guestCall.count({
+            where: { guestId: parseInt(id) }
+        });
+
+        if (remainingCalls === 0) {
+            await prisma.guest.update({
+                where: { id: parseInt(id) },
+                data: { called: false, status: 'NUEVO' }
+            });
+        }
+
+        await logActivity(currentUserId, 'DELETE', 'GUEST_CALL', parseInt(callId), { guestId: parseInt(id) }, req.ip, req.headers['user-agent']);
+
+        res.status(200).json({ message: 'Call deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Eliminar visita de invitado
+const deleteVisit = async (req, res) => {
+    try {
+        const { id, visitId } = req.params;
+        const { roles, id: currentUserId } = req.user;
+
+        const guest = await prisma.guest.findUnique({
+            where: { id: parseInt(id) }
+        });
+
+        if (!guest) {
+            return res.status(404).json({ message: 'Guest not found' });
+        }
+
+        const visit = await prisma.guestVisit.findUnique({
+            where: { id: parseInt(visitId) }
+        });
+
+        if (!visit) {
+            return res.status(404).json({ message: 'Visit not found' });
+        }
+
+        // Check permissions: ADMIN or module coordinator can delete
+        const isAdmin = roles.includes('ADMIN');
+        const isCoordinator = roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
+
+        if (!isAdmin && !isCoordinator) {
+            return res.status(403).json({ message: 'Only Admin or coordinators can delete visits' });
+        }
+
+        // If coordinator, check if the guest is in their network
+        if (!isAdmin && isCoordinator) {
+            const networkUserIds = await getUserNetwork(currentUserId);
+            const isInNetwork = networkUserIds.includes(guest.invitedById) ||
+                (guest.assignedToId && networkUserIds.includes(guest.assignedToId)) ||
+                guest.invitedById === currentUserId ||
+                guest.assignedToId === currentUserId;
+
+            if (!isInNetwork) {
+                return res.status(403).json({ message: 'You can only delete visits from guests in your network' });
+            }
+        }
+
+        await prisma.guestVisit.delete({
+            where: { id: parseInt(visitId) }
+        });
+
+        // Update guest status if there are no more visits
+        const remainingVisits = await prisma.guestVisit.count({
+            where: { guestId: parseInt(id) }
+        });
+
+        if (remainingVisits === 0) {
+            await prisma.guest.update({
+                where: { id: parseInt(id) },
+                data: { visited: false, status: guest.called ? 'CONTACTADO' : 'NUEVO' }
+            });
+        }
+
+        await logActivity(currentUserId, 'DELETE', 'GUEST_VISIT', parseInt(visitId), { guestId: parseInt(id) }, req.ip, req.headers['user-agent']);
+
+        res.status(200).json({ message: 'Visit deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // Crear invitado público (desde página de login)
 const createPublicGuest = async (req, res) => {
     try {
@@ -662,5 +845,7 @@ module.exports = {
     convertGuestToMember,
     addCall,
     addVisit,
+    deleteCall,
+    deleteVisit,
     createPublicGuest,
 };

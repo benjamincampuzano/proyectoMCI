@@ -58,6 +58,14 @@ const AsyncSearchSelect = ({
     }, []);
 
     const handleSearch = async (term) => {
+        // Don't search if term is empty or too short (backend requires at least 2 characters)
+        if (!term || term.trim().length < 2) {
+            setItems([]);
+            setError(null);
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
             setError(null);

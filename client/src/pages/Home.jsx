@@ -182,8 +182,8 @@ const Home = () => {
                                     <div className="mb-4">
                                         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
                                             {isSuperAdmin()
-                                                ? `Red de ${selectedLeader?.fullName}`
-                                                : 'Mi Red'
+                                                ? `Ministerio de ${selectedLeader?.fullName}`
+                                                : 'Mi Ministerio'
                                             }
                                         </h2>
                                     </div>
@@ -314,8 +314,9 @@ const Home = () => {
     return (
         <div className="space-y-8 pb-20">
             <PageHeader
-                title="Dashboard Principal"
-                description={`Bienvenido, ${user?.fullName}`}
+                title={`Bienvenido, ${user?.fullName}`}
+                description={`Proverbios 27:23 Sé diligente en conocer el estado de tus ovejas, y mira con cuidado por tus rebaños`}
+                action={``}
             />
 
             {/* Quick Actions FAB */}

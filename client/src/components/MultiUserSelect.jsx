@@ -42,27 +42,24 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
     }, [value]);
 
     const fetchUsers = async () => {
+        if (!searchTerm && !isOpen) return; // Don't fetch if closed and no search
+        
         setLoading(true);
         try {
-            const params = new URLSearchParams();
+            const params = {
+                search: searchTerm,
+                limit: 20
+            };
 
             if (roleFilter) {
-                params.append('role', roleFilter);
+                params.role = roleFilter;
             }
 
-            const url = `/users${params.toString() ? '?' + params.toString() : ''}`;
-            const res = await api.get(url);
-
-            let filteredUsers = Array.isArray(res.data?.users) ? res.data.users : [];
-            if (searchTerm) {
-                filteredUsers = filteredUsers.filter(user =>
-                    user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-                );
-            }
+            const res = await api.get('/users/search', { params });
+            let results = Array.isArray(res.data) ? res.data : [];
 
             // Filter out already selected users
-            filteredUsers = filteredUsers.filter(user => !value.includes(user.id));
+            const filteredUsers = results.filter(user => !value.includes(user.id));
 
             setUsers(filteredUsers);
         } catch (error) {
@@ -73,9 +70,18 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
     };
 
     const fetchSelectedUsers = async (userIds) => {
+        if (!userIds || userIds.length === 0) return;
+        
         try {
-            const res = await api.get('/users');
-
+            // Fetch users one by one or using search if many.
+            // For now, since we usually have few selected, and searching by ID isn't directly supported in a single call easily without a specific endpoint,
+            // we use the search endpoint with names or just accept the current limitation but optimized.
+            // Better: use /users and rely on backend pagination if it were better, 
+            // but for now let's use search with an empty term to get a subset or keep it simple if the list is small.
+            
+            // Optimization: If we have the users in the current 'users' list, we can take them.
+            // But usually we need to fetch them from DB for the initial load.
+            const res = await api.get('/users', { params: { limit: 100 } }); // Fetch a larger batch but not ALL if possible
             const selected = Array.isArray(res.data?.users) ? res.data.users.filter(user => userIds.includes(user.id)) : [];
             setSelectedUsers(selected);
         } catch (error) {

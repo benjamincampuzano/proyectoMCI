@@ -812,8 +812,16 @@ const updateUser = async (req, res) => {
                             // Process main leaders
                             const ids = Array.isArray(entry.ids) ? entry.ids : [entry.ids];
                             for (const idToAssign of ids.filter(Boolean)) {
-                                await tx.userHierarchy.create({
-                                    data: {
+                                await tx.userHierarchy.upsert({
+                                    where: {
+                                        parentId_childId_role: {
+                                            parentId: parseInt(idToAssign),
+                                            childId: userId,
+                                            role: entry.role
+                                        }
+                                    },
+                                    update: {},
+                                    create: {
                                         parentId: parseInt(idToAssign),
                                         childId: userId,
                                         role: entry.role
@@ -827,8 +835,16 @@ const updateUser = async (req, res) => {
                             for (const spouseIdToAssign of spouseIds.filter(Boolean)) {
                                 // Skip if this spouse is already in the main IDs (compare as integers)
                                 if (mainIds.includes(parseInt(spouseIdToAssign))) continue;
-                                await tx.userHierarchy.create({
-                                    data: {
+                                await tx.userHierarchy.upsert({
+                                    where: {
+                                        parentId_childId_role: {
+                                            parentId: parseInt(spouseIdToAssign),
+                                            childId: userId,
+                                            role: entry.role
+                                        }
+                                    },
+                                    update: {},
+                                    create: {
                                         parentId: parseInt(spouseIdToAssign),
                                         childId: userId,
                                         role: entry.role

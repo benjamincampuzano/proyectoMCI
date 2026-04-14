@@ -1,5 +1,7 @@
 import { FileSearchIcon, Funnel, X } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
+import { AsyncSearchSelect } from '../ui';
+import api from '../../utils/api';
 
 const UserFilters = ({
     searchTerm,
@@ -65,12 +67,14 @@ const UserFilters = ({
                 {/* Filtro de Líder 12 */}
                 <div className="relative">
                     <Funnel className={iconClass} size={16} />
-                    <select className={selectClass} value={liderDoceFilter} onChange={(e) => setLiderDoceFilter(e.target.value)}>
-                        <option value="">Todos los Líderes 12</option>
-                        {lideresDoce.map(l => (
-                            <option key={l.id} value={l.id}>{l.fullName}</option>
-                        ))}
-                    </select>
+                    <AsyncSearchSelect
+                        fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => res.data)}
+                        selectedValue={lideresDoce.find(l => l.id === parseInt(liderDoceFilter)) || (liderDoceFilter ? { id: parseInt(liderDoceFilter), fullName: 'Cargando...' } : null)}
+                        onSelect={(user) => setLiderDoceFilter(user?.id?.toString() || '')}
+                        placeholder="Todos los Líderes 12"
+                        labelKey="fullName"
+                        className="text-sm"
+                    />
                 </div>
             </div>
 

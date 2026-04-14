@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Phone, House, User, WhatsappLogoIcon,ChatCircle, ChatCircleDots, WarningCircleIcon, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon } from '@phosphor-icons/react';
+import { Phone, House, User, WhatsappLogoIcon,ChatCircle, ChatCircleDots, WarningCircleIcon, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon, Plus, Trash } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import ConfirmationModal from './ConfirmationModal';
 
 const GuestTracking = () => {
-    const { user } = useAuth();
+    const { user, hasRole, isAdmin, isCoordinator } = useAuth();
     const [guests, setGuests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedGuest, setSelectedGuest] = useState(null);
@@ -16,6 +17,10 @@ const GuestTracking = () => {
         date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
         observation: ''
     });
+    const [showDeleteCallConfirm, setShowDeleteCallConfirm] = useState(false);
+    const [showDeleteVisitConfirm, setShowDeleteVisitConfirm] = useState(false);
+    const [callToDelete, setCallToDelete] = useState(null);
+    const [visitToDelete, setVisitToDelete] = useState(null);
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -68,6 +73,57 @@ const GuestTracking = () => {
             console.error(`Error saving ${modalType}:`, error);
             toast.error('Error al guardar: ' + (error.response?.data?.message || error.message));
         }
+    };
+
+    const handleDeleteCall = (callId) => {
+        const call = selectedGuest.calls.find(c => c.id === callId);
+        setCallToDelete(call);
+        setShowDeleteCallConfirm(true);
+    };
+
+    const performDeleteCall = async () => {
+        try {
+            await api.delete(`/guests/${selectedGuest.id}/calls/${callToDelete.id}`);
+            toast.success('Llamada eliminada exitosamente');
+            // Update the selected guest to reflect the changes
+            const updatedGuest = { ...selectedGuest };
+            updatedGuest.calls = updatedGuest.calls.filter(call => call.id !== callToDelete.id);
+            setSelectedGuest(updatedGuest);
+            fetchGuests();
+            setShowDeleteCallConfirm(false);
+            setCallToDelete(null);
+        } catch (error) {
+            console.error('Error deleting call:', error);
+            toast.error('Error al eliminar llamada: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const handleDeleteVisit = (visitId) => {
+        const visit = selectedGuest.visits.find(v => v.id === visitId);
+        setVisitToDelete(visit);
+        setShowDeleteVisitConfirm(true);
+    };
+
+    const performDeleteVisit = async () => {
+        try {
+            await api.delete(`/guests/${selectedGuest.id}/visits/${visitToDelete.id}`);
+            toast.success('Visita eliminada exitosamente');
+            // Update the selected guest to reflect the changes
+            const updatedGuest = { ...selectedGuest };
+            updatedGuest.visits = updatedGuest.visits.filter(visit => visit.id !== visitToDelete.id);
+            setSelectedGuest(updatedGuest);
+            fetchGuests();
+            setShowDeleteVisitConfirm(false);
+            setVisitToDelete(null);
+        } catch (error) {
+            console.error('Error deleting visit:', error);
+            toast.error('Error al eliminar visita: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const canDeleteRecords = () => {
+        if (!user) return false;
+        return isAdmin() || isCoordinator();
     };
 
 
@@ -376,9 +432,20 @@ const GuestTracking = () => {
                                                     <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">
                                                         {format(new Date(call.date), "PPP p", { locale: es })}
                                                     </span>
-                                                    <span className="text-[10px] text-gray-500 uppercase font-semibold">
-                                                        Por: {call.caller?.fullName}
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] text-gray-500 uppercase font-semibold">
+                                                            Por: {call.caller?.fullName}
+                                                        </span>
+                                                        {canDeleteRecords() && (
+                                                            <button
+                                                                onClick={() => handleDeleteCall(call.id)}
+                                                                className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                                title="Eliminar llamada"
+                                                            >
+                                                                <Trash className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic border-l-2 border-gray-200 dark:border-gray-700 pl-3">
                                                     "{call.observation}"
@@ -407,9 +474,20 @@ const GuestTracking = () => {
                                                     <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">
                                                         {format(new Date(visit.date), "PPP p", { locale: es })}
                                                     </span>
-                                                    <span className="text-[10px] text-gray-500 uppercase font-semibold">
-                                                        Por: {visit.visitor?.fullName}
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] text-gray-500 uppercase font-semibold">
+                                                            Por: {visit.visitor?.fullName}
+                                                        </span>
+                                                        {canDeleteRecords() && (
+                                                            <button
+                                                                onClick={() => handleDeleteVisit(visit.id)}
+                                                                className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                                title="Eliminar visita"
+                                                            >
+                                                                <Trash className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic border-l-2 border-gray-200 dark:border-gray-700 pl-3">
                                                     "{visit.observation}"
@@ -435,6 +513,124 @@ const GuestTracking = () => {
                     </div>
                 </div>
             )}
+
+            {/* Delete Call Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteCallConfirm}
+                onClose={() => {
+                    setShowDeleteCallConfirm(false);
+                    setCallToDelete(null);
+                }}
+                onConfirm={performDeleteCall}
+                title="Eliminar Llamada"
+                message="¿Estás seguro de que deseas eliminar este registro de llamada?"
+                confirmText="Eliminar Llamada"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {callToDelete && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Fecha:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {format(new Date(callToDelete.date), "PPP 'a las' p", { locale: es })}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Realizada por:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {callToDelete.caller?.fullName || 'Usuario desconocido'}
+                                </span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-gray-600 dark:text-gray-400 mb-1">Observación:</span>
+                                <span className="font-medium text-gray-900 dark:text-white italic">
+                                    "{callToDelete.observation}"
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <div className="text-red-600 dark:text-red-400 mt-0.5">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                                ⚠️ Acción Irreversible
+                            </h4>
+                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                                <li>• Se eliminará el registro de la llamada</li>
+                                <li>• Se actualizará el estado del invitado</li>
+                                <li>• No se puede deshacer esta acción</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </ConfirmationModal>
+
+            {/* Delete Visit Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteVisitConfirm}
+                onClose={() => {
+                    setShowDeleteVisitConfirm(false);
+                    setVisitToDelete(null);
+                }}
+                onConfirm={performDeleteVisit}
+                title="Eliminar Visita"
+                message="¿Estás seguro de que deseas eliminar este registro de visita?"
+                confirmText="Eliminar Visita"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {visitToDelete && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Fecha:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {format(new Date(visitToDelete.date), "PPP 'a las' p", { locale: es })}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Realizada por:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {visitToDelete.visitor?.fullName || 'Usuario desconocido'}
+                                </span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-gray-600 dark:text-gray-400 mb-1">Observación:</span>
+                                <span className="font-medium text-gray-900 dark:text-white italic">
+                                    "{visitToDelete.observation}"
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <div className="text-red-600 dark:text-red-400 mt-0.5">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                                ⚠️ Acción Irreversible
+                            </h4>
+                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                                <li>• Se eliminará el registro de la visita</li>
+                                <li>• Se actualizará el estado del invitado</li>
+                                <li>• No se puede deshacer esta acción</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </ConfirmationModal>
         </div>
     );
 };

@@ -1,5 +1,7 @@
 import { Eye, EyeClosedIcon } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
+import { AsyncSearchSelect } from '../ui';
+import api from '../../utils/api';
 
 const UserFormFields = ({
     formData,
@@ -139,21 +141,21 @@ const UserFormFields = ({
             </div>
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Cónyuge (Opcional)</label>
-                <select
-                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                    value={formData.spouseId || ''}
-                    onChange={e => setFormData({ ...formData, spouseId: e.target.value })}
+                <AsyncSearchSelect
+                    fetchItems={(term) => {
+                        const params = { search: term };
+                        if (formData.sex === 'HOMBRE') params.sex = 'MUJER';
+                        else if (formData.sex === 'MUJER') params.sex = 'HOMBRE';
+                        
+                        return api.get('/users/search', { params })
+                            .then(res => (res.data || []).filter(u => u.id !== formData.id));
+                    }}
+                    selectedValue={users.find(u => u.id === parseInt(formData.spouseId)) || (formData.spouseId ? { id: formData.spouseId, fullName: 'Cargando...' } : null)}
+                    onSelect={(user) => setFormData({ ...formData, spouseId: user?.id || '' })}
+                    placeholder="Buscar cónyuge..."
+                    labelKey="fullName"
                     disabled={!['CASADO', 'UNION_LIBRE'].includes(formData.maritalStatus)}
-                >
-                    <option value="">-- Sin Cónyuge --</option>
-                    {users
-                        .filter(u => u.id !== formData.id)
-                        .sort((a, b) => a.fullName.localeCompare(b.fullName))
-                        .map(u => (
-                            <option key={u.id} value={u.id}>{u.fullName}</option>
-                        ))
-                    }
-                </select>
+                />
             </div>
             <div>
                 <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
@@ -215,20 +217,18 @@ const UserFormFields = ({
                             {[0, 1].map(index => (
                                 <div key={`pastor-${index}`}>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Pastor ({index + 1})</label>
-                                    <select
-                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                        value={(formData.pastorIds || [])[index] || ''}
-                                        onChange={e => {
-                                            const val = e.target.value;
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'PASTOR' } }).then(res => res.data)}
+                                        selectedValue={pastores.find(p => p.id === parseInt((formData.pastorIds || [])[index])) || ((formData.pastorIds || [])[index] ? { id: formData.pastorIds[index], fullName: 'Cargando...' } : null)}
+                                        onSelect={(user) => {
                                             const newPastorIds = [...(formData.pastorIds || [])];
-                                            newPastorIds[index] = val;
+                                            newPastorIds[index] = user?.id || '';
                                             
                                             let newPastorSpouseIds = [...(formData.pastorSpouseIds || [])];
-                                            if (val) {
-                                                const selected = pastores.find(p => p.id === parseInt(val));
-                                                if (selected?.spouseId) {
-                                                    newPastorSpouseIds[index] = selected.spouseId.toString();
-                                                }
+                                            if (user?.spouseId) {
+                                                newPastorSpouseIds[index] = user.spouseId.toString();
+                                            } else {
+                                                newPastorSpouseIds[index] = '';
                                             }
                                             
                                             setFormData({
@@ -237,10 +237,9 @@ const UserFormFields = ({
                                                 pastorSpouseIds: newPastorSpouseIds,
                                             });
                                         }}
-                                    >
-                                        <option value="">-- Sin Asignar --</option>
-                                        {pastores.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
-                                    </select>
+                                        placeholder="Buscar pastor..."
+                                        labelKey="fullName"
+                                    />
                                 </div>
                             ))}
                         </>
@@ -252,20 +251,18 @@ const UserFormFields = ({
                             {[0, 1].map(index => (
                                 <div key={`ld-${index}`}>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12 ({index + 1})</label>
-                                    <select
-                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                        value={(formData.liderDoceIds || [])[index] || ''}
-                                        onChange={e => {
-                                            const val = e.target.value;
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => res.data)}
+                                        selectedValue={lideresDoce.find(l => l.id === parseInt((formData.liderDoceIds || [])[index])) || ((formData.liderDoceIds || [])[index] ? { id: formData.liderDoceIds[index], fullName: 'Cargando...' } : null)}
+                                        onSelect={(user) => {
                                             const newLiderDoceIds = [...(formData.liderDoceIds || [])];
-                                            newLiderDoceIds[index] = val;
+                                            newLiderDoceIds[index] = user?.id || '';
                                             
                                             let newLiderDoceSpouseIds = [...(formData.liderDoceSpouseIds || [])];
-                                            if (val) {
-                                                const selected = lideresDoce.find(l => l.id === parseInt(val));
-                                                if (selected?.spouseId) {
-                                                    newLiderDoceSpouseIds[index] = selected.spouseId.toString();
-                                                }
+                                            if (user?.spouseId) {
+                                                newLiderDoceSpouseIds[index] = user.spouseId.toString();
+                                            } else {
+                                                newLiderDoceSpouseIds[index] = '';
                                             }
                                             
                                             setFormData({
@@ -274,10 +271,9 @@ const UserFormFields = ({
                                                 liderDoceSpouseIds: newLiderDoceSpouseIds,
                                             });
                                         }}
-                                    >
-                                        <option value="">-- Sin Asignar --</option>
-                                        {lideresDoce.map(l => <option key={l.id} value={l.id}>{l.fullName}</option>)}
-                                    </select>
+                                        placeholder="Buscar líder de 12..."
+                                        labelKey="fullName"
+                                    />
                                 </div>
                             ))}
                         </>
@@ -289,20 +285,24 @@ const UserFormFields = ({
                             {[0, 1].map(index => (
                                 <div key={`lc-${index}`}>
                                     <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula ({index + 1})</label>
-                                    <select
-                                        className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                        value={(formData.liderCelulaIds || [])[index] || ''}
-                                        onChange={e => {
-                                            const val = e.target.value;
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) => {
+                                            const params = { search: term, role: 'LIDER_CELULA' };
+                                            if ((formData.liderDoceIds || []).some(id => id)) {
+                                                params.liderDoceId = formData.liderDoceIds.find(id => id);
+                                            }
+                                            return api.get('/users/search', { params }).then(res => res.data);
+                                        }}
+                                        selectedValue={lideresCelula.find(lc => lc.id === parseInt((formData.liderCelulaIds || [])[index])) || ((formData.liderCelulaIds || [])[index] ? { id: formData.liderCelulaIds[index], fullName: 'Cargando...' } : null)}
+                                        onSelect={(user) => {
                                             const newLiderCelulaIds = [...(formData.liderCelulaIds || [])];
-                                            newLiderCelulaIds[index] = val;
+                                            newLiderCelulaIds[index] = user?.id || '';
                                             
                                             let newLiderCelulaSpouseIds = [...(formData.liderCelulaSpouseIds || [])];
-                                            if (val) {
-                                                const selected = lideresCelula.find(lc => lc.id === parseInt(val));
-                                                if (selected?.spouseId) {
-                                                    newLiderCelulaSpouseIds[index] = selected.spouseId.toString();
-                                                }
+                                            if (user?.spouseId) {
+                                                newLiderCelulaSpouseIds[index] = user.spouseId.toString();
+                                            } else {
+                                                newLiderCelulaSpouseIds[index] = '';
                                             }
                                             
                                             setFormData({
@@ -311,12 +311,9 @@ const UserFormFields = ({
                                                 liderCelulaSpouseIds: newLiderCelulaSpouseIds,
                                             });
                                         }}
-                                    >
-                                        <option value="">-- Sin Asignar --</option>
-                                        {lideresCelula
-                                            .filter(lc => (formData.liderDoceIds || []).length === 0 || (formData.liderDoceIds || []).some(ldId => lc.liderDoceId === parseInt(ldId)))
-                                            .map(lc => <option key={lc.id} value={lc.id}>{lc.fullName}</option>)}
-                                    </select>
+                                        placeholder="Buscar líder de célula..."
+                                        labelKey="fullName"
+                                    />
                                 </div>
                             ))}
                         </>

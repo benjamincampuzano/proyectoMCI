@@ -5,12 +5,14 @@ import { useAuth } from '../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 import { DATA_POLICY_URL } from '../constants/policies';
 import toast from 'react-hot-toast';
+import ConfirmationModal from './ConfirmationModal';
 
 const UserMenu = ({ onOpenProfile }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [showSessions, setShowSessions] = useState(false);
     const [sessions, setSessions] = useState([]);
     const [loadingSessions, setLoadingSessions] = useState(false);
+    const [showLogoutAllConfirm, setShowLogoutAllConfirm] = useState(false);
     const { user, logout, getSessions, logoutAll, isAdmin: contextIsAdmin } = useAuth();
     const menuRef = useRef(null);
 
@@ -54,15 +56,22 @@ const UserMenu = ({ onOpenProfile }) => {
         }
     };
 
-    const handleLogoutAll = async () => {
-        if (window.confirm('¿Estás seguro de que quieres cerrar todas las sesiones? Esto te desconectará de todos tus dispositivos.')) {
+    const handleLogoutAll = () => {
+        setShowLogoutAllConfirm(true);
+    };
+
+    const performLogoutAll = async () => {
+        try {
             const result = await logoutAll();
             if (result.success) {
                 toast.success('Todas las sesiones han sido cerradas');
                 setIsOpen(false);
+                setShowLogoutAllConfirm(false);
             } else {
                 toast.error(result.message || 'Error al cerrar sesiones');
             }
+        } catch (error) {
+            toast.error('Error al cerrar sesiones: ' + (error.message || 'Error desconocido'));
         }
     };
 
@@ -194,6 +203,37 @@ const UserMenu = ({ onOpenProfile }) => {
                     </div>
                 </div>
             )}
+
+            {/* Logout All Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showLogoutAllConfirm}
+                onClose={() => setShowLogoutAllConfirm(false)}
+                onConfirm={performLogoutAll}
+                title="Cerrar Todas las Sesiones"
+                message="¿Estás seguro de que quieres cerrar todas las sesiones? Esto te desconectará de todos tus dispositivos."
+                confirmText="Cerrar Todas las Sesiones"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <div className="text-red-600 dark:text-red-400 mt-0.5">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                                ⚠️ Acción Irreversible
+                            </h4>
+                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                                <li>• Se cerrarán todas las sesiones activas</li>
+                                <li>• Deberás iniciar sesión nuevamente</li>
+                                <li>• Esto incluye todos tus dispositivos</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </ConfirmationModal>
         </div>
     );
 };

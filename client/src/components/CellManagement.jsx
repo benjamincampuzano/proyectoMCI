@@ -772,6 +772,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             >
                                                 <option value="ABIERTA">Abierta</option>
                                                 <option value="CERRADA">Cerrada</option>
+                                                <option value="VIRTUAL">Virtual</option>
                                             </select>
                                         </div>
 
@@ -779,52 +780,47 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Líder 12
                                             </label>
-                                            <select
-                                                value={formData.liderDoceId}
-                                                onChange={e => setFormData({ ...formData, liderDoceId: e.target.value })}
-                                                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                            <AsyncSearchSelect
+                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => res.data)}
+                                                selectedValue={eligibleDoceLeaders.find(l => l.id === parseInt(formData.liderDoceId)) || (formData.liderDoceId ? { id: formData.liderDoceId, fullName: 'Cargando...' } : null)}
+                                                onSelect={(user) => {
+                                                    setFormData({ ...formData, liderDoceId: user?.id || '' });
+                                                }}
+                                                placeholder="Seleccionar Líder 12"
+                                                labelKey="fullName"
                                                 disabled={currentUser?.roles?.includes('LIDER_DOCE')}
-                                            >
-                                                <option value="">Sin Líder 12</option>
-                                                {eligibleDoceLeaders.map(l => (
-                                                    <option key={l.id} value={l.id}>{l.fullName}</option>
-                                                ))}
-                                            </select>
+                                            />
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Líder de la Célula <span className="text-red-400">*</span>
                                             </label>
-                                            <select
-                                                required
-                                                value={formData.leaderId}
-                                                onChange={e => setFormData({ ...formData, leaderId: e.target.value })}
-                                                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                            <AsyncSearchSelect
+                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_CELULA' } }).then(res => res.data)}
+                                                selectedValue={eligibleLeaders.find(l => l.id === parseInt(formData.leaderId)) || (formData.leaderId ? { id: formData.leaderId, fullName: 'Cargando...' } : null)}
+                                                onSelect={(user) => setFormData({ ...formData, leaderId: user?.id || '' })}
+                                                placeholder="Seleccionar Líder"
+                                                labelKey="fullName"
                                                 disabled={currentUser?.roles?.includes('PASTOR')}
-                                            >
-                                                <option value="">Seleccionar Líder</option>
-                                                {eligibleLeaders.map(l => (
-                                                    <option key={l.id} value={l.id}>{l.fullName} ({l.role})</option>
-                                                ))}
-                                            </select>
+                                            />
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                                 Anfitrión
                                             </label>
-                                            <select
-                                                value={formData.hostId}
-                                                onChange={e => setFormData({ ...formData, hostId: e.target.value })}
-                                                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                            <AsyncSearchSelect
+                                                fetchItems={(term) => {
+                                                    // Búsqueda de anfitriones (pueden ser discípulos o líderes)
+                                                    return api.get('/users/search', { params: { search: term } }).then(res => res.data);
+                                                }}
+                                                selectedValue={eligibleHosts.find(h => h.id === parseInt(formData.hostId)) || (formData.hostId ? { id: formData.hostId, fullName: 'Cargando...' } : null)}
+                                                onSelect={(user) => setFormData({ ...formData, hostId: user?.id || '' })}
+                                                placeholder="Sin anfitrión"
+                                                labelKey="fullName"
                                                 disabled={!formData.leaderId}
-                                            >
-                                                <option value="">Sin anfitrión</option>
-                                                {eligibleHosts.map(h => (
-                                                    <option key={h.id} value={h.id}>{h.fullName} ({h.role})</option>
-                                                ))}
-                                            </select>
+                                            />
                                         </div>
 
                                         <div>
@@ -871,29 +867,45 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Dirección <span className="text-red-400">*</span>
+                                                {formData.cellType === 'VIRTUAL' ? 'URL de la Reunión Virtual' : 'Dirección'} <span className="text-red-400">*</span>
                                             </label>
-                                            <div className="flex gap-2">
+                                            {formData.cellType === 'VIRTUAL' ? (
                                                 <input
-                                                    type="text"
+                                                    type="url"
                                                     required
                                                     value={formData.address}
                                                     onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                                    className="flex-1 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                                    placeholder="https://zoom.us/j/... o https://meet.google.com/..."
                                                 />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setMapAddress(formData.address || formData.city || 'Manizales');
-                                                        setShowMapModal(true);
-                                                    }}
-                                                    className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 transition-colors"
-                                                    title="Seleccionar en mapa"
-                                                >
-                                                    <MapTrifold size={20} />
-                                                </button>
-                                            </div>
-                                            {(formData.latitude && formData.longitude) && (
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={formData.address}
+                                                        onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                                        className="flex-1 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setMapAddress(formData.address || formData.city || 'Manizales');
+                                                            setShowMapModal(true);
+                                                        }}
+                                                        className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 transition-colors"
+                                                        title="Seleccionar en mapa"
+                                                    >
+                                                        <MapTrifold size={20} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {formData.cellType === 'VIRTUAL' && formData.address && (
+                                                <p className="text-xs text-blue-600 mt-1">
+                                                    ✓ URL configurada: <a href={formData.address} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">Abrir reunión</a>
+                                                </p>
+                                            )}
+                                            {(formData.latitude && formData.longitude) && formData.cellType !== 'VIRTUAL' && (
                                                 <p className="text-xs text-green-600 mt-1">
                                                     ✓ Coordenadas: {formData.latitude.toFixed(5)}, {formData.longitude.toFixed(5)}
                                                 </p>
@@ -1092,16 +1104,22 @@ const CellManagement = ({ moduleCoordinator }) => {
             <div className="flex flex-col md:flex-row gap-4 items-center">
                 <div className="flex-1 w-full relative">
                     <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <select
-                        value={filterDoce}
-                        onChange={(e) => setFilterDoce(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 border border-blue-100 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 appearance-none bg-white dark:bg-gray-700 dark:text-white text-sm"
-                    >
-                        <option value="">{currentUser?.roles?.includes('PASTOR') ? 'Todos los Pastores' : 'Todos los Líderes 12'}</option>
-                        {eligibleDoceLeaders.map(l => (
-                            <option key={l.id} value={l.id}>{l.fullName}</option>
-                        ))}
-                    </select>
+                    <AsyncSearchSelect
+                        fetchItems={(term) => {
+                            const params = { search: term };
+                            if (currentUser?.roles?.includes('PASTOR')) {
+                                params.role = 'LIDER_DOCE'; // O el rol que corresponda a los discípulos de un pastor
+                            } else {
+                                params.role = 'LIDER_DOCE';
+                            }
+                            return api.get('/users/search', { params }).then(res => res.data);
+                        }}
+                        selectedValue={eligibleDoceLeaders.find(l => l.id === parseInt(filterDoce)) || (filterDoce ? { id: filterDoce, fullName: 'Cargando...' } : null)}
+                        onSelect={(user) => setFilterDoce(user?.id || '')}
+                        placeholder={currentUser?.roles?.includes('PASTOR') ? "Buscar Pastor..." : "Buscar Líder 12..."}
+                        labelKey="fullName"
+                        className="w-full"
+                    />
                 </div>
                 <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                     <button
@@ -1140,7 +1158,11 @@ const CellManagement = ({ moduleCoordinator }) => {
                             <div className="flex justify-between items-start mb-4">
                                 <h3 className="text-lg font-bold text-gray-800 dark:text-white">{cell.name}</h3>
                                 <div className="flex gap-2">
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                        cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 
+                                        cell.cellType === 'VIRTUAL' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                    }`}>
                                         {cell.cellType}
                                     </span>
                                     <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
@@ -1153,6 +1175,10 @@ const CellManagement = ({ moduleCoordinator }) => {
                                 <div className="flex items-center gap-2">
                                     <Users size={16} className="text-gray-400" />
                                     <span><strong className="text-gray-700 dark:text-gray-300">Líder:</strong> {cell.leader?.fullName}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Clock size={16} className="text-gray-400" />
+                                    <span><strong className="text-gray-700 dark:text-gray-300">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
                                 </div>
                                 {cell.liderDoce && (
                                     <div className="flex items-center gap-2">
@@ -1169,13 +1195,30 @@ const CellManagement = ({ moduleCoordinator }) => {
                                     <span><strong className="text-gray-700 dark:text-gray-300">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
                                 </div>
                                 <div className="flex items-center gap-2 pt-1">
-                                    <MapPin size={16} className="text-blue-400" />
-                                    <span className="text-xs text-gray-500 italic">
-                                        {cell.latitude && cell.longitude
-                                            ? `${cell.latitude.toFixed(4)}, ${cell.longitude.toFixed(4)}`
-                                            : 'Sin ubicación en mapa'
-                                        }
-                                    </span>
+                                    {cell.cellType === 'VIRTUAL' ? (
+                                        <>
+                                            <MapPin size={16} className="text-purple-400" />
+                                            <span className="text-xs text-gray-500 italic">
+                                                {cell.address ? (
+                                                    <a href={cell.address} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline">
+                                                        Unirse a reunión virtual
+                                                    </a>
+                                                ) : (
+                                                    'Sin URL configurada'
+                                                )}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <MapPin size={16} className="text-blue-400" />
+                                            <span className="text-xs text-gray-500 italic">
+                                                {cell.latitude && cell.longitude
+                                                    ? `${cell.latitude.toFixed(4)}, ${cell.longitude.toFixed(4)}`
+                                                    : 'Sin ubicación en mapa'
+                                                }
+                                            </span>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
@@ -1247,7 +1290,11 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         <div>
                                             <div className="text-sm font-medium text-gray-900 dark:text-white">{cell.name}</div>
                                             <div className="flex gap-2 mt-1">
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                    cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 
+                                                    cell.cellType === 'VIRTUAL' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                                }`}>
                                                     {cell.cellType}
                                                 </span>
                                                 {cell.liderDoce && (
@@ -1262,7 +1309,17 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         {cell.leader?.fullName || 'N/A'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {cell.city}
+                                        {cell.cellType === 'VIRTUAL' ? (
+                                            cell.address ? (
+                                                <a href={cell.address} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline">
+                                                    Unirse a reunión
+                                                </a>
+                                            ) : (
+                                                <span className="text-gray-400">Sin URL</span>
+                                            )
+                                        ) : (
+                                            cell.city
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {cell.dayOfWeek} {cell.time}

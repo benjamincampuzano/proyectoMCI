@@ -11,6 +11,7 @@ import { getRootNodeForRole } from './utils/buildHierarchy';
 import { getUnassignedUsers } from './utils/unassigned';
 import api from '../utils/api';
 import CardsView from './cards/CardsView';
+import ConfirmationModal from './ConfirmationModal';
 
 const VIEW_TREE = 'tree';
 const VIEW_RADIAL = 'radial';
@@ -24,6 +25,8 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   const [pendingAssign, setPendingAssign] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState(new Set());
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [partnerToRemove, setPartnerToRemove] = useState(null);
 
   const coupleRoot = useMemo(() => {
     const fullNetwork = buildCoupleNetwork(network);
@@ -92,14 +95,20 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     setUnassignedOpen(true);
   };
 
-  const handleRemoveUser = async (partner) => {
-    if (!window.confirm(`¿Estás seguro de que deseas remover a ${partner.fullName} de la red de discipulado?`)) return;
+  const handleRemoveUser = (partner) => {
+    setPartnerToRemove(partner);
+    setShowRemoveConfirm(true);
+  };
+
+  const performRemoveUser = async () => {
     try {
       setLoading(true);
-      await api.delete(`/network/remove/${partner.id}`);
+      await api.delete(`/network/remove/${partnerToRemove.id}`);
       onNetworkChange?.();
       const response = await api.get('/users');
       setAllUsers(Array.isArray(response.data) ? response.data : []);
+      setShowRemoveConfirm(false);
+      setPartnerToRemove(null);
     } catch (error) {
       console.error('Error removing user:', error);
     } finally {
@@ -268,6 +277,40 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
         onConfirm={confirmAssign}
         onCancel={() => setPendingAssign(null)}
       />
+
+      {/* Remove User Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showRemoveConfirm}
+        onClose={() => {
+          setShowRemoveConfirm(false);
+          setPartnerToRemove(null);
+        }}
+        onConfirm={performRemoveUser}
+        title="Remover de la Red"
+        message={`¿Estás seguro de que deseas remover a ${partnerToRemove?.fullName} de la red de discipulado?`}
+        confirmText="Remover Usuario"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+      >
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="text-red-600 dark:text-red-400 mt-0.5">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                ⚠️ Acción Irreversible
+              </h4>
+              <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                <li>• Se removerá al usuario de la red de discipulado</li>
+                <li>• Perderá la conexión actual con su líder</li>
+                <li>• Podrá ser reasignado a otro líder</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </ConfirmationModal>
     </div>
   );
 }

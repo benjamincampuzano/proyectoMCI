@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SpinnerIcon, MagnifyingGlass, Funnel, PencilIcon, Trash, UserPlus, X, FloppyDiskIcon, UserCheckIcon } from '@phosphor-icons/react';
+import { SpinnerIcon, MagnifyingGlass, Funnel, PencilIcon, Trash, UserPlus, X, FloppyDiskIcon, UserCheckIcon, Users, Calendar, Clock, Phone, MapPin, Star, CheckCircle } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import { AsyncSearchSelect, Button } from './ui';
@@ -99,13 +99,67 @@ const GuestList = ({ refreshTrigger }) => {
         return labels[status] || status;
     };
 
-    // Filtros rápidos predefinidos
+    // Estado para el filtro activo
+    const [activeQuickFilter, setActiveQuickFilter] = useState('all');
+
+    // Filtros rápidos modernos con iconos y colores
     const quickFilters = [
-        { id: 'all', label: 'Todos', icon: null },
-        { id: 'mine', label: 'Mis invitados', icon: UserPlus },
-        { id: 'uncontacted', label: 'Sin contactar', icon: null },
-        { id: 'this_week', label: 'Esta semana', icon: null },
-        { id: 'this_month', label: 'Este mes', icon: null },
+        { 
+            id: 'all', 
+            label: 'Todos', 
+            icon: Users, 
+            color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600',
+            activeColor: 'bg-blue-500 text-white border-blue-600 dark:bg-blue-600'
+        },
+        { 
+            id: 'mine', 
+            label: 'Mis invitados', 
+            icon: UserPlus, 
+            color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-300 dark:border-green-700',
+            activeColor: 'bg-green-500 text-white border-green-600 dark:bg-green-600'
+        },
+        { 
+            id: 'uncontacted', 
+            label: 'Sin contactar', 
+            icon: Clock, 
+            color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700',
+            activeColor: 'bg-yellow-500 text-white border-yellow-600 dark:bg-yellow-600'
+        },
+        { 
+            id: 'contacted', 
+            label: 'Contactados', 
+            icon: Phone, 
+            color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-300 dark:border-blue-700',
+            activeColor: 'bg-blue-500 text-white border-blue-600 dark:bg-blue-600'
+        },
+        { 
+            id: 'visited', 
+            label: 'Visitados', 
+            icon: MapPin, 
+            color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-300 dark:border-purple-700',
+            activeColor: 'bg-purple-500 text-white border-purple-600 dark:bg-purple-600'
+        },
+        { 
+            id: 'consolidated', 
+            label: 'Consolidados', 
+            icon: Star, 
+            color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700',
+            activeColor: 'bg-emerald-500 text-white border-emerald-600 dark:bg-emerald-600'
+        },
+        { 
+            id: 'this_week', 
+            label: 'Esta semana', 
+            icon: Calendar, 
+            color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700',
+            activeColor: 'bg-indigo-500 text-white border-indigo-600 dark:bg-indigo-600'
+        },
+        { 
+            id: 'this_month', 
+            label: 'Este mes', 
+            icon: Calendar, 
+            color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 border-pink-300 dark:border-pink-700',
+            activeColor: 'bg-pink-500 text-white border-pink-600 dark:bg-pink-600'
+        },
     ];
 
     const handleQuickFilter = (filterId) => {
@@ -114,6 +168,9 @@ const GuestList = ({ refreshTrigger }) => {
         setInvitedByFilter(null);
         setLiderDoceFilter(null);
         setSearchTerm('');
+        
+        // Establecer filtro activo
+        setActiveQuickFilter(filterId);
 
         switch (filterId) {
             case 'mine':
@@ -121,6 +178,15 @@ const GuestList = ({ refreshTrigger }) => {
                 break;
             case 'uncontacted':
                 setStatusFilter('NUEVO');
+                break;
+            case 'contacted':
+                setStatusFilter('CONTACTADO');
+                break;
+            case 'visited':
+                setStatusFilter('CONSOLIDADO');
+                break;
+            case 'consolidated':
+                setStatusFilter('GANADO');
                 break;
             case 'this_week':
                 // El backend manejará este filtro
@@ -130,11 +196,37 @@ const GuestList = ({ refreshTrigger }) => {
                 setSearchTerm('__this_month__');
                 break;
             default:
+                // 'all' - no aplicar filtros específicos
                 break;
         }
 
         // Aplicar el filtro
         setTimeout(() => fetchGuests(), 0);
+    };
+
+    // Función para verificar si un filtro está activo
+    const isFilterActive = (filterId) => {
+        if (activeQuickFilter === filterId) return true;
+        
+        // Verificación adicional basada en los valores actuales de los filtros
+        switch (filterId) {
+            case 'mine':
+                return invitedByFilter === currentUser?.id;
+            case 'uncontacted':
+                return statusFilter === 'NUEVO';
+            case 'contacted':
+                return statusFilter === 'CONTACTADO';
+            case 'visited':
+                return statusFilter === 'CONSOLIDADO';
+            case 'consolidated':
+                return statusFilter === 'GANADO';
+            case 'this_week':
+                return searchTerm === '__this_week__';
+            case 'this_month':
+                return searchTerm === '__this_month__';
+            default:
+                return false;
+        }
     };
 
     // Funciones auxiliares de permisos
@@ -145,11 +237,9 @@ const GuestList = ({ refreshTrigger }) => {
 
     const canDelete = (guest) => {
         const roles = currentUser?.roles || [];
-        if (roles.includes('ADMIN') || roles.includes('LIDER_DOCE')) {
-            return true;
-        }
-        // LIDER_CELULA/DISCIPULO solo pueden eliminar invitados que invitaron
-        return guest.invitedBy?.id === currentUser?.id;
+        // Solo ADMIN y LIDER_DOCE pueden eliminar invitados
+        // DISCIPULO no tiene permiso para eliminar
+        return roles.includes('ADMIN') || roles.includes('LIDER_DOCE');
     };
 
     return (
@@ -162,17 +252,52 @@ const GuestList = ({ refreshTrigger }) => {
                 </div>
             )}
 
-            {/* Filtros rápidos */}
-            <div className="flex flex-wrap gap-2 mb-4">
-                {quickFilters.map((filter) => (
-                    <button
-                        key={filter.id}
-                        onClick={() => handleQuickFilter(filter.id)}
-                        className="px-3 py-1.5 text-sm font-medium rounded-full border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-700 dark:text-gray-300 transition-colors"
-                    >
-                        {filter.label}
-                    </button>
-                ))}
+            {/* Filtros rápidos modernos */}
+            <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                    <Funnel size={18} className="text-gray-500 dark:text-gray-400" />
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Filtros rápidos</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {quickFilters.map((filter) => {
+                        const isActive = isFilterActive(filter.id);
+                        const Icon = filter.icon;
+                        return (
+                            <button
+                                key={filter.id}
+                                onClick={() => handleQuickFilter(filter.id)}
+                                className={`
+                                    px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 transform hover:scale-105
+                                    flex items-center gap-2 shadow-sm hover:shadow-md
+                                    ${isActive 
+                                        ? filter.activeColor + ' shadow-md ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800' 
+                                        : filter.color + ' hover:opacity-80'
+                                    }
+                                `}
+                                title={filter.label}
+                            >
+                                {Icon && <Icon size={16} weight={isActive ? 'fill' : 'regular'} />}
+                                <span className="whitespace-nowrap">{filter.label}</span>
+                                {isActive && (
+                                    <CheckCircle size={14} weight="fill" className="ml-1" />
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+                {activeQuickFilter !== 'all' && (
+                    <div className="mt-3 flex items-center gap-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                            Filtro activo: <strong>{quickFilters.find(f => f.id === activeQuickFilter)?.label}</strong>
+                        </span>
+                        <button
+                            onClick={() => handleQuickFilter('all')}
+                            className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                        >
+                            Limpiar filtro
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Filtros */}

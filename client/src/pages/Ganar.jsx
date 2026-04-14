@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import TabNavigator from '../components/TabNavigator';
 import GuestRegistrationForm from '../components/GuestRegistrationForm';
 import GuestList from '../components/GuestList';
+import GuestTracking from '../components/GuestTracking';
 import GuestStats from '../components/GuestStats';
 import OracionDeTresManagement from '../components/OracionDeTresManagement';
 import { PageHeader, Button } from '../components/ui';
@@ -86,6 +87,7 @@ const Ganar = () => {
 
     const tabs = [
         { id: 'list', label: 'Lista de Invitados', component: GuestList },
+        { id: 'tracking', label: 'Seguimiento de Invitados', component: GuestTracking },
         {
             id: 'stats',
             label: 'Estadísticas',

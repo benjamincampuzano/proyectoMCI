@@ -807,6 +807,7 @@ enum AuditAction {
   DELETE
   LOGIN
   LOGOUT
+  LOGOUT_ALL
   TOKEN_REFRESH
   CONSOLIDATE
   EXPORT
@@ -891,6 +892,7 @@ enum AttendanceStatus {
   AUSENTE
   JUSTIFICADO
   TARDE
+  VIRTUAL
 }
 
 enum ClassAttendanceStatus {

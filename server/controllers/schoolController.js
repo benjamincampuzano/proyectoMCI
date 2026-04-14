@@ -354,7 +354,7 @@ const getModuleMatrix = async (req, res) => {
         const moduleData = await prisma.seminarModule.findUnique({
             where: { id: moduleId },
             include: {
-                professor: { select: { id: true, profile: { select: { fullName: true } } } },
+                professors: { select: { id: true, profile: { select: { fullName: true } } } },
                 auxiliaries: { select: { id: true, profile: { select: { fullName: true } } } }
             }
         });
@@ -365,7 +365,7 @@ const getModuleMatrix = async (req, res) => {
         const roles = user.roles || [];
         const isAdmin = roles.includes('ADMIN');
         const isCoordinator = await isUserCoordinator(user.id, 'discipular');
-        const isProfessor = moduleData.professorId === user.id || isAdmin || isCoordinator;
+        const isProfessor = moduleData.professors.some(p => p.id === user.id) || isAdmin || isCoordinator;
         const isAuxiliar = moduleData.auxiliaries.some(a => a.id === user.id);
         const isDisciple = roles.includes('DISCIPULO');
         

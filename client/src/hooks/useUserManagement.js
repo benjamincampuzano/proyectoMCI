@@ -289,7 +289,7 @@ const useUserManagement = () => {
         setSuccess('');
         
         try {
-            const response = await api.post(`/auth/reset-password/${user.id}`, { newTempPassword: tempPassword });
+            const response = await api.post(`/auth/force-password-change/${user.id}`, { newTempPassword: tempPassword });
             
             setSuccess(`Contraseña de ${user.fullName} reseteada exitosamente. Contraseña temporal: ${tempPassword}`);
             setPasswordResetUser(null);
