@@ -24,7 +24,7 @@ const app = express();
 /* ✅ Trust proxy for rate limiting behind reverse proxy */
 app.set('trust proxy', ['127.0.0.1', '::1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']);
 
-/* ✅ Middleware base */
+/* ✅ Middlewaree */
 app.use(helmet({
   crossOriginResourcePolicy: false,
   contentSecurityPolicy: {
