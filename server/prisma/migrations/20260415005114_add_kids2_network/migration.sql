@@ -5,18 +5,20 @@
 
 */
 -- AlterEnum
-ALTER TYPE "AuditAction" ADD VALUE 'LOGOUT_ALL';
+ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'LOGOUT_ALL';
 
--- AlterEnum
-BEGIN;
--- Map old values to new ones before changing the type to avoid casting errors
-UPDATE "UserProfile" SET "network" = 'KIDS1' WHERE "network" = 'KIDS';
-UPDATE "UserProfile" SET "network" = 'KIDS2' WHERE "network" = 'ROCAS';
+-- Update values BEFORE changing the enum type
+UPDATE "UserProfile" SET "network" = 'KIDS1'::text WHERE "network" = 'KIDS'::text;
+UPDATE "UserProfile" SET "network" = 'KIDS2'::text WHERE "network" = 'ROCAS'::text;
 
-CREATE TYPE "Network_new" AS ENUM ('MUJERES', 'HOMBRES', 'JOVENES', 'KIDS1', 'KIDS2', 'TEENS');
-ALTER TABLE "UserProfile" ALTER COLUMN "network" TYPE "Network_new" USING ("network"::text::"Network_new");
+-- Rename old enum
 ALTER TYPE "Network" RENAME TO "Network_old";
-ALTER TYPE "Network_new" RENAME TO "Network";
-DROP TYPE "public"."Network_old";
-COMMIT;
 
+-- Create new enum
+CREATE TYPE "Network" AS ENUM ('MUJERES', 'HOMBRES', 'JOVENES', 'KIDS1', 'KIDS2', 'TEENS');
+
+-- Alter column to use new enum
+ALTER TABLE "UserProfile" ALTER COLUMN "network" TYPE "Network" USING ("network"::text::"Network");
+
+-- Drop old enum
+DROP TYPE "Network_old";
