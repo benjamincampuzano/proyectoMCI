@@ -9,10 +9,10 @@ import ConfirmationModal from '../ConfirmationModal';
 import PropTypes from 'prop-types';
 
 const CATEGORY_INFO = {
-    'KIDS': { label: 'Kids', color: 'pink' },
-    'TEENS': { label: 'Teens', color: 'yellow' },
-    'ROCAS': { label: 'Rocas', color: 'orange' },
-    'JOVENES': { label: 'Jóvenes', color: 'purple' }
+    'KIDS1': { label: 'Kids 1 (5-7 años)', minAge: 5, maxAge: 7, color: 'pink' },
+    'KIDS2': { label: 'Kids 2 (8-10 años)', minAge: 8, maxAge: 10, color: 'purple' },
+    'TEENS': { label: 'Teens (11-13 años)', minAge: 11, maxAge: 13, color: 'blue' },
+    'JOVENES': { label: 'Jóvenes (14 años en adelante)', minAge: 14, maxAge: 99, color: 'green' }
 };
 
 const KidsSchedule = ({ moduleCoordinator }) => {
@@ -138,6 +138,13 @@ const KidsSchedule = ({ moduleCoordinator }) => {
     const performCourseDelete = async () => {
         if (!courseToDelete) return;
 
+        // Check if there are enrolled students before attempting deletion
+        const enrollmentCount = courseToDelete._count?.enrollments || 0;
+        if (enrollmentCount > 0) {
+            toast.error(`❌ No se puede eliminar la clase porque tiene ${enrollmentCount} estudiante(s) inscrito(s). Primero debe desvincular a todos los estudiantes.`);
+            return;
+        }
+
         try {
             await api.delete(`/kids/modules/${courseToDelete.id}`);
             fetchCourses();
@@ -146,10 +153,10 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             toast.success('Clase eliminada exitosamente');
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Error al eliminar la clase';
-            if (errorMessage.includes('enrolled students')) {
-                toast.error('No se puede eliminar la clase porque tiene estudiantes inscritos. Primero debe desvincular a todos los estudiantes.');
+            if (error.response?.status === 400 && errorMessage.includes('enrolled students')) {
+                toast.error('❌ No se puede eliminar la clase porque tiene estudiantes inscritos. Primero debe desvincular a todos los estudiantes desde la sección de inscripciones.');
             } else {
-                toast.error(errorMessage);
+                toast.error(`❌ ${errorMessage}`);
             }
         }
     };
@@ -287,7 +294,8 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                 ) : (
                     courses.map(course => {
                         const isExpanded = expandedCourseId === course.id;
-                        const categoryInfo = CATEGORY_INFO[course.category] || CATEGORY_INFO['KIDS'];
+                        const categoryInfo = CATEGORY_INFO[course.category] || CATEGORY_INFO['KIDS1'];
+                        const safeColor = categoryInfo?.color || 'indigo';
                         const courseSchedules = schedules[course.id] || [];
 
                         return (
@@ -298,8 +306,8 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                     onClick={() => toggleCourse(course.id)}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className={`p-2 rounded-lg bg-${categoryInfo.color}-100 dark:bg-${categoryInfo.color}-900/30`}>
-                                            <BookOpen className={`w-5 h-5 text-${categoryInfo.color}-600 dark:text-${categoryInfo.color}-400`} weight="fill" />
+                                        <div className={`p-2 rounded-lg bg-${safeColor}-100 dark:bg-${safeColor}-900/30`}>
+                                            <BookOpen className={`w-5 h-5 text-${safeColor}-600 dark:text-${safeColor}-400`} weight="fill" />
                                         </div>
                                         <div>
                                             <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{course.name}</h3>
@@ -616,9 +624,14 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                 }}
                 onConfirm={performCourseDelete}
                 title="Eliminar Clase"
-                message="¿Estás seguro de eliminar esta clase?"
-                confirmText="Eliminar Clase"
-                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+                message={courseToDelete?._count?.enrollments > 0 
+                    ? `⚠️ Esta clase tiene ${courseToDelete._count.enrollments} estudiante(s) inscrito(s). No se puede eliminar hasta que todos los estudiantes sean desvinculados.` 
+                    : "¿Estás seguro de eliminar esta clase?"}
+                confirmText={courseToDelete?._count?.enrollments > 0 ? "No se puede eliminar" : "Eliminar Clase"}
+                confirmButtonClass={courseToDelete?._count?.enrollments > 0 
+                    ? "bg-gray-400 cursor-not-allowed text-white" 
+                    : "bg-red-600 hover:bg-red-700 text-white"}
+                disabled={courseToDelete?._count?.enrollments > 0}
             >
                 {courseToDelete && (
                     <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">

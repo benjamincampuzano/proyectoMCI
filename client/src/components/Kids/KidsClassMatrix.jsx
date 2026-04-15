@@ -8,10 +8,10 @@ import { useAuth } from '../../context/AuthContext';
 import { ROLE_GROUPS } from '../../constants/roles';
 
 const CATEGORY_INFO = {
-    'KIDS': { label: 'Kids', minAge: 5, maxAge: 7 },
-    'TEENS': { label: 'Teens', minAge: 8, maxAge: 10 },
-    'ROCAS': { label: 'Rocas', minAge: 11, maxAge: 13 },
-    'JOVENES': { label: 'Jóvenes', minAge: 14, maxAge: 99 }
+    'KIDS1': { label: 'Kids 1 (5-7 años)', minAge: 5, maxAge: 7, color: 'pink' },
+    'KIDS2': { label: 'Kids 2 (8-10 años)', minAge: 8, maxAge: 10, color: 'purple' },
+    'TEENS': { label: 'Teens (11-13 años)', minAge: 11, maxAge: 13, color: 'blue' },
+    'JOVENES': { label: 'Jóvenes (14 años en adelante)', minAge: 14, maxAge: 99, color: 'green' }
 };
 
 const calculateAge = (birthDate) => {

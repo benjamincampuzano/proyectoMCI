@@ -285,12 +285,25 @@ const registerParticipant = async (req, res) => {
         const { guestId, userId, discountPercentage, needsTransport, needsAccommodation } = req.body;
         const { roles, id: currentUserId } = req.user;
 
+        console.log('Registration attempt:', {
+            encuentroId,
+            guestId,
+            userId,
+            discountPercentage,
+            needsTransport,
+            needsAccommodation,
+            currentUserId,
+            userRoles: roles
+        });
+
         const hasAccess = await checkEncuentroAccess(req.user, encuentroId);
         if (!hasAccess) {
+            console.log('Access denied for user:', currentUserId, 'to encuentro:', encuentroId);
             return res.status(403).json({ error: 'No tienes permisos para registrar participantes.' });
         }
 
         if ((!guestId && !userId) || (guestId && userId)) {
+            console.log('Invalid guest/user ID combination:', { guestId, userId });
             return res.status(400).json({ error: 'Must provide either guestId OR userId, not both.' });
         }
 
@@ -321,27 +334,70 @@ const registerParticipant = async (req, res) => {
 
         if (guestId) {
             const guest = await prisma.guest.findUnique({ where: { id: parseInt(guestId) } });
+            if (!guest) {
+                console.log('Guest not found:', guestId);
+                return res.status(404).json({ error: 'Invitado no encontrado.' });
+            }
             participantSex = guest?.sex;
             participantBirthDate = guest?.birthDate;
+            console.log('Guest data:', { guestId, sex: participantSex, birthDate: participantBirthDate });
         } else {
             const user = await prisma.user.findUnique({
                 where: { id: parseInt(userId) },
                 include: { profile: true }
             });
+            if (!user) {
+                console.log('User not found:', userId);
+                return res.status(404).json({ error: 'Usuario no encontrado.' });
+            }
             participantSex = user?.profile?.sex;
             participantBirthDate = user?.profile?.birthDate;
+            console.log('User data:', { userId, sex: participantSex, birthDate: participantBirthDate });
         }
 
-        if (encuentroInfo.type === 'HOMBRES' && participantSex !== 'HOMBRE') {
-            return res.status(400).json({ error: 'Este encuentro es exclusivo para hombres.' });
+        console.log('Encuentro type:', encuentroInfo.type);
+        console.log('Participant sex:', participantSex);
+        console.log('Participant birth date:', participantBirthDate);
+
+        if (encuentroInfo.type === 'HOMBRES') {
+            if (!participantSex) {
+                console.log('Gender validation failed: HOMBRES encounter but participant has no sex specified');
+                return res.status(400).json({ 
+                    error: 'El invitado debe tener especificado el sexo (HOMBRE) para este encuentro. Por favor, actualice la información del invitado primero.',
+                    requiresGuestUpdate: true,
+                    missingField: 'sex',
+                    expectedValue: 'HOMBRE'
+                });
+            }
+            if (participantSex !== 'HOMBRE') {
+                console.log('Gender validation failed: HOMBRES encounter but participant is not HOMBRE');
+                return res.status(400).json({ error: 'Este encuentro es exclusivo para hombres.' });
+            }
         }
-        if (encuentroInfo.type === 'MUJERES' && participantSex !== 'MUJER') {
-            return res.status(400).json({ error: 'Este encuentro es exclusivo para mujeres.' });
+        if (encuentroInfo.type === 'MUJERES') {
+            if (!participantSex) {
+                console.log('Gender validation failed: MUJERES encounter but participant has no sex specified');
+                return res.status(400).json({ 
+                    error: 'El invitado debe tener especificado el sexo (MUJER) para este encuentro. Por favor, actualice la información del invitado primero.',
+                    requiresGuestUpdate: true,
+                    missingField: 'sex',
+                    expectedValue: 'MUJER'
+                });
+            }
+            if (participantSex !== 'MUJER') {
+                console.log('Gender validation failed: MUJERES encounter but participant is not MUJER');
+                return res.status(400).json({ error: 'Este encuentro es exclusivo para mujeres.' });
+            }
         }
 
         if (encuentroInfo.type === 'JOVENES') {
             if (!participantBirthDate) {
-                return res.status(400).json({ error: 'Se requiere la fecha de nacimiento.' });
+                console.log('Age validation failed: JOVENES encounter but no birth date provided');
+                return res.status(400).json({ 
+                    error: 'El invitado debe tener especificado la fecha de nacimiento para el encuentro de jóvenes. Por favor, actualice la información del invitado primero.',
+                    requiresGuestUpdate: true,
+                    missingField: 'birthDate'
+                });
             }
             const birthDate = new Date(participantBirthDate);
             const today = new Date();
@@ -350,7 +406,9 @@ const registerParticipant = async (req, res) => {
             if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
                 age--;
             }
+            console.log('Age validation for JOVENES:', { age, birthDate, today });
             if (age >= 18) {
+                console.log('Age validation failed: JOVENES encounter but participant is 18 or older');
                 return res.status(400).json({ error: 'Este encuentro es exclusivo para jóvenes.' });
             }
         }

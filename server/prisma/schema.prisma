@@ -875,8 +875,8 @@ enum Network {
   MUJERES
   HOMBRES
   JOVENES
-  KIDS
-  ROCAS
+  KIDS1
+  KIDS2
   TEENS
 }
 

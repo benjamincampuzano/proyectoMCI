@@ -254,13 +254,14 @@ const PublicGuestRegistration = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="sex" className="block text-sm font-medium text-gray-400 mb-2">Sexo</label>
+                            <label htmlFor="sex" className="block text-sm font-medium text-gray-400 mb-2">Sexo *</label>
                             <select
                                 id="sex"
                                 name="sex"
                                 value={formData.sex}
                                 onChange={handleChange}
                                 className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+                                required
                             >
                                 <option value="">Seleccionar...</option>
                                 <option value="HOMBRE">Hombre</option>

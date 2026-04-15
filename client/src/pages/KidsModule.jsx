@@ -134,7 +134,7 @@ const KidsModule = () => {
         <div className="space-y-6">
             <PageHeader
                 title="Módulo Kids"
-                description="Escuela infantil: Kids (5-7), Teens (8 a 10), Rocas (11-14) y Jóvenes (15+)"
+                description="Escuela infantil: Kids 1 (5-7), Kids 2 (8 a 10), Teens (11-13) y Jóvenes (14+)"
                 action={
                     <div className="flex items-center gap-4">
                         <CoordinatorSelector 

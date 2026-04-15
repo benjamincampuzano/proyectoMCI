@@ -39,7 +39,7 @@ const KidsStats = () => {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Reporte Estadístico de Clases</h2>
-                    <p className="text-gray-500 dark:text-gray-400">Participación de estudiantes en células y clases (Kids, Teens, Rocas, Jóvenes)</p>
+                    <p className="text-gray-500 dark:text-gray-400">Participación de estudiantes en células y clases (Kids, Teens, Jóvenes)</p>
                 </div>
             </div>
 
@@ -108,28 +108,34 @@ const KidsStats = () => {
 
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                 <h3 className="text-lg font-semibold mb-6 text-gray-800 dark:text-white">Participación en Células y Clases por Líder</h3>
-                <div className="h-80 w-full">
-                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
-                        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis
-                                dataKey="leaderName"
-                                angle={-45}
-                                textAnchor="end"
-                                height={80}
-                                interval={0}
-                                tick={{ fontSize: 12 }}
-                            />
-                            <YAxis />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#1f2937', color: '#fff', border: 'none' }}
-                                itemStyle={{ color: '#fff' }}
-                            />
-                            <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                            <Bar dataKey="students" name="Total Estudiantes" fill="#ec4899" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="studentsInCells" name="En Células" fill="#10b981" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+                <div className="h-80 w-full min-h-[320px]">
+                    {data && data.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis
+                                    dataKey="leaderName"
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={80}
+                                    interval={0}
+                                    tick={{ fontSize: 12 }}
+                                />
+                                <YAxis />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1f2937', color: '#fff', border: 'none' }}
+                                    itemStyle={{ color: '#fff' }}
+                                />
+                                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                <Bar dataKey="students" name="Total Estudiantes" fill="#ec4899" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="studentsInCells" name="En Células" fill="#10b981" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                            No hay datos disponibles para mostrar
+                        </div>
+                    )}
                 </div>
             </div>
 

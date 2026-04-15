@@ -2,10 +2,10 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = require('../utils/database');
 
 const CATEGORY_CONFIG = {
-    'KIDS': { label: 'Kids', minAge: 5, maxAge: 7 },
-    'TEENS': { label: 'Teens', minAge: 8, maxAge: 10 },
-    'ROCAS': { label: 'Rocas', minAge: 11, maxAge: 13 },
-    'JOVENES': { label: 'Jóvenes', minAge: 14, maxAge: 99 }
+    'KIDS1': { label: 'Kids 1 (5-7 años)', minAge: 5, maxAge: 7 },
+    'KIDS2': { label: 'Kids 2 (8-10 años)', minAge: 8, maxAge: 10 },
+    'TEENS': { label: 'Teens (11-13 años)', minAge: 11, maxAge: 13 },
+    'JOVENES': { label: 'Jóvenes (14 años en adelante)', minAge: 14, maxAge: 99 }
 };
 
 const calculateAge = (birthDate) => {
@@ -21,9 +21,9 @@ const calculateAge = (birthDate) => {
 };
 
 const CATEGORY_MODULE_NUMBERS = {
-    'KIDS': 101,
-    'TEENS': 301,
-    'ROCAS': 501,
+    'KIDS1': 101,
+    'KIDS2': 301,
+    'TEENS': 501,
     'JOVENES': 701
 };
 
@@ -87,7 +87,7 @@ const getModules = async (req, res) => {
         const modules = await prisma.seminarModule.findMany({
             where: {
                 type: {
-                    in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                    in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
                 },
                 isDeleted: false
             },
@@ -456,7 +456,7 @@ const getStudentMatrix = async (req, res) => {
                     some: {
                         module: { 
                             type: {
-                                in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                                in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
                             }
                         }
                     }
@@ -499,7 +499,7 @@ const getStudentMatrix = async (req, res) => {
                     where: {
                         module: { 
                             type: {
-                                in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                                in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
                             }
                         }
                     },
@@ -680,7 +680,7 @@ const getKidsStatsByLeader = async (req, res) => {
                                 some: {
                                     module: { 
                                         type: {
-                                            in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                                            in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
                                         }
                                     }
                                 }
@@ -698,7 +698,7 @@ const getKidsStatsByLeader = async (req, res) => {
                                     where: { 
                                         module: { 
                                             type: {
-                                                in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                                                in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
                                             }
                                         }
                                     },
@@ -811,7 +811,7 @@ const checkKidsAccess = async (req, res) => {
                                 some: {
                                     module: {
                                         type: {
-                                            in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                                            in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
                                         }
                                     }
                                 }
@@ -829,7 +829,7 @@ const checkKidsAccess = async (req, res) => {
                                     where: {
                                         module: {
                                             type: {
-                                                in: ['KIDS', 'TEENS', 'ROCAS', 'JOVENES']
+                                                in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
                                             }
                                         }
                                     },

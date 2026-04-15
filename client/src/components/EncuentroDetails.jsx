@@ -96,14 +96,23 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const handleRegister = async (e) => {
         e.preventDefault();
         setLoading(true);
+        
+        // Log registration data for debugging
+        const registrationData = {
+            guestId: registrationType === 'GUEST' ? selectedGuestId : null,
+            userId: registrationType === 'USER' ? selectedUserId : null,
+            discountPercentage: parseFloat(discount),
+            needsTransport,
+            needsAccommodation
+        };
+        
+        console.log('Registration data:', registrationData);
+        console.log('Registration type:', registrationType);
+        console.log('Selected guest ID:', selectedGuestId);
+        console.log('Selected user ID:', selectedUserId);
+        
         try {
-            await api.post(`/encuentros/${encuentro.id}/register`, {
-                guestId: registrationType === 'GUEST' ? selectedGuestId : null,
-                userId: registrationType === 'USER' ? selectedUserId : null,
-                discountPercentage: parseFloat(discount),
-                needsTransport,
-                needsAccommodation
-            });
+            await api.post(`/encuentros/${encuentro.id}/register`, registrationData);
             setShowRegisterModal(false);
             setSelectedGuestId(null);
             setSelectedUserId(null);
@@ -114,7 +123,24 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error registering guest:', error);
-            toast.error('Error creating registration: ' + (error.response?.data?.error || error.message));
+            console.error('Error response:', error.response);
+            console.error('Error data:', error.response?.data);
+            console.error('Error status:', error.response?.status);
+            console.error('Error headers:', error.response?.headers);
+            
+            const errorData = error.response?.data;
+            let errorMessage = errorData?.error || errorData?.message || error.message;
+            
+            // If the error indicates guest needs update, show a more helpful message
+            if (errorData?.requiresGuestUpdate) {
+                if (errorData?.missingField === 'sex') {
+                    errorMessage = `Este invitado necesita tener especificado el sexo (${errorData?.expectedValue}) para inscribirse en este encuentro. Por favor, edite el invitado y agregue esta información.`;
+                } else if (errorData?.missingField === 'birthDate') {
+                    errorMessage = 'Este invitado necesita tener especificado la fecha de nacimiento para inscribirse en el encuentro de jóvenes. Por favor, edite el invitado y agregue esta información.';
+                }
+            }
+            
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

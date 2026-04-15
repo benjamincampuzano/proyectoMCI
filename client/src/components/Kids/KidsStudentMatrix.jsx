@@ -6,16 +6,16 @@ import { Button, Input, AsyncSearchSelect } from '../ui';
 import * as XLSX from 'xlsx';
 
 const KIDS_LEVELS = [
-    { nivel: 'KIDS', seccion: '1A', name: 'Kids (5-7 años)', moduleNumber: 101, minAge: 5, maxAge: 7 },
-    { nivel: 'TEENS', seccion: '1A', name: 'Teens (8-10 años)', moduleNumber: 201, minAge: 8, maxAge: 10 },
-    { nivel: 'ROCAS', seccion: '1A', name: 'Rocas (11-13 años)', moduleNumber: 301, minAge: 11, maxAge: 13 },
+    { nivel: 'KIDS1', seccion: '1A', name: 'Kids 1 (5-7 años)', moduleNumber: 101, minAge: 5, maxAge: 7 },
+    { nivel: 'KIDS2', seccion: '1A', name: 'Kids 2 (8-10 años)', moduleNumber: 201, minAge: 8, maxAge: 10 },
+    { nivel: 'TEENS', seccion: '1A', name: 'Teens (11-13 años)', moduleNumber: 301, minAge: 11, maxAge: 13 },
     { nivel: 'JOVENES', seccion: '1A', name: 'Jóvenes (14 años en adelante)', moduleNumber: 501, minAge: 14, maxAge: 99 },
 ];
 const CATEGORY_INFO = {
-    'KIDS': { label: 'Kids', color: 'pink', ageRange: '5-7 años' },
-    'TEENS': { label: 'Teens', color: 'yellow', ageRange: '8-10 años' },
-    'ROCAS': { label: 'Rocas', color: 'orange', ageRange: '11-13 años' },
-    'JOVENES': { label: 'Jóvenes', color: 'purple', ageRange: '14+ años' }
+    'KIDS1': { label: 'Kids 1 (5-7 años)', minAge: 5, maxAge: 7 },
+    'KIDS2': { label: 'Kids 2 (8-10 años)', minAge: 8, maxAge: 10 },
+    'TEENS': { label: 'Teens (11-13 años)', minAge: 11, maxAge: 13 },
+    'JOVENES': { label: 'Jóvenes (14 años en adelante)', minAge: 14, maxAge: 99 }
 };
 
 const KidsStudentMatrix = () => {
