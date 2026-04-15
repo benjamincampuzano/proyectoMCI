@@ -8,21 +8,21 @@ const Select = ({
 }) => (
     <div className="space-y-1">
         {label && (
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80">
                 {label}
-                {required && <span className="text-red-500 ml-1">*</span>}
+                {required && <span className="text-[#ff3b30] ml-1">*</span>}
             </label>
         )}
         <select
-            className={`w-full px-4 py-2 rounded-lg border ${error
-                    ? 'border-red-500 focus:ring-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'
-                } bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:outline-none transition-colors ${className}`}
+            className={`w-full px-3 py-2 rounded-lg border ${error
+                    ? 'border-[#ff3b30] focus:ring-[#ff3b30]'
+                    : 'border-[#d1d1d6] dark:border-[#3a3a3c] focus:ring-[#0071e3]'
+                } bg-white dark:bg-[#1d1d1f] text-[#1d1d1f] dark:text-white focus:ring-2 focus:outline-none transition-colors ${className}`}
             {...props}
         >
             {children}
         </select>
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-[#ff3b30]">{error}</p>}
     </div>
 );
 

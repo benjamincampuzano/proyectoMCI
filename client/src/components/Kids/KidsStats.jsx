@@ -38,7 +38,7 @@ const KidsStats = () => {
         <div className="space-y-8 animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Reporte Estadístico de Clases</h2>
+                    <h2 className="text-2xl font-bold text-[#1d1d1f] dark:text-white">Reporte Estadístico de Clases</h2>
                     <p className="text-gray-500 dark:text-gray-400">Participación de estudiantes en células y clases (Kids, Teens, Jóvenes)</p>
                 </div>
             </div>
@@ -106,8 +106,8 @@ const KidsStats = () => {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold mb-6 text-gray-800 dark:text-white">Participación en Células y Clases por Líder</h3>
+            <div className="bg-white dark:bg-[#272729] p-6 rounded-lg shadow">
+                <h3 className="text-lg font-semibold mb-6 text-[#1d1d1f] dark:text-white">Participación en Células y Clases por Líder</h3>
                 <div className="h-80 w-full min-h-[320px]">
                     {data && data.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
@@ -139,13 +139,13 @@ const KidsStats = () => {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Detalle por Red</h3>
+            <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-[#d1d1d6] dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white">Detalle por Red</h3>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-700">
+                        <thead className="bg-[#f5f5f7] dark:bg-[#272729]">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Líder</th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Estudiantes</th>
@@ -155,9 +155,9 @@ const KidsStats = () => {
                                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Asistencia Células</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="bg-white dark:bg-[#272729] divide-y divide-gray-200 dark:divide-gray-700">
                             {data.map((item) => (
-                                <tr key={item.leaderName} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <tr key={item.leaderName} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                         {item.leaderName}
                                     </td>

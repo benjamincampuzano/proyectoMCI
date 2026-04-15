@@ -272,9 +272,9 @@ const KidsStudentMatrix = () => {
                 </Button>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-4">
+            <div className="bg-white dark:bg-[#272729] rounded-lg shadow p-4 space-y-4">
                 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-4">
+            <div className="bg-white dark:bg-[#272729] rounded-lg shadow p-4 space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Buscar Estudiante
@@ -292,44 +292,44 @@ const KidsStudentMatrix = () => {
             </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-700">
+                        <thead className="bg-[#f5f5f7] dark:bg-[#272729]">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Nombre
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Edad
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Teléfono
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Correo
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Fecha de Nacimiento
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Acudiente
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Líder
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Célula
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Última Asistencia Célula
                                 </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Asistencia
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="bg-white dark:bg-[#272729] divide-y divide-gray-200 dark:divide-gray-700">
                             {filteredStudents.map((student) => {
                                 const birthDate = student.profile?.birthDate;
                                 const age = calculateAge(birthDate);
@@ -340,22 +340,22 @@ const KidsStudentMatrix = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                                             {student.fullName}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {age || '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {student.phone || '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {student.email || '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {formattedDate}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {student.responsible?.fullName || '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {student.leaderDoce ? (
                                                 <div>
                                                     <div>{student.leaderDoce.fullName}</div>
@@ -367,7 +367,7 @@ const KidsStudentMatrix = () => {
                                                 </div>
                                             ) : '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {student.cell?.hasCell ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                                                     SÍ
@@ -378,7 +378,7 @@ const KidsStudentMatrix = () => {
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {student.lastCellAttendance ? (
                                                 <div>
                                                     <div>{formatCellAttendanceDate(student.lastCellAttendance.date)}</div>
@@ -391,7 +391,7 @@ const KidsStudentMatrix = () => {
                                                 </div>
                                             ) : '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d] text-center">
                                             {getAttendanceRate(student.enrollments)}
                                         </td>
                                     </tr>
@@ -402,7 +402,7 @@ const KidsStudentMatrix = () => {
                 </div>
 
                 {filteredStudents.length === 0 && (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <div className="text-center py-8 text-[#86868b] dark:text-[#98989d]">
                         No se encontraron estudiantes con los filtros seleccionados
                     </div>
                 )}
@@ -411,7 +411,7 @@ const KidsStudentMatrix = () => {
             {/* Modal para subir evidencias de clase */}
             {showPhotoModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                    <div className="bg-white dark:bg-[#272729] rounded-lg p-6 w-full max-w-md mx-4">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                                 Subir Evidencia de Clase
@@ -438,7 +438,7 @@ const KidsStudentMatrix = () => {
                                     onChange={(e) => setPhotoUrl(e.target.value)}
                                     className="w-full"
                                 />
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <p className="text-xs text-[#86868b] dark:text-[#98989d] mt-1">
                                     Pega el enlace público de la imagen en Google Drive
                                 </p>
                             </div>
@@ -451,7 +451,7 @@ const KidsStudentMatrix = () => {
                                     placeholder="Describe la actividad, fecha, tema de la clase..."
                                     value={photoDescription}
                                     onChange={(e) => setPhotoDescription(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-[#3a3a3c] rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-[#272729] dark:text-gray-100"
                                     rows="3"
                                 />
                             </div>

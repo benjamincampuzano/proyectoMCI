@@ -56,13 +56,13 @@ const KidsCourseManagement = () => {
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Clases Kids</h2>
                 <div className="flex items-center gap-2">
-                    <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                    <div className="flex bg-[#f5f5f7] dark:bg-[#272729] rounded-lg p-1">
                         <button
                             onClick={() => setViewMode('table')}
                             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                                 viewMode === 'table'
                                     ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                                    : 'text-[#86868b] dark:text-white/80 hover:text-gray-800 dark:hover:text-white'
                             }`}
                             title="Vista de tabla"
                         >
@@ -73,7 +73,7 @@ const KidsCourseManagement = () => {
                             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                                 viewMode === 'cards'
                                     ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                                    : 'text-[#86868b] dark:text-white/80 hover:text-gray-800 dark:hover:text-white'
                             }`}
                             title="Vista de tarjetas"
                         >
@@ -102,7 +102,7 @@ const KidsCourseManagement = () => {
                                 onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedCourseId(course.id)}
                                 role="button"
                                 tabIndex={0}
-                                className="bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700 relative group"
+                                className="bg-white dark:bg-[#272729] rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow p-6 border border-[#d1d1d6] dark:border-[#3a3a3c] relative group"
                             >
                                 <div className="flex justify-between items-start mb-4">
                                     <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
@@ -111,13 +111,13 @@ const KidsCourseManagement = () => {
                                     <span className={`${colors.bg} ${colors.text} text-xs px-2 py-1 rounded-full`}>
                                         {categoryInfo.label} ({categoryInfo.ageRange})
                                     </span>
-                                    <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs px-2 py-1 rounded-full">
+                                    <span className="bg-[#f5f5f7] dark:bg-[#272729] text-[#86868b] dark:text-white/80 text-xs px-2 py-1 rounded-full">
                                         {course._count?.enrollments || 0} Estudiantes
                                     </span>
                                 </div>
-                                <p className="text-gray-500 text-sm mb-4 line-clamp-2">{course.description}</p>
+                                <p className="text-[#86868b] text-sm mb-4 line-clamp-2">{course.description}</p>
 
-                                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                <div className="space-y-2 text-sm text-[#86868b] dark:text-[#98989d]">
                                     <div className="flex items-center">
                                         <Users size={16} className="mr-2" />
                                         <span>Prof: {course.professor?.fullName || 'N/A'}</span>
@@ -141,37 +141,37 @@ const KidsCourseManagement = () => {
                     })}
                 </div>
             ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-900/50">
+                        <thead className="bg-[#f5f5f7] dark:bg-black/50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Nombre
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Categoría
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Profesor
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Auxiliar
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Fecha Inicio
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Fecha Final
                                 </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Estudiantes
                                 </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-right text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Acciones
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="bg-white dark:bg-[#272729] divide-y divide-gray-200 dark:divide-gray-700">
                             {courses.map(course => {
                                 const categoryInfo = CATEGORY_INFO[course.category] || CATEGORY_INFO['KIDS1'];
                                 const safeColor = categoryInfo?.color || 'pink';
@@ -183,7 +183,7 @@ const KidsCourseManagement = () => {
                                 const colors = colorClasses[safeColor] || colorClasses.pink;
 
                                 return (
-                                    <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    <tr key={course.id} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700/50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600" onClick={() => setSelectedCourseId(course.id)}>
@@ -196,22 +196,22 @@ const KidsCourseManagement = () => {
                                                 {categoryInfo.label}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {course.professor?.fullName || 'Sin asignar'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {course.auxiliaries && course.auxiliaries.length > 0 
                                                 ? course.auxiliaries.map(a => a.fullName).join(', ')
                                                 : 'Sin asignar'
                                             }
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {course.endDate ? new Date(course.endDate).toLocaleDateString() : 'Sin fecha'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-[#86868b] dark:text-[#98989d]">
                                             {course._count?.enrollments || 0}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

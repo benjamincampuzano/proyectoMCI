@@ -43,17 +43,17 @@ const AttendanceChart = () => {
     return (
         <div className="space-y-6">
             {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+            <div className="bg-white dark:bg-[#272729] rounded-lg shadow-sm border border-gray-100 dark:border-[#3a3a3c] p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label htmlFor="cellSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="cellSelect" className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                             Célula (Opcional)
                         </label>
                         <select
                             id="cellSelect"
                             value={selectedCell}
                             onChange={(e) => setSelectedCell(e.target.value)}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3] outline-none"
                         >
                             <option value="">Todas las células</option>
                             {cells.map(cell => (
@@ -64,7 +64,7 @@ const AttendanceChart = () => {
                         </select>
                     </div>
                     <div>
-                        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="startDate" className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                             <Calendar className="inline w-4 h-4 mr-1" />
                             Fecha Inicio
                         </label>
@@ -73,11 +73,11 @@ const AttendanceChart = () => {
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3] outline-none"
                         />
                     </div>
                     <div>
-                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="endDate" className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                             <Calendar className="inline w-4 h-4 mr-1" />
                             Fecha Fin
                         </label>
@@ -86,7 +86,7 @@ const AttendanceChart = () => {
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:ring-2 focus:ring-[#0071e3] outline-none"
                         />
                     </div>
                 </div>
@@ -145,8 +145,8 @@ const AttendanceChart = () => {
             </div>
 
             {/* Chart */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+            <div className="bg-white dark:bg-[#272729] rounded-xl shadow-sm border border-gray-100 dark:border-[#3a3a3c] p-6">
+                <h2 className="text-xl font-bold text-[#1d1d1f] dark:text-white mb-6">
                     Tendencia de Asistencia
                 </h2>
                 
@@ -161,11 +161,11 @@ const AttendanceChart = () => {
                 
                 {loading ? (
                     <div className="text-center py-12">
-                        <p className="text-gray-500 dark:text-gray-400">Cargando estadísticas...</p>
+                        <p className="text-[#86868b] dark:text-[#98989d]">Cargando estadísticas...</p>
                     </div>
                 ) : stats.length === 0 ? (
                     <div className="text-center py-12">
-                        <p className="text-gray-500 dark:text-gray-400">No hay datos de asistencia para el rango de fechas seleccionado</p>
+                        <p className="text-[#86868b] dark:text-[#98989d]">No hay datos de asistencia para el rango de fechas seleccionado</p>
                     </div>
                 ) : (
                     <ResponsiveContainer width="100%" height={400}>

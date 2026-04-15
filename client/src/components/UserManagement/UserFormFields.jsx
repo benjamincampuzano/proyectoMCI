@@ -23,9 +23,9 @@ const UserFormFields = ({
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Tipo de Documento</label>
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Tipo de Documento</label>
                 <select
-                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                     value={formData.documentType || ''}
                     onChange={e => setFormData({ ...formData, documentType: e.target.value })}
                 >
@@ -39,33 +39,33 @@ const UserFormFields = ({
                 </select>
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Número de Documento</label>
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Número de Documento</label>
                 <input
                     type="text"
-                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                     value={formData.documentNumber || ''}
                     onChange={e => setFormData({ ...formData, documentNumber: e.target.value })}
                     placeholder="12345678"
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nombre Completo</label>
-                <input required type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Nombre Completo</label>
+                <input required type="text" className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Fecha de Nacimiento</label>
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Fecha de Nacimiento</label>
                 <input
                     type="date"
-                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                     value={formData.birthDate || ''}
                     onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Email</label>
                 <input required
                     type="email"
-                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                     value={formData.email}
                     placeholder="tu_email@email.com"
                     onChange={e => setFormData({ ...formData, email: e.target.value })}
@@ -74,13 +74,13 @@ const UserFormFields = ({
 
             {mode === 'create' && (
                 <div>
-                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Password</label>
+                    <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Password</label>
                     <div className="relative">
                         <input
                             required
                             type={showPassword ? "text" : "Contraseña"}
                             placeholder="Mínimo 8 caracteres"
-                            className="w-full p-2 pr-10 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                            className="w-full p-2 pr-10 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                             value={formData.password}
                             onChange={e => {
                                 setFormData({ ...formData, password: e.target.value });
@@ -90,7 +90,7 @@ const UserFormFields = ({
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#1d1d1f] dark:text-gray-400 dark:hover:text-gray-200"
                         >
                             {showPassword ? <Eye size={20} /> : <EyeClosedIcon size={20} />}
                         </button>
@@ -108,9 +108,9 @@ const UserFormFields = ({
             )}
 
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Estado Civil</label>
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Estado Civil</label>
                 <select
-                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                     value={formData.maritalStatus || ''}
                     onChange={e => setFormData({ ...formData, maritalStatus: e.target.value })}
                 >
@@ -124,9 +124,9 @@ const UserFormFields = ({
                 </select>
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">RED</label>
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">RED</label>
                 <select
-                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                     value={formData.network || ''}
                     onChange={e => setFormData({ ...formData, network: e.target.value })}
                 >
@@ -140,7 +140,7 @@ const UserFormFields = ({
                 </select>
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Cónyuge (Opcional)</label>
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Cónyuge (Opcional)</label>
                 <AsyncSearchSelect
                     fetchItems={(term) => {
                         const params = { search: term };
@@ -158,9 +158,9 @@ const UserFormFields = ({
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Rol</label>
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Rol</label>
                 <select
-                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                     value={formData.role || ''}
                     onChange={e => setFormData({ ...formData, role: e.target.value, pastorId: '', liderDoceId: '', liderCelulaId: '' })}
                 >
@@ -170,30 +170,30 @@ const UserFormFields = ({
                 </select>
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Sexo</label>
-                <select className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.sex || ''} onChange={e => setFormData({ ...formData, sex: e.target.value })}>
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Sexo</label>
+                <select className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]" value={formData.sex || ''} onChange={e => setFormData({ ...formData, sex: e.target.value })}>
                     <option value="">Seleccionar...</option>
                     <option value="HOMBRE">Hombre</option>
                     <option value="MUJER">Mujer</option>
                 </select>
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Teléfono</label>
-                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Teléfono</label>
+                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Dirección</label>
-                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.address || ''} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Dirección</label>
+                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]" value={formData.address || ''} onChange={e => setFormData({ ...formData, address: e.target.value })} />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Barrio</label>
-                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500" value={formData.neighborhood || ''} onChange={e => setFormData({ ...formData, neighborhood: e.target.value })} />
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Barrio</label>
+                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]" value={formData.neighborhood || ''} onChange={e => setFormData({ ...formData, neighborhood: e.target.value })} />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Ciudad</label>
+                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Ciudad</label>
                 <input
                     type="text"
-                    className="w-full p-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                     value={formData.city || ''}
                     onChange={e => setFormData({ ...formData, city: e.target.value })}
                     placeholder="Manizales"
@@ -216,7 +216,7 @@ const UserFormFields = ({
                         <>
                             {[0, 1].map(index => (
                                 <div key={`pastor-${index}`}>
-                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Pastor ({index + 1})</label>
+                                    <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Pastor ({index + 1})</label>
                                     <AsyncSearchSelect
                                         fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'PASTOR' } }).then(res => res.data)}
                                         selectedValue={pastores.find(p => p.id === parseInt((formData.pastorIds || [])[index])) || ((formData.pastorIds || [])[index] ? { id: formData.pastorIds[index], fullName: 'Cargando...' } : null)}
@@ -250,7 +250,7 @@ const UserFormFields = ({
                         <>
                             {[0, 1].map(index => (
                                 <div key={`ld-${index}`}>
-                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder 12 ({index + 1})</label>
+                                    <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Líder 12 ({index + 1})</label>
                                     <AsyncSearchSelect
                                         fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => res.data)}
                                         selectedValue={lideresDoce.find(l => l.id === parseInt((formData.liderDoceIds || [])[index])) || ((formData.liderDoceIds || [])[index] ? { id: formData.liderDoceIds[index], fullName: 'Cargando...' } : null)}
@@ -284,7 +284,7 @@ const UserFormFields = ({
                         <>
                             {[0, 1].map(index => (
                                 <div key={`lc-${index}`}>
-                                    <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Líder Célula ({index + 1})</label>
+                                    <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Líder Célula ({index + 1})</label>
                                     <AsyncSearchSelect
                                         fetchItems={(term) => {
                                             const params = { search: term, role: 'LIDER_CELULA' };
@@ -332,7 +332,7 @@ const UserFormFields = ({
                         checked={formData.dataPolicyAccepted || false}
                         onChange={e => setFormData({ ...formData, dataPolicyAccepted: e.target.checked })}
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                    <span className="text-sm text-[#1d1d1f] dark:text-white/80 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                         Acepta la Política de Tratamiento de Datos Personales de MCI.
                     </span>
                 </label>
@@ -345,7 +345,7 @@ const UserFormFields = ({
                         checked={formData.dataTreatmentAuthorized || false}
                         onChange={e => setFormData({ ...formData, dataTreatmentAuthorized: e.target.checked })}
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                    <span className="text-sm text-[#1d1d1f] dark:text-white/80 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                         Autoriza el tratamiento de datos conforme a la Ley 1581 de 2012.
                     </span>
                 </label>
@@ -358,7 +358,7 @@ const UserFormFields = ({
                         checked={formData.minorConsentAuthorized || false}
                         onChange={e => setFormData({ ...formData, minorConsentAuthorized: e.target.checked })}
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                    <span className="text-sm text-[#1d1d1f] dark:text-white/80 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                         {calculateAge(formData.birthDate) < 18 ? (
                             <span className="text-blue-600 dark:text-blue-400 font-semibold">
                                 Cuento con el documento de autorización física/digital firmado por el padre o tutor legal. (Obligatorio)

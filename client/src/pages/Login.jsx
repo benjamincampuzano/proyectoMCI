@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Eye, EyeClosedIcon, ArrowsClockwiseIcon } from '@phosphor-icons/react';
+import { useTheme } from '../context/ThemeContext';
+import { Lock, Eye, EyeClosedIcon, ArrowsClockwiseIcon, Sun, Moon } from '@phosphor-icons/react';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import logo from '../assets/logo.jpg';
 
@@ -14,6 +15,7 @@ const Login = () => {
     const [captcha, setCaptcha] = useState({ num1: 0, num2: 0, operator: '+' });
     const [captchaAnswer, setCaptchaAnswer] = useState('');
     const { login } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
     // Generate random captcha
@@ -97,108 +99,125 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-[100dvh] bg-gray-950 flex items-center justify-center p-4 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-800 via-gray-950 to-gray-950"></div>
-            <div className="absolute top-1/4 -left-32 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl"></div>
-
-            <div className="relative bg-gray-900/80 backdrop-blur-xl p-10 rounded-[2rem] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] border border-gray-800/50 w-full max-w-md">
+        <div className={`min-h-[100dvh] ${theme === 'dark' ? 'bg-black' : 'bg-[#f5f5f7]'} flex items-center justify-center p-4 relative transition-colors duration-300`}>
+            {/* Apple-style subtle static elements */}
+            <div className="absolute inset-0 overflow-hidden">
+                <div className={`absolute top-0 left-0 w-96 h-96 ${theme === 'dark' ? 'bg-[#0071e3]' : 'bg-[#0066cc]'} opacity-3 rounded-full blur-3xl`}></div>
+                <div className={`absolute bottom-0 right-0 w-80 h-80 ${theme === 'dark' ? 'bg-[#2997ff]' : 'bg-[#0071e3]'} opacity-2 rounded-full blur-3xl`}></div>
+            </div>
+            
+            {/* Floating theme toggle button */}
+            <button
+                onClick={toggleTheme}
+                className={`fixed top-6 right-6 p-3 rounded-full z-50 transition-all duration-300 ${
+                    theme === 'dark' 
+                        ? 'bg-[#272729] text-white hover:bg-[#2a2a2d]' 
+                        : 'bg-white text-[#1d1d1f] hover:bg-[#fafafc] border border-[#e5e5e7]'
+                } shadow-lg hover:scale-105 active:scale-95`}
+                aria-label="Toggle theme"
+            >
+                {theme === 'dark' ? (
+                    <Sun size={20} weight="regular" />
+                ) : (
+                    <Moon size={20} weight="regular" />
+                )}
+            </button>
+            <div className="w-full max-w-[440px] relative z-10">
                 <div className="text-center mb-8">
-                    <div className="w-20 h-20 mx-auto mb-6 rounded-2xl overflow-hidden shadow-lg border border-gray-700">
+                    <div className="w-16 h-16 mx-auto mb-5 rounded-xl overflow-hidden">
                         <img src={logo} alt="MCI Logo" className="w-full h-full object-cover" />
                     </div>
-                    <h2 className="text-3xl font-semibold tracking-tight text-white">Bienvenido</h2>
-                    <p className="text-gray-400 mt-2 text-sm">Ingresa a tu cuenta</p>
+                    <h2 className={`text-2xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-[#1d1d1f]'}`} style={{ letterSpacing: '-0.02em' }}>Bienvenido</h2>
+                    <p className={`mt-1 text-sm ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Ingresa a tu cuenta</p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-sm flex items-center justify-center gap-2">
-                        <span className="text-red-400 font-medium">{error}</span>
+                    <div className="bg-[#ff3b30]/10 border border-[#ff3b30]/20 text-[#ff453a] p-3 rounded-lg mb-5 text-sm">
+                        {error}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Email</label>
+                        <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Email</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full bg-gray-950/50 border border-gray-800 text-white px-4 py-3.5 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all"
+                            className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-all`}
                             placeholder="tu@email.com"
                             required
                         />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Contrasena</label>
+                        <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Contrasena</label>
                         <div className="relative">
                             <input
                                 type={showPassword ? 'text' : 'password'}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-gray-950/50 border border-gray-800 text-white px-4 py-3.5 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all pr-12"
+                                className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-all pr-10`}
                                 placeholder="********"
                                 required
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${theme === 'dark' ? 'text-[#98989d] hover:text-white' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}
                             >
-                                {showPassword ? <Eye size={20} weight="bold" /> : <EyeClosedIcon size={20} weight="bold" />}
+                                {showPassword ? <Eye size={18} weight="regular" /> : <EyeClosedIcon size={18} weight="regular" />}
                             </button>
                         </div>
                     </div>
 
-                    {/* Captcha */}
-                    <div className="bg-gray-800/50 p-2 rounded-xl border border-gray-700/50">
-                        <label className="block text-xs font-semibold text-gray-400 uppercase mb-2">Verificación de Seguridad</label>
+                    <div className={`${theme === 'dark' ? 'bg-black' : 'bg-white'} p-3 rounded-lg border-none`}>
+                        <label className={`block text-xs font-semibold uppercase mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Verificación de Seguridad</label>
                         <div className="flex items-center gap-2">
-                            <div className="bg-gray-900/50 px-3 py-2 rounded-lg border border-gray-600/50">
-                                <span className="text-white font-medium text-sm">
+                            <div className={`${theme === 'dark' ? 'bg-black' : 'bg-[#fafafc]'} px-3 py-2 rounded-md border-none`}>
+                                <span className={`font-normal text-sm ${theme === 'dark' ? 'text-white' : 'text-[#1d1d1f]'}`}>
                                     {captcha.num1} {captcha.operator} {captcha.num2} = ?
                                 </span>
                             </div>
                             <button
                                 type="button"
                                 onClick={generateCaptcha}
-                                className="p-2 text-gray-500 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+                                className={`p-2 rounded-md transition-colors ${theme === 'dark' ? 'text-[#98989d] hover:text-white hover:bg-[#272729]' : 'text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]'}`}
                                 title="Generar nuevo captcha"
                             >
-                                <ArrowsClockwiseIcon size={16} />
+                                <ArrowsClockwiseIcon size={14} />
                             </button>
                             <input
                                 type="text"
                                 value={captchaAnswer}
                                 onChange={(e) => setCaptchaAnswer(e.target.value)}
                                 placeholder="Respuesta"
-                                className="flex-1 bg-gray-900/50 border border-gray-600/50 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                                className={`flex-1 ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-2 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors text-sm`}
                                 required
                             />
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">Resuelve la operación para continuar</p>
+                        <p className={`text-xs mt-2 ${theme === 'dark' ? 'text-[#86868b]' : 'text-[#98989d]'}`}>Resuelve la operación para continuar</p>
                     </div>
 
                     <button
                         type="submit"
-                        className="w-full bg-white text-gray-900 font-semibold py-3.5 rounded-xl hover:bg-gray-100 active:scale-[0.98] transition-all shadow-lg shadow-white/5"
+                        className="w-full bg-[#0071e3] text-white font-normal py-2 rounded-lg hover:bg-[#0077ed] active:scale-[0.98] transition-all"
                     >
                         Iniciar Sesion
                     </button>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-gray-400">
+                <div className={`mt-6 text-center text-sm ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>
                     No tienes cuenta?{' '}
-                    <Link to="/register" className="text-white font-medium hover:underline">
+                    <Link to="/register" className={`${theme === 'dark' ? 'text-[#2997ff]' : 'text-[#0066cc]'} font-normal hover:underline`}>
                         Registrate aqui
                     </Link>
                 </div>
 
-                <div className="mt-4 pt-6 border-t border-gray-800">
+                <div className={`mt-4 pt-5 ${theme === 'dark' ? 'border-t border-[#3a3a3c]' : 'border-t border-[#e5e5e7]'}`}>
                     <button
                         onClick={() => navigate('/public-guest-registration')}
-                        className="w-full bg-transparent hover:bg-gray-800/50 text-gray-300 font-medium py-3 rounded-xl border border-gray-700 transition-colors"
+                        className={`w-full font-normal py-2 rounded-lg border transition-colors ${theme === 'dark' ? 'bg-transparent hover:bg-[#272729] text-white border-[#3a3a3c]' : 'bg-transparent hover:bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5e7]'}`}
                     >
                         Registrar Nuevo Invitado
                     </button>

@@ -158,7 +158,7 @@ const Home = () => {
                     {isSuperAdmin() && (
                         <div className="min-h-[200px]">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                                <h2 className="text-xl font-semibold text-[#1d1d1f] dark:text-white">
                                     Pastores
                                 </h2>
                             </div>
@@ -166,12 +166,10 @@ const Home = () => {
                         </div>
                     )}
 
-                    {/* Para PASTOR, mostrar directamente su red completa sin selector */}
-
                     {networkLoading ? (
-                        <div className="flex items-center justify-center h-[300px] bg-gray-50 dark:bg-gray-800 rounded-2xl">
-                            <div className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                <ArrowsClockwise className="w-5 h-5 animate-spin" />
+                        <div className="flex items-center justify-center h-[300px] bg-[#f5f5f7] dark:bg-[#272729] rounded-lg">
+                            <div className="text-[#86868b] dark:text-[#98989d] flex items-center gap-2">
+                                <ArrowsClockwise className="w-4 h-4 animate-spin" />
                                 Cargando red de discipulado...
                             </div>
                         </div>
@@ -180,7 +178,7 @@ const Home = () => {
                             {network ? (
                                 <>
                                     <div className="mb-4">
-                                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                                        <h2 className="text-xl font-semibold text-[#1d1d1f] dark:text-white">
                                             {isSuperAdmin()
                                                 ? `Ministerio de ${selectedLeader?.fullName}`
                                                 : 'Mi Ministerio'
@@ -188,55 +186,52 @@ const Home = () => {
                                         </h2>
                                     </div>
                                     {network && (hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) && (
-                                        <div className="mb-6 p-6 bg-gradient-to-r from-emerald-50 to-amber-50 dark:from-emerald-900/20 dark:to-amber-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-lg">
-                                            <div className="flex items-center gap-3 mb-4">
-                                                <div className="w-12 h-12 bg-emerald-600 dark:bg-emerald-700 rounded-full flex items-center justify-center text-white shadow-lg">
-                                                    <Users size={24} weight="fill" />
+                                        <div className="mb-5 p-4 bg-[#f5f5f7] dark:bg-[#272729] rounded-lg">
+                                            <div className="flex items-center gap-2.5 mb-3">
+                                                <div className="w-8 h-8 bg-[#34c759] rounded-full flex items-center justify-center text-white">
+                                                    <Users size={16} weight="fill" />
                                                 </div>
-                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Mis Líderes</h3>
+                                                <h3 className="text-base font-semibold text-[#1d1d1f] dark:text-white">Mis Líderes</h3>
                                             </div>
                                             
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                {/* Tarjeta PASTOR - se muestra para todos los roles */}
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                                 {network.pastor && (
-                                                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-emerald-200 dark:border-emerald-700 shadow-sm hover:shadow-md transition-all duration-200">
-                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900 rounded-full flex items-center justify-center">
-                                                                <Crown size={16} className="text-emerald-600 dark:text-emerald-400" weight="fill" />
+                                                    <div className="bg-white dark:bg-[#1d1d1f] rounded-lg p-3 border border-[#d1d1d6] dark:border-[#3a3a3c]">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <div className="w-6 h-6 bg-[#34c759]/20 rounded-full flex items-center justify-center">
+                                                                <Crown size={12} className="text-[#34c759]" weight="fill" />
                                                             </div>
-                                                            <span className="font-bold text-emerald-700 dark:text-emerald-400 text-lg">PASTOR</span>
+                                                            <span className="font-semibold text-[#34c759] text-sm">PASTOR</span>
                                                         </div>
-                                                        <div className="text-gray-900 dark:text-white font-medium">
+                                                        <div className="text-[#1d1d1f] dark:text-white font-normal text-sm">
                                                             {network.pastor.fullName}
                                                         </div>
                                                     </div>
                                                 )}
                                                 
-                                                {/* Tarjeta LIDER_DOCE - se muestra para LIDER_CELULA y DISCIPULO */}
                                                 {network.liderDoce && (hasAnyRole(['LIDER_CELULA', 'DISCIPULO'])) && (
-                                                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-amber-200 dark:border-amber-700 shadow-sm hover:shadow-md transition-all duration-200">
-                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900 rounded-full flex items-center justify-center">
-                                                                <StarIcon size={16} className="text-amber-600 dark:text-amber-400" weight="fill" />
+                                                    <div className="bg-white dark:bg-[#1d1d1f] rounded-lg p-3 border border-[#d1d1d6] dark:border-[#3a3a3c]">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <div className="w-6 h-6 bg-[#ff9500]/20 rounded-full flex items-center justify-center">
+                                                                <StarIcon size={12} className="text-[#ff9500]" weight="fill" />
                                                             </div>
-                                                            <span className="font-bold text-amber-700 dark:text-amber-400 text-lg">LIDER 12</span>
+                                                            <span className="font-semibold text-[#ff9500] text-sm">LIDER 12</span>
                                                         </div>
-                                                        <div className="text-gray-900 dark:text-white font-medium">
+                                                        <div className="text-[#1d1d1f] dark:text-white font-normal text-sm">
                                                             {network.liderDoce.fullName}
                                                         </div>
                                                     </div>
                                                 )}
                                                 
-                                                {/* Tarjeta LIDER_CELULA - se muestra solo para DISCIPULO */}
                                                 {network.liderCelula && hasRole('DISCIPULO') && (
-                                                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700 shadow-sm hover:shadow-md transition-all duration-200">
-                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                                                                <Users size={16} className="text-blue-600 dark:text-blue-400" weight="fill" />
+                                                    <div className="bg-white dark:bg-[#1d1d1f] rounded-lg p-3 border border-[#d1d1d6] dark:border-[#3a3a3c]">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <div className="w-6 h-6 bg-[#0071e3]/20 rounded-full flex items-center justify-center">
+                                                                <Users size={12} className="text-[#0071e3]" weight="fill" />
                                                             </div>
-                                                            <span className="font-bold text-blue-700 dark:text-blue-400 text-lg">LIDER CELULA</span>
+                                                            <span className="font-semibold text-[#0071e3] text-sm">LIDER CELULA</span>
                                                         </div>
-                                                        <div className="text-gray-900 dark:text-white font-medium">
+                                                        <div className="text-[#1d1d1f] dark:text-white font-normal text-sm">
                                                             {network.liderCelula.fullName}
                                                         </div>
                                                     </div>
@@ -251,9 +246,9 @@ const Home = () => {
                                     />
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-[300px] bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
-                                    <Users className="w-12 h-12 text-gray-400 mb-4" />
-                                    <p className="text-gray-500 dark:text-gray-400">
+                                <div className="flex flex-col items-center justify-center h-[300px] bg-[#f5f5f7] dark:bg-[#272729] rounded-lg border border-[#d1d1d6] dark:border-[#3a3a3c]">
+                                    <Users className="w-8 h-8 text-[#86868b] mb-3" />
+                                    <p className="text-[#86868b] dark:text-[#98989d] text-sm">
                                         {isSuperAdmin()
                                             ? 'Selecciona un pastor para ver su red'
                                             : 'No hay red disponible'
@@ -312,44 +307,41 @@ const Home = () => {
     }
 
     return (
-        <div className="space-y-8 pb-20">
+        <div className="space-y-6 pb-20">
             <PageHeader
                 title={`Bienvenido, ${user?.fullName}`}
                 description={`Proverbios 27:23 Sé diligente en conocer el estado de tus ovejas, y mira con cuidado por tus rebaños`}
                 action={``}
             />
 
-            {/* Quick Actions FAB */}
             {canViewNetwork && (
-                <div className="fixed bottom-8 right-8 z-40 flex flex-col gap-3">
+                <div className="fixed bottom-6 right-6 z-40">
                     <Button
                         variant="primary"
                         size="sm"
                         icon={ArrowsClockwise}
                         onClick={refreshNetwork}
-                        className="shadow-xl"
                     >
                         Actualizar
                     </Button>
                 </div>
             )}
 
-            {/* Tabs Navigation */}
-            <div className="border-b border-gray-200 dark:border-gray-700">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            <div className="border-b border-[#d1d1d6] dark:border-[#3a3a3c]">
+                <nav className="-mb-px flex space-x-6" aria-label="Tabs">
                     {canViewNetwork && (
                         <button
                             onClick={() => setActiveTab('red')}
                             className={`
-                                py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
+                                py-3 px-1 border-b-2 font-normal text-sm transition-colors duration-200
                                 ${activeTab === 'red'
-                                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                    ? 'border-[#0071e3] text-[#0071e3]'
+                                    : 'border-transparent text-[#86868b] hover:text-[#1d1d1f] hover:border-[#d1d1d6] dark:hover:text-white'
                                 }
                             `}
                         >
                             <span className="flex items-center gap-2">
-                                <Users className="w-5 h-5" weight="duotone" />
+                                <Users className="w-4 h-4" weight="regular" />
                                 Red de Personas
                             </span>
                         </button>
@@ -358,15 +350,15 @@ const Home = () => {
                         <button
                             onClick={() => setActiveTab('actividad')}
                             className={`
-                                py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
+                                py-3 px-1 border-b-2 font-normal text-sm transition-colors duration-200
                                 ${activeTab === 'actividad'
-                                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                    ? 'border-[#0071e3] text-[#0071e3]'
+                                    : 'border-transparent text-[#86868b] hover:text-[#1d1d1f] hover:border-[#d1d1d6] dark:hover:text-white'
                                 }
                             `}
                         >
                             <span className="flex items-center gap-2">
-                                <Calendar className="w-5 h-5" weight="duotone" />
+                                <Calendar className="w-4 h-4" weight="regular" />
                                 Actividad y Ministerio
                             </span>
                         </button>
@@ -375,15 +367,15 @@ const Home = () => {
                         <button
                             onClick={() => setActiveTab('informe')}
                             className={`
-                                py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200
+                                py-3 px-1 border-b-2 font-normal text-sm transition-colors duration-200
                                 ${activeTab === 'informe'
-                                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                    ? 'border-[#0071e3] text-[#0071e3]'
+                                    : 'border-transparent text-[#86868b] hover:text-[#1d1d1f] hover:border-[#d1d1d6] dark:hover:text-white'
                                 }
                             `}
                         >
                             <span className="flex items-center gap-2">
-                                <ArrowsClockwise className="w-5 h-5" weight="duotone" />
+                                <ArrowsClockwise className="w-4 h-4" weight="regular" />
                                 Informe General
                             </span>
                         </button>

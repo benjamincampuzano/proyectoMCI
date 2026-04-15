@@ -1,5 +1,4 @@
 import React from 'react';
-import { colors, semanticColors } from '../../constants/colors';
 
 const Button = ({
   children,
@@ -14,33 +13,24 @@ const Button = ({
   type = 'button',
   ...props
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]';
+  const baseClasses = 'inline-flex items-center justify-center font-normal rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]';
   
   const sizeClasses = {
-    sm: 'px-3.5 py-2 text-xs',
-    md: 'px-5 py-2.5 text-sm',
-    lg: 'px-6 py-3 text-base',
-    xl: 'px-8 py-4 text-lg'
+    sm: 'px-3.5 py-1.5 text-sm',
+    md: 'px-4 py-2 text-base',
+    lg: 'px-6 py-2.5 text-lg',
+    xl: 'px-8 py-3 text-xl'
   };
 
   const variantClasses = {
-    primary: `bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 shadow-lg shadow-blue-600/20 ${disabled ? 'bg-gray-400 hover:bg-gray-400' : ''}`,
-    secondary: `bg-gray-200 hover:bg-gray-300 text-gray-700 focus:ring-gray-500 ${disabled ? 'bg-gray-100 hover:bg-gray-100 text-gray-400' : ''}`,
-    success: `bg-emerald-600 hover:bg-emerald-700 text-white focus:ring-emerald-500 shadow-lg shadow-emerald-600/20 ${disabled ? 'bg-gray-400 hover:bg-gray-400' : ''}`,
-    warning: `bg-amber-600 hover:bg-amber-700 text-white focus:ring-amber-500 shadow-lg shadow-amber-600/20 ${disabled ? 'bg-gray-400 hover:bg-gray-400' : ''}`,
-    error: `bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 shadow-lg shadow-red-600/20 ${disabled ? 'bg-gray-400 hover:bg-gray-400' : ''}`,
-    outline: `border-2 border-gray-300 hover:border-gray-400 text-gray-700 focus:ring-gray-500 ${disabled ? 'border-gray-200 text-gray-400' : ''}`,
-    ghost: `text-gray-700 hover:bg-gray-100 focus:ring-gray-500 ${disabled ? 'text-gray-400 hover:bg-transparent' : ''}`
-  };
-
-  const darkModeClasses = {
-    primary: 'dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white dark:focus:ring-blue-500',
-    secondary: 'dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 dark:focus:ring-gray-500',
-    success: 'dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:text-white dark:focus:ring-emerald-500',
-    warning: 'dark:bg-amber-600 dark:hover:bg-amber-700 dark:text-white dark:focus:ring-amber-500',
-    error: 'dark:bg-red-600 dark:hover:bg-red-700 dark:text-white dark:focus:ring-red-500',
-    outline: 'dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-200 dark:focus:ring-gray-500',
-    ghost: 'dark:text-gray-200 dark:hover:bg-gray-800 dark:focus:ring-gray-500'
+    primary: 'bg-[#0071e3] hover:bg-[#0077ed] text-white focus:ring-[#0071e3]',
+    secondary: 'bg-[#f5f5f7] hover:bg-[#ededf2] text-[#1d1d1f] focus:ring-[#0071e3] dark:bg-[#272729] dark:hover:bg-[#2a2a2d] dark:text-white',
+    success: 'bg-[#34c759] hover:bg-[#30d158] text-white focus:ring-[#34c759]',
+    warning: 'bg-[#ff9500] hover:bg-[#ff9f2a] text-white focus:ring-[#ff9500]',
+    error: 'bg-[#ff3b30] hover:bg-[#ff453a] text-white focus:ring-[#ff3b30]',
+    outline: 'border border-[#d1d1d6] hover:border-[#86868b] text-[#1d1d1f] focus:ring-[#0071e3] dark:border-[#3a3a3c] dark:hover:border-[#48484a] dark:text-white',
+    ghost: 'text-[#1d1d1f] hover:bg-[#f5f5f7] focus:ring-[#0071e3] dark:text-white dark:hover:bg-[#272729]',
+    dark: 'bg-[#1d1d1f] hover:bg-[#2c2c2e] text-white focus:ring-[#0071e3]'
   };
 
   const iconSizeClasses = {
@@ -75,17 +65,16 @@ const Button = ({
 
   const renderIcon = () => {
     if (loading) return loadingSpinner;
-    if (Icon) return <Icon className={iconSizeClasses[size]} weight="duotone" />;
+    if (Icon) return <Icon className={iconSizeClasses[size]} weight="regular" />;
     return null;
   };
 
   const iconElement = renderIcon();
-  const iconSpacing = iconElement ? (iconPosition === 'left' ? 'mr-2' : 'ml-2') : '';
 
   return (
     <button
       type={type}
-      className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${darkModeClasses[variant]} ${className}`}
+      className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
       disabled={disabled || loading}
       onClick={onClick}
       {...props}

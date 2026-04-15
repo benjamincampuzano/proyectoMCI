@@ -134,8 +134,8 @@ const GuestStats = () => {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Estadísticas de Invitados</h2>
+            <div className="bg-white dark:bg-[#272729] rounded-lg p-6 border border-[#d1d1d6] dark:border-[#3a3a3c]">
+                <h2 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-6">Estadísticas de Invitados</h2>
 
                 {error && (
                     <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
@@ -146,7 +146,7 @@ const GuestStats = () => {
                 {/* Date Filters */}
                 <div className="flex flex-wrap items-end gap-4 mb-6">
                     <div className="flex items-center gap-2">
-                        <label htmlFor="startDate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <label htmlFor="startDate" className="text-sm font-medium text-[#1d1d1f] dark:text-white/80">
                             Desde
                         </label>
                         <input
@@ -154,11 +154,11 @@ const GuestStats = () => {
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 text-sm"
+                            className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm"
                         />
                     </div>
                     <div className="flex items-center gap-2">
-                        <label htmlFor="endDate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <label htmlFor="endDate" className="text-sm font-medium text-[#1d1d1f] dark:text-white/80">
                             Hasta
                         </label>
                         <input
@@ -166,7 +166,7 @@ const GuestStats = () => {
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 text-sm"
+                            className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm"
                         />
                     </div>
                     {currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r)) && (
@@ -258,8 +258,8 @@ const GuestStats = () => {
                         {/* Charts */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                             {/* Status Distribution */}
-                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-100 dark:border-gray-700">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Distribución por Estado</h3>
+                            <div className="bg-white dark:bg-[#272729] rounded-lg p-6 border border-[#d1d1d6] dark:border-[#3a3a3c]">
+                                <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Distribución por Estado</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <PieChart>
                                         <Pie
@@ -282,8 +282,8 @@ const GuestStats = () => {
                             </div>
 
                             {/* Top Inviters */}
-                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-100 dark:border-gray-700">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Invitadores</h3>
+                            <div className="bg-white dark:bg-[#272729] rounded-lg p-6 border border-[#d1d1d6] dark:border-[#3a3a3c]">
+                                <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Top Invitadores</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <BarChart data={stats.topInviters || []}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.2} />
@@ -299,8 +299,8 @@ const GuestStats = () => {
 
                             {/* Invitations by LIDER_DOCE */}
                             {stats.invitationsByLiderDoce && stats.invitationsByLiderDoce.length > 0 && (
-                                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-100 dark:border-gray-700 col-span-1 lg:col-span-2">
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Invitaciones por Líder 12</h3>
+                                <div className="bg-white dark:bg-[#272729] rounded-lg p-6 border border-[#d1d1d6] dark:border-[#3a3a3c] col-span-1 lg:col-span-2">
+                                    <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Invitaciones por Líder 12</h3>
                                     <ResponsiveContainer width="100%" height={300}>
                                         <BarChart data={stats.invitationsByLiderDoce}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" strokeOpacity={0.2} />
@@ -319,23 +319,23 @@ const GuestStats = () => {
 
                         {/* Top Inviters Table */}
                         {stats.topInviters && stats.topInviters.length > 0 && (
-                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-100 dark:border-gray-700">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Detalle de Invitadores</h3>
+                            <div className="bg-white dark:bg-[#272729] rounded-lg p-6 border border-[#d1d1d6] dark:border-[#3a3a3c]">
+                                <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Detalle de Invitadores</h3>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
-                                        <thead className="bg-gray-100 dark:bg-gray-800">
+                                        <thead className="bg-[#f5f5f7] dark:bg-[#272729]">
                                             <tr>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">#</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Nombre</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 dark:text-gray-200">Total Invitados</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-[#1d1d1f] dark:text-gray-200">#</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-[#1d1d1f] dark:text-gray-200">Nombre</th>
+                                                <th className="px-4 py-3 text-right text-sm font-semibold text-[#1d1d1f] dark:text-gray-200">Total Invitados</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-600">
                                             {stats.topInviters.map((inviter, index) => (
                                                 <tr key={inviter.name} className="hover:bg-white dark:hover:bg-gray-600/50 transition-colors">
-                                                    <td className="px-4 py-3 text-gray-500 dark:text-gray-300">{index + 1}</td>
-                                                    <td className="px-4 py-3 text-gray-900 dark:text-white">{inviter.name}</td>
-                                                    <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-semibold">{inviter.count}</td>
+                                                    <td className="px-4 py-3 text-[#86868b] dark:text-white/80">{index + 1}</td>
+                                                    <td className="px-4 py-3 text-[#1d1d1f] dark:text-white">{inviter.name}</td>
+                                                    <td className="px-4 py-3 text-right text-[#1d1d1f] dark:text-white font-semibold">{inviter.count}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -346,39 +346,39 @@ const GuestStats = () => {
 
                         {/* Reporte de Seguimiento por Líder */}
                         {trackingStats && trackingStats.length > 0 && (
-                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-100 dark:border-gray-700 mt-6">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Reporte de Seguimiento por Líder</h3>
+                            <div className="bg-white dark:bg-[#272729] rounded-lg p-6 border border-[#d1d1d6] dark:border-[#3a3a3c] mt-6">
+                                <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Reporte de Seguimiento por Líder</h3>
                                 <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                        <thead className="bg-gray-50 dark:bg-gray-900/50">
+                                    <table className="min-w-full divide-y divide-[#d1d1d6] dark:divide-[#3a3a3c]">
+                                        <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
                                             <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Líder</th>
-                                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
-                                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Llamadas (Sí/No)</th>
-                                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Visitas (Sí/No)</th>
-                                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">% Efectividad</th>
+                                                <th className="px-6 py-3 text-left text-xs font-semibold text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">Líder</th>
+                                                <th className="px-6 py-3 text-center text-xs font-semibold text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">Total</th>
+                                                <th className="px-6 py-3 text-center text-xs font-semibold text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">Llamadas (Sí/No)</th>
+                                                <th className="px-6 py-3 text-center text-xs font-semibold text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">Visitas (Sí/No)</th>
+                                                <th className="px-6 py-3 text-center text-xs font-semibold text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">% Efectividad</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        <tbody className="bg-white dark:bg-[#272729] divide-y divide-[#d1d1d6] dark:divide-[#3a3a3c]">
                                             {trackingStats.map((row, idx) => (
-                                                <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                <tr key={idx} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700/50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#1d1d1f] dark:text-white">
                                                         {row.leaderName}
                                                     </td>
-                                                    <td className="px-6 py-4 text-center text-sm text-gray-600 dark:text-gray-300">
+                                                    <td className="px-6 py-4 text-center text-sm text-[#1d1d1f] dark:text-white/80">
                                                         {row.total}
                                                     </td>
                                                     <td className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center gap-2">
                                                             <span className="text-sm font-bold text-green-600 dark:text-green-400">{row.withCall}</span>
-                                                            <span className="text-gray-300 dark:text-gray-600">/</span>
+                                                            <span className="text-gray-300 dark:text-[#1d1d1f]">/</span>
                                                             <span className="text-sm font-bold text-red-400 dark:text-red-500">{row.withoutCall}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 text-center">
                                                         <div className="flex items-center justify-center gap-2">
                                                             <span className="text-sm font-bold text-purple-600 dark:text-purple-400">{row.withVisit}</span>
-                                                            <span className="text-gray-300 dark:text-gray-600">/</span>
+                                                            <span className="text-gray-300 dark:text-[#1d1d1f]">/</span>
                                                             <span className="text-sm font-bold text-red-400 dark:text-red-500">{row.withoutVisit}</span>
                                                         </div>
                                                     </td>
@@ -390,7 +390,7 @@ const GuestStats = () => {
                                                                     style={{ width: `${(row.total > 0 ? ((row.withCall + row.withVisit) / (row.total * 2)) * 100 : 0)}%` }}
                                                                 />
                                                             </div>
-                                                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                                            <span className="text-xs font-medium text-[#86868b] dark:text-[#98989d]">
                                                                 {row.total > 0 ? (((row.withCall + row.withVisit) / (row.total * 2)) * 100).toFixed(1) : 0}%
                                                             </span>
                                                         </div>

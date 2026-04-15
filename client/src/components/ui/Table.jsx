@@ -15,9 +15,9 @@ const Table = ({
   ...props
 }) => {
   const baseClasses = 'w-full border-collapse';
-  const headerBaseClasses = 'bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700';
-  const rowBaseClasses = 'border-b border-gray-200 dark:border-gray-700';
-  const cellBaseClasses = 'px-4 py-3 text-sm text-gray-900 dark:text-gray-100';
+  const headerBaseClasses = 'bg-[#f5f5f7] dark:bg-[#272729] border-b border-[#d1d1d6] dark:border-[#3a3a3c]';
+  const rowBaseClasses = 'border-b border-[#d1d1d6] dark:border-[#3a3a3c]';
+  const cellBaseClasses = 'px-4 py-3 text-sm text-[#1d1d1f] dark:text-white';
 
   const sizeClasses = compact ? 'px-3 py-2' : 'px-4 py-3';
 
@@ -25,11 +25,11 @@ const Table = ({
     let classes = rowBaseClasses;
     
     if (striped && index % 2 === 1) {
-      classes += ' bg-gray-50 dark:bg-gray-800/50';
+      classes += ' bg-[#f5f5f7]/50 dark:bg-[#272729]/50';
     }
     
     if (hover) {
-      classes += ' hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors';
+      classes += ' hover:bg-[#f5f5f7] dark:hover:bg-[#272729] transition-colors';
     }
     
     return `${classes} ${rowClassName}`;
@@ -40,7 +40,7 @@ const Table = ({
   };
 
   const getHeaderClasses = () => {
-    return `${headerBaseClasses} ${sizeClasses} font-semibold text-gray-700 dark:text-gray-300 text-left ${headerClassName}`;
+    return `${headerBaseClasses} ${sizeClasses} font-semibold text-[#1d1d1f] dark:text-white/80 text-left ${headerClassName}`;
   };
 
   if (loading) {
@@ -53,14 +53,14 @@ const Table = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className={`text-center py-8 text-gray-500 dark:text-gray-400 ${className}`}>
+      <div className={`text-center py-8 text-[#86868b] dark:text-[#98989d] ${className}`}>
         {emptyMessage}
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-lg">
       <table className={`${baseClasses} ${className}`} {...props}>
         <thead>
           <tr>
@@ -91,22 +91,21 @@ const Table = ({
   );
 };
 
-// Table Skeleton Component for loading states
 const TableSkeleton = ({ rows = 5, columns = 4, compact = false }) => {
   const sizeClasses = compact ? 'h-8' : 'h-12';
   
   return (
     <div className="w-full">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <tr className="bg-[#f5f5f7] dark:bg-[#272729] border-b border-[#d1d1d6] dark:border-[#3a3a3c]">
               {Array.from({ length: columns }).map((_, index) => (
                 <th
                   key={index}
-                  className={`px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 text-left ${compact ? 'px-3 py-2' : ''}`}
+                  className={`px-4 py-3 font-semibold text-[#1d1d1f] dark:text-white/80 text-left ${compact ? 'px-3 py-2' : ''}`}
                 >
-                  <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-24 animate-pulse"></div>
+                  <div className="h-4 bg-[#d1d1d6] dark:bg-[#3a3a3c] rounded w-24 animate-pulse"></div>
                 </th>
               ))}
             </tr>
@@ -115,14 +114,14 @@ const TableSkeleton = ({ rows = 5, columns = 4, compact = false }) => {
             {Array.from({ length: rows }).map((_, rowIndex) => (
               <tr
                 key={rowIndex}
-                className={`border-b border-gray-200 dark:border-gray-700 ${rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}
+                className={`border-b border-[#d1d1d6] dark:border-[#3a3a3c] ${rowIndex % 2 === 1 ? 'bg-[#f5f5f7]/50 dark:bg-[#272729]/50' : ''}`}
               >
                 {Array.from({ length: columns }).map((_, colIndex) => (
                   <td
                     key={colIndex}
-                    className={`px-4 py-3 text-sm text-gray-900 dark:text-gray-100 ${compact ? 'px-3 py-2' : ''}`}
+                    className={`px-4 py-3 text-sm text-[#1d1d1f] dark:text-white ${compact ? 'px-3 py-2' : ''}`}
                   >
-                    <div className={`h-4 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse`}></div>
+                    <div className={`h-4 bg-[#e5e5ea] dark:bg-[#3a3a3c] rounded w-full animate-pulse`}></div>
                   </td>
                 ))}
               </tr>
@@ -134,19 +133,18 @@ const TableSkeleton = ({ rows = 5, columns = 4, compact = false }) => {
   );
 };
 
-// Table Actions Component for common actions
 const TableActions = ({ actions, row, className = '' }) => (
-  <div className={`flex items-center gap-2 ${className}`}>
+  <div className={`flex items-center gap-1 ${className}`}>
     {actions.map((action, index) => (
       <button
         key={index}
         onClick={() => action.onClick(row)}
-        className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${
+        className={`inline-flex items-center justify-center p-1.5 rounded-lg transition-colors ${
           action.variant === 'primary'
-            ? 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20'
+            ? 'text-[#0071e3] hover:bg-[#0071e3]/10'
             : action.variant === 'danger'
-            ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
-            : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700'
+            ? 'text-[#ff3b30] hover:bg-[#ff3b30]/10'
+            : 'text-[#86868b] hover:bg-[#f5f5f7] dark:hover:bg-[#272729]'
         }`}
         title={action.title}
       >
@@ -156,7 +154,6 @@ const TableActions = ({ actions, row, className = '' }) => (
   </div>
 );
 
-// Attach sub-components
 Table.Skeleton = TableSkeleton;
 Table.Actions = TableActions;
 

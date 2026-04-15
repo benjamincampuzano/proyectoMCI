@@ -457,8 +457,8 @@ const CellManagement = ({ moduleCoordinator }) => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Gestión de Células</h2>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                    <h2 className="text-2xl font-bold text-[#1d1d1f] dark:text-white">Gestión de Células</h2>
+                    <p className="text-[#1d1d1f] dark:text-[#98989d] text-sm mt-1">
                         Administra las células de tu red
                     </p>
                 </div>
@@ -494,12 +494,12 @@ const CellManagement = ({ moduleCoordinator }) => {
             {/* Management Modal */}
             {selectedCell && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
-                            <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                    <div className="bg-white dark:bg-[#272729] rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-[#d1d1d6] dark:border-[#3a3a3c] flex justify-between items-center sticky top-0 bg-white dark:bg-[#272729]">
+                            <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white">
                                 Administrar Célula: {selectedCell.name}
                             </h3>
-                            <button onClick={() => setSelectedCell(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <button onClick={() => setSelectedCell(null)} className="text-[#86868b] hover:text-[#1d1d1f] dark:text-[#98989d] dark:hover:text-gray-200">
                                 <X size={24} />
                             </button>
                         </div>
@@ -507,26 +507,26 @@ const CellManagement = ({ moduleCoordinator }) => {
                             {/* Cell Info */}
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg space-y-2">
                                 <div className="flex items-center gap-2">
-                                    <Users size={16} className="text-gray-600 dark:text-gray-400" />
-                                    <span className="text-sm text-gray-700 dark:text-gray-300"><strong>Líder:</strong> {selectedCell.leader?.fullName}</span>
+                                    <Users size={16} className="text-[#1d1d1f] dark:text-[#98989d]" />
+                                    <span className="text-sm text-[#1d1d1f] dark:text-white/80"><strong>Líder:</strong> {selectedCell.leader?.fullName}</span>
                                 </div>
                                 {selectedCell.host && (
                                     <div className="flex items-center gap-2">
-                                        <MapPin size={16} className="text-gray-600 dark:text-gray-400" />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300"><strong>Anfitrión:</strong> {selectedCell.host?.fullName}</span>
+                                        <MapPin size={16} className="text-[#1d1d1f] dark:text-[#98989d]" />
+                                        <span className="text-sm text-[#1d1d1f] dark:text-white/80"><strong>Anfitrión:</strong> {selectedCell.host?.fullName}</span>
                                     </div>
                                 )}
                                 <div className="flex items-center gap-2">
-                                    <Clock size={16} className="text-gray-600 dark:text-gray-400" />
-                                    <span className="text-sm text-gray-700 dark:text-gray-300"><strong>Horario:</strong> {selectedCell.dayOfWeek} {selectedCell.time}</span>
+                                    <Clock size={16} className="text-[#1d1d1f] dark:text-[#98989d]" />
+                                    <span className="text-sm text-[#1d1d1f] dark:text-white/80"><strong>Horario:</strong> {selectedCell.dayOfWeek} {selectedCell.time}</span>
                                 </div>
                             </div>
 
                             {/* Assign Member Section */}
                             <div>
-                                <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">Asignar Discípulo</h4>
+                                <h4 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-3">Asignar Discípulo</h4>
                                 <div className="mb-2">
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    <p className="text-sm text-[#1d1d1f] dark:text-[#98989d]">
                                         Solo puedes asignar usuarios que pertenecen a tu red de discipulado
                                     </p>
                                 </div>
@@ -613,10 +613,10 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             if (item._specialMessage) {
                                                 return (
                                                     <div className="p-3 text-center">
-                                                        <div className="font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                                        <div className="font-medium text-[#1d1d1f] dark:text-[#98989d] mb-1">
                                                             {item.fullName}
                                                         </div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-500 leading-relaxed">
+                                                        <div className="text-xs text-[#86868b] dark:text-[#86868b] leading-relaxed">
                                                             {item.message}
                                                         </div>
                                                     </div>
@@ -626,10 +626,10 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             // Regular user display
                                             return (
                                                 <div>
-                                                    <div className="font-medium text-gray-900 dark:text-gray-100">
+                                                    <div className="font-medium text-gray-900 dark:text-white">
                                                         {item.fullName}
                                                     </div>
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                    <div className="text-xs text-[#86868b] dark:text-[#98989d]">
                                                         {item.email}
                                                     </div>
                                                     <div className="flex gap-1 mt-1">
@@ -640,7 +640,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                                     role === 'LIDER_DOCE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
                                                                     role === 'LIDER_CELULA' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
                                                                     role === 'DISCIPULO' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                                                                    'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                                                    'bg-[#f5f5f7] text-[#1d1d1f] dark:bg-gray-900 dark:text-gray-200'
                                                                 }`}
                                                             >
                                                                 {role === 'LIDER_DOCE' ? 'Líder 12' :
@@ -672,20 +672,20 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                             {/* Assigned Members List */}
                             <div>
-                                <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+                                <h4 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-3">
                                     Discípulos Asignados ({assignedMembers.length})
                                 </h4>
                                 {assignedMembers.length === 0 ? (
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm italic">
+                                    <p className="text-[#86868b] dark:text-[#98989d] text-sm italic">
                                         No hay discípulos asignados a esta célula
                                     </p>
                                 ) : (
                                     <div className="space-y-2">
                                         {assignedMembers.map(member => (
-                                            <div key={member.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                            <div key={member.id} className="flex justify-between items-center p-3 bg-[#f5f5f7] dark:bg-[#272729] rounded-lg">
                                                 <div>
-                                                    <p className="font-medium text-gray-800 dark:text-white">{member.fullName}</p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{member.email}</p>
+                                                    <p className="font-medium text-[#1d1d1f] dark:text-white">{member.fullName}</p>
+                                                    <p className="text-xs text-[#86868b] dark:text-[#98989d]">{member.email}</p>
                                                 </div>
                                                 <Button
                                                     onClick={() => handleRemoveMember(member.id)}
@@ -709,9 +709,9 @@ const CellManagement = ({ moduleCoordinator }) => {
             {/* Create/Edit Form Modal */}
             {showCreateForm && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl h-[95vh] flex flex-col overflow-hidden">
+                    <div className="bg-white dark:bg-[#272729] rounded-2xl shadow-xl w-full max-w-2xl h-[95vh] flex flex-col overflow-hidden">
                         {/* Header */}
-                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+                        <div className="p-6 border-b border-[#d1d1d6] dark:border-[#3a3a3c] flex justify-between items-center flex-shrink-0">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <Users className="w-6 h-6 text-blue-600" />
                                 {isEditing ? 'Editar Célula' : 'Nueva Célula'}
@@ -735,7 +735,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         cellType: 'ABIERTA'
                                     });
                                 }}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                className="text-gray-400 hover:text-[#1d1d1f] dark:hover:text-gray-300 transition-colors"
                             >
                                 <X size={24} />
                             </button>
@@ -747,7 +747,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                 <div className="space-y-6">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="sm:col-span-2">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Nombre de la Célula <span className="text-red-400">*</span>
                                             </label>
                                             <input
@@ -755,20 +755,20 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 required
                                                 value={formData.name}
                                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                                className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                                                 placeholder="Ej: Célula Centro"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Tipo de Célula <span className="text-red-400">*</span>
                                             </label>
                                             <select
                                                 required
                                                 value={formData.cellType}
                                                 onChange={e => setFormData({ ...formData, cellType: e.target.value })}
-                                                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                                className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                                             >
                                                 <option value="ABIERTA">Abierta</option>
                                                 <option value="CERRADA">Cerrada</option>
@@ -777,7 +777,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Líder 12
                                             </label>
                                             <AsyncSearchSelect
@@ -793,7 +793,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Líder de la Célula <span className="text-red-400">*</span>
                                             </label>
                                             <AsyncSearchSelect
@@ -807,7 +807,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Anfitrión
                                             </label>
                                             <AsyncSearchSelect
@@ -824,14 +824,14 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Día <span className="text-red-400">*</span>
                                             </label>
                                             <select
                                                 required
                                                 value={formData.dayOfWeek}
                                                 onChange={e => setFormData({ ...formData, dayOfWeek: e.target.value })}
-                                                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                                className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                                             >
                                                 {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(d => (
                                                     <option key={d} value={d}>{d}</option>
@@ -840,7 +840,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Hora <span className="text-red-400">*</span>
                                             </label>
                                             <input
@@ -848,12 +848,12 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 required
                                                 value={formData.time}
                                                 onChange={e => setFormData({ ...formData, time: e.target.value })}
-                                                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                                className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Ciudad <span className="text-red-400">*</span>
                                             </label>
                                             <input
@@ -861,12 +861,12 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 required
                                                 value={formData.city}
                                                 onChange={e => setFormData({ ...formData, city: e.target.value })}
-                                                className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                                className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 {formData.cellType === 'VIRTUAL' ? 'URL de la Reunión Virtual' : 'Dirección'} <span className="text-red-400">*</span>
                                             </label>
                                             {formData.cellType === 'VIRTUAL' ? (
@@ -875,7 +875,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                     required
                                                     value={formData.address}
                                                     onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                                    className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                                                     placeholder="https://zoom.us/j/... o https://meet.google.com/..."
                                                 />
                                             ) : (
@@ -885,7 +885,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                         required
                                                         value={formData.address}
                                                         onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                                        className="flex-1 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                                        className="flex-1 px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                                                     />
                                                     <button
                                                         type="button"
@@ -916,7 +916,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                             </div>
 
                             {/* Footer - Fixed at bottom outside scroll area */}
-                            <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                            <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-gray-900">
                                 <div className="p-6 flex justify-end gap-3">
                                     <button
                                         type="button"
@@ -937,7 +937,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 cellType: 'ABIERTA'
                                             });
                                         }}
-                                        className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        className="px-4 py-2 text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#272729] border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-[#f5f5f7] dark:hover:bg-gray-700 transition-colors"
                                     >
                                         Cancelar
                                     </button>
@@ -965,8 +965,8 @@ const CellManagement = ({ moduleCoordinator }) => {
             {/* Map Selection Modal */}
             {showMapModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
-                        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+                    <div className="bg-white dark:bg-[#272729] rounded-2xl shadow-xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
+                        <div className="p-4 border-b border-[#d1d1d6] dark:border-[#3a3a3c] flex justify-between items-center flex-shrink-0">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <MapTrifold className="w-5 h-5 text-green-600" />
                                 Seleccionar ubicación - Haz clic en el mapa
@@ -979,7 +979,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                     setMapAddress('');
                                     setMapResults([]);
                                 }}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                className="text-gray-400 hover:text-[#1d1d1f] dark:hover:text-gray-300 transition-colors"
                             >
                                 <X size={24} />
                             </button>
@@ -987,7 +987,7 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                         <div className="flex-1 flex flex-col">
                             {/* Search bar */}
-                            <div className="p-3 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                            <div className="p-3 bg-[#f5f5f7] dark:bg-gray-900 border-b border-[#d1d1d6] dark:border-[#3a3a3c]">
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
@@ -999,7 +999,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             }
                                         }}
                                         placeholder="Buscar dirección..."
-                                        className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-green-500"
+                                        className="flex-1 px-3 py-2 text-sm bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#34c759]"
                                     />
                                     <Button
                                         onClick={() => searchAddress(mapAddress)}
@@ -1017,15 +1017,15 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                             {/* Search results */}
                             {mapResults.length > 0 && (
-                                <div className="max-h-32 overflow-y-auto bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                                <div className="max-h-32 overflow-y-auto bg-white dark:bg-[#272729] border-b border-[#d1d1d6] dark:border-[#3a3a3c]">
                                     {mapResults.map((result, index) => (
                                         <button
                                             key={index}
                                             type="button"
                                             onClick={() => handleSelectAddress(result)}
-                                            className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                            className="w-full text-left px-3 py-2 hover:bg-[#f5f5f7] dark:hover:bg-gray-700 border-b border-gray-100 dark:border-[#3a3a3c] last:border-0"
                                         >
-                                            <p className="text-xs text-gray-800 dark:text-gray-200 line-clamp-1">
+                                            <p className="text-xs text-[#1d1d1f] dark:text-gray-200 line-clamp-1">
                                                 {result.display_name}
                                             </p>
                                         </button>
@@ -1054,14 +1054,14 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                 {/* Selected location info overlay */}
                                 {selectedCoords && (
-                                    <div className="absolute bottom-4 left-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 z-[1000]">
+                                    <div className="absolute bottom-4 left-4 right-4 bg-white dark:bg-[#272729] rounded-lg shadow-lg p-3 z-[1000]">
                                         <div className="flex items-start gap-2">
                                             <MapPin className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-800 dark:text-white">
+                                                <p className="text-sm font-medium text-[#1d1d1f] dark:text-white">
                                                     Ubicación seleccionada
                                                 </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                                                <p className="text-xs text-[#86868b] dark:text-[#98989d] line-clamp-2">
                                                     {selectedCoords.displayName}
                                                 </p>
                                                 <p className="text-xs text-gray-400 mt-1">
@@ -1074,7 +1074,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                             </div>
                         </div>
 
-                        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4 flex justify-end gap-3">
+                        <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-gray-900 p-4 flex justify-end gap-3">
                             <button
                                 type="button"
                                 onClick={() => {
@@ -1083,7 +1083,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                     setMapAddress('');
                                     setMapResults([]);
                                 }}
-                                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                className="px-4 py-2 text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#272729] border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-[#f5f5f7] dark:hover:bg-gray-700 transition-colors"
                             >
                                 Cancelar
                             </button>
@@ -1121,13 +1121,13 @@ const CellManagement = ({ moduleCoordinator }) => {
                         className="w-full"
                     />
                 </div>
-                <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <div className="flex bg-[#f5f5f7] dark:bg-[#272729] rounded-lg p-1">
                     <button
                         onClick={() => setViewMode('table')}
                         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                             viewMode === 'table'
                                 ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                                : 'text-[#1d1d1f] dark:text-white/80 hover:text-[#1d1d1f] dark:hover:text-white'
                         }`}
                         title="Vista de tabla"
                     >
@@ -1138,14 +1138,14 @@ const CellManagement = ({ moduleCoordinator }) => {
                         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                             viewMode === 'cards'
                                 ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                                : 'text-[#1d1d1f] dark:text-white/80 hover:text-[#1d1d1f] dark:hover:text-white'
                         }`}
                         title="Vista de tarjetas"
                     >
                         <SquaresFourIcon size={18} />
                     </button>
                 </div>
-                <p className="text-xs text-gray-500 whitespace-nowrap">
+                <p className="text-xs text-[#86868b] whitespace-nowrap">
                     Mostrando {filteredCells.length} células
                 </p>
             </div>
@@ -1154,9 +1154,9 @@ const CellManagement = ({ moduleCoordinator }) => {
             {viewMode === 'cards' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredCells.map(cell => (
-                        <div key={cell.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
+                        <div key={cell.id} className="bg-white dark:bg-[#272729] rounded-lg shadow p-6 border border-gray-100 dark:border-[#3a3a3c] hover:shadow-md transition-shadow">
                             <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-lg font-bold text-gray-800 dark:text-white">{cell.name}</h3>
+                                <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white">{cell.name}</h3>
                                 <div className="flex gap-2">
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                         cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 
@@ -1171,34 +1171,34 @@ const CellManagement = ({ moduleCoordinator }) => {
                                 </div>
                             </div>
 
-                            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                            <div className="space-y-2 text-sm text-[#1d1d1f] dark:text-white/80">
                                 <div className="flex items-center gap-2">
                                     <Users size={16} className="text-gray-400" />
-                                    <span><strong className="text-gray-700 dark:text-gray-300">Líder:</strong> {cell.leader?.fullName}</span>
+                                    <span><strong className="text-[#1d1d1f] dark:text-white/80">Líder:</strong> {cell.leader?.fullName}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Clock size={16} className="text-gray-400" />
-                                    <span><strong className="text-gray-700 dark:text-gray-300">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
+                                    <span><strong className="text-[#1d1d1f] dark:text-white/80">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
                                 </div>
                                 {cell.liderDoce && (
                                     <div className="flex items-center gap-2">
                                         <Users size={16} className="text-blue-300" />
-                                        <span><strong className="text-gray-700 dark:text-gray-300">Líder 12:</strong> {cell.liderDoce?.fullName}</span>
+                                        <span><strong className="text-[#1d1d1f] dark:text-white/80">Líder 12:</strong> {cell.liderDoce?.fullName}</span>
                                     </div>
                                 )}
                                 <div className="flex items-center gap-2">
                                     <MapPin size={16} className="text-gray-400" />
-                                    <span><strong className="text-gray-700 dark:text-gray-300">Ciudad:</strong> {cell.city}</span>
+                                    <span><strong className="text-[#1d1d1f] dark:text-white/80">Ciudad:</strong> {cell.city}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Clock size={16} className="text-gray-400" />
-                                    <span><strong className="text-gray-700 dark:text-gray-300">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
+                                    <span><strong className="text-[#1d1d1f] dark:text-white/80">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
                                 </div>
                                 <div className="flex items-center gap-2 pt-1">
                                     {cell.cellType === 'VIRTUAL' ? (
                                         <>
                                             <MapPin size={16} className="text-purple-400" />
-                                            <span className="text-xs text-gray-500 italic">
+                                            <span className="text-xs text-[#86868b] italic">
                                                 {cell.address ? (
                                                     <a href={cell.address} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline">
                                                         Unirse a reunión virtual
@@ -1211,7 +1211,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                     ) : (
                                         <>
                                             <MapPin size={16} className="text-blue-400" />
-                                            <span className="text-xs text-gray-500 italic">
+                                            <span className="text-xs text-[#86868b] italic">
                                                 {cell.latitude && cell.longitude
                                                     ? `${cell.latitude.toFixed(4)}, ${cell.longitude.toFixed(4)}`
                                                     : 'Sin ubicación en mapa'
@@ -1222,7 +1222,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                 </div>
                             </div>
 
-                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-[#3a3a3c] flex justify-between items-center">
                                 <div className="flex gap-4">
                                     <Button
                                         onClick={() => setSelectedCell(cell)}
@@ -1259,33 +1259,33 @@ const CellManagement = ({ moduleCoordinator }) => {
                     ))}
                 </div>
             ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-900/50">
+                        <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Nombre
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Líder
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Ciudad
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Horario
                                 </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Discípulos
                                 </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-right text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Acciones
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="bg-white dark:bg-[#272729] divide-y divide-gray-200 dark:divide-gray-700">
                             {filteredCells.map(cell => (
-                                <tr key={cell.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <tr key={cell.id} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700/50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div>
                                             <div className="text-sm font-medium text-gray-900 dark:text-white">{cell.name}</div>
@@ -1305,10 +1305,10 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                         {cell.leader?.fullName || 'N/A'}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                         {cell.cellType === 'VIRTUAL' ? (
                                             cell.address ? (
                                                 <a href={cell.address} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline">
@@ -1321,7 +1321,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             cell.city
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                         {cell.dayOfWeek} {cell.time}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">

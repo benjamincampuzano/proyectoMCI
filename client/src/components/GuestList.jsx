@@ -108,7 +108,7 @@ const GuestList = ({ refreshTrigger }) => {
             id: 'all', 
             label: 'Todos', 
             icon: Users, 
-            color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600',
+            color: 'bg-[#f5f5f7] text-[#1d1d1f] dark:bg-[#272729] dark:text-white/80 border-[#d1d1d6] dark:border-[#3a3a3c]',
             activeColor: 'bg-blue-500 text-white border-blue-600 dark:bg-blue-600'
         },
         { 
@@ -244,7 +244,7 @@ const GuestList = ({ refreshTrigger }) => {
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Lista de Invitados</h2>
+            <h2 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-6">Lista de Invitados</h2>
 
             {error && (
                 <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
@@ -255,8 +255,8 @@ const GuestList = ({ refreshTrigger }) => {
             {/* Filtros rápidos modernos */}
             <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
-                    <Funnel size={18} className="text-gray-500 dark:text-gray-400" />
-                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Filtros rápidos</h3>
+                    <Funnel size={18} className="text-[#86868b] dark:text-gray-400" />
+                    <h3 className="text-sm font-semibold text-[#1d1d1f] dark:text-white/80">Filtros rápidos</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {quickFilters.map((filter) => {
@@ -287,7 +287,7 @@ const GuestList = ({ refreshTrigger }) => {
                 </div>
                 {activeQuickFilter !== 'all' && (
                     <div className="mt-3 flex items-center gap-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-xs text-[#86868b] dark:text-gray-400">
                             Filtro activo: <strong>{quickFilters.find(f => f.id === activeQuickFilter)?.label}</strong>
                         </span>
                         <button
@@ -310,7 +310,7 @@ const GuestList = ({ refreshTrigger }) => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                         placeholder="Buscar por nombre..."
-                        className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        className="w-full pl-10 pr-4 py-2 bg-[#f5f5f7] dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                     />
                 </div>
 
@@ -318,7 +318,7 @@ const GuestList = ({ refreshTrigger }) => {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                        className="w-full px-4 py-2 bg-[#f5f5f7] dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                     >
                         <option value="">Estado (Todos)</option>
                         <option value="NUEVO">Nuevo</option>
@@ -341,7 +341,7 @@ const GuestList = ({ refreshTrigger }) => {
                         renderItem={(user) => (
                             <div>
                                 <div className="font-medium">{user.fullName}</div>
-                                <div className="text-xs text-gray-500">{user.email}</div>
+                                <div className="text-xs text-[#86868b]">{user.email}</div>
                             </div>
                         )}
                     />
@@ -362,7 +362,7 @@ const GuestList = ({ refreshTrigger }) => {
                         renderItem={(user) => (
                             <div>
                                 <div className="font-medium">{user.fullName}</div>
-                                <div className="text-xs text-gray-500">{user.email}</div>
+                                <div className="text-xs text-[#86868b]">{user.email}</div>
                             </div>
                         )}
                     />
@@ -380,7 +380,7 @@ const GuestList = ({ refreshTrigger }) => {
             {/* Tabla de Invitados */}
             <div className="overflow-x-auto">
                 <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-900/50">
+                    <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
                         <tr>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Nombre</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Teléfono</th>
@@ -405,7 +405,7 @@ const GuestList = ({ refreshTrigger }) => {
                             </tr>
                         ) : (
                             guests.map((guest) => (
-                                <tr key={guest.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <tr key={guest.id} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700/50 transition-colors">
                                     <td className="px-4 py-3">
                                         {editingGuest?.id === guest.id ? (
                                             <div className="space-y-2">
@@ -416,7 +416,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                         setEditingGuest({ ...editingGuest, name: e.target.value })
                                                     }
                                                     disabled={!canEditAllFields(guest)}
-                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Nombre"
                                                 />
                                                 <input
@@ -426,15 +426,15 @@ const GuestList = ({ refreshTrigger }) => {
                                                         setEditingGuest({ ...editingGuest, address: e.target.value })
                                                     }
                                                     disabled={!canEditAllFields(guest)}
-                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                                                     placeholder="Dirección"
                                                 />
                                             </div>
                                         ) : (
                                             <div>
-                                                <p className="text-gray-900 dark:text-white text-sm font-medium">{guest.name}</p>
+                                                <p className="text-[#1d1d1f] dark:text-white text-sm font-medium">{guest.name}</p>
                                                 {guest.address && (
-                                                    <p className="text-gray-500 dark:text-gray-400 text-xs">{guest.address}</p>
+                                                    <p className="text-[#86868b] dark:text-gray-400 text-xs">{guest.address}</p>
                                                 )}
                                             </div>
                                         )}
@@ -448,10 +448,10 @@ const GuestList = ({ refreshTrigger }) => {
                                                     setEditingGuest({ ...editingGuest, phone: e.target.value })
                                                 }
                                                 disabled={!canEditAllFields(guest)}
-                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                         ) : (
-                                            <span className="text-gray-600 dark:text-gray-300 text-sm">{guest.phone}</span>
+                                            <span className="text-gray-600 dark:text-white/80 text-sm">{guest.phone}</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -461,7 +461,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                 onChange={(e) =>
                                                     setEditingGuest({ ...editingGuest, status: e.target.value })
                                                 }
-                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white text-sm"
+                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm"
                                             >
                                                 <option value="NUEVO">Nuevo</option>
                                                 <option value="CONTACTADO">Llamado</option>
@@ -488,10 +488,10 @@ const GuestList = ({ refreshTrigger }) => {
                                                     labelKey="fullName"
                                                 />
                                             ) : (
-                                                <p className="text-gray-900 dark:text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
+                                                <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
                                             )
                                         ) : (
-                                            <p className="text-gray-900 dark:text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
+                                            <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -507,7 +507,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                 labelKey="fullName"
                                             />
                                         ) : (
-                                            <p className="text-gray-900 dark:text-white text-sm">{guest.assignedTo?.fullName || 'Pendiente'}</p>
+                                            <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.assignedTo?.fullName || 'Pendiente'}</p>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -604,7 +604,7 @@ const GuestList = ({ refreshTrigger }) => {
 
             {/* Información de paginación */}
             {pagination.total > 0 && (
-                <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                <div className="mt-4 text-center text-sm text-[#86868b] dark:text-gray-400">
                     Mostrando {guests.length} de {pagination.total} invitados
                 </div>
             )}
@@ -614,46 +614,46 @@ const GuestList = ({ refreshTrigger }) => {
                 convertingGuest && (
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700 shadow-xl">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                            <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white mb-4">
                                 Convertir a Discípulo: {convertingGuest.name}
                             </h3>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-1">
                                         Email
                                     </label>
                                     <input
                                         type="email"
                                         value={conversionEmail}
                                         onChange={(e) => setConversionEmail(e.target.value)}
-                                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-3 py-2 bg-white dark:bg-[#272729] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                                         placeholder="correo@ejemplo.com"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-1">
                                         Contraseña
                                     </label>
                                     <input
                                         type="password"
                                         value={conversionPassword}
                                         onChange={(e) => setConversionPassword(e.target.value)}
-                                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-3 py-2 bg-white dark:bg-[#272729] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                                         placeholder="Contraseña"
                                     />
                                 </div>
 
                                 {/* Data Authorization Checks */}
-                                <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2">
+                                <div className="bg-[#f5f5f7] dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2">
                                     <label className="flex items-start gap-2 cursor-pointer group">
                                         <input
                                             type="checkbox"
                                             required
-                                            className="mt-1 w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                            className="mt-1 w-3.5 h-3.5 rounded border-[#d1d1d6] dark:border-[#3a3a3c] text-blue-600 focus:ring-blue-500"
                                             checked={conversionConsent.dataPolicyAccepted}
                                             onChange={e => setConversionConsent({ ...conversionConsent, dataPolicyAccepted: e.target.checked })}
                                         />
-                                        <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                        <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-[#1d1d1f] dark:group-hover:text-white transition-colors">
                                             Acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos</a>.
                                         </span>
                                     </label>
@@ -661,11 +661,11 @@ const GuestList = ({ refreshTrigger }) => {
                                         <input
                                             type="checkbox"
                                             required
-                                            className="mt-1 w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                            className="mt-1 w-3.5 h-3.5 rounded border-[#d1d1d6] dark:border-[#3a3a3c] text-blue-600 focus:ring-blue-500"
                                             checked={conversionConsent.dataTreatmentAuthorized}
                                             onChange={e => setConversionConsent({ ...conversionConsent, dataTreatmentAuthorized: e.target.checked })}
                                         />
-                                        <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                                        <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-[#1d1d1f] dark:group-hover:text-white transition-colors">
                                             Autorizo el tratamiento de mis datos personales.
                                         </span>
                                     </label>

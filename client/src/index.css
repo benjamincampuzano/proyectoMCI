@@ -1,19 +1,61 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Outfit', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+}
+
+:root {
+  --sk-black: #000000;
+  --sk-light-gray: #f5f5f7;
+  --sk-near-black: #1d1d1f;
+  --sk-apple-blue: #0071e3;
+  --sk-link-blue: #0066cc;
+  --sk-bright-blue: #2997ff;
+  --sk-white: #ffffff;
+  --sk-white-80: rgba(255, 255, 255, 0.8);
+  --sk-black-80: rgba(0, 0, 0, 0.8);
+  --sk-black-48: rgba(0, 0, 0, 0.48);
+  --sk-dark-surface-1: #272729;
+  --sk-dark-surface-2: #262628;
+  --sk-dark-surface-3: #28282a;
+  --sk-dark-surface-4: #2a2a2d;
+  --sk-dark-surface-5: #242426;
+  --sk-button-active: #ededf2;
+  --sk-button-default-light: #fafafc;
+  --sk-overlay: rgba(210, 210, 215, 0.64);
+  --sk-white-32: rgba(255, 255, 255, 0.32);
+  --sk-card-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0px;
+  --sk-focus-color: #0071e3;
 }
 
 @layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
   body {
-    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors;
+    @apply bg-[#f5f5f7] text-[#1d1d1f] transition-colors;
     font-family: var(--font-sans);
   }
+  
+  body.dark {
+    @apply bg-[#000000] text-white;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    letter-spacing: -0.02em;
+  }
+  
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: white;
+  }
 }
+
 @layer utilities {
   @keyframes shimmer {
     from { background-position: 0 0; }
@@ -21,5 +63,88 @@
   }
   .animate-shimmer {
     animation: shimmer 1s linear infinite;
+  }
+  
+    
+  .sk-glass {
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+  
+  .sk-section-dark {
+    background-color: var(--sk-black);
+    color: white;
+  }
+  
+  .sk-section-light {
+    background-color: var(--sk-light-gray);
+    color: var(--sk-near-black);
+  }
+  
+  .sk-btn-primary {
+    background-color: var(--sk-apple-blue);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-family: var(--font-sans);
+    font-size: 17px;
+    font-weight: 400;
+    transition: background-color 0.2s ease;
+  }
+  
+  .sk-btn-primary:hover {
+    background-color: #0077ed;
+  }
+  
+  .sk-btn-primary:active {
+    background-color: var(--sk-button-active);
+  }
+  
+  .sk-btn-primary:focus {
+    outline: 2px solid var(--sk-focus-color);
+    outline-offset: 2px;
+  }
+  
+  .sk-btn-dark {
+    background-color: var(--sk-near-black);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-family: var(--font-sans);
+    font-size: 17px;
+    font-weight: 400;
+  }
+  
+  .sk-pill-link {
+    color: var(--sk-link-blue);
+    border-radius: 980px;
+    border: 1px solid var(--sk-link-blue);
+    padding: 4px 12px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  
+  .sk-pill-link:hover {
+    text-decoration: underline;
+  }
+  
+  .dark .sk-pill-link {
+    color: var(--sk-bright-blue);
+    border-color: var(--sk-bright-blue);
+  }
+  
+  .sk-card {
+    background-color: var(--sk-light-gray);
+    border-radius: 8px;
+    border: none;
+    box-shadow: var(--sk-card-shadow);
+  }
+  
+  .dark .sk-card {
+    background-color: var(--sk-dark-surface-1);
   }
 }

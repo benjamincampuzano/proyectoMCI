@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LockIcon, User, Calendar, Check, Shield, X, EyeIcon, EyeClosedIcon, Plus, Envelope, ArrowsClockwiseIcon } from '@phosphor-icons/react';
+import { LockIcon, User, Calendar, Check, Shield, X, EyeIcon, EyeClosedIcon, Plus, Envelope, ArrowsClockwiseIcon, Sun, Moon } from '@phosphor-icons/react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import { DATA_POLICY_URL } from '../constants/policies';
 import toast from 'react-hot-toast';
 import logo from '../assets/logo.jpg';
+import AsyncSearchSelect from '../components/ui/AsyncSearchSelect';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -30,10 +32,12 @@ const Register = () => {
         captchaAnswer: ''
     });
     const [lideresDoce, setLideresDoce] = useState([]);
+    const [selectedLeader, setSelectedLeader] = useState(null);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [captcha, setCaptcha] = useState({ num1: 0, num2: 0, operator: '+' });
     const { register } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
     // Generate random captcha
@@ -50,6 +54,19 @@ const Register = () => {
 
         setCaptcha({ num1, num2, operator });
         setFormData({ ...formData, captchaAnswer: '' });
+    };
+
+    // Fetch leaders for AsyncSearchSelect
+    const fetchLeaders = async (searchTerm) => {
+        try {
+            const response = await api.get('/auth/leaders', {
+                params: { search: searchTerm }
+            });
+            return response.data;
+        } catch (err) {
+            console.error('Error fetching leaders:', err);
+            throw err;
+        }
     };
 
     // Fetch public leaders (LIDER_DOCE) for the dropdown
@@ -82,6 +99,11 @@ const Register = () => {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleLeaderSelect = (leader) => {
+        setSelectedLeader(leader);
+        setFormData({ ...formData, liderDoceId: leader ? leader.id : '' });
     };
 
     const handleSubmit = async (e) => {
@@ -135,11 +157,34 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-[100dvh] bg-gray-900 flex items-center justify-center p-4">
-            <div className="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md md:max-w-4xl border border-gray-700 max-h-[90vh] overflow-y-auto">
+        <div className={`min-h-[100dvh] ${theme === 'dark' ? 'bg-black' : 'bg-[#f5f5f7]'} flex items-center justify-center p-4 relative transition-colors duration-300`}>
+            {/* Apple-style subtle static elements */}
+            <div className="absolute inset-0 overflow-hidden">
+                <div className={`absolute top-0 left-0 w-96 h-96 ${theme === 'dark' ? 'bg-[#0071e3]' : 'bg-[#0066cc]'} opacity-3 rounded-full blur-3xl`}></div>
+                <div className={`absolute bottom-0 right-0 w-80 h-80 ${theme === 'dark' ? 'bg-[#2997ff]' : 'bg-[#0071e3]'} opacity-2 rounded-full blur-3xl`}></div>
+            </div>
+            
+            {/* Floating theme toggle button */}
+            <button
+                onClick={toggleTheme}
+                className={`fixed top-6 right-6 p-3 rounded-full z-50 transition-all duration-300 ${
+                    theme === 'dark' 
+                        ? 'bg-[#272729] text-white hover:bg-[#2a2a2d]' 
+                        : 'bg-white text-[#1d1d1f] hover:bg-[#fafafc] border border-[#e5e5e7]'
+                } shadow-lg hover:scale-105 active:scale-95`}
+                aria-label="Toggle theme"
+            >
+                {theme === 'dark' ? (
+                    <Sun size={20} weight="regular" />
+                ) : (
+                    <Moon size={20} weight="regular" />
+                )}
+            </button>
+            
+            <div className={`${theme === 'dark' ? 'bg-black' : 'bg-white'} p-8 rounded-lg w-full max-w-md md:max-w-4xl max-h-[90vh] overflow-y-auto relative z-10`}>
                 <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-white">Crear Cuenta</h2>
-                    <p className="text-gray-400 mt-2">Únete a la plataforma</p>
+                    <h2 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1d1d1f]'}`}>Crear Cuenta</h2>
+                    <p className={`mt-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Únete a la plataforma</p>
                 </div>
 
                 {error && (
@@ -154,12 +199,12 @@ const Register = () => {
                         <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Tipo de Documento</label>
+                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Tipo de Documento</label>
                                     <select
                                         name="documentType"
                                         value={formData.documentType}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                         required
                                     >
                                         <option value="">Tipo Documento</option>
@@ -172,13 +217,13 @@ const Register = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Número de Documento</label>
+                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Número de Documento</label>
                                     <input
                                         type="text"
                                         name="documentNumber"
                                         value={formData.documentNumber}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                         placeholder="123456789"
                                         required
                                     />
@@ -186,15 +231,15 @@ const Register = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Nombre Completo</label>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Nombre Completo</label>
                                 <div className="relative">
-                                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
+                                    <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`} size={20} />
                                     <input
                                         type="text"
                                         name="fullName"
                                         value={formData.fullName}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                         placeholder="Juan Pérez"
                                         required
                                     />
@@ -207,42 +252,42 @@ const Register = () => {
                                     name="birthDate"
                                     value={formData.birthDate}
                                     onChange={handleChange}
-                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Email</label>
                                 <div className="relative">
-                                    <Envelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
+                                    <Envelope className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`} size={20} />
                                     <input
                                         type="email"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                         placeholder="tu_email@email.com"
                                         required
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Contraseña</label>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Contraseña</label>
                                 <div className="relative">
-                                    <LockIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
+                                    <LockIcon className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`} size={20} />
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         name="password"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors pr-12"
+                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors pr-12`}
                                         placeholder="••••••••••••••••"
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                                        className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors ${theme === 'dark' ? 'text-[#98989d] hover:text-white' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}
                                     >
                                         {showPassword ? <EyeIcon size={20} /> : <EyeClosedIcon size={20} />}
                                     </button>
@@ -255,7 +300,7 @@ const Register = () => {
                                                     key={i}
                                                     className={`h-1 flex-1 rounded-full transition-colors ${i < getPasswordStrength(formData.password)
                                                         ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'][getPasswordStrength(formData.password) - 1]
-                                                        : 'bg-gray-700'
+                                                        : theme === 'dark' ? 'bg-[#3a3a3c]' : 'bg-[#e5e5e7]'
                                                         }`}
                                                 />
                                             ))}
@@ -276,7 +321,7 @@ const Register = () => {
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleChange}
-                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                     placeholder="Teléfono"
                                     required
                                 />
@@ -291,7 +336,7 @@ const Register = () => {
                                     name="maritalStatus"
                                     value={formData.maritalStatus}
                                     onChange={handleChange}
-                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                     required
                                 >
                                     <option value="">Seleccione...</option>
@@ -311,7 +356,7 @@ const Register = () => {
                                         name="sex"
                                         value={formData.sex}
                                         onChange={handleChange}
-                                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                         required
                                     >
                                         <option value="">Seleccione...</option>
@@ -324,7 +369,7 @@ const Register = () => {
                                     name="network"
                                     value={formData.network}
                                     onChange={handleChange}
-                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                     required
                                 >
                                     <option value="">Seleccione...</option>
@@ -343,7 +388,7 @@ const Register = () => {
                                     name="address"
                                     value={formData.address}
                                     onChange={handleChange}
-                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                     placeholder="Dirección"
                                     required
                                 />
@@ -355,7 +400,7 @@ const Register = () => {
                                     name="neighborhood"
                                     value={formData.neighborhood}
                                     onChange={handleChange}
-                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                     placeholder="Barrio"
                                 />
                             </div>
@@ -366,7 +411,7 @@ const Register = () => {
                                     name="city"
                                     value={formData.city}
                                     onChange={handleChange}
-                                    className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
                                     placeholder="Ciudad"
                                     required
                                 />
@@ -374,21 +419,16 @@ const Register = () => {
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Líder de Los Doce</label>
-                        <select
-                            name="liderDoceId"
-                            value={formData.liderDoceId}
-                            onChange={handleChange}
-                            className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                            required
-                        >
-                            <option value="">-- Selecciona tu líder de Doce --</option>
-                            {lideresDoce.map(leader => (
-                                <option key={leader.id} value={leader.id}>
-                                    {leader.fullName}
-                                </option>
-                            ))}
-                        </select>
+                        <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Líder de Los Doce</label>
+                        <AsyncSearchSelect
+                            fetchItems={fetchLeaders}
+                            onSelect={handleLeaderSelect}
+                            selectedValue={selectedLeader}
+                            placeholder="Buscar líder..."
+                            labelKey="fullName"
+                            valueKey="id"
+                            className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                        />
                     </div>
                     {/* Captcha */}
                     <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-700/50">
