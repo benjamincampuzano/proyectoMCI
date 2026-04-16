@@ -1,20 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MagnifyingGlassIcon, SpinnerIcon, X } from '@phosphor-icons/react';
+import { MagnifyingGlass, Spinner, X, UserCircle } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 
-/**
- * A generic, decoupled asynchronous search select component.
- * 
- * @param {Function} fetchItems - Function to fetch items based on search term. Must return a Promise resolving to an array.
- * @param {Function} onSelect - Callback when an item is selected.
- * @param {Object} selectedValue - The currently selected item (full object) or ID.
- * @param {string} placeholder - Placeholder text for input.
- * @param {string|Function} labelKey - Key of the item object to display as label, or render function.
- * @param {string} valueKey - Key of the item object to use as value logic (default: 'id').
- * @param {Function} renderItem - Optional custom renderer for dropdown items.
- * @param {Function} renderSelected - Optional custom renderer for the selected state.
- * @param {string} className - Additional CSS classes.
- */
 const AsyncSearchSelect = ({
     fetchItems,
     onSelect,
@@ -35,10 +22,9 @@ const AsyncSearchSelect = ({
     const [error, setError] = useState(null);
     const wrapperRef = useRef(null);
 
-    // Debounce logic
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (isOpen) { // Only search if dropdown is open to save resources
+            if (isOpen) {
                 handleSearch(searchTerm);
             }
         }, 300);
@@ -46,7 +32,6 @@ const AsyncSearchSelect = ({
         return () => clearTimeout(timer);
     }, [searchTerm, isOpen]);
 
-    // Close on click outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
@@ -58,7 +43,6 @@ const AsyncSearchSelect = ({
     }, []);
 
     const handleSearch = async (term) => {
-        // Don't search if term is empty or too short (backend requires at least 2 characters)
         if (!term || term.trim().length < 2) {
             setItems([]);
             setError(null);
@@ -94,30 +78,22 @@ const AsyncSearchSelect = ({
     const getLabel = (item) => {
         if (!item) return '';
         if (typeof labelKey === 'function') return labelKey(item);
-        
-        // Fallback for common user object structures
         return item[labelKey] || item.profile?.[labelKey] || item.fullName || item.profile?.fullName || item.id || '';
     };
 
-    // Determine if we have a valid selection to show
     const isSelected = effectiveSelectedValue !== null && effectiveSelectedValue !== undefined && effectiveSelectedValue !== '';
-
-    // If selectedValue is an ID but we don't have the full object, the parent should handle display
-    // OR we can display "Selected" if we don't know the label. 
-    // Ideally selectedValue passed in is the full object, or we rely on parent to pass a `selectedLabel` prop 
-    // but for simplicity let's assume selectedValue is the object or we might need a prop for initial label if it's just ID.
-    // NOTE: In the legacy components, they often passed just ID and accepted that it wouldn't show label until fetched 
-    // or they passed an initial object. To keep this generic, let's assume selectedValue is the Object for display.
 
     return (
         <div className={`relative ${className}`} ref={wrapperRef}>
             <div
                 className={`
-                    w-full min-h-[42px] px-3 py-2 bg-white dark:bg-gray-700
-                    border border-gray-300 dark:border-gray-600 rounded-lg
+                    w-full min-h-[44px] px-4 py-2 bg-[var(--ln-input-bg)] 
+                    border border-[var(--ln-border-standard)] rounded-xl
                     flex items-center justify-between cursor-text
-                    focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent
-                    ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100 dark:bg-gray-800' : ''}
+                    focus-within:ring-2 focus-within:ring-[var(--ln-brand-indigo)]/20 focus-within:border-[var(--ln-brand-indigo)]
+                    hover:border-[var(--ln-border-primary)]
+                    transition-all duration-300
+                    ${disabled ? 'opacity-40 cursor-not-allowed grayscale-[0.5]' : ''}
                 `}
                 onClick={() => !disabled && setIsOpen(true)}
                 onKeyDown={(e) => !disabled && (e.key === 'Enter' || e.key === ' ') && setIsOpen(true)}
@@ -127,75 +103,102 @@ const AsyncSearchSelect = ({
                 aria-haspopup="listbox"
                 aria-disabled={disabled}
             >
-                {/* Search Input when Open or Not Selected */}
                 {(!isSelected || isOpen) ? (
-                    <div className="flex items-center flex-1 min-w-0 gap-2">
-                        <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div className="flex items-center flex-1 min-w-0 gap-3">
+                        <MagnifyingGlass 
+                            className={`w-4 h-4 ${isOpen ? 'text-[var(--ln-brand-indigo)]' : 'text-[var(--ln-text-quaternary)]'} transition-colors`} 
+                            weight="bold" 
+                        />
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bg-transparent border-none focus:outline-none w-full text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400"
-                            placeholder={isSelected ? getLabel(effectiveSelectedValue) : placeholder} // Show label as placeholder when editing/searching
+                            className="bg-transparent border-none focus:outline-none w-full text-[13.5px] weight-510 text-[var(--ln-text-primary)] placeholder:text-[var(--ln-text-tertiary)]/40"
+                            placeholder={isSelected ? getLabel(effectiveSelectedValue) : placeholder}
                             disabled={disabled}
                             autoFocus={isOpen}
                         />
                     </div>
                 ) : (
-                    /* Selected Item Display */
-                    <div className="flex items-center flex-1 min-w-0">
+                    <div className="flex items-center flex-1 min-w-0 group/label">
                         {renderSelected ? renderSelected(effectiveSelectedValue) : (
-                            <span className="text-sm text-gray-900 dark:text-gray-100 truncate block">
-                                {getLabel(effectiveSelectedValue)}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-[var(--ln-brand-indigo)]/10 flex items-center justify-center text-[var(--ln-brand-indigo)] text-[10px] weight-700">
+                                    {getLabel(effectiveSelectedValue).charAt(0)}
+                                </div>
+                                <span className="text-[13.5px] weight-590 text-[var(--ln-text-primary)] truncate block tracking-tight">
+                                    {getLabel(effectiveSelectedValue)}
+                                </span>
+                            </div>
                         )}
                     </div>
                 )}
 
-                {/* Actions: Clear or Loading */}
-                <div className="flex items-center gap-1 ml-2">
-                    {loading && <SpinnerIcon className="w-4 h-4 animate-spin text-gray-400" />}
+                <div className="flex items-center gap-2 ml-2">
+                    {loading && <Spinner className="w-4 h-4 animate-spin text-[var(--ln-brand-indigo)]" weight="bold" />}
                     {isSelected && !disabled && !loading && (
                         <button
                             type="button"
                             onClick={clearSelection}
-                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                            className="p-1 hover:bg-[var(--ln-text-quaternary)]/10 rounded-full text-[var(--ln-text-quaternary)] hover:text-[var(--ln-text-primary)] transition-all active:scale-90"
                         >
-                            <X className="w-4 h-4" />
+                            <X className="w-3 h-3" weight="bold" />
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Dropdown Results */}
             {isOpen && !disabled && (
-                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {error && (
-                        <div className="p-3 text-red-500 text-sm text-center">{error}</div>
-                    )}
+                <div className="relative z-[100] w-full mt-2 bg-[var(--ln-bg-panel)]/80 backdrop-blur-xl border border-[var(--ln-border-standard)] rounded-[20px] shadow-2xl max-h-72 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 ring-1 ring-black/5">
+                    <div className="overflow-y-auto max-h-72 p-1.5 custom-scrollbar">
+                        {error && (
+                            <div className="p-4 text-red-500 text-[11px] weight-700 uppercase tracking-widest text-center bg-red-500/5 rounded-xl">
+                                {error}
+                            </div>
+                        )}
 
-                    {!loading && !error && items.length === 0 && (
-                        <div className="p-3 text-gray-500 dark:text-gray-400 text-sm text-center">
-                            No se encontraron resultados
-                        </div>
-                    )}
-
-                    {items.map((item) => (
-                        <div
-                            key={item[valueKey]}
-                            onClick={() => handleSelect(item)}
-                            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelect(item)}
-                            role="option"
-                            tabIndex={0}
-                            className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-700 dark:text-gray-200"
-                        >
-                            {renderItem ? renderItem(item) : (
-                                <div>
-                                    <div className="font-medium">{getLabel(item)}</div>
+                        {!loading && !error && items.length === 0 && (
+                            <div className="p-8 text-center space-y-2">
+                                <div className="mx-auto w-10 h-10 bg-[var(--ln-bg-panel)] rounded-xl flex items-center justify-center text-[var(--ln-text-quaternary)] opacity-40">
+                                    <MagnifyingGlass size={20} />
                                 </div>
-                            )}
+                                <p className="text-[13px] weight-510 text-[var(--ln-text-tertiary)] opacity-60">
+                                    No se encontraron resultados para <span className="text-[var(--ln-text-primary)]">"{searchTerm}"</span>
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="space-y-0.5">
+                            {items.map((item) => (
+                                <div
+                                    key={item[valueKey]}
+                                    onClick={() => handleSelect(item)}
+                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelect(item)}
+                                    role="option"
+                                    tabIndex={0}
+                                    className="group px-3.5 py-2.5 hover:bg-white/[0.04] rounded-xl cursor-pointer transition-all border border-transparent hover:border-[var(--ln-border-standard)]"
+                                >
+                                    {renderItem ? renderItem(item) : (
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-[var(--ln-brand-indigo)]/10 flex items-center justify-center text-[var(--ln-brand-indigo)] text-[12px] weight-700 shadow-sm border border-[var(--ln-brand-indigo)]/20">
+                                                {getLabel(item).charAt(0)}
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <div className="text-[13.5px] weight-590 text-[var(--ln-text-primary)] group-hover:text-[var(--ln-brand-indigo)] transition-colors truncate">
+                                                    {getLabel(item)}
+                                                </div>
+                                                {item.email && (
+                                                    <div className="text-[11px] weight-510 text-[var(--ln-text-tertiary)] opacity-60 group-hover:opacity-100 transition-opacity truncate">
+                                                        {item.email}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    </div>
                 </div>
             )}
         </div>

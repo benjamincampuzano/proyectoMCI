@@ -447,6 +447,109 @@ const getAllUsers = async (req, res) => {
             });
         }
 
+        if (req.user.roles.includes('LIDER_DOCE') || req.user.roles.includes('LIDER_CELULA')) {
+            const requesterNetworkId = await getUserNetwork(req.user.id);
+
+            if (!requesterNetworkId || requesterNetworkId.length === 0) {
+                return res.json({
+                    users: [],
+                    pagination: {
+                        page: pageNum,
+                        limit: limitNum,
+                        total: 0,
+                        pages: 0
+                    }
+                });
+            }
+
+            const isLiderCelula = req.user.roles.includes('LIDER_CELULA');
+            
+            let searchFilter = {};
+            if (search) {
+                searchFilter = {
+                    OR: [
+                        { profile: { fullName: { contains: search, mode: 'insensitive' } } },
+                        { email: { contains: search, mode: 'insensitive' } }
+                    ]
+                };
+            }
+
+            let sexFilterObj = {};
+            if (sexFilter) {
+                sexFilterObj = { profile: { sex: sexFilter } };
+            }
+
+            let liderDoceFilterObj = {};
+            if (liderDoceFilter) {
+                liderDoceFilterObj = { 
+                    parents: { 
+                        some: { 
+                            parentId: parseInt(liderDoceFilter),
+                            role: 'LIDER_DOCE'
+                        } 
+                    } 
+                };
+            }
+
+            let roleFilterObj = {};
+            if (role) {
+                roleFilterObj = {
+                    roles: {
+                        some: {
+                            role: { name: role }
+                        }
+                    }
+                };
+            } else if (isLiderCelula) {
+                roleFilterObj = {
+                    roles: {
+                        some: {
+                            role: { name: { in: ['DISCIPULO', 'LIDER_CELULA'] } }
+                        }
+                    }
+                };
+            }
+
+            const whereClause = {
+                isDeleted: false,
+                id: { in: requesterNetworkId },
+                ...roleFilterObj,
+                ...(Object.keys(searchFilter).length > 0 && searchFilter),
+                ...(Object.keys(sexFilterObj).length > 0 && sexFilterObj),
+                ...(Object.keys(liderDoceFilterObj).length > 0 && liderDoceFilterObj)
+            };
+
+            const totalCount = await prisma.user.count({
+                where: whereClause
+            });
+
+            const queryOptions = {
+                where: whereClause,
+                include: {
+                    roles: { include: { role: true } },
+                    profile: true
+                },
+                orderBy: { id: 'desc' }
+            };
+
+            if (limitNum !== undefined) {
+                queryOptions.skip = (pageNum - 1) * limitNum;
+                queryOptions.take = limitNum;
+            }
+
+            const users = await prisma.user.findMany(queryOptions);
+
+            return res.json({
+                users: users.map(formatUser),
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total: totalCount,
+                    pages: limitNum ? Math.ceil(totalCount / limitNum) : 1
+                }
+            });
+        }
+
         if (req.user.isModuleCoordinator) {
             // Construir filtro de búsqueda
             let searchFilter = {};
@@ -488,100 +591,6 @@ const getAllUsers = async (req, res) => {
                         }
                     }
                 },
-                ...(Object.keys(searchFilter).length > 0 && searchFilter),
-                ...(Object.keys(sexFilterObj).length > 0 && sexFilterObj),
-                ...(Object.keys(liderDoceFilterObj).length > 0 && liderDoceFilterObj)
-            };
-
-            // Obtener total de usuarios para paginación
-            const totalCount = await prisma.user.count({
-                where: whereClause
-            });
-
-            const queryOptions = {
-                where: whereClause,
-                include: {
-                    roles: { include: { role: true } },
-                    profile: true
-                },
-                orderBy: { id: 'desc' }
-            };
-
-            // Aplicar paginación solo si hay un límite definido
-            if (limitNum !== undefined) {
-                queryOptions.skip = (pageNum - 1) * limitNum;
-                queryOptions.take = limitNum;
-            }
-
-            const users = await prisma.user.findMany(queryOptions);
-
-            return res.json({
-                users: users.map(formatUser),
-                pagination: {
-                    page: pageNum,
-                    limit: limitNum,
-                    total: totalCount,
-                    pages: limitNum ? Math.ceil(totalCount / limitNum) : 1
-                }
-            });
-        }
-
-        if (req.user.roles.includes('LIDER_DOCE')) {
-            const requesterNetworkId = await getUserNetwork(req.user.id);
-
-            if (!requesterNetworkId) {
-                return res.json({
-                    users: [],
-                    pagination: {
-                        page: pageNum,
-                        limit: limitNum,
-                        total: 0,
-                        pages: 0
-                    }
-                });
-            }
-
-            // Construir filtro de búsqueda
-            let searchFilter = {};
-            if (search) {
-                searchFilter = {
-                    OR: [
-                        { profile: { fullName: { contains: search, mode: 'insensitive' } } },
-                        { email: { contains: search, mode: 'insensitive' } }
-                    ]
-                };
-            }
-
-            // Filtro de sexo
-            let sexFilterObj = {};
-            if (sexFilter) {
-                sexFilterObj = { profile: { sex: sexFilter } };
-            }
-
-            // Filtro de líder de 12
-            let liderDoceFilterObj = {};
-            if (liderDoceFilter) {
-                liderDoceFilterObj = { 
-                    parents: { 
-                        some: { 
-                            parentId: parseInt(liderDoceFilter),
-                            role: 'LIDER_DOCE'
-                        } 
-                    } 
-                };
-            }
-
-            // Combinar todos los filtros
-            const whereClause = {
-                isDeleted: false,
-                id: { in: requesterNetworkId },
-                ...(role && {
-                    roles: {
-                        some: {
-                            role: { name: role }
-                        }
-                    }
-                }),
                 ...(Object.keys(searchFilter).length > 0 && searchFilter),
                 ...(Object.keys(sexFilterObj).length > 0 && sexFilterObj),
                 ...(Object.keys(liderDoceFilterObj).length > 0 && liderDoceFilterObj)

@@ -3,148 +3,205 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --font-mono: 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'Berkeley Mono', 'ui-monospace', 'SF Mono', 'Menlo', 'Monaco', 'Cascadia Mono', 'Segoe UI Mono', 'Roboto Mono', 'Oxygen Mono', 'Ubuntu Monospace', 'Source Code Pro', 'Fira Mono', 'Droid Sans Mono', 'Courier New', monospace;
 }
 
 :root {
-  --sk-black: #000000;
-  --sk-light-gray: #f5f5f7;
-  --sk-near-black: #1d1d1f;
-  --sk-apple-blue: #0071e3;
-  --sk-link-blue: #0066cc;
-  --sk-bright-blue: #2997ff;
-  --sk-white: #ffffff;
-  --sk-white-80: rgba(255, 255, 255, 0.8);
-  --sk-black-80: rgba(0, 0, 0, 0.8);
-  --sk-black-48: rgba(0, 0, 0, 0.48);
-  --sk-dark-surface-1: #272729;
-  --sk-dark-surface-2: #262628;
-  --sk-dark-surface-3: #28282a;
-  --sk-dark-surface-4: #2a2a2d;
-  --sk-dark-surface-5: #242426;
-  --sk-button-active: #ededf2;
-  --sk-button-default-light: #fafafc;
-  --sk-overlay: rgba(210, 210, 215, 0.64);
-  --sk-white-32: rgba(255, 255, 255, 0.32);
-  --sk-card-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0px;
-  --sk-focus-color: #0071e3;
+  --ln-bg-marketing: #f7f8f8;
+  --ln-bg-panel: #f5f6f7;
+  --ln-bg-surface: #ffffff;
+  --ln-bg-secondary: #f3f4f5;
+  
+  --ln-text-primary: #1d1d1f;
+  --ln-text-secondary: #3c3f44;
+  --ln-text-tertiary: #585d65;
+  --ln-text-quaternary: #6f7580;
+  
+  --ln-brand-indigo: #5e6ad2;
+  --ln-accent-violet: #7170ff;
+  --ln-accent-hover: #828fff;
+  --ln-security-lavender: #7a7fad;
+  
+  --ln-success: #27a644;
+  --ln-emerald: #10b981;
+  
+  --ln-border-primary: #d0d6e0;
+  --ln-border-secondary: #e6e6e6;
+  --ln-border-tertiary: #d1d1d6;
+  --ln-border-subtle: rgba(0, 0, 0, 0.05);
+  --ln-border-standard: rgba(0, 0, 0, 0.08);
+  
+  --ln-line-tint: #e5e5e7;
+  --ln-line-tertiary: #f5f5f7;
+  
+  --ln-overlay: rgba(0, 0, 0, 0.5);
+  
+  --ln-btn-ghost: rgba(0, 0, 0, 0.02);
+  --ln-btn-subtle: rgba(0, 0, 0, 0.04);
+  
+  --sk-focus-color: var(--ln-accent-violet);
+}
+
+.dark {
+  --ln-bg-marketing: #08090a;
+  --ln-bg-panel: #0f1011;
+  --ln-bg-surface: #191a1b;
+  --ln-bg-secondary: #28282c;
+  
+  --ln-text-primary: #f7f8f8;
+  --ln-text-secondary: #e4e8ee;
+  --ln-text-tertiary: #b6bcc6;
+  --ln-text-quaternary: #9aa2ae;
+  
+  --ln-border-primary: #23252a;
+  --ln-border-secondary: #34343a;
+  --ln-border-tertiary: #3e3e44;
+  --ln-border-subtle: rgba(255, 255, 255, 0.05);
+  --ln-border-standard: rgba(255, 255, 255, 0.08);
+  
+  --ln-line-tint: #141516;
+  --ln-line-tertiary: #18191a;
+  
+  --ln-btn-ghost: rgba(255, 255, 255, 0.02);
+  --ln-btn-subtle: rgba(255, 255, 255, 0.04);
+
+  background-color: var(--ln-bg-marketing);
+  color: var(--ln-text-primary);
 }
 
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv01" 1, "ss03" 1;
   }
   
   body {
-    @apply bg-[#f5f5f7] text-[#1d1d1f] transition-colors;
+    @apply bg-[var(--ln-bg-marketing)] text-[var(--ln-text-primary)] transition-colors;
     font-family: var(--font-sans);
-  }
-  
-  body.dark {
-    @apply bg-[#000000] text-white;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    letter-spacing: -0.02em;
+    @apply font-[var(--font-sans)] text-[var(--ln-text-primary)];
+    font-weight: 510;
   }
   
-  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
-    color: white;
+  h1 { 
+    font-size: 2rem; 
+    line-height: 1.13; 
+    letter-spacing: -0.704px; 
+  }
+  h2 { 
+    font-size: 1.5rem; 
+    line-height: 1.33; 
+    letter-spacing: -0.288px; 
+  }
+  h3 { 
+    font-size: 1.25rem; 
+    line-height: 1.33; 
+    letter-spacing: -0.24px; 
+    font-weight: 590;
+  }
+  
+  /* Display sizes */
+  .text-display-xl {
+    font-size: 4.5rem;
+    line-height: 1;
+    letter-spacing: -1.584px;
+    font-weight: 510;
+  }
+  .text-display-lg {
+    font-size: 4rem;
+    line-height: 1;
+    letter-spacing: -1.408px;
+    font-weight: 510;
+  }
+  .text-display {
+    font-size: 3rem;
+    line-height: 1;
+    letter-spacing: -1.056px;
+    font-weight: 510;
   }
 }
 
 @layer utilities {
-  @keyframes shimmer {
-    from { background-position: 0 0; }
-    to { background-position: 1rem 0; }
-  }
-  .animate-shimmer {
-    animation: shimmer 1s linear infinite;
+  /* Linear Card */
+  .ln-card {
+    @apply bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] rounded-lg transition-all;
   }
   
-    
-  .sk-glass {
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  .ln-card-hover {
+    @apply bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] rounded-lg transition-all hover:bg-[var(--ln-bg-secondary)] cursor-pointer;
+  }
+
+  /* Linear Input */
+  .ln-input {
+    @apply w-full px-3 py-2.5 rounded-md bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] 
+           text-[var(--ln-text-primary)] placeholder-[var(--ln-text-tertiary)]
+           focus:outline-none focus:border-[var(--ln-accent-violet)] focus:ring-1 focus:ring-[var(--ln-accent-violet)]
+           transition-all duration-200;
+  }
+
+  /* Linear Buttons */
+  .ln-btn-primary {
+    @apply bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] text-white px-4 py-2 rounded-md
+           font-medium transition-all duration-200 flex items-center justify-center gap-2;
+  }
+
+  .ln-btn-ghost {
+    @apply bg-[var(--ln-btn-ghost)] hover:bg-[var(--ln-btn-subtle)] border border-[var(--ln-border-standard)] 
+           text-[var(--ln-text-primary)] px-4 py-2 rounded-md transition-all duration-200;
   }
   
-  .sk-section-dark {
-    background-color: var(--sk-black);
-    color: white;
+  .ln-btn-subtle {
+    @apply bg-[var(--ln-btn-subtle)] text-[var(--ln-text-secondary)] px-2 py-1 rounded-md 
+           transition-all duration-200;
+  }
+
+  .ln-btn-icon {
+    @apply bg-[var(--ln-btn-ghost)] hover:bg-[var(--ln-btn-subtle)] border border-[var(--ln-border-standard)]
+           rounded-full p-2 flex items-center justify-center text-[var(--ln-text-primary)] transition-all;
+  }
+
+  /* Linear Label */
+  .ln-label {
+    @apply block text-xs font-medium uppercase tracking-wider mb-1.5 text-[var(--ln-text-secondary)];
   }
   
-  .sk-section-light {
-    background-color: var(--sk-light-gray);
-    color: var(--sk-near-black);
+  /* Linear Badge/Pill */
+  .ln-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
   }
   
-  .sk-btn-primary {
-    background-color: var(--sk-apple-blue);
-    color: white;
-    padding: 8px 15px;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    font-family: var(--font-sans);
-    font-size: 17px;
-    font-weight: 400;
-    transition: background-color 0.2s ease;
+  .ln-badge-success {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--ln-emerald)] text-white;
   }
   
-  .sk-btn-primary:hover {
-    background-color: #0077ed;
+  .ln-badge-neutral {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-transparent border border-[var(--ln-border-primary)] text-[var(--ln-text-secondary)];
+  }
+
+  /* Tab Navigation */
+  .ln-tab {
+    @apply py-3 px-1 border-b-2 font-normal text-sm transition-colors duration-200;
   }
   
-  .sk-btn-primary:active {
-    background-color: var(--sk-button-active);
+  .ln-tab-active {
+    @apply py-3 px-1 border-b-2 font-normal text-sm transition-colors duration-200 border-[var(--ln-accent-violet)] text-[var(--ln-accent-violet)];
   }
   
-  .sk-btn-primary:focus {
-    outline: 2px solid var(--sk-focus-color);
-    outline-offset: 2px;
+  .ln-tab-inactive {
+    @apply py-3 px-1 border-b-2 font-normal text-sm transition-colors duration-200 border-transparent text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:border-[var(--ln-border-primary)];
   }
-  
-  .sk-btn-dark {
-    background-color: var(--sk-near-black);
-    color: white;
-    padding: 8px 15px;
-    border-radius: 8px;
-    font-family: var(--font-sans);
-    font-size: 17px;
-    font-weight: 400;
+
+  /* Backdrop */
+  .ln-backdrop {
+    @apply fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-[2px] z-[999] flex items-center justify-center p-4;
   }
-  
-  .sk-pill-link {
-    color: var(--sk-link-blue);
-    border-radius: 980px;
-    border: 1px solid var(--sk-link-blue);
-    padding: 4px 12px;
-    font-family: var(--font-sans);
-    font-size: 14px;
-    text-decoration: none;
-    transition: all 0.2s ease;
-  }
-  
-  .sk-pill-link:hover {
-    text-decoration: underline;
-  }
-  
-  .dark .sk-pill-link {
-    color: var(--sk-bright-blue);
-    border-color: var(--sk-bright-blue);
-  }
-  
-  .sk-card {
-    background-color: var(--sk-light-gray);
-    border-radius: 8px;
-    border: none;
-    box-shadow: var(--sk-card-shadow);
-  }
-  
-  .dark .sk-card {
-    background-color: var(--sk-dark-surface-1);
+
+  /* Spinner */
+  .ln-spinner {
+    @apply animate-spin text-[var(--ln-brand-indigo)];
   }
 }

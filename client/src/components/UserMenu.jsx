@@ -99,107 +99,94 @@ const UserMenu = ({ onOpenProfile }) => {
         <div className="relative" ref={menuRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center space-x-2 px-2.5 py-1.5 rounded-lg bg-[#f5f5f7] dark:bg-[#272729] hover:bg-[#e5e5ea] dark:hover:bg-[#3a3a3c] transition-colors"
+                className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-[var(--ln-border-standard)] transition-all group"
             >
-                <div className="w-7 h-7 rounded-full bg-[#0071e3] flex items-center justify-center">
-                    <User size={16} className="text-white" weight="regular" />
+                <div className="w-8 h-8 rounded-full bg-[var(--ln-brand-indigo)] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+                    <User size={18} className="text-white" weight="regular" />
                 </div>
                 <div className="text-left hidden md:block">
-                    <p className="text-sm font-normal text-[#1d1d1f] dark:text-white">{user?.fullName}</p>
-                    <p className="text-[10px] text-[#86868b] dark:text-[#98989d]">
-                        {Array.isArray(user?.roles) ? user.roles.join(', ').replace(/_/g, ' ') : (typeof user?.role === 'string' ? user.role.replace(/_/g, ' ') : (Array.isArray(user?.role) ? user.role.join(', ').replace(/_/g, ' ') : 'Usuario'))}
+                    <p className="text-[13px] weight-510 text-[var(--ln-text-primary)] leading-none">{user?.fullName}</p>
+                    <p className="text-[10px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest mt-1 opacity-70">
+                        {Array.isArray(user?.roles) ? user.roles[0].replace(/_/g, ' ') : (typeof user?.role === 'string' ? user.role.replace(/_/g, ' ') : 'Usuario')}
                     </p>
                 </div>
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg shadow-[rgba(0,0,0,0.22)_3px_5px_30px_0px] py-1 z-50">
-                    <div className="px-3 py-2 border-b border-[#d1d1d6] dark:border-[#3a3a3c]">
-                        <p className="text-sm font-semibold text-[#1d1d1f] dark:text-white">{user?.fullName}</p>
-                        <p className="text-[10px] text-[#86868b] dark:text-[#98989d]">{user?.email}</p>
+                <div className="absolute right-0 mt-3 w-64 bg-[var(--ln-bg-surface)]/90 backdrop-blur-xl border border-[var(--ln-border-standard)] rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="px-4 py-3 border-b border-[var(--ln-border-standard)] mb-1">
+                        <p className="text-[14px] weight-590 text-[var(--ln-text-primary)]">{user?.fullName}</p>
+                        <p className="text-[11px] text-[var(--ln-text-tertiary)] mt-0.5">{user?.email}</p>
                     </div>
 
-                    <button
-                        onClick={() => handleMenuItemClick(onOpenProfile)}
-                        className="w-full flex items-center space-x-2.5 px-3 py-2 hover:bg-[#f5f5f7] dark:hover:bg-[#272729] transition-colors text-left"
-                    >
-                        <Gear size={16} className="text-[#86868b]" weight="regular" />
-                        <span className="text-sm text-[#1d1d1f] dark:text-white">Mi Perfil</span>
-                    </button>
+                    <div className="px-1.5 space-y-0.5">
+                        <button
+                            onClick={() => handleMenuItemClick(onOpenProfile)}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.05] transition-colors text-left group"
+                        >
+                            <Gear size={18} className="text-[var(--ln-text-tertiary)] group-hover:text-[var(--ln-text-primary)]" weight="regular" />
+                            <span className="text-[13px] text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)]">Configuración de Perfil</span>
+                        </button>
 
-                    <a
-                        href={DATA_POLICY_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full flex items-center space-x-2.5 px-3 py-2 hover:bg-[#f5f5f7] dark:hover:bg-[#272729] transition-colors text-left"
-                    >
-                        <ShieldCheck size={16} className="text-[#86868b]" weight="regular" />
-                        <span className="text-sm text-[#1d1d1f] dark:text-white">Política de Datos</span>
-                    </a>
+                        <a
+                            href={DATA_POLICY_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.05] transition-colors text-left group"
+                        >
+                            <ShieldCheck size={18} className="text-[var(--ln-text-tertiary)] group-hover:text-[var(--ln-text-primary)]" weight="regular" />
+                            <span className="text-[13px] text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)]">Privacidad y Datos</span>
+                        </a>
 
-                    {(user?.roles?.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) && (
-                        <>
-                            <Link
-                                to="/usuarios"
-                                onClick={() => setIsOpen(false)}
-                                className="w-full flex items-center space-x-2.5 px-3 py-2 hover:bg-[#f5f5f7] dark:hover:bg-[#272729] transition-colors text-left"
-                            >
-                                <Users size={16} className="text-[#86868b]" weight="regular" />
-                                <span className="text-sm text-[#1d1d1f] dark:text-white">Administrador</span>
-                            </Link>
-                        </>
-                    )}
-
-                    <div className="px-3 py-2">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-[#1d1d1f] dark:text-white">Tema</span>
+                        <div className="px-4 py-2 flex items-center justify-between border-t border-[var(--ln-border-standard)] mt-2 pt-3">
+                            <span className="text-[13px] text-[var(--ln-text-secondary)]">Apariencia</span>
                             <ThemeToggle />
                         </div>
-                    </div>
 
-                    <button
-                        onClick={handleShowSessions}
-                        className="w-full flex items-center space-x-2.5 px-3 py-2 hover:bg-[#f5f5f7] dark:hover:bg-[#272729] transition-colors text-left"
-                    >
-                        <DevicesIcon size={16} className="text-[#86868b]" weight="regular" />
-                        <span className="text-sm text-[#1d1d1f] dark:text-white">Mis Sesiones</span>
-                    </button>
+                        <button
+                            onClick={handleShowSessions}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.05] transition-colors text-left group"
+                        >
+                            <DevicesIcon size={18} className="text-[var(--ln-text-tertiary)] group-hover:text-[var(--ln-text-primary)]" weight="regular" />
+                            <span className="text-[13px] text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)]">Mis Sesiones</span>
+                        </button>
 
-                    {showSessions && (
-                        <div className="px-2 py-2 border-t border-b border-[#d1d1d6] dark:border-[#3a3a3c] mx-2 my-1">
-                            {loadingSessions ? (
-                                <p className="text-[10px] text-[#86868b] text-center py-2">Cargando...</p>
-                            ) : sessions.length === 0 ? (
-                                <p className="text-[10px] text-[#86868b] text-center py-2">No hay sesiones activas</p>
-                            ) : (
-                                <div className="max-h-32 overflow-y-auto">
-                                    {sessions.map((session) => (
-                                        <div key={session.id} className="text-[10px] py-1 px-2 hover:bg-[#f5f5f7] dark:hover:bg-[#272729] rounded">
-                                            <p className="font-medium text-[#1d1d1f] dark:text-white">{getDeviceInfo(session.userAgent)}</p>
-                                            <p className="text-[#86868b]">IP: {session.ipAddress || 'Desconocida'}</p>
-                                            <p className="text-[#86868b]">Expira: {formatDate(session.expiresAt)}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                        {showSessions && (
+                            <div className="px-2 py-2 border border-[var(--ln-border-standard)] bg-black/5 dark:bg-white/5 rounded-lg mx-2 my-1.5 animate-in fade-in zoom-in-95 duration-200">
+                                {loadingSessions ? (
+                                    <p className="text-[10px] text-[var(--ln-text-tertiary)] text-center py-2 italic font-medium">Cargando...</p>
+                                ) : sessions.length === 0 ? (
+                                    <p className="text-[10px] text-[var(--ln-text-tertiary)] text-center py-2 font-medium">Sin sesiones activas</p>
+                                ) : (
+                                    <div className="max-h-32 overflow-y-auto space-y-2">
+                                        {sessions.map((session) => (
+                                            <div key={session.id} className="text-[10px] py-1 px-2 hover:bg-white/5 rounded transition-colors border-l-2 border-transparent hover:border-[var(--ln-brand-indigo)]">
+                                                <p className="font-semibold text-[var(--ln-text-primary)]">{getDeviceInfo(session.userAgent)}</p>
+                                                <p className="text-[var(--ln-text-tertiary)] opacity-80 mt-0.5">IP: {session.ipAddress}</p>
+                                                <p className="text-[var(--ln-text-tertiary)] opacity-80">Exp: {formatDate(session.expiresAt)}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <button
+                                    onClick={handleLogoutAll}
+                                    className="w-full mt-2 flex items-center justify-center gap-2 px-2 py-1.5 bg-red-500/10 hover:bg-red-500/20 rounded-md text-red-500 text-[10px] font-bold transition-all uppercase tracking-wider"
+                                >
+                                    <SignOut size={12} weight="bold" />
+                                    <span>Cerrar todo</span>
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="border-t border-[var(--ln-border-standard)] mt-2 pt-1.5">
                             <button
-                                onClick={handleLogoutAll}
-                                className="w-full mt-2 flex items-center justify-center space-x-1.5 px-2 py-1.5 bg-[#ff3b30]/10 hover:bg-[#ff3b30]/20 rounded text-[#ff3b30] text-[10px] transition-colors"
+                                onClick={() => handleMenuItemClick(logout)}
+                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 transition-colors text-left group"
                             >
-                                <SignOut size={12} />
-                                <span>Cerrar todas las sesiones</span>
+                                <SignOut size={18} className="text-red-500 group-hover:scale-110 transition-transform" weight="regular" />
+                                <span className="text-[13px] text-red-500 font-medium">Cerrar Sesión</span>
                             </button>
                         </div>
-                    )}
-
-                    <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] mt-1 pt-1">
-                        <button
-                            onClick={() => handleMenuItemClick(logout)}
-                            className="w-full flex items-center space-x-2.5 px-3 py-2 hover:bg-[#ff3b30]/10 transition-colors text-left"
-                        >
-                            <SignOut size={16} className="text-[#ff3b30]" weight="regular" />
-                            <span className="text-sm text-[#ff3b30]">Cerrar Sesión</span>
-                        </button>
                     </div>
                 </div>
             )}

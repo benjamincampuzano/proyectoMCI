@@ -32,11 +32,11 @@ const cleanupOrphanedTokens = async () => {
                     }
                 }
             });
-            console.log(`✅ Cleaned up ${tokenIds.length} orphaned refresh tokens`);
+            //console.log(`✅ Cleaned up ${tokenIds.length} orphaned refresh tokens`);
             return tokenIds.length;
         }
 
-        console.log('✅ No orphaned refresh tokens found');
+        //console.log('✅ No orphaned refresh tokens found');
         return 0;
     } catch (error) {
         console.error('❌ Error cleaning up orphaned tokens:', error);
@@ -48,7 +48,7 @@ const cleanupOrphanedTokens = async () => {
 if (require.main === module) {
     cleanupOrphanedTokens()
         .then(count => {
-            console.log(`Cleanup completed. Removed ${count} orphaned tokens.`);
+            //console.log(`Cleanup completed. Removed ${count} orphaned tokens.`);
             process.exit(0);
         })
         .catch(error => {

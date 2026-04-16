@@ -29,7 +29,6 @@ const useAttendance = () => {
             console.error('Error fetching cells:', err);
             // Handle network errors silently
             if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
-                console.log('Server not available - using empty cells list');
                 setCells([]);
             } else {
                 setError(err.response?.data?.error || 'Error fetching cells');

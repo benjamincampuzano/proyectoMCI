@@ -5,7 +5,16 @@ import api from '../utils/api';
 import NetworkTree from '../components/NetworkTree';
 import UserActivityList from '../components/UserActivityList';
 import { PageHeader, Button } from '../components/ui';
-import { ArrowsClockwise, Users, Calendar, CaretDown, StarIcon, Crown } from '@phosphor-icons/react';
+import { 
+    ArrowsClockwise, 
+    Users, 
+    Calendar, 
+    CaretDown, 
+    StarIcon, 
+    Crown,
+    UsersThree,
+    Spinner
+} from '@phosphor-icons/react';
 
 const ConsolidatedStatsReport = lazy(() => import('../components/ConsolidatedStatsReport'));
 
@@ -19,8 +28,7 @@ const Home = () => {
     const [loading, setLoading] = useState(true);
     const [networkLoading, setNetworkLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [showNetworkSelector, setShowNetworkSelector] = useState(false);
-
+    
     useEffect(() => {
         if (isSuperAdmin()) {
             fetchPastores();
@@ -32,10 +40,8 @@ const Home = () => {
         } else if (hasAnyRole(['LIDER_CELULA', 'DISCIPULO'])) {
             let leaderId = user.id;
             if (hasRole('DISCIPULO')) {
-                // Para DISCIPULO: PASTOR -> LIDER_DOCE -> LIDER_CELULA -> DISCIPULO
                 leaderId = user.liderCelulaId || user.liderDoceId || user.pastorId || user.id;
             } else if (hasRole('LIDER_CELULA')) {
-                // Para LIDER_CELULA: PASTOR -> LIDER_DOCE -> LIDER_CELULA
                 leaderId = user.liderDoceId || user.pastorId || user.id;
             }
             handleSelectLeader({ id: leaderId, fullName: user.fullName, roles: user.roles });
@@ -61,18 +67,13 @@ const Home = () => {
         try {
             setLoading(true);
             if (hasAnyRole(['PASTOR'])) {
-                // Para PASTOR, obtener su propia red primero
                 try {
                     const pastorNetworkResponse = await api.get(`/network/${user.id}`);
-                    // console.log('Home.jsx - fetchLideresDoce - pastorNetworkResponse.data:', pastorNetworkResponse.data);
-                    
-                    // Obtener los LIDER_DOCE del pastor
                     const response = await api.get('/network/los-doce');
                     const lideresDoceData = response.data;
                     setLideresDoce(lideresDoceData);
                     
                     if (pastorNetworkResponse.data && lideresDoceData.length > 0) {
-                        // Usar la red del pastor como base y agregar los LIDER_DOCE como discípulos
                         const pastorNetwork = {
                             ...pastorNetworkResponse.data,
                             disciples: [
@@ -84,24 +85,19 @@ const Home = () => {
                                 }))
                             ]
                         };
-                        
-                        // console.log('Home.jsx - fetchLideresDoce - pastorNetwork final:', pastorNetwork);
                         setNetwork(pastorNetwork);
                         setSelectedLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
                     } else if (pastorNetworkResponse.data) {
-                        // Si no tiene LIDER_DOCE, usar solo su red
                         setNetwork(pastorNetworkResponse.data);
                         setSelectedLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
                     } else {
                         setLoading(false);
                     }
                 } catch (err) {
-                    console.error('Error obteniendo red del pastor:', err);
                     setError(err.response?.data?.message || err.message);
                     setLoading(false);
                 }
             } else {
-                // Para otros roles, cargar lista de LIDER_DOCE
                 const response = await api.get('/network/los-doce');
                 setLideresDoce(response.data);
                 if (response.data.length > 0) {
@@ -120,9 +116,7 @@ const Home = () => {
             setNetworkLoading(true);
             setSelectedLeader(leader);
             setError(null);
-            // console.log('Home.jsx - handleSelectLeader - leader:', leader);
             const response = await api.get(`/network/${leader.id}`);
-            // console.log('Home.jsx - handleSelectLeader - response.data:', response.data);
             setNetwork(response.data);
         } catch (err) {
             if (err.response?.status === 404) {
@@ -147,19 +141,16 @@ const Home = () => {
 
     const canViewNetwork = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO']);
     const canViewReport = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
-    const isAdminOrPastor = isSuperAdmin() || hasAnyRole(['PASTOR']);
 
-    // Render content based on active tab
     const renderTabContent = () => {
         if (activeTab === 'red') {
-            // Red de Personas tab
             return (
-                <>
+                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     {isSuperAdmin() && (
-                        <div className="min-h-[200px]">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-semibold text-[#1d1d1f] dark:text-white">
-                                    Pastores
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-xl weight-590 text-[var(--ln-text-primary)] tracking-tight">
+                                    Ministerio
                                 </h2>
                             </div>
                             <LosDoceGrid losDoce={pastores} onSelectLeader={handleSelectLeader} />
@@ -167,115 +158,127 @@ const Home = () => {
                     )}
 
                     {networkLoading ? (
-                        <div className="flex items-center justify-center h-[300px] bg-[#f5f5f7] dark:bg-[#272729] rounded-lg">
-                            <div className="text-[#86868b] dark:text-[#98989d] flex items-center gap-2">
-                                <ArrowsClockwise className="w-4 h-4 animate-spin" />
-                                Cargando red de discipulado...
+                        <div className="flex flex-col items-center justify-center h-[400px] bg-[var(--ln-bg-panel)] rounded-[24px] border border-[var(--ln-border-standard)] animate-pulse">
+                            <ArrowsClockwise className="w-8 h-8 text-[var(--ln-brand-indigo)] animate-spin mb-4" />
+                            <div className="text-[var(--ln-text-tertiary)] text-sm weight-510 tracking-wide">
+                                Analizando red de discipulado...
                             </div>
                         </div>
                     ) : (
-                        <div className="min-h-[300px]">
+                        <div className="space-y-8">
                             {network ? (
                                 <>
-                                    <div className="mb-4">
-                                        <h2 className="text-xl font-semibold text-[#1d1d1f] dark:text-white">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-xl weight-590 text-[var(--ln-text-primary)] tracking-tight">
                                             {isSuperAdmin()
                                                 ? `Ministerio de ${selectedLeader?.fullName}`
-                                                : 'Mi Ministerio'
+                                                : 'Mi Red de Discipulado'
                                             }
                                         </h2>
                                     </div>
+                                    
                                     {network && (hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) && (
-                                        <div className="mb-5 p-4 bg-[#f5f5f7] dark:bg-[#272729] rounded-lg">
-                                            <div className="flex items-center gap-2.5 mb-3">
-                                                <div className="w-8 h-8 bg-[#34c759] rounded-full flex items-center justify-center text-white">
-                                                    <Users size={16} weight="fill" />
+                                        <div className="p-8 bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[24px] border border-[var(--ln-border-standard)] shadow-sm">
+                                            <div className="flex items-center gap-3 mb-8">
+                                                <div className="w-10 h-10 bg-[var(--ln-brand-indigo)]/10 rounded-xl flex items-center justify-center text-[var(--ln-brand-indigo)] border border-[var(--ln-brand-indigo)]/20">
+                                                    <Users size={20} weight="bold" />
                                                 </div>
-                                                <h3 className="text-base font-semibold text-[#1d1d1f] dark:text-white">Mis Líderes</h3>
+                                                <div>
+                                                    <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] tracking-tight">Línea de Autoridad</h3>
+                                                    <p className="text-[12px] text-[var(--ln-text-tertiary)] opacity-70">Cobertura directa sobre tu liderazgo.</p>
+                                                </div>
                                             </div>
                                             
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                {network.pastor && (
-                                                    <div className="bg-white dark:bg-[#1d1d1f] rounded-lg p-3 border border-[#d1d1d6] dark:border-[#3a3a3c]">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <div className="w-6 h-6 bg-[#34c759]/20 rounded-full flex items-center justify-center">
-                                                                <Crown size={12} className="text-[#34c759]" weight="fill" />
+                                            <div className="flex flex-row gap-4 overflow-x-auto">
+                                                {network.pastores && network.pastores.length > 0 && network.pastores.map((pastor, idx) => (
+                                                    <div key={`pastor-${idx}`} className="flex-1 bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-6 h-6 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20">
+                                                                <Crown size={14} className="text-emerald-500" weight="bold" />
                                                             </div>
-                                                            <span className="font-semibold text-[#34c759] text-sm">PASTOR</span>
+                                                            <span className="text-[9px] weight-590 text-emerald-500 uppercase tracking-widest">Pastor</span>
                                                         </div>
-                                                        <div className="text-[#1d1d1f] dark:text-white font-normal text-sm">
-                                                            {network.pastor.fullName}
+                                                        <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
+                                                            {pastor.fullName}
                                                         </div>
                                                     </div>
-                                                )}
-                                                
-                                                {network.liderDoce && (hasAnyRole(['LIDER_CELULA', 'DISCIPULO'])) && (
-                                                    <div className="bg-white dark:bg-[#1d1d1f] rounded-lg p-3 border border-[#d1d1d6] dark:border-[#3a3a3c]">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <div className="w-6 h-6 bg-[#ff9500]/20 rounded-full flex items-center justify-center">
-                                                                <StarIcon size={12} className="text-[#ff9500]" weight="fill" />
+                                                ))}
+
+                                                {network.lideresDoce && network.lideresDoce.length > 0 && network.lideresDoce.map((lider, idx) => (
+                                                    <div key={`lider-doce-${idx}`} className="flex-1 bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-6 h-6 bg-purple-500/10 rounded-lg flex items-center justify-center border border-purple-500/20">
+                                                                <StarIcon size={14} className="text-purple-500" weight="bold" />
                                                             </div>
-                                                            <span className="font-semibold text-[#ff9500] text-sm">LIDER 12</span>
+                                                            <span className="text-[9px] weight-590 text-purple-500 uppercase tracking-widest">Líder Doce</span>
                                                         </div>
-                                                        <div className="text-[#1d1d1f] dark:text-white font-normal text-sm">
-                                                            {network.liderDoce.fullName}
+                                                        <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
+                                                            {lider.fullName}
                                                         </div>
                                                     </div>
-                                                )}
-                                                
-                                                {network.liderCelula && hasRole('DISCIPULO') && (
-                                                    <div className="bg-white dark:bg-[#1d1d1f] rounded-lg p-3 border border-[#d1d1d6] dark:border-[#3a3a3c]">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <div className="w-6 h-6 bg-[#0071e3]/20 rounded-full flex items-center justify-center">
-                                                                <Users size={12} className="text-[#0071e3]" weight="fill" />
+                                                ))}
+
+                                                {network.lideresCelula && network.lideresCelula.length > 0 && hasRole('DISCIPULO') && network.lideresCelula.map((lider, idx) => (
+                                                    <div key={`lider-celula-${idx}`} className="flex-1 bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-6 h-6 bg-[var(--ln-brand-indigo)]/10 rounded-lg flex items-center justify-center border border-[var(--ln-brand-indigo)]/20">
+                                                                <Users size={14} className="text-[var(--ln-brand-indigo)]" weight="bold" />
                                                             </div>
-                                                            <span className="font-semibold text-[#0071e3] text-sm">LIDER CELULA</span>
+                                                            <span className="text-[9px] weight-590 text-[var(--ln-brand-indigo)] uppercase tracking-widest">Líder Célula</span>
                                                         </div>
-                                                        <div className="text-[#1d1d1f] dark:text-white font-normal text-sm">
-                                                            {network.liderCelula.fullName}
+                                                        <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
+                                                            {lider.fullName}
                                                         </div>
                                                     </div>
-                                                )}
+                                                ))}
                                             </div>
                                         </div>
                                     )}
-                                    <NetworkTree
-                                        network={network}
-                                        currentUser={user}
-                                        onNetworkChange={() => handleSelectLeader(selectedLeader || user)}
-                                    />
+                                    <div className="p-1 rounded-[32px] bg-white/[0.02] border border-[var(--ln-border-standard)] overflow-hidden shadow-2xl">
+                                        <NetworkTree
+                                            network={network}
+                                            currentUser={user}
+                                            onNetworkChange={() => handleSelectLeader(selectedLeader || user)}
+                                        />
+                                    </div>
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-[300px] bg-[#f5f5f7] dark:bg-[#272729] rounded-lg border border-[#d1d1d6] dark:border-[#3a3a3c]">
-                                    <Users className="w-8 h-8 text-[#86868b] mb-3" />
-                                    <p className="text-[#86868b] dark:text-[#98989d] text-sm">
+                                <div className="flex flex-col items-center justify-center h-[400px] bg-[var(--ln-bg-panel)] rounded-[32px] border border-[var(--ln-border-standard)] text-center px-6">
+                                    <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-6 border border-[var(--ln-border-standard)]">
+                                        <Users className="w-8 h-8 text-[var(--ln-text-tertiary)] opacity-30" />
+                                    </div>
+                                    <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] tracking-tight">Red No Cargada</h3>
+                                    <p className="text-[var(--ln-text-tertiary)] text-sm max-w-[300px] mt-2 opacity-70">
                                         {isSuperAdmin()
-                                            ? 'Selecciona un pastor para ver su red'
-                                            : 'No hay red disponible'
+                                            ? 'Selecciona un pastor de la lista superior para visualizar la estructura de su ministerio.'
+                                            : 'No se encontraron datos para tu red de discipulado en este momento.'
                                         }
                                     </p>
                                 </div>
                             )}
                         </div>
                     )}
-                </>
+                </div>
             );
         }
 
         if (activeTab === 'actividad') {
-            // Actividad y Ministerio tab
             return (
-                <div>
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <UserActivityList />
                 </div>
             );
         }
 
         if (activeTab === 'informe') {
-            // Informe General tab
             return (
-                <div className="min-h-[600px]">
-                    <Suspense fallback={<div className="h-[600px] flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400">Cargando Estadísticas...</div>}>
+                <div className="min-h-[600px] animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <Suspense fallback={
+                        <div className="h-[400px] flex flex-col items-center justify-center bg-[var(--ln-bg-panel)] rounded-[32px] border border-[var(--ln-border-standard)]">
+                            <Spinner size={32} className="text-[var(--ln-brand-indigo)] animate-spin mb-4" />
+                            <p className="text-sm text-[var(--ln-text-tertiary)] weight-510">Preparando analíticas...</p>
+                        </div>
+                    }>
                         <ConsolidatedStatsReport simpleMode={false} />
                     </Suspense>
                 </div>
@@ -285,106 +288,108 @@ const Home = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-gray-500 dark:text-gray-400">Cargando...</div>
+            <div className="flex flex-col items-center justify-center h-screen -mt-20">
+                <Spinner size={40} className="text-[var(--ln-brand-indigo)] animate-spin" />
+                <p className="mt-6 text-[var(--ln-text-tertiary)] weight-510 animate-pulse tracking-wide">Iniciando Dashboard...</p>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex flex-col items-center">
-                <p className="mb-3">{error}</p>
-                <Button variant="outline" onClick={() => { 
-                    setError(null); 
-                    if (isSuperAdmin()) fetchPastores();
-                    else if (hasAnyRole(['PASTOR'])) fetchLideresDoce();
-                }}>
-                    Reintentar
-                </Button>
+            <div className="flex items-center justify-center h-[400px]">
+                <div className="max-w-md w-full bg-red-500/5 border border-red-500/20 p-8 rounded-[24px] text-center">
+                    <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500 mx-auto mb-4 border border-red-500/20">
+                        <X size={24} weight="bold" />
+                    </div>
+                    <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] mb-2">Error de Sincronización</h3>
+                    <p className="text-sm text-red-500/70 mb-6">{error}</p>
+                    <button 
+                        onClick={() => { 
+                            setError(null); 
+                            if (isSuperAdmin()) fetchPastores();
+                            else if (hasAnyRole(['PASTOR'])) fetchLideresDoce();
+                        }}
+                        className="px-6 py-2 bg-[var(--ln-text-primary)] text-[var(--ln-bg-marketing)] rounded-xl weight-590 text-[13px] hover:opacity-90 transition-opacity"
+                    >
+                        Intentar Reconectar
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 pb-20">
-            <PageHeader
-                title={`Bienvenido, ${user?.fullName}`}
-                description={`Proverbios 27:23 Sé diligente en conocer el estado de tus ovejas, y mira con cuidado por tus rebaños`}
-                action={``}
-            />
-
-            {canViewNetwork && (
-                <div className="fixed bottom-6 right-6 z-40">
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        icon={ArrowsClockwise}
+        <div className="space-y-10 pb-32">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-in slide-in-from-top-4 duration-700">
+                <PageHeader
+                    title={`Hola, ${user?.fullName.split(' ')[0]}`}
+                    description={`Diligente en conocer el estado de tus ovejas, y mira con cuidado por tus rebaños.`}
+                    action={``}
+                />
+                
+                {canViewNetwork && (
+                    <button
                         onClick={refreshNetwork}
+                        className="flex items-center gap-2.5 px-5 py-2.5 bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 text-[var(--ln-text-primary)] rounded-xl weight-590 text-[13px] transition-all backdrop-blur-md active:scale-95 group shadow-xl"
                     >
-                        Actualizar
-                    </Button>
-                </div>
-            )}
+                        <ArrowsClockwise className="w-4 h-4 text-[var(--ln-brand-indigo)] group-hover:rotate-180 transition-transform duration-500" weight="bold" />
+                        <span>Sincronizar Datos</span>
+                    </button>
+                )}
+            </div>
 
-            <div className="border-b border-[#d1d1d6] dark:border-[#3a3a3c]">
-                <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+            <div className="sticky top-[84px] z-30 -mx-4 px-4 py-2 backdrop-blur-xl bg-[var(--ln-bg-marketing)]/80 border-b border-[var(--ln-border-standard)] animate-in fade-in duration-500">
+                <nav className="flex space-x-1" aria-label="Tabs">
                     {canViewNetwork && (
                         <button
                             onClick={() => setActiveTab('red')}
                             className={`
-                                py-3 px-1 border-b-2 font-normal text-sm transition-colors duration-200
+                                py-2 px-5 rounded-lg weight-510 text-[13px] transition-all duration-300 flex items-center gap-2.5
                                 ${activeTab === 'red'
-                                    ? 'border-[#0071e3] text-[#0071e3]'
-                                    : 'border-transparent text-[#86868b] hover:text-[#1d1d1f] hover:border-[#d1d1d6] dark:hover:text-white'
+                                    ? 'bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-brand-indigo)]'
+                                    : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/5'
                                 }
                             `}
                         >
-                            <span className="flex items-center gap-2">
-                                <Users className="w-4 h-4" weight="regular" />
-                                Red de Personas
-                            </span>
+                            <UsersThree className={`w-4 h-4 ${activeTab === 'red' ? 'text-[var(--ln-brand-indigo)]' : 'opacity-50'}`} weight={activeTab === 'red' ? 'bold' : 'regular'} />
+                            Red de Discipulado
                         </button>
                     )}
                     {canViewNetwork && (
                         <button
                             onClick={() => setActiveTab('actividad')}
                             className={`
-                                py-3 px-1 border-b-2 font-normal text-sm transition-colors duration-200
+                                py-2 px-5 rounded-lg weight-510 text-[13px] transition-all duration-300 flex items-center gap-2.5
                                 ${activeTab === 'actividad'
-                                    ? 'border-[#0071e3] text-[#0071e3]'
-                                    : 'border-transparent text-[#86868b] hover:text-[#1d1d1f] hover:border-[#d1d1d6] dark:hover:text-white'
+                                    ? 'bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-brand-indigo)]'
+                                    : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/5'
                                 }
                             `}
                         >
-                            <span className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4" weight="regular" />
-                                Actividad y Ministerio
-                            </span>
+                            <Calendar className={`w-4 h-4 ${activeTab === 'actividad' ? 'text-[var(--ln-brand-indigo)]' : 'opacity-50'}`} weight={activeTab === 'actividad' ? 'bold' : 'regular'} />
+                            Actividad
                         </button>
                     )}
                     {canViewReport && (
                         <button
                             onClick={() => setActiveTab('informe')}
                             className={`
-                                py-3 px-1 border-b-2 font-normal text-sm transition-colors duration-200
+                                py-2 px-5 rounded-lg weight-510 text-[13px] transition-all duration-300 flex items-center gap-2.5
                                 ${activeTab === 'informe'
-                                    ? 'border-[#0071e3] text-[#0071e3]'
-                                    : 'border-transparent text-[#86868b] hover:text-[#1d1d1f] hover:border-[#d1d1d6] dark:hover:text-white'
+                                    ? 'bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-brand-indigo)]'
+                                    : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/5'
                                 }
                             `}
                         >
-                            <span className="flex items-center gap-2">
-                                <ArrowsClockwise className="w-4 h-4" weight="regular" />
-                                Informe General
-                            </span>
+                            <ArrowsClockwise className={`w-4 h-4 ${activeTab === 'informe' ? 'text-[var(--ln-brand-indigo)]' : 'opacity-50'}`} weight={activeTab === 'informe' ? 'bold' : 'regular'} />
+                            Analíticas
                         </button>
                     )}
                 </nav>
             </div>
 
-            {/* Tab Content */}
-            <div className="animate-in fade-in duration-300">
+            <div className="relative">
                 {renderTabContent()}
             </div>
         </div>

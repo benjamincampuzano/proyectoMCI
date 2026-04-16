@@ -39,7 +39,7 @@ const cleanExpiredTokens = async () => {
 
 const register = async (req, res) => {
     try {
-        const { email, password, fullName, sex, phone, address, city, parentId, liderDoceId, roleInHierarchy, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
+        const { email, password, fullName, sex, phone, address, city, neighborhood, maritalStatus, network, parentId, liderDoceId, roleInHierarchy, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
 
         const validation = validatePassword(password, { email, fullName });
         if (!validation.isValid) {
@@ -88,6 +88,9 @@ const register = async (req, res) => {
                             ...(sex && (sex === 'HOMBRE' || sex === 'MUJER') ? { sex } : {}),
                             address,
                             city,
+                            neighborhood,
+                            maritalStatus,
+                            network,
                             documentType,
                             documentNumber,
                             birthDate: birthDate ? new Date(birthDate) : null,
@@ -372,7 +375,7 @@ const registerSetup = async (req, res) => {
             return res.status(403).json({ message: 'System is already initialized' });
         }
 
-        const { email, password, fullName, sex, phone, address, city, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
+        const { email, password, fullName, sex, phone, address, city, neighborhood, maritalStatus, network, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
 
         const validation = validatePassword(password, { email, fullName });
         if (!validation.isValid) {
@@ -425,6 +428,9 @@ const registerSetup = async (req, res) => {
                             sex: sex || undefined,
                             address,
                             city,
+                            neighborhood,
+                            maritalStatus,
+                            network,
                             documentType: documentType || undefined,
                             documentNumber,
                             birthDate: birthDate ? new Date(birthDate) : null,

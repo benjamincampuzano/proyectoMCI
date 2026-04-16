@@ -387,19 +387,20 @@ const GuestList = ({ refreshTrigger }) => {
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Estado</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Invitado Por</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Asignado a</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Célula</th>
                             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 dark:text-gray-200">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {loading ? (
                             <tr>
-                                <td colSpan="5" className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan="6" className="px-4 py-8 text-center text-gray-400">
                                     <SpinnerIcon size={24} className="animate-spin mx-auto" />
                                 </td>
                             </tr>
                         ) : guests.length === 0 ? (
                             <tr>
-                                <td colSpan="6" className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan="7" className="px-4 py-8 text-center text-gray-400">
                                     No se encontraron invitados
                                 </td>
                             </tr>
@@ -508,6 +509,18 @@ const GuestList = ({ refreshTrigger }) => {
                                             />
                                         ) : (
                                             <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.assignedTo?.fullName || 'Pendiente'}</p>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        {guest.cell ? (
+                                            <div>
+                                                <p className="text-[#1d1d1f] dark:text-white text-sm font-medium">{guest.cell.name}</p>
+                                                <p className="text-[#86868b] dark:text-gray-400 text-xs">
+                                                    Líder: {guest.cell.leader?.fullName || 'N/A'}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 dark:text-gray-500 text-sm">No asignado</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">

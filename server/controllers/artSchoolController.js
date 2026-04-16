@@ -1,4 +1,5 @@
 const prisma = require('../utils/database');
+const { getUserNetwork } = require('../utils/networkUtils');
 
 // ==========================================
 // ROLES INTERNOS
@@ -155,7 +156,18 @@ exports.deleteClass = async (req, res) => {
 
 exports.getClasses = async (req, res) => {
   try {
-    const classes = await prisma.artClass.findMany({
+    const user = req.user;
+    const userRoles = user.roles || [];
+    const userId = user.id;
+
+    // Determine if user has full access (ADMIN, PASTOR, Coordinator, Subcoordinator)
+    const hasFullAccess = userRoles.includes('ADMIN') || 
+                         userRoles.includes('PASTOR') ||
+                         user.isCoordinator ||
+                         (user.moduleCoordinations && user.moduleCoordinations.length > 0) ||
+                         user.isModuleSubCoordinator;
+
+    let classes = await prisma.artClass.findMany({
       where: { isDeleted: false },
       include: {
         professor: {
@@ -166,6 +178,12 @@ exports.getClasses = async (req, res) => {
         },
         enrollments: {
           include: {
+            user: { 
+              select: { id: true, profile: { select: { fullName: true } } }
+            },
+            guest: { 
+              select: { id: true, name: true, phone: true, invitedBy: { select: { id: true } } }
+            },
             payments: true
           }
         },
@@ -179,6 +197,40 @@ exports.getClasses = async (req, res) => {
         }
       }
     });
+
+    // Filter enrollments based on user role
+    if (!hasFullAccess) {
+      let allowedUserIds = [];
+      
+      if (userRoles.includes('LIDER_DOCE')) {
+        // LIDER_DOCE can see their network
+        allowedUserIds = await getUserNetwork(userId);
+        allowedUserIds.push(userId); // Include themselves
+      } else if (userRoles.includes('LIDER_CELULA')) {
+        // LIDER_CELULA can see themselves and their network
+        allowedUserIds = await getUserNetwork(userId);
+        allowedUserIds.push(userId); // Include themselves
+      } else if (userRoles.includes('DISCIPULO')) {
+        // DISCIPULO can only see themselves
+        allowedUserIds = [userId];
+      }
+
+      // Filter classes to only include enrollments from allowed users
+      classes = classes.map(cls => ({
+        ...cls,
+        enrollments: cls.enrollments.filter(enr => {
+          // Check if enrollment belongs to allowed user
+          if (enr.userId && allowedUserIds.includes(enr.userId)) {
+            return true;
+          }
+          // Check if guest is invited by allowed user
+          if (enr.guest && enr.guest.invitedBy && allowedUserIds.includes(enr.guest.invitedBy.id)) {
+            return true;
+          }
+          return false;
+        })
+      })).filter(cls => cls.enrollments.length > 0); // Only show classes that have visible enrollments
+    }
 
     // Add totals to enrollments in each class
     const classesWithTotals = classes.map(cls => ({
@@ -195,6 +247,7 @@ exports.getClasses = async (req, res) => {
 
     res.status(200).json(classesWithTotals);
   } catch (error) {
+    console.error('Error in getClasses:', error);
     res.status(500).json({ error: 'Error al obtener las clases' });
   }
 };
@@ -202,6 +255,17 @@ exports.getClasses = async (req, res) => {
 exports.getClassById = async (req, res) => {
   try {
     const { id } = req.params;
+    const user = req.user;
+    const userRoles = user.roles || [];
+    const userId = user.id;
+
+    // Determine if user has full access (ADMIN, PASTOR, Coordinator, Subcoordinator)
+    const hasFullAccess = userRoles.includes('ADMIN') || 
+                         userRoles.includes('PASTOR') ||
+                         user.isCoordinator ||
+                         (user.moduleCoordinations && user.moduleCoordinations.length > 0) ||
+                         user.isModuleSubCoordinator;
+
     const artClass = await prisma.artClass.findUnique({
       where: { id: Number(id) },
       include: {
@@ -214,7 +278,7 @@ exports.getClassById = async (req, res) => {
         enrollments: {
           include: {
             user: { select: { id: true, profile: { select: { fullName: true } } } },
-            guest: { select: { id: true, name: true, phone: true } },
+            guest: { select: { id: true, name: true, phone: true, invitedBy: { select: { id: true } } } },
             payments: true
           }
         }
@@ -223,8 +287,41 @@ exports.getClassById = async (req, res) => {
 
     if (!artClass) return res.status(404).json({ error: 'Clase no encontrada' });
 
+    // Filter enrollments based on user role
+    let filteredEnrollments = artClass.enrollments;
+    
+    if (!hasFullAccess) {
+      let allowedUserIds = [];
+      
+      if (userRoles.includes('LIDER_DOCE')) {
+        // LIDER_DOCE can see their network
+        allowedUserIds = await getUserNetwork(userId);
+        allowedUserIds.push(userId); // Include themselves
+      } else if (userRoles.includes('LIDER_CELULA')) {
+        // LIDER_CELULA can see themselves and their network
+        allowedUserIds = await getUserNetwork(userId);
+        allowedUserIds.push(userId); // Include themselves
+      } else if (userRoles.includes('DISCIPULO')) {
+        // DISCIPULO can only see themselves
+        allowedUserIds = [userId];
+      }
+
+      // Filter enrollments
+      filteredEnrollments = artClass.enrollments.filter(enr => {
+        // Check if enrollment belongs to allowed user
+        if (enr.userId && allowedUserIds.includes(enr.userId)) {
+          return true;
+        }
+        // Check if guest is invited by allowed user
+        if (enr.guest && enr.guest.invitedBy && allowedUserIds.includes(enr.guest.invitedBy.id)) {
+          return true;
+        }
+        return false;
+      });
+    }
+
     // Calculate totals for each enrollment
-    const enrollmentsWithTotals = artClass.enrollments.map(enr => {
+    const enrollmentsWithTotals = filteredEnrollments.map(enr => {
       const totalPaid = enr.payments.reduce((sum, p) => sum + p.amount, 0);
       const balance = enr.finalCost - totalPaid;
       return {
@@ -239,6 +336,7 @@ exports.getClassById = async (req, res) => {
       enrollments: enrollmentsWithTotals
     });
   } catch (error) {
+    console.error('Error in getClassById:', error);
     res.status(500).json({ error: 'Error al obtener la clase' });
   }
 };

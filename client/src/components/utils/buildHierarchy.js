@@ -16,13 +16,9 @@ export function buildCustomHierarchy(network, currentUser) {
   function findNodeById(node, targetId) {
     if (!node) return null;
     
-    // console.log('findNodeById - buscando targetId:', targetId, 'en node:', node);
     
     if (node.partners) {
-      // Es un CoupleNode
-      // console.log('findNodeById - es CoupleNode, partners:', node.partners);
-      if (node.partners.some(p => p.id === targetId)) {
-        // console.log('findNodeById - encontrado en partners:', node);
+     if (node.partners.some(p => p.id === targetId)) {
         return node;
       }
       
@@ -31,10 +27,7 @@ export function buildCustomHierarchy(network, currentUser) {
         if (found) return found;
       }
     } else {
-      // Es un nodo individual
-      // console.log('findNodeById - es nodo individual, node.id:', node.id);
       if (node.id === targetId) {
-        // console.log('findNodeById - encontrado por ID:', node);
         return node;
       }
       
@@ -53,11 +46,9 @@ export function buildCustomHierarchy(network, currentUser) {
     
     // Usar directamente los datos del nodo transformado
     if (node.pastor && node.pastor.fullName) {
-      // console.log('findPastor - encontrado pastor en node:', node.pastor);
       return node.pastor;
     }
     
-    // console.log('findPastor - no se encontró pastor en node');
     return null;
   }
   
@@ -67,11 +58,9 @@ export function buildCustomHierarchy(network, currentUser) {
     
     // Usar directamente los datos del nodo transformado
     if (node.liderDoce && node.liderDoce.fullName) {
-      // console.log('findLiderDoce - encontrado liderDoce en node:', node.liderDoce);
       return node.liderDoce;
     }
     
-    // console.log('findLiderDoce - no se encontró liderDoce en node');
     return null;
   }
 
@@ -155,11 +144,7 @@ export function buildCustomHierarchy(network, currentUser) {
       // Si es PASTOR, mostrar la red completa con él como raíz
       // Buscar el nodo del pastor en la red y usarlo como raíz
       const pastorNode = findNodeById(network, userId);
-      // console.log('PASTOR - userId:', userId);
-      // console.log('PASTOR - pastorNode:', pastorNode);
-      // console.log('PASTOR - network:', network);
       if (pastorNode) {
-        // console.log('PASTOR - pastorNode.partners:', pastorNode.partners);
         return pastorNode;
       }
       return network;
@@ -185,12 +170,6 @@ export function buildCustomHierarchy(network, currentUser) {
       const liderDoceLC = findLiderDoce(userNode, network);
       const disciplesLC = findDisciples(userNode);
       
-      // console.log('LIDER_CELULA - userNode:', userNode);
-      // console.log('LIDER_CELULA - userNode.pastor:', userNode.pastor);
-      // console.log('LIDER_CELULA - userNode.liderDoce:', userNode.liderDoce);
-      // console.log('LIDER_CELULA - pastorLC:', pastorLC);
-      // console.log('LIDER_CELULA - liderDoceLC:', liderDoceLC);
-      
       // Crear un nodo raíz que incluya los líderes superiores
       const customRootLC = {
         ...userNode,
@@ -201,9 +180,6 @@ export function buildCustomHierarchy(network, currentUser) {
         // Mantener los discípulos originales
         disciples: disciplesLC
       };
-      // console.log('LIDER_CELULA - customRootLC.pastor:', customRootLC.pastor);
-      // console.log('LIDER_CELULA - customRootLC.liderDoce:', customRootLC.liderDoce);
-      // console.log('LIDER_CELULA - customRootLC:', customRootLC);
       return customRootLC;
       
     case ROLES.DISCIPULO:
@@ -212,15 +188,7 @@ export function buildCustomHierarchy(network, currentUser) {
       const liderDoceD = findLiderDoce(userNode, network);
       const liderCelulaD = findLiderCelula(userNode, network);
       
-      // console.log('DISCIPULO - userNode:', userNode);
-      // console.log('DISCIPULO - userNode.pastor:', userNode.pastor);
-      // console.log('DISCIPULO - userNode.liderDoce:', userNode.liderDoce);
-      // console.log('DISCIPULO - userNode.liderCelula:', userNode.liderCelula);
-      // console.log('DISCIPULO - pastorD:', pastorD);
-      // console.log('DISCIPULO - liderDoceD:', liderDoceD);
-      // console.log('DISCIPULO - liderCelulaD:', liderCelulaD);
-      
-      // Crear un nodo raíz que incluya los líderes superiores
+            // Crear un nodo raíz que incluya los líderes superiores
       const customRootD = {
         ...userNode,
         // Asignar los líderes superiores directamente
@@ -230,10 +198,6 @@ export function buildCustomHierarchy(network, currentUser) {
         // Los discípulos no tienen discípulos (solo invitados)
         disciples: []
       };
-      // console.log('DISCIPULO - customRootD.pastor:', customRootD.pastor);
-      // console.log('DISCIPULO - customRootD.liderDoce:', customRootD.liderDoce);
-      // console.log('DISCIPULO - customRootD.liderCelula:', customRootD.liderCelula);
-      // console.log('DISCIPULO - customRootD:', customRootD);
       return customRootD;
       
     default:

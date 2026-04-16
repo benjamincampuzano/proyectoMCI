@@ -11,7 +11,7 @@ const cleanupExpiredTokens = async () => {
             }
         });
         
-        console.log(`✅ Cleaned up ${result.count} expired refresh tokens`);
+        //console.log(`✅ Cleaned up ${result.count} expired refresh tokens`);
         return result.count;
     } catch (error) {
         console.error('❌ Error cleaning up expired tokens:', error);
@@ -23,7 +23,7 @@ const cleanupExpiredTokens = async () => {
 if (require.main === module) {
     cleanupExpiredTokens()
         .then(count => {
-            console.log(`Cleanup completed. Removed ${count} expired tokens.`);
+            //console.log(`Cleanup completed. Removed ${count} expired tokens.`);
             process.exit(0);
         })
         .catch(error => {

@@ -89,6 +89,14 @@ const getNetwork = async (req, res) => {
             allIds.push(rootUser.spouseId);
         }
 
+        // Include the parents (leaders) of the root user to show in authority line
+        const parentIds = rootUser.parents?.map(p => p.parentId) || [];
+        parentIds.forEach(id => {
+            if (!allIds.includes(id)) {
+                allIds.push(id);
+            }
+        });
+
         const allUsers = await prisma.user.findMany({
             where: {
                 id: { in: allIds },
@@ -169,6 +177,38 @@ const getNetwork = async (req, res) => {
             'DISCIPULO': 0
         };
 
+        // Fetch indirect PASTOR from LIDER_DOCE's parents if root user doesn't have direct PASTOR
+        let indirectPastor = null;
+        const rootUserHasDirectPastor = rootUser.parents?.some(p => p.role === 'PASTOR');
+        if (!rootUserHasDirectPastor) {
+            const rootUserLideresDoce = rootUser.parents?.filter(p => p.role === 'LIDER_DOCE').map(p => p.parentId) || [];
+            if (rootUserLideresDoce.length > 0) {
+                const liderDoceUsers = await prisma.user.findMany({
+                    where: { id: { in: rootUserLideresDoce } },
+                    include: {
+                        parents: {
+                            include: {
+                                parent: {
+                                    include: {
+                                        profile: true,
+                                        roles: { include: { role: true } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                for (const liderDoce of liderDoceUsers) {
+                    const pastorParent = liderDoce.parents?.find(p => p.role === 'PASTOR');
+                    if (pastorParent) {
+                        indirectPastor = pastorParent.parent;
+                        break;
+                    }
+                }
+            }
+        }
+
         const processedIds = new Set();
 
         // Function to build node
@@ -206,11 +246,6 @@ const getNetwork = async (req, res) => {
             if (leaders.lideresDoce.length === 0 && currentUser.cell && currentUser.cell.liderDoce) {
                 leaders.lideresDoce.push(currentUser.cell.liderDoce);
             }
-            
-            // console.log('networkController - parentEntries:', parentEntries);
-            // console.log('networkController - leaders.pastores:', leaders.pastores);
-            // console.log('networkController - leaders.lideresDoce:', leaders.lideresDoce);
-            // console.log('networkController - leaders.lideresCelula:', leaders.lideresCelula);
 
             // Combine children from both members of the couple
             const allChildrenEdges = [...(currentUser.children || []), ...(spouseNode?.children || [])];
@@ -260,9 +295,6 @@ const getNetwork = async (req, res) => {
                 pastores: leaders.pastores.map(p => ({ id: p.id, fullName: p.profile?.fullName })),
                 lideresDoce: leaders.lideresDoce.map(ld => ({ id: ld.id, fullName: ld.profile?.fullName })),
                 lideresCelula: leaders.lideresCelula.map(lc => ({ id: lc.id, fullName: lc.profile?.fullName })),
-                pastor: leaders.pastores[0] ? { id: leaders.pastores[0].id, fullName: leaders.pastores[0].profile?.fullName } : null,
-                liderDoce: leaders.lideresDoce[0] ? { id: leaders.lideresDoce[0].id, fullName: leaders.lideresDoce[0].profile?.fullName } : null,
-                liderCelula: leaders.lideresCelula[0] ? { id: leaders.lideresCelula[0].id, fullName: leaders.lideresCelula[0].profile?.fullName } : null,
                 partners: spouseNode ? [
                     { id: currentUser.id, fullName: currentUser.profile?.fullName, roles: currentUser.roles.map(r => r.role.name) },
                     { id: spouseNode.id, fullName: spouseNode.profile?.fullName, roles: spouseNode.roles.map(r => r.role.name) }
@@ -274,6 +306,18 @@ const getNetwork = async (req, res) => {
         };
 
         const tree = buildNode(rootId);
+
+        // Add indirect pastor if found
+        if (indirectPastor && tree) {
+            if (!tree.pastores) tree.pastores = [];
+            const pastorExists = tree.pastores.some(p => p.id === indirectPastor.id);
+            if (!pastorExists) {
+                tree.pastores.push({
+                    id: indirectPastor.id,
+                    fullName: indirectPastor.profile?.fullName
+                });
+            }
+        }
 
         res.json(tree);
 

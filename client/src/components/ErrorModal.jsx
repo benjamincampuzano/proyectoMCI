@@ -1,145 +1,94 @@
 import { X, WarningCircle, Info, Warning, Shield } from '@phosphor-icons/react';
+import Modal from './ui/Modal';
 
 const ErrorModal = ({
     isOpen,
     onClose,
-    title = 'Error',
+    title = 'Notificación del Sistema',
     message = '',
     type = 'error'
 }) => {
-    if (!isOpen) return null;
-
-    const getIcon = () => {
+    const getIconData = () => {
         switch (type) {
             case 'email':
-                return <Info size={48} className="text-blue-500" />;
+                return { icon: Info, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' };
             case 'phone':
-                return <WarningCircle size={48} className="text-orange-500" />;
+                return { icon: WarningCircle, color: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500/20' };
             case 'document':
-                return <Shield size={48} className="text-purple-500" />;
+                return { icon: Shield, color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/20' };
             case 'password':
-                return <Warning size={48} className="text-red-500" />;
+                return { icon: Warning, color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20' };
             case 'permission':
-                return <Shield size={48} className="text-yellow-500" />;
+                return { icon: Shield, color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20' };
             case 'server':
-                return <WarningCircle size={48} className="text-red-600" />;
+                return { icon: Shield, color: 'text-red-600', bg: 'bg-red-600/10', border: 'border-red-600/20' };
             default:
-                return <WarningCircle size={48} className="text-red-500" />;
+                return { icon: WarningCircle, color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20' };
         }
     };
 
-    const getIconBg = () => {
-        switch (type) {
-            case 'email':
-                return 'bg-blue-100 dark:bg-blue-900/20';
-            case 'phone':
-                return 'bg-orange-100 dark:bg-orange-900/20';
-            case 'document':
-                return 'bg-purple-100 dark:bg-purple-900/20';
-            case 'password':
-                return 'bg-red-100 dark:bg-red-900/20';
-            case 'permission':
-                return 'bg-yellow-100 dark:bg-yellow-900/20';
-            case 'server':
-                return 'bg-red-100 dark:bg-red-900/20';
-            default:
-                return 'bg-red-100 dark:bg-red-900/20';
-        }
-    };
+    const iconData = getIconData();
+    const Icon = iconData.icon;
 
     const getSuggestions = () => {
         switch (type) {
             case 'email':
-                return [
-                    'Verifica que el correo electrónico esté escrito correctamente',
-                    'Asegúrate de que no esté registrado por otro usuario',
-                    'Intenta con otro correo electrónico si el problema persiste'
-                ];
+                return ['Verifica la ortografía del correo', 'Asegúrate de que no esté registrado', 'Intenta con una cuenta alternativa'];
             case 'phone':
-                return [
-                    'Verifica que el número de teléfono esté escrito correctamente',
-                    'Asegúrate de que no esté registrado por otro usuario',
-                    'Intenta con otro número de teléfono si el problema persiste'
-                ];
+                return ['Verifica el formato del número', 'Confirma que no esté en uso', 'Prueba con otro contacto'];
             case 'document':
-                return [
-                    'Verifica que el tipo y número de documento estén correctos',
-                    'Asegúrate de que no esté registrado por otro usuario',
-                    'Contacta al administrador si crees que es un error'
-                ];
+                return ['Verifica tipo y número de documento', 'Confirma los datos legales', 'Contacta al administrador'];
             case 'password':
-                return [
-                    'La contraseña debe tener al menos 8 caracteres',
-                    'Debe incluir mayúsculas, minúsculas, números y símbolos',
-                    'No debe contener tu nombre o correo electrónico'
-                ];
+                return ['Mínimo 8 caracteres', 'Usa mayúsculas, números y símbolos', 'Evita secuencias predecibles'];
             case 'permission':
-                return [
-                    'Verifica que tienes los permisos necesarios',
-                    'Contacta al administrador del sistema',
-                    'Inicia sesión nuevamente si el problema persiste'
-                ];
+                return ['Verifica tu nivel de acceso', 'Solicita permisos a un administrador', 'Reinicia sesión para actualizar roles'];
             case 'server':
-                return [
-                    'Verifica tu conexión a internet',
-                    'Intenta nuevamente en unos momentos',
-                    'Contacta al soporte técnico si el problema persiste'
-                ];
+                return ['Verifica tu conectividad', 'Intenta nuevamente en un momento', 'Consulta el estado del servicio'];
             default:
-                return [
-                    'Verifica los datos ingresados',
-                    'Intenta nuevamente',
-                    'Contacta al soporte técnico si el problema persiste'
-                ];
+                return ['Verifica los datos obligatorios', 'Revisa el formulario', 'Contacta a soporte técnico'];
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                <div className="p-6">
-                    <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h3>
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
-                        >
-                            <X size={20} />
-                        </button>
-                    </div>
-                    
-                    <div className="flex flex-col items-center text-center mb-6">
-                        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${getIconBg()}`}>
-                            {getIcon()}
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-300 mb-4">{message}</p>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={title}
+            size="sm"
+        >
+            <Modal.Content>
+                <div className="flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className={`p-5 ${iconData.bg} ${iconData.border} border rounded-[24px] mb-6 shadow-sm`}>
+                        <Icon size={40} weight="bold" className={iconData.color} />
                     </div>
 
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Sugerencias:</h4>
-                        <ul className="space-y-1">
+                    <h4 className="text-[17px] weight-590 text-[var(--ln-text-primary)] mb-3 tracking-tight">
+                        {message}
+                    </h4>
+
+                    <div className="w-full bg-[var(--ln-bg-panel)]/50 border border-[var(--ln-border-standard)] rounded-2xl p-5 mb-8 text-left">
+                        <p className="text-[10px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-widest mb-4">Recomendaciones</p>
+                        <ul className="space-y-3">
                             {getSuggestions().map((suggestion, index) => (
-                                <li key={index} className="text-sm text-gray-600 dark:text-gray-300 flex items-start">
-                                    <span className="text-blue-500 mr-2">•</span>
+                                <li key={index} className="text-[13px] weight-510 text-[var(--ln-text-secondary)] flex items-start gap-3">
+                                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${iconData.color.replace('text-', 'bg-')}`} />
                                     {suggestion}
                                 </li>
                             ))}
                         </ul>
                     </div>
-
-                    <div className="flex justify-end">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
-                        >
-                            Entendido
-                        </button>
-                    </div>
                 </div>
-            </div>
-        </div>
+            </Modal.Content>
+
+            <Modal.Footer className="flex justify-center p-8 pt-0">
+                <button
+                    onClick={onClose}
+                    className="w-full bg-[var(--ln-text-primary)] text-[var(--ln-bg-surface)] py-3 rounded-xl weight-590 text-sm hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-black/10"
+                >
+                    Entendido
+                </button>
+            </Modal.Footer>
+        </Modal>
     );
 };
 

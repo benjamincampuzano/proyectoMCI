@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
+const { isModuleCoordinator } = require('../middleware/coordinatorAuth');
 
 // Import controllers
 const cellAttendanceController = require('../controllers/cellAttendanceController');
@@ -8,6 +9,8 @@ const cellController = require('../controllers/cellController');
 
 // All routes require authentication
 router.use(authenticate);
+// Add module coordinator check
+router.use(isModuleCoordinator);
 
 // Cell Management Routes
 router.post('/cells', cellController.createCell);

@@ -527,7 +527,9 @@ const removeModuleSubCoordinator = async (req, res) => {
     try {
         const { module } = req.params;
         const normalizedModule = normalizeModuleName(module);
-        const isCoordinatorOfThisModule = req.user.isModuleCoordinatorOfCurrent && !req.user.isSubCoordinator;
+        
+        // Check if user is a module coordinator (not sub-coordinator) of this module
+        const isCoordinatorOfThisModule = req.user.moduleCoordinations?.includes(normalizedModule);
         const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
         
         if (!isCoordinatorOfThisModule && !isAdminOrPastor) {

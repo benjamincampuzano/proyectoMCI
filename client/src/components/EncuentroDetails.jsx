@@ -105,12 +105,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             needsTransport,
             needsAccommodation
         };
-        
-        console.log('Registration data:', registrationData);
-        console.log('Registration type:', registrationType);
-        console.log('Selected guest ID:', selectedGuestId);
-        console.log('Selected user ID:', selectedUserId);
-        
+                
         try {
             await api.post(`/encuentros/${encuentro.id}/register`, registrationData);
             setShowRegisterModal(false);

@@ -32,10 +32,9 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     const fullNetwork = buildCoupleNetwork(network);
     return getRootNodeForRole(fullNetwork, currentUser);
   }, [network, currentUser]);
-  
+
   const unassigned = useMemo(() => {
     const result = getUnassignedUsers({ allUsers, coupleRoot });
-    console.log('NetworkTree - getUnassignedUsers:', result.length, 'users');
     return result;
   }, [allUsers, coupleRoot]);
 
@@ -46,8 +45,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
         const response = await api.get('/users?limit=99999');
         const usersData = response.data?.users || response.data || [];
         setAllUsers(Array.isArray(usersData) ? usersData : []);
-        console.log('NetworkTree - loaded users:', usersData.length);
-      } catch (error) {
+        } catch (error) {
         console.error('Error loading users:', error);
         setAllUsers([]);
       }
@@ -143,66 +141,76 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-        <div className="flex items-center justify-between">
+      <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[32px] border border-[var(--ln-border-standard)] p-8 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Red de Discipulado</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {network.partners && network.partners.length > 1 
-                ? `${network.partners[0].fullName} & ${network.partners[1].fullName}`
-                : network.fullName} • {unassigned.length} usuarios sin asignar
-            </p>
+            <h2 className="text-xl weight-590 text-[var(--ln-text-primary)] tracking-tight flex items-center gap-2.5">
+              <FlowArrow className="w-5 h-5 text-[var(--ln-brand-indigo)]" weight="bold" />
+              Red de Discipulado
+            </h2>
+            <div className="flex items-center gap-3 mt-1.5">
+              <p className="text-[13px] text-[var(--ln-text-tertiary)] opacity-70">
+                {network.partners && network.partners.length > 1
+                  ? `${network.partners[0].fullName} & ${network.partners[1].fullName}`
+                  : network.fullName}
+              </p>
+              <span className="w-1 h-1 rounded-full bg-[var(--ln-border-standard)]" />
+              <p className="text-[11px] weight-510 text-amber-500 uppercase tracking-widest">
+                {unassigned.length} por asignar
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-4">
             {/* Unassigned users button */}
             <button
               onClick={handleUnassignedModalOpen}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors shadow-sm"
-              title={`${selectedLeaderForModal ? `Asignar usuarios a ${selectedLeaderForModal.partners?.map(p => p.fullName).join(' & ')}` : 'Ver usuarios sin asignar (selecciona un líder con Shift+click para asignar)'}`}
+              className="inline-flex items-center gap-2.5 px-5 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-xl border border-amber-500/20 transition-all active:scale-95 group"
             >
-              <UsersThree size={18} />
-              <span className="font-medium">Sin Asignar</span>
-              <span className="bg-amber-600 px-2 py-0.5 rounded-full text-xs font-bold">
+              <UsersThree size={18} weight="bold" />
+              <span className="text-[13px] weight-590">Usuarios sin Asignar</span>
+              <span className="bg-amber-500 text-white px-2 py-0.5 rounded-md text-[10px] weight-700">
                 {unassigned.length}
               </span>
             </button>
 
+            <span className="hidden lg:block w-px h-8 bg-[var(--ln-border-standard)] mx-2" />
+
             {/* View switcher */}
-            <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm">
+            <div className="flex p-1 bg-white/[0.03] border border-[var(--ln-border-standard)] rounded-xl">
               <button
-                className={`px-4 py-2 text-sm font-medium transition-colors ${view === VIEW_TREE
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                className={`px-4 py-1.5 text-[12px] weight-590 rounded-lg transition-all flex items-center gap-2
+                                ${view === VIEW_TREE
+                    ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20'
+                    : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/5'
                   }`}
                 onClick={() => setView(VIEW_TREE)}
-                title="Vista Árbol"
               >
-                <FlowArrow size={16} className="inline mr-2" />
+                <FlowArrow size={14} weight="bold" />
                 Árbol
               </button>
               <button
-                className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-gray-600 transition-colors ${view === VIEW_RADIAL
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                className={`px-4 py-1.5 text-[12px] weight-590 rounded-lg transition-all flex items-center gap-2
+                                ${view === VIEW_RADIAL
+                    ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20'
+                    : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/5'
                   }`}
                 onClick={() => setView(VIEW_RADIAL)}
-                title="Vista Radial"
               >
-                <div className="inline mr-2">⭕</div>
+                <span className="text-[14px]">⭕</span>
                 Radial
               </button>
               <button
-                className={`px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-gray-600 transition-colors ${view === VIEW_CARDS
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                className={`px-4 py-1.5 text-[12px] weight-590 rounded-lg transition-all flex items-center gap-2
+                                ${view === VIEW_CARDS
+                    ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20'
+                    : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/5'
                   }`}
                 onClick={() => setView(VIEW_CARDS)}
-                title="Vista de Tarjetas"
               >
-                <CardsThree size={16} className="inline mr-2" />
+                <CardsThree size={14} weight="bold" />
                 Tarjetas
               </button>
             </div>
@@ -210,8 +218,8 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+      {/* Main content container */}
+      <div className="bg-white/[0.02] rounded-[32px] border border-[var(--ln-border-standard)] overflow-hidden">
         {view === VIEW_TREE && (
           <div className="p-6">
             <div className="mb-4 flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">

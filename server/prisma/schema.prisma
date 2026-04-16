@@ -209,9 +209,11 @@ model Guest {
   dataPolicyAccepted      Boolean                 @default(false)
   dataTreatmentAuthorized Boolean                 @default(false)
   minorConsentAuthorized  Boolean                 @default(false)
+  cellId                  Int?
   artEnrollments          ArtEnrollment[]
   encuentroRegistrations  EncuentroRegistration[]
   assignedTo              User?                   @relation("AssignedTo", fields: [assignedToId], references: [id])
+  cell                    Cell?                   @relation(fields: [cellId], references: [id])
   invitedBy               User                    @relation("InvitedBy", fields: [invitedById], references: [id])
   calls                   GuestCall[]
   visits                  GuestVisit[]
@@ -245,31 +247,39 @@ model GuestVisit {
 }
 
 model Cell {
-  id          Int              @id @default(autoincrement())
-  name        String
-  description String?
-  leaderId    Int
-  hostId      Int?
-  liderDoceId Int?
-  address     String?
-  city        String?
-  latitude    Float?
-  longitude   Float?
-  dayOfWeek   String?
-  time        String?
-  cellType    String           @default("ABIERTA")
-  isDeleted   Boolean          @default(false)
-  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime         @updatedAt @db.Timestamptz(6)
-  host        User?            @relation("CellHost", fields: [hostId], references: [id])
-  leader      User             @relation("CellLeader", fields: [leaderId], references: [id])
-  liderDoce   User?            @relation("CellLiderDoce", fields: [liderDoceId], references: [id])
-  attendances CellAttendance[]
-  members     User[]           @relation("CellMembers")
+  id                  Int              @id @default(autoincrement())
+  name                String
+  description         String?
+  leaderId            Int
+  hostId              Int?
+  liderDoceId         Int?
+  address             String?
+  city                String?
+  latitude            Float?
+  longitude           Float?
+  dayOfWeek           String?
+  time                String?
+  cellType            String           @default("ABIERTA")
+  isDeleted           Boolean          @default(false)
+  createdAt           DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime         @updatedAt @db.Timestamptz(6)
+  barrio              String?
+  fastingDate         DateTime?        @db.Timestamptz(6)
+  network             String?          @default("MIXTA")
+  pastorsMeeting      Boolean          @default(false)
+  rhemaWord           String?
+  spiritualMappingUrl String?
+  host                User?            @relation("CellHost", fields: [hostId], references: [id])
+  leader              User             @relation("CellLeader", fields: [leaderId], references: [id])
+  liderDoce           User?            @relation("CellLiderDoce", fields: [liderDoceId], references: [id])
+  attendances         CellAttendance[]
+  guests              Guest[]
+  members             User[]           @relation("CellMembers")
 
   @@index([leaderId])
   @@index([liderDoceId])
   @@index([hostId])
+  @@index([network])
 }
 
 model ChurchAttendance {
@@ -812,6 +822,7 @@ enum AuditAction {
   BACKUP_DOWNLOAD
   BACKUP_RESTORE
   TOKEN_REFRESH
+  LOGIN_FAILED
 }
 
 enum EntityType {

@@ -1,12 +1,9 @@
 import { useState } from 'react';
-import { X, Warning, Spinner, UserMinus } from '@phosphor-icons/react';
+import { Warning, Spinner, UserMinus } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import Modal from './ui/Modal';
 
-/**
- * Confirmation dialog for removing users from a network
- * Shows warning and requires confirmation before removal
- */
 const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
@@ -18,15 +15,10 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
             const response = await api.delete(`/network/remove/${user.id}`);
             const data = response.data;
 
-            // Show success notification
             toast.success(data.message);
-
-            // Notify parent component
             if (onUserRemoved) {
                 onUserRemoved();
             }
-
-            // Close dialog
             handleClose();
         } catch (err) {
             setError(err.message);
@@ -40,103 +32,73 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
         onClose();
     };
 
-    if (!isOpen || !user) return null;
-
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <Warning className="w-6 h-6 text-orange-600" />
-                        Confirmar Eliminación
-                    </h2>
-                    <button
-                        onClick={handleClose}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                        disabled={submitting}
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
+        <Modal
+            isOpen={isOpen}
+            onClose={handleClose}
+            title="Confirmar Eliminación"
+            size="sm"
+        >
+            <Modal.Content>
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <p className="text-[14px] weight-510 text-[var(--ln-text-secondary)]">
+                        ¿Estás seguro de que deseas remover a este usuario de la red?
+                    </p>
 
-                {/* Content */}
-                <div className="p-6">
-                    <div className="mb-4">
-                        <p className="text-gray-700 dark:text-gray-300 mb-4">
-                            ¿Estás seguro de que deseas remover a este usuario de la red?
-                        </p>
-
-                        {/* User Info */}
-                        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            <h3 className="font-semibold text-gray-900 dark:text-white">{user.fullName}</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
-                            <span className={`
-                                inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full
-                                ${user.roles?.includes('ADMIN') ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                                    user.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                        user.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                            user.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                                                'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
-                            `}>
-                                {Array.isArray(user.roles) ? user.roles.join(', ').replace(/_/g, ' ') : (typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : (Array.isArray(user.role) ? user.role.join(', ').replace(/_/g, ' ') : 'Usuario'))}
+                    {/* User Info Card */}
+                    <div className="bg-[var(--ln-bg-panel)]/50 border border-[var(--ln-border-standard)] rounded-2xl p-5 group hover:border-[var(--ln-border-primary)] transition-all">
+                        <div className="flex flex-col gap-1">
+                            <h3 className="text-[15px] weight-590 text-[var(--ln-text-primary)]">{user?.fullName}</h3>
+                            <p className="text-[13px] weight-510 text-[var(--ln-text-tertiary)]">{user?.email}</p>
+                        </div>
+                        <div className="mt-4">
+                            <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] weight-700 uppercase tracking-widest bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-brand-indigo)] border border-[var(--ln-brand-indigo)]/20">
+                                {Array.isArray(user?.roles) ? user.roles[0]?.replace(/_/g, ' ') : user?.role?.replace(/_/g, ' ') || 'Usuario'}
                             </span>
                         </div>
                     </div>
 
-                    {/* Warning */}
-                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-4">
-                        <div className="flex gap-3">
-                            <Warning className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm text-orange-800 dark:text-orange-300">
-                                <p className="font-semibold mb-1">Importante:</p>
-                                <p>
-                                    El usuario será removido de esta red. Si el usuario tiene discípulos,
-                                    estos permanecerán bajo su liderazgo.
-                                </p>
-                            </div>
+                    {/* Security Warning */}
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 flex gap-4">
+                        <Warning className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                        <div className="space-y-1">
+                            <p className="text-[11px] weight-700 text-amber-600 uppercase tracking-widest">Aviso Importante</p>
+                            <p className="text-[13px] weight-510 text-amber-900/80 dark:text-amber-200/80 leading-relaxed">
+                                El usuario será removido de esta red. Si tiene discípulos a cargo, estos **permanecerán** bajo su liderazgo.
+                            </p>
                         </div>
                     </div>
 
-                    {/* Error Message */}
                     {error && (
-                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4">
+                        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-600 rounded-xl text-xs weight-590 animate-shake">
                             {error}
                         </div>
                     )}
                 </div>
+            </Modal.Content>
 
-                {/* Footer */}
-                <div className="p-6 border-t bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-end gap-3">
-                        <button
-                            onClick={handleClose}
-                            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            disabled={submitting}
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={handleRemoveUser}
-                            disabled={submitting}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                        >
-                            {submitting ? (
-                                <>
-                                    <Spinner className="w-4 h-4 animate-spin" />
-                                    Removiendo...
-                                </>
-                            ) : (
-                                <>
-                                    <UserMinus className="w-4 h-4" />
-                                    Remover Usuario
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <Modal.Footer className="flex justify-end gap-3">
+                <button
+                    onClick={handleClose}
+                    disabled={submitting}
+                    className="px-4 py-2 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] weight-510 text-sm transition-all"
+                >
+                    Cancelar
+                </button>
+                <button
+                    onClick={handleRemoveUser}
+                    disabled={submitting}
+                    className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-xl weight-590 text-sm transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-red-500/10"
+                >
+                    {submitting ? (
+                        <Spinner className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <UserMinus className="w-4 h-4" weight="bold" />
+                    )}
+                    Remover Usuario
+                </button>
+            </Modal.Footer>
+        </Modal>
     );
 };
 

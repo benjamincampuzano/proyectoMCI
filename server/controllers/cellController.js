@@ -67,7 +67,7 @@ const getCoordinates = async (address, city) => {
 // Create a new cell
 const createCell = async (req, res) => {
     try {
-        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType, latitude, longitude } = req.body;
+        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType, latitude, longitude, barrio, network, spiritualMappingUrl, fastingDate, rhemaWord, pastorsMeeting } = req.body;
         const requestedLeaderId = parseInt(leaderId);
         const requestedHostId = hostId ? parseInt(hostId) : null;
         const requestedLiderDoceId = liderDoceId ? parseInt(liderDoceId) : null;
@@ -122,6 +122,12 @@ const createCell = async (req, res) => {
                 liderDoceId: requestedLiderDoceId,
                 address,
                 city,
+                barrio,
+                network,
+                spiritualMappingUrl,
+                fastingDate: fastingDate ? new Date(fastingDate) : null,
+                rhemaWord,
+                pastorsMeeting: pastorsMeeting || false,
                 latitude: finalLat,
                 longitude: finalLon,
                 dayOfWeek,
@@ -143,27 +149,41 @@ const createCell = async (req, res) => {
 // Assign functionality (Add member to cell)
 const assignMember = async (req, res) => {
     try {
-        let { cellId, userId, memberId } = req.body;
+        let { cellId, userId, memberId, guestId } = req.body;
 
-        // Start Fix: Handle params and alternative body fields
         if (req.params.id) {
             cellId = req.params.id;
         }
 
         const targetUserId = userId || memberId;
 
-        if (!cellId || !targetUserId) {
-            return res.status(400).json({ error: 'Missing cellId or memberId' });
+        if (!cellId) {
+            return res.status(400).json({ error: 'Missing cellId' });
         }
-        // End Fix
+
+        const { id: currentUserId } = req.user;
+
+        // Handle guest assignment
+        if (guestId) {
+            await prisma.guest.update({
+                where: { id: parseInt(guestId) },
+                data: { cellId: parseInt(cellId) }
+            });
+            await logActivity(currentUserId, 'UPDATE', 'GUEST', parseInt(guestId), { action: 'ASSIGN_CELL', cellId: parseInt(cellId) }, req.ip, req.headers['user-agent']);
+            return res.json({ message: 'Guest assigned successfully' });
+        }
+
+        // Handle user assignment
+        if (!targetUserId) {
+            return res.status(400).json({ error: 'Missing memberId or guestId' });
+        }
 
         await prisma.user.update({
             where: { id: parseInt(targetUserId) },
             data: { cellId: parseInt(cellId) }
         });
 
-        const { id: currentUserId } = req.user;
-        await logActivity(currentUserId, 'UPDATE', 'USER', parseInt(userId), { action: 'ASSIGN_CELL', cellId: parseInt(cellId) }, req.ip, req.headers['user-agent']);
+        await logActivity(currentUserId, 'UPDATE', 'USER', parseInt(targetUserId), { action: 'ASSIGN_CELL', cellId: parseInt(cellId) }, req.ip, req.headers['user-agent']);
 
         res.json({ message: 'Member assigned successfully' });
     } catch (error) {
@@ -517,7 +537,7 @@ const updateCell = async (req, res) => {
     try {
         const { id } = req.params;
         const cellId = parseInt(id);
-        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType, latitude, longitude } = req.body;
+        const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType, latitude, longitude, barrio, network, spiritualMappingUrl, fastingDate, rhemaWord, pastorsMeeting } = req.body;
 
         const { roles, id: userId } = req.user;
 
@@ -548,6 +568,12 @@ const updateCell = async (req, res) => {
         if (dayOfWeek) data.dayOfWeek = dayOfWeek;
         if (time) data.time = time;
         if (cellType) data.cellType = cellType;
+        if (barrio !== undefined) data.barrio = barrio;
+        if (network !== undefined) data.network = network;
+        if (spiritualMappingUrl !== undefined) data.spiritualMappingUrl = spiritualMappingUrl;
+        if (fastingDate !== undefined) data.fastingDate = fastingDate ? new Date(fastingDate) : null;
+        if (rhemaWord !== undefined) data.rhemaWord = rhemaWord;
+        if (pastorsMeeting !== undefined) data.pastorsMeeting = pastorsMeeting;
 
         // Use provided coordinates if available, otherwise geocode if address/city changed
         if (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null) {
@@ -575,11 +601,22 @@ const updateCell = async (req, res) => {
 
 const unassignMember = async (req, res) => {
     try {
-        const { userId } = req.body;
+        const { userId, guestId } = req.body;
         const { memberId } = req.params;
         const targetUserId = userId || memberId;
         const { id: currentUserId } = req.user;
 
+        // Handle guest unassignment
+        if (guestId) {
+            await prisma.guest.update({
+                where: { id: parseInt(guestId) },
+                data: { cellId: null }
+            });
+            await logActivity(currentUserId, 'UPDATE', 'GUEST', parseInt(guestId), { action: 'UNASSIGN_CELL' }, req.ip, req.headers['user-agent']);
+            return res.json({ message: 'Invitado desvinculado correctamente' });
+        }
+
+        // Handle user unassignment
         await prisma.user.update({
             where: { id: parseInt(targetUserId) },
             data: { cellId: null }

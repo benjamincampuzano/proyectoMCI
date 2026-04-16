@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from '@phosphor-icons/react';
 
 const Modal = ({
   isOpen,
@@ -43,7 +44,7 @@ const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-[rgba(0,0,0,0.85)] backdrop-blur-[2px] z-[999] flex items-center justify-center p-4 animate-in fade-in duration-200"
       onClick={handleBackdropClick}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleBackdropClick()}
       role="button"
@@ -51,34 +52,32 @@ const Modal = ({
       {...props}
     >
       <div
-        className={`bg-white dark:bg-[#1d1d1f] rounded-xl shadow-[rgba(0,0,0,0.22)_3px_5px_30px_0px] w-full ${sizeClasses[size]} overflow-hidden ${className}`}
+        className={`bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] rounded-xl w-full ${sizeClasses[size]} overflow-hidden ${className} animate-in zoom-in-95 duration-200 shadow-[rgba(0,0,0,0)_0px_8px_2px,rgba(0,0,0,0.01)_0px_5px_2px,rgba(0,0,0,0.04)_0px_3px_2px,rgba(0,0,0,0.07)_0px_1px_1px,rgba(0,0,0,0.08)_0px_0px_1px]`}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
         {(title || showCloseButton) && (
-          <div className="p-5 border-b border-[#d1d1d6] dark:border-[#3a3a3c] flex justify-between items-center">
+          <div className="px-6 py-5 border-b border-[rgba(255,255,255,0.08)] flex justify-between items-center">
             {title && (
-              <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white">
+              <h3 className="text-[20px] font-[590] text-[var(--ln-text-primary)] tracking-[-0.24px] leading-[1.33]">
                 {title}
               </h3>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="text-[#86868b] hover:text-[#1d1d1f] dark:hover:text-white transition-colors p-1 rounded-lg hover:bg-[#f5f5f7] dark:hover:bg-[#272729]"
+                className="text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] transition-colors p-2 rounded-lg bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.05)]"
                 aria-label="Cerrar modal"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             )}
           </div>
         )}
 
-        <div className="max-h-[80vh] overflow-y-auto">
+        <div className="max-h-[85vh] overflow-y-auto">
           {children}
         </div>
       </div>
@@ -87,19 +86,19 @@ const Modal = ({
 };
 
 const ModalContent = ({ children, className = '', ...props }) => (
-  <div className={`p-5 ${className}`} {...props}>
+  <div className={`px-6 py-6 text-[15px] font-[400] text-[var(--ln-text-secondary)] leading-[1.60] tracking-[-0.165px] ${className}`} {...props}>
     {children}
   </div>
 );
 
 const ModalFooter = ({ children, className = '', ...props }) => (
-  <div className={`p-5 bg-[#f5f5f7] dark:bg-[#272729] border-t border-[#d1d1d6] dark:border-[#3a3a3c] ${className}`} {...props}>
+  <div className={`px-6 py-5 bg-[rgba(255,255,255,0.02)] border-t border-[rgba(255,255,255,0.08)] ${className}`} {...props}>
     {children}
   </div>
 );
 
 const ModalHeader = ({ children, className = '', ...props }) => (
-  <div className={`p-5 border-b border-[#d1d1d6] dark:border-[#3a3a3c] ${className}`} {...props}>
+  <div className={`px-6 py-5 border-b border-[rgba(255,255,255,0.08)] ${className}`} {...props}>
     {children}
   </div>
 );

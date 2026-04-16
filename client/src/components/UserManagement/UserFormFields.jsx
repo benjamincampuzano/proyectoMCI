@@ -1,4 +1,4 @@
-import { Eye, EyeClosedIcon } from '@phosphor-icons/react';
+import { Eye, EyeClosed, MapPin } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 import { AsyncSearchSelect } from '../ui';
 import api from '../../utils/api';
@@ -20,97 +20,111 @@ const UserFormFields = ({
     calculateAge,
     getAssignableRoles
 }) => {
+    const inputGroup = (label, children, required = false) => (
+        <div className="space-y-1.5 group">
+            <label className="text-[11px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-wider flex items-center gap-1.5 px-1 opacity-70 group-focus-within:opacity-100 group-focus-within:text-[var(--ln-brand-indigo)] transition-all">
+                {label} {required && <span className="text-red-500">*</span>}
+            </label>
+            {children}
+        </div>
+    );
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Tipo de Documento</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
+            {/* Sección: Identidad y Contacto */}
+            {inputGroup("Tipo de Documento", 
                 <select
-                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
+                    className="ln-input appearance-none"
                     value={formData.documentType || ''}
                     onChange={e => setFormData({ ...formData, documentType: e.target.value })}
                 >
                     <option value="">Seleccionar...</option>
-                    <option value="RC">RC</option>
-                    <option value="TI">TI</option>
-                    <option value="CC">CC</option>
-                    <option value="CE">CE</option>
-                    <option value="PP">PPT</option>
-                    <option value="PEP">PEP</option>
+                    <option value="RC">Registro Civil</option>
+                    <option value="TI">Tarjeta Identidad</option>
+                    <option value="CC">Cédula Ciudadanía</option>
+                    <option value="CE">Cédula Extranjería</option>
+                    <option value="PP">PPT (Permiso Temporal)</option>
                 </select>
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Número de Documento</label>
-                <input
-                    type="text"
-                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                    value={formData.documentNumber || ''}
-                    onChange={e => setFormData({ ...formData, documentNumber: e.target.value })}
-                    placeholder="12345678"
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Nombre Completo</label>
-                <input required type="text" className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Fecha de Nacimiento</label>
-                <input
-                    type="date"
-                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                    value={formData.birthDate || ''}
-                    onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
-                />
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Email</label>
-                <input required
-                    type="email"
-                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                    value={formData.email}
-                    placeholder="tu_email@email.com"
-                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                />
-            </div>
+            , true)}
 
-            {mode === 'create' && (
-                <div>
-                    <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Password</label>
-                    <div className="relative">
-                        <input
-                            required
-                            type={showPassword ? "text" : "Contraseña"}
-                            placeholder="Mínimo 8 caracteres"
-                            className="w-full p-2 pr-10 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                            value={formData.password}
-                            onChange={e => {
-                                setFormData({ ...formData, password: e.target.value });
-                                setPasswordErrors(validatePasswordRealTime(e.target.value, formData.fullName));
-                            }}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#1d1d1f] dark:text-gray-400 dark:hover:text-gray-200"
-                        >
-                            {showPassword ? <Eye size={20} /> : <EyeClosedIcon size={20} />}
-                        </button>
-                    </div>
-                    {passwordErrors.length > 0 && (
-                        <div className="mt-1 space-y-1">
-                            {passwordErrors.map((error, idx) => (
-                                <p key={idx} className="text-xs text-red-600 dark:text-red-400">
-                                    ⚠️ {error}
-                                </p>
-                            ))}
-                        </div>
-                    )}
+            {inputGroup("Número de Documento", 
+                <div className="relative">
+                    <input
+                        type="text"
+                        className="ln-input pl-11"
+                        value={formData.documentNumber || ''}
+                        onChange={e => setFormData({ ...formData, documentNumber: e.target.value })}
+                        placeholder="Sin puntos ni comas"
+                        required
+                    />
+                </div>
+            , true)}
+
+            {inputGroup("Nombre Completo", 
+                <div className="relative">
+                    <input 
+                        required 
+                        type="text" 
+                        className="ln-input pl-11" 
+                        value={formData.fullName} 
+                        onChange={e => setFormData({ ...formData, fullName: e.target.value })} 
+                        placeholder="Nombres y Apellidos"
+                    />
+                </div>
+            , true)}
+
+            {inputGroup("Fecha de Nacimiento", 
+                <div className="relative">
+                    <input
+                        type="date"
+                        className="ln-input pl-11"
+                        value={formData.birthDate || ''}
+                        onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
+                        required
+                    />
+                </div>
+            , true)}
+
+            {inputGroup("Sexo", 
+                <select
+                    className="ln-input appearance-none"
+                    value={formData.sex || ''}
+                    onChange={e => setFormData({ ...formData, sex: e.target.value })}
+                    required
+                >
+                    <option value="">Seleccione...</option>
+                    <option value="HOMBRE">Hombre</option>
+                    <option value="MUJER">Mujer</option>
+                </select>
+            , true)}
+            {inputGroup("Teléfono / WhatsApp", 
+                <div className="relative">
+                    <input 
+                        type="text" 
+                        className="ln-input pl-11" 
+                        value={formData.phone || ''} 
+                        onChange={e => setFormData({ ...formData, phone: e.target.value })} 
+                        placeholder="Teléfono"
+                    />
                 </div>
             )}
-
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Estado Civil</label>
+            {inputGroup("Email", 
+                <div className="relative">
+                    <input 
+                        required
+                        type="email"
+                        className="ln-input pl-11"
+                        value={formData.email}
+                        placeholder="correo electronico"
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    />
+                </div>
+            , true)}
+                    
+            {/* Sección: Entorno Civil y Red */}
+            {inputGroup("Estado Civil", 
                 <select
-                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
+                    className="ln-input appearance-none"
                     value={formData.maritalStatus || ''}
                     onChange={e => setFormData({ ...formData, maritalStatus: e.target.value })}
                 >
@@ -122,25 +136,9 @@ const UserFormFields = ({
                     <option value="UNION_LIBRE">Unión de hecho/libre</option>
                     <option value="SEPARADO">Separado/a</option>
                 </select>
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">RED</label>
-                <select
-                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                    value={formData.network || ''}
-                    onChange={e => setFormData({ ...formData, network: e.target.value })}
-                >
-                    <option value="">Seleccione...</option>
-                    <option value="MUJERES">Mujeres</option>
-                    <option value="HOMBRES">Hombres</option>
-                    <option value="KIDS 1">Kids1 (5 a 7 años)</option>
-                    <option value="KIDS 2">Kids2 (8 a 10 años)</option>
-                    <option value="TEENS">Teens (11 a 13 años)</option>
-                    <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
-                </select>
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Cónyuge (Opcional)</label>
+            )}
+
+            {inputGroup("Cónyuge Ministerial", 
                 <AsyncSearchSelect
                     fetchItems={(term) => {
                         const params = { search: term };
@@ -152,226 +150,226 @@ const UserFormFields = ({
                     }}
                     selectedValue={users.find(u => u.id === parseInt(formData.spouseId)) || (formData.spouseId ? { id: formData.spouseId, fullName: 'Cargando...' } : null)}
                     onSelect={(user) => setFormData({ ...formData, spouseId: user?.id || '' })}
-                    placeholder="Buscar cónyuge..."
+                    placeholder="Buscar por nombre..."
                     labelKey="fullName"
                     disabled={!['CASADO', 'UNION_LIBRE'].includes(formData.maritalStatus)}
                 />
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Rol</label>
+            )}
+
+            {inputGroup("RED Ministerial", 
                 <select
-                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                    value={formData.role || ''}
-                    onChange={e => setFormData({ ...formData, role: e.target.value, pastorId: '', liderDoceId: '', liderCelulaId: '' })}
+                    className="ln-input appearance-none"
+                    value={formData.network || ''}
+                    onChange={e => setFormData({ ...formData, network: e.target.value })}
+                    required
                 >
-                    {getAssignableRoles && getAssignableRoles().map(r => (
-                        <option key={r} value={r}>{r.replace('_', ' ')}</option>
-                    ))}
+                    <option value="">Seleccione...</option>
+                    <option value="MUJERES">RED de Mujeres</option>
+                    <option value="HOMBRES">RED de Hombres</option>
+                    <option value="KIDS">MCI Kids 1 (5 a 7 años)</option>
+                    <option value="ROCAS">MCI Kids 2 (8 a 10 años)</option>
+                    <option value="TEENS">MCI Teens (11 a 13 años)</option>
+                    <option value="JOVENES">MCI Jóvenes (14+ solteros)</option>
                 </select>
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Sexo</label>
-                <select className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]" value={formData.sex || ''} onChange={e => setFormData({ ...formData, sex: e.target.value })}>
-                    <option value="">Seleccionar...</option>
-                    <option value="HOMBRE">Hombre</option>
-                    <option value="MUJER">Mujer</option>
-                </select>
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Teléfono</label>
-                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Dirección</label>
-                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]" value={formData.address || ''} onChange={e => setFormData({ ...formData, address: e.target.value })} />
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Barrio</label>
-                <input type="text" className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]" value={formData.neighborhood || ''} onChange={e => setFormData({ ...formData, neighborhood: e.target.value })} />
-            </div>
-            <div>
-                <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Ciudad</label>
-                <input
-                    type="text"
-                    className="w-full p-2 rounded-lg bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                    value={formData.city || ''}
-                    onChange={e => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Manizales"
-                />
-            </div>
+            , true)}
 
-            {/* Dynamic Leader Selection */}
-            {formData.role === 'PASTOR' && (
-                <div className="md:col-span-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm">
-                    ℹ️ El rol PASTOR es líder de sí mismo por defecto.
+            {inputGroup("Barrio", 
+                <div className="relative">
+                    <input 
+                        type="text" 
+                        className="ln-input pl-11" 
+                        value={formData.neighborhood || ''} 
+                        onChange={e => setFormData({ ...formData, neighborhood: e.target.value })} 
+                        placeholder="Nombre del barrio"
+                    />
                 </div>
             )}
 
-            {(formData.role === 'LIDER_DOCE' || formData.role === 'LIDER_CELULA' || formData.role === 'DISCIPULO') && (
-                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-                    <h3 className="md:col-span-2 font-semibold text-gray-900 dark:text-white">Asignación de Líderes Parejas</h3>
 
-                    {/* PASTORES (for LIDER_DOCE) */}
-                    {formData.role === 'LIDER_DOCE' && (
-                        <>
-                            {[0, 1].map(index => (
-                                <div key={`pastor-${index}`}>
-                                    <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Pastor ({index + 1})</label>
-                                    <AsyncSearchSelect
-                                        fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'PASTOR' } }).then(res => res.data)}
-                                        selectedValue={pastores.find(p => p.id === parseInt((formData.pastorIds || [])[index])) || ((formData.pastorIds || [])[index] ? { id: formData.pastorIds[index], fullName: 'Cargando...' } : null)}
-                                        onSelect={(user) => {
-                                            const newPastorIds = [...(formData.pastorIds || [])];
-                                            newPastorIds[index] = user?.id || '';
-                                            
-                                            let newPastorSpouseIds = [...(formData.pastorSpouseIds || [])];
-                                            if (user?.spouseId) {
-                                                newPastorSpouseIds[index] = user.spouseId.toString();
-                                            } else {
-                                                newPastorSpouseIds[index] = '';
-                                            }
-                                            
-                                            setFormData({
-                                                ...formData,
-                                                pastorIds: newPastorIds,
-                                                pastorSpouseIds: newPastorSpouseIds,
-                                            });
-                                        }}
-                                        placeholder="Buscar pastor..."
-                                        labelKey="fullName"
-                                    />
-                                </div>
-                            ))}
-                        </>
-                    )}
 
-                    {/* LIDERES DOCE (for LIDER_CELULA and DISCIPULO) */}
-                    {(formData.role === 'LIDER_CELULA' || formData.role === 'DISCIPULO') && (
-                        <>
-                            {[0, 1].map(index => (
-                                <div key={`ld-${index}`}>
-                                    <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Líder 12 ({index + 1})</label>
-                                    <AsyncSearchSelect
-                                        fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => res.data)}
-                                        selectedValue={lideresDoce.find(l => l.id === parseInt((formData.liderDoceIds || [])[index])) || ((formData.liderDoceIds || [])[index] ? { id: formData.liderDoceIds[index], fullName: 'Cargando...' } : null)}
-                                        onSelect={(user) => {
-                                            const newLiderDoceIds = [...(formData.liderDoceIds || [])];
-                                            newLiderDoceIds[index] = user?.id || '';
-                                            
-                                            let newLiderDoceSpouseIds = [...(formData.liderDoceSpouseIds || [])];
-                                            if (user?.spouseId) {
-                                                newLiderDoceSpouseIds[index] = user.spouseId.toString();
-                                            } else {
-                                                newLiderDoceSpouseIds[index] = '';
-                                            }
-                                            
-                                            setFormData({
-                                                ...formData,
-                                                liderDoceIds: newLiderDoceIds,
-                                                liderDoceSpouseIds: newLiderDoceSpouseIds,
-                                            });
-                                        }}
-                                        placeholder="Buscar líder de 12..."
-                                        labelKey="fullName"
-                                    />
-                                </div>
-                            ))}
-                        </>
-                    )}
-
-                    {/* LIDERES CELULA (for DISCIPULO) */}
-                    {formData.role === 'DISCIPULO' && (
-                        <>
-                            {[0, 1].map(index => (
-                                <div key={`lc-${index}`}>
-                                    <label className="block text-sm font-medium mb-1 text-[#1d1d1f] dark:text-white/80">Líder Célula ({index + 1})</label>
-                                    <AsyncSearchSelect
-                                        fetchItems={(term) => {
-                                            const params = { search: term, role: 'LIDER_CELULA' };
-                                            if ((formData.liderDoceIds || []).some(id => id)) {
-                                                params.liderDoceId = formData.liderDoceIds.find(id => id);
-                                            }
-                                            return api.get('/users/search', { params }).then(res => res.data);
-                                        }}
-                                        selectedValue={lideresCelula.find(lc => lc.id === parseInt((formData.liderCelulaIds || [])[index])) || ((formData.liderCelulaIds || [])[index] ? { id: formData.liderCelulaIds[index], fullName: 'Cargando...' } : null)}
-                                        onSelect={(user) => {
-                                            const newLiderCelulaIds = [...(formData.liderCelulaIds || [])];
-                                            newLiderCelulaIds[index] = user?.id || '';
-                                            
-                                            let newLiderCelulaSpouseIds = [...(formData.liderCelulaSpouseIds || [])];
-                                            if (user?.spouseId) {
-                                                newLiderCelulaSpouseIds[index] = user.spouseId.toString();
-                                            } else {
-                                                newLiderCelulaSpouseIds[index] = '';
-                                            }
-                                            
-                                            setFormData({
-                                                ...formData,
-                                                liderCelulaIds: newLiderCelulaIds,
-                                                liderCelulaSpouseIds: newLiderCelulaSpouseIds,
-                                            });
-                                        }}
-                                        placeholder="Buscar líder de célula..."
-                                        labelKey="fullName"
-                                    />
-                                </div>
-                            ))}
-                        </>
-                    )}
+            {/* Sección: Jerarquía Ministerial */}
+            <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
+                            {inputGroup("Dirección", 
+                <div className="relative">
+                    <input 
+                        type="text" 
+                        className="ln-input" 
+                        value={formData.address || ''} 
+                        onChange={e => setFormData({ ...formData, address: e.target.value })} 
+                        placeholder="Dirección completa"
+                    />
                 </div>
             )}
+                
+                {inputGroup("Perfil / Rol Principal", 
+                    <select
+                        className="ln-input appearance-none font-bold text-[var(--ln-brand-indigo)]"
+                        value={formData.role || ''}
+                        onChange={e => setFormData({ ...formData, role: e.target.value, pastorId: '', liderDoceId: '', liderCelulaId: '' })}
+                    >
+                        {getAssignableRoles && getAssignableRoles().map(r => (
+                            <option key={r} value={r}>{r.replace('_', ' ')}</option>
+                        ))}
+                    </select>
+                , true)}
 
-            {/* Data Authorization Checks */}
-            <div className="md:col-span-2 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3 mt-2">
-                <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                        type="checkbox"
-                        required={mode === 'create'}
-                        disabled={!isAdmin}
-                        className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                        checked={formData.dataPolicyAccepted || false}
-                        onChange={e => setFormData({ ...formData, dataPolicyAccepted: e.target.checked })}
-                    />
-                    <span className="text-sm text-[#1d1d1f] dark:text-white/80 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                        Acepta la Política de Tratamiento de Datos Personales de MCI.
-                    </span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                        type="checkbox"
-                        required={mode === 'create'}
-                        disabled={!isAdmin}
-                        className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                        checked={formData.dataTreatmentAuthorized || false}
-                        onChange={e => setFormData({ ...formData, dataTreatmentAuthorized: e.target.checked })}
-                    />
-                    <span className="text-sm text-[#1d1d1f] dark:text-white/80 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                        Autoriza el tratamiento de datos conforme a la Ley 1581 de 2012.
-                    </span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                        type="checkbox"
-                        disabled={!isAdmin}
-                        required={calculateAge(formData.birthDate) < 18}
-                        className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                        checked={formData.minorConsentAuthorized || false}
-                        onChange={e => setFormData({ ...formData, minorConsentAuthorized: e.target.checked })}
-                    />
-                    <span className="text-sm text-[#1d1d1f] dark:text-white/80 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                        {calculateAge(formData.birthDate) < 18 ? (
-                            <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                                Cuento con el documento de autorización física/digital firmado por el padre o tutor legal. (Obligatorio)
-                            </span>
-                        ) : (
-                            "Cuenta con autorización del representante legal (para menores)."
+                <div className="sm:col-span-2 text-[11px] weight-510 text-[var(--ln-brand-indigo)]/70 px-1">
+                    {formData.role === 'PASTOR' ? 
+                        "ℹ️ El perfil de Pastor tiene autonomía jerárquica total." : 
+                        "ℹ️ Asigne los líderes por pareja para mantener la integridad de la red."
+                    }
+                </div>
+
+                {(formData.role === 'LIDER_DOCE' || formData.role === 'LIDER_CELULA' || formData.role === 'DISCIPULO') && (
+                    <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
+                        {/* PASTORES (for LIDER_DOCE) */}
+                        {formData.role === 'LIDER_DOCE' && (
+                            <>
+                                {[0, 1].map(index => (
+                                    <div key={`pastor-${index}`}>
+                                        {inputGroup(`Pastor Liderazgo (${index + 1})`, 
+                                            <AsyncSearchSelect
+                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'PASTOR' } }).then(res => res.data)}
+                                                selectedValue={pastores.find(p => p.id === parseInt((formData.pastorIds || [])[index])) || ((formData.pastorIds || [])[index] ? { id: formData.pastorIds[index], fullName: 'Cargando...' } : null)}
+                                                onSelect={(user) => {
+                                                    const newPastorIds = [...(formData.pastorIds || [])];
+                                                    newPastorIds[index] = user?.id || '';
+                                                    let newPastorSpouseIds = [...(formData.pastorSpouseIds || [])];
+                                                    newPastorSpouseIds[index] = user?.spouseId?.toString() || '';
+                                                    setFormData({ ...formData, pastorIds: newPastorIds, pastorSpouseIds: newPastorSpouseIds });
+                                                }}
+                                                placeholder="Buscar pastor tutor..."
+                                                labelKey="fullName"
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </>
                         )}
-                    </span>
+
+                        {/* LIDERES DOCE (for LIDER_CELULA and DISCIPULO) */}
+                        {(formData.role === 'LIDER_CELULA' || formData.role === 'DISCIPULO') && (
+                            <>
+                                {[0, 1].map(index => (
+                                    <div key={`ld-${index}`}>
+                                        {inputGroup(`Líder 12 (${index + 1})`, 
+                                            <AsyncSearchSelect
+                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => res.data)}
+                                                selectedValue={lideresDoce.find(l => l.id === parseInt((formData.liderDoceIds || [])[index])) || ((formData.liderDoceIds || [])[index] ? { id: formData.liderDoceIds[index], fullName: 'Cargando...' } : null)}
+                                                onSelect={(user) => {
+                                                    const newLiderDoceIds = [...(formData.liderDoceIds || [])];
+                                                    newLiderDoceIds[index] = user?.id || '';
+                                                    let newLiderDoceSpouseIds = [...(formData.liderDoceSpouseIds || [])];
+                                                    newLiderDoceSpouseIds[index] = user?.spouseId?.toString() || '';
+                                                    setFormData({ ...formData, liderDoceIds: newLiderDoceIds, liderDoceSpouseIds: newLiderDoceSpouseIds });
+                                                }}
+                                                placeholder="Buscar líder de 12..."
+                                                labelKey="fullName"
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </>
+                        )}
+
+                        {/* LIDERES CELULA (for DISCIPULO) */}
+                        {formData.role === 'DISCIPULO' && (
+                            <>
+                                {[0, 1].map(index => (
+                                    <div key={`lc-${index}`}>
+                                        {inputGroup(`Líder Célula(${index + 1})`, 
+                                            <AsyncSearchSelect
+                                                fetchItems={(term) => {
+                                                    const params = { search: term, role: 'LIDER_CELULA' };
+                                                    const parentId = (formData.liderDoceIds || []).find(id => id);
+                                                    if (parentId) params.liderDoceId = parentId;
+                                                    return api.get('/users/search', { params }).then(res => res.data);
+                                                }}
+                                                selectedValue={lideresCelula.find(lc => lc.id === parseInt((formData.liderCelulaIds || [])[index])) || ((formData.liderCelulaIds || [])[index] ? { id: formData.liderCelulaIds[index], fullName: 'Cargando...' } : null)}
+                                                onSelect={(user) => {
+                                                    const newLiderCelulaIds = [...(formData.liderCelulaIds || [])];
+                                                    newLiderCelulaIds[index] = user?.id || '';
+                                                    let newLiderCelulaSpouseIds = [...(formData.liderCelulaSpouseIds || [])];
+                                                    newLiderCelulaSpouseIds[index] = user?.spouseId?.toString() || '';
+                                                    setFormData({ ...formData, liderCelulaIds: newLiderCelulaIds, liderCelulaSpouseIds: newLiderCelulaSpouseIds });
+                                                }}
+                                                placeholder="Buscar líder de célula..."
+                                                labelKey="fullName"
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Sección: Auditoría y Consentimiento */}
+            <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="flex items-start gap-3 p-3 rounded-2xl bg-[var(--ln-bg-panel)]/50 border border-[var(--ln-border-standard)] hover:border-[var(--ln-brand-indigo)]/30 transition-all cursor-pointer group shadow-sm">
+                    <div className="relative flex items-center mt-0.5">
+                        <input
+                            type="checkbox"
+                            required={mode === 'create'}
+                            disabled={!isAdmin}
+                            className="w-5 h-5 rounded-lg border-[var(--ln-border-standard)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)]/20 bg-white shadow-sm transition-all disabled:opacity-40"
+                            checked={formData.dataPolicyAccepted || false}
+                            onChange={e => setFormData({ ...formData, dataPolicyAccepted: e.target.checked })}
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[13.5px] weight-590 text-[var(--ln-text-primary)] group-hover:text-[var(--ln-brand-indigo)] transition-colors">Política de MCI</span>
+                        <span className="text-[11px] text-[var(--ln-text-tertiary)] opacity-60">Aceptación de la Política de Tratamiento de MCI Global.</span>
+                    </div>
                 </label>
+
+                <label className="flex items-start gap-3 p-3 rounded-2xl bg-[var(--ln-bg-panel)]/50 border border-[var(--ln-border-standard)] hover:border-[var(--ln-brand-indigo)]/30 transition-all cursor-pointer group shadow-sm">
+                    <div className="relative flex items-center mt-0.5">
+                        <input
+                            type="checkbox"
+                            required={mode === 'create'}
+                            disabled={!isAdmin}
+                            className="w-5 h-5 rounded-lg border-[var(--ln-border-standard)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)]/20 bg-white shadow-sm transition-all disabled:opacity-40"
+                            checked={formData.dataTreatmentAuthorized || false}
+                            onChange={e => setFormData({ ...formData, dataTreatmentAuthorized: e.target.checked })}
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[13.5px] weight-590 text-[var(--ln-text-primary)] group-hover:text-[var(--ln-brand-indigo)] transition-colors">Ley 1581 (2012)</span>
+                        <span className="text-[11px] text-[var(--ln-text-tertiary)] opacity-60">Autorización previa y explícita para recolección de datos.</span>
+                    </div>
+                </label>
+
+                <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-[var(--ln-brand-indigo)]/5 border border-[var(--ln-brand-indigo)]/10 hover:border-[var(--ln-brand-indigo)]/30 transition-all cursor-pointer group shadow-md sm:col-span-2">
+                    <div className="relative flex items-center mt-1">
+                        <input
+                            type="checkbox"
+                            disabled={!isAdmin}
+                            required={calculateAge(formData.birthDate) < 18}
+                            className="w-6 h-6 rounded-lg border-[var(--ln-brand-indigo)]/30 text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)]/20 bg-white transition-all disabled:opacity-40"
+                            checked={formData.minorConsentAuthorized || false}
+                            onChange={e => setFormData({ ...formData, minorConsentAuthorized: e.target.checked })}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[14px] weight-700 text-[var(--ln-brand-indigo)]">Autorización para Menores de Edad</span>
+                        <span className="text-[12px] weight-510 text-[var(--ln-text-secondary)] opacity-80 leading-relaxed">
+                            {calculateAge(formData.birthDate) < 18 ? 
+                                "El registro requiere firma física de los padres o tutor legal para ser válido en el sistema." : 
+                                "Consentimiento del representante legal para el manejo de información sensible."
+                            }
+                        </span>
+                    </div>
+                </label>
+
                 {!isAdmin && (
-                    <p className="text-xs text-orange-600 dark:text-orange-400 italic">
-                        * Solo un administrador puede modificar el estado de autorización de datos.
-                    </p>
+                    <div className="flex items-center gap-2 p-3 bg-orange-500/5 rounded-xl border border-orange-500/10 animate-pulse sm:col-span-2">
+                        <div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
+                        <p className="text-[11px] weight-700 text-orange-500/80 uppercase tracking-widest">
+                            Auditoría de Acceso: Edición restringida a Administradores
+                        </p>
+                    </div>
                 )}
             </div>
         </div>

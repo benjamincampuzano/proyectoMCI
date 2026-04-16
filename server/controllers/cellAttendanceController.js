@@ -175,8 +175,12 @@ const getCells = async (req, res) => {
 
         let where = {};
 
-        if (userRoles.includes('ADMIN') || userRoles.includes('ADMIN')) {
-            // ADMIN sees all cells (no filter)
+        // Check if user is module coordinator of enviar module
+        const isEnviarCoordinator = req.user.moduleCoordinations?.includes('enviar') ||
+                                   req.user.moduleSubCoordinations?.includes('enviar');
+
+        if (userRoles.includes('ADMIN') || userRoles.includes('ADMIN') || isEnviarCoordinator) {
+            // ADMIN and enviar module coordinators see all cells (no filter)
             where = {};
         } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
             // LIDER_DOCE y PASTOR pueden ver todas las células de su red
@@ -203,6 +207,12 @@ const getCells = async (req, res) => {
                 name: true,
                 address: true,
                 city: true,
+                barrio: true,
+                network: true,
+                spiritualMappingUrl: true,
+                fastingDate: true,
+                rhemaWord: true,
+                pastorsMeeting: true,
                 latitude: true,
                 longitude: true,
                 dayOfWeek: true,
@@ -235,9 +245,13 @@ const getCells = async (req, res) => {
                 members: {
                     select: { id: true }
                 },
+                guests: {
+                    select: { id: true }
+                },
                 _count: {
                     select: {
-                        members: true
+                        members: true,
+                        guests: true
                     }
                 }
             },
@@ -269,6 +283,10 @@ const getCellMembers = async (req, res) => {
         const userRoles = req.user.roles || [];
         const userId = req.user.id;
 
+        // Check if user is module coordinator of enviar module
+        const isEnviarCoordinator = req.user.moduleCoordinations?.includes('enviar') ||
+                                   req.user.moduleSubCoordinations?.includes('enviar');
+
         const cell = await prisma.cell.findUnique({
             where: { id: parseInt(cellId) },
             select: {
@@ -280,6 +298,13 @@ const getCellMembers = async (req, res) => {
                         email: true,
                         roles: { include: { role: true } }
                     }
+                },
+                guests: {
+                    select: {
+                        id: true,
+                        name: true,
+                        phone: true
+                    }
                 }
             }
         });
@@ -289,7 +314,7 @@ const getCellMembers = async (req, res) => {
         }
 
         const isMember = cell.members.some(m => m.id === userId);
-        const isAuthorized = userRoles.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r));
+        const isAuthorized = userRoles.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r)) || isEnviarCoordinator;
 
         if (!isAuthorized && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell' });
@@ -299,7 +324,16 @@ const getCellMembers = async (req, res) => {
             id: m.id,
             fullName: m.profile?.fullName,
             email: m.email,
-            roles: m.roles.map(r => r.role.name)
+            roles: m.roles.map(r => r.role.name),
+            type: 'USER'
+        }));
+
+        const formattedGuests = cell.guests.map(g => ({
+            id: g.id,
+            fullName: g.name,
+            email: g.phone,
+            roles: ['INVITADO'],
+            type: 'GUEST'
         }));
 
         // Filter: DISCIPULO/MIEMBRO only sees themselves
@@ -319,7 +353,8 @@ const getCellMembers = async (req, res) => {
             }
         }
 
-        res.json(formattedMembers);
+        const allMembers = [...formattedMembers, ...formattedGuests];
+        res.json(allMembers);
     } catch (error) {
         console.error('Error fetching cell members:', error);
         res.status(500).json({ error: 'Error fetching cell members' });
@@ -332,6 +367,10 @@ const getAttendanceStats = async (req, res) => {
         const { startDate, endDate, cellId } = req.query;
         const userRoles = req.user.roles || [];
         const userId = req.user.id;
+
+        // Check if user is module coordinator of enviar module
+        const isEnviarCoordinator = req.user.moduleCoordinations?.includes('enviar') ||
+                                   req.user.moduleSubCoordinations?.includes('enviar');
 
         // Default to last 30 days if no date range provided
         const end = endDate ? new Date(endDate) : new Date();
@@ -352,20 +391,22 @@ const getAttendanceStats = async (req, res) => {
             }
 
             // Check authorization
-            if (userRoles.includes('LIDER_CELULA') && cell.leaderId !== userId) {
+            if (userRoles.includes('LIDER_CELULA') && cell.leaderId !== userId && !isEnviarCoordinator) {
                 return res.status(403).json({ error: 'Not authorized to view this cell' });
-            } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
+            } else if ((userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) && !isEnviarCoordinator) {
                 const networkUserIds = await getUserNetwork(userId);
                 if (!networkUserIds.includes(cell.leaderId)) {
                     return res.status(403).json({ error: 'Not authorized to view this cell' });
                 }
             }
-            // ADMIN has access
+            // ADMIN and enviar module coordinators have access
 
             cellFilter.cellId = parseInt(cellId);
         } else {
             // Filter all cells based on role
-            if (userRoles.includes('LIDER_CELULA')) {
+            if (isEnviarCoordinator || userRoles.includes('ADMIN')) {
+                // Module coordinators and ADMIN see all cells (no filter)
+            } else if (userRoles.includes('LIDER_CELULA')) {
                 const userCells = await prisma.cell.findMany({
                     where: { leaderId: userId },
                     select: { id: true }
@@ -379,7 +420,6 @@ const getAttendanceStats = async (req, res) => {
                 });
                 cellFilter.cellId = { in: networkCells.map(c => c.id) };
             }
-            // ADMIN sees all cells (no filter)
         }
 
         // Fetch attendance records within date range

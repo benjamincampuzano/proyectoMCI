@@ -91,7 +91,30 @@ const getGeneralStats = async (req, res) => {
                 ]
             },
             include: {
-                invitedBy: hierarchyInclude,
+                invitedBy: {
+                    include: {
+                        profile: true,
+                        roles: {
+                            include: {
+                                role: true
+                            }
+                        },
+                        parents: {
+                            include: {
+                                parent: {
+                                    include: {
+                                        profile: true,
+                                        roles: {
+                                            include: {
+                                                role: true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 calls: true,
                 visits: true
             }
@@ -103,8 +126,12 @@ const getGeneralStats = async (req, res) => {
         const trackingStats = { withCall: 0, withoutCall: 0, withVisit: 0, withoutVisit: 0 };
 
         guests.forEach(guest => {
+            // Filter to only include guests where the inviter has LIDER_DOCE role
+            const hasLiderDoceRole = guest.invitedBy?.roles?.some(r => r.role.name === 'LIDER_DOCE');
+            if (!hasLiderDoceRole) return;
+
             totalGuests++;
-            const leaderName = getLiderName(guest.invitedBy);
+            const leaderName = guest.invitedBy?.profile?.fullName || guest.invitedBy?.email || 'Sin Asignar';
             guestsByLeader[leaderName] = (guestsByLeader[leaderName] || 0) + 1;
             if (guest.status === 'GANADO') totalConversions++;
             if (guest.calls?.length > 0) trackingStats.withCall++;
@@ -122,14 +149,51 @@ const getGeneralStats = async (req, res) => {
                     networkFilter('userId', null, null)
                 ]
             },
-            include: { user: hierarchyInclude }
+            include: {
+                user: {
+                    include: {
+                        profile: true,
+                        roles: {
+                            include: {
+                                role: true
+                            }
+                        },
+                        parents: {
+                            include: {
+                                parent: {
+                                    include: {
+                                        profile: true,
+                                        roles: {
+                                            include: {
+                                                role: true
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         const attendanceByMonth = {};
         attendances.forEach(att => {
             const date = new Date(att.date);
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            const leaderName = getLiderName(att.user);
+            
+            // Filter to only include users whose leader has LIDER_DOCE role
+            let leaderName = null;
+            if (att.user?.parents && att.user.parents.length > 0) {
+                const liderDoce = att.user.parents.find(p => p.parent?.roles?.some(r => r.role.name === 'LIDER_DOCE'));
+                if (liderDoce) {
+                    leaderName = liderDoce.parent.profile?.fullName || liderDoce.parent.email;
+                }
+            }
+            
+            // If no LIDER_DOCE parent found, skip this attendance record
+            if (!leaderName) return;
+            
             if (!attendanceByMonth[monthKey]) attendanceByMonth[monthKey] = {};
             attendanceByMonth[monthKey][leaderName] = (attendanceByMonth[monthKey][leaderName] || 0) + 1;
         });
@@ -159,13 +223,29 @@ const getGeneralStats = async (req, res) => {
                 avgGrade: gradeCount > 0 ? (totalGrade / gradeCount).toFixed(1) : 0,
                 avgAttendance: studentCount > 0 ? (totalAttendancePct / studentCount).toFixed(1) : 0
             };
-        });
+        }).filter(stat => stat.studentCount > 0);
 
         // 4. CELLS
         const cells = await prisma.cell.findMany({
             where: networkFilter('leaderId', null, null),
             include: {
-                leader: hierarchyInclude,
+                leader: {
+                    include: {
+                        profile: true,
+                        roles: {
+                            include: {
+                                role: true
+                            }
+                        },
+                        parents: {
+                            include: {
+                                parent: {
+                                    include: { profile: true }
+                                }
+                            }
+                        }
+                    }
+                },
                 attendances: {
                     where: { date: { gte: start, lte: end } },
                     select: { date: true, status: true }
@@ -175,12 +255,23 @@ const getGeneralStats = async (req, res) => {
 
         const cellsByLeader = {};
         cells.forEach(cell => {
-            const leaderName = getLiderName(cell.leader);
-            if (!cellsByLeader[leaderName]) {
-                cellsByLeader[leaderName] = { count: 0, locations: [], totalAvgAttendance: 0, cellCountWithAttendance: 0 };
+            // Filter to only include cells where the leader has a LIDER_DOCE in their hierarchy
+            let liderDoceName = null;
+            if (cell.leader?.parents && cell.leader.parents.length > 0) {
+                const liderDoce = cell.leader.parents.find(p => p.parent?.roles?.some(r => r.role.name === 'LIDER_DOCE'));
+                if (liderDoce) {
+                    liderDoceName = liderDoce.parent.profile?.fullName || liderDoce.parent.email;
+                }
             }
-            cellsByLeader[leaderName].count++;
-            cellsByLeader[leaderName].locations.push({
+            
+            // If no LIDER_DOCE parent found, skip this cell
+            if (!liderDoceName) return;
+
+            if (!cellsByLeader[liderDoceName]) {
+                cellsByLeader[liderDoceName] = { count: 0, locations: [], totalAvgAttendance: 0, cellCountWithAttendance: 0 };
+            }
+            cellsByLeader[liderDoceName].count++;
+            cellsByLeader[liderDoceName].locations.push({
                 name: cell.name, address: cell.address, city: cell.city, lat: cell.latitude, lng: cell.longitude
             });
             if (cell.attendances.length > 0) {
@@ -193,8 +284,8 @@ const getGeneralStats = async (req, res) => {
                 const meetingDates = Object.keys(meetings);
                 if (meetingDates.length > 0) {
                     const avg = meetingDates.reduce((acc, d) => acc + meetings[d], 0) / meetingDates.length;
-                    cellsByLeader[leaderName].totalAvgAttendance += avg;
-                    cellsByLeader[leaderName].cellCountWithAttendance++;
+                    cellsByLeader[liderDoceName].totalAvgAttendance += avg;
+                    cellsByLeader[liderDoceName].cellCountWithAttendance++;
                 }
             }
         });

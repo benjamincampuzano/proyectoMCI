@@ -49,13 +49,13 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
     // Course creation form data
     const [courseFormData, setCourseFormData] = useState({
-        category: 'KIDS'
+        category: 'KIDS1'
     });
 
     // Course edit form data
     const [courseEditFormData, setCourseEditFormData] = useState({
         name: '',
-        category: 'KIDS'
+        category: 'KIDS1'
     });
 
     // Check if user is ADMIN or the specific coordinator of the KIDS module
@@ -78,12 +78,14 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             });
             setShowCreateCourseModal(false);
             setCourseFormData({
-                category: 'KIDS'
+                category: 'KIDS1'
             });
             fetchCourses();
             toast.success('Clase creada exitosamente');
         } catch (error) {
-            toast.error('Error creating course');
+            console.error('Error creating course:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Error creating course';
+            toast.error(errorMessage);
         }
     };
 
@@ -95,7 +97,8 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                 // Optionally expand the first course by default
             }
         } catch (error) {
-            console.error('Error fetching courses', error);
+            console.error('Error fetching courses:', error);
+            toast.error('Error al cargar los cursos');
         }
     };
 
@@ -105,7 +108,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
         setEditingCourse(course);
         setCourseEditFormData({
             name: course.name,
-            category: course.category || 'KIDS'
+            category: course.category || 'KIDS1'
         });
         setShowEditCourseModal(true);
     };
@@ -125,7 +128,9 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             fetchCourses();
             toast.success('Clase actualizada exitosamente');
         } catch (error) {
-            toast.error('Error updating course');
+            console.error('Error updating course:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Error updating course';
+            toast.error(errorMessage);
         }
     };
 
@@ -166,8 +171,9 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             const res = await api.get(`/kids-schedule/module/${courseId}`);
             setSchedules(prev => ({ ...prev, [courseId]: res.data }));
         } catch (error) {
-            console.error('Error fetching schedules for course', error);
-            toast.error('Error al cargar cronograma del curso');
+            console.error('Error fetching schedules for course:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Error al cargar cronograma del curso';
+            toast.error(errorMessage);
         }
     };
 
@@ -229,8 +235,9 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             toast.success('Entrada de cronograma eliminada');
             fetchSchedulesForCourse(scheduleToDelete.moduleId);
         } catch (error) {
-            console.error(error);
-            toast.error('Error al eliminar');
+            console.error('Error deleting schedule:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Error al eliminar';
+            toast.error(errorMessage);
         } finally {
             setShowDeleteConfirm(false);
             setScheduleToDelete(null);
@@ -256,8 +263,9 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             setShowModal(false);
             fetchSchedulesForCourse(formCourseId);
         } catch (error) {
-            console.error(error);
-            toast.error('Error al guardar en el cronograma');
+            console.error('Error saving schedule:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Error al guardar en el cronograma';
+            toast.error(errorMessage);
         }
     };
 

@@ -190,6 +190,13 @@ const getAllGuests = async (req, res) => {
                 assignedTo: {
                     include: { profile: true }
                 },
+                cell: {
+                    include: {
+                        leader: {
+                            include: { profile: true }
+                        }
+                    }
+                },
                 calls: {
                     include: {
                         caller: { include: { profile: true } }
@@ -213,6 +220,14 @@ const getAllGuests = async (req, res) => {
             ...g,
             invitedBy: g.invitedBy ? { id: g.invitedBy.id, fullName: g.invitedBy.profile?.fullName, email: g.invitedBy.email } : null,
             assignedTo: g.assignedTo ? { id: g.assignedTo.id, fullName: g.assignedTo.profile?.fullName, email: g.assignedTo.email } : null,
+            cell: g.cell ? {
+                id: g.cell.id,
+                name: g.cell.name,
+                leader: g.cell.leader ? {
+                    id: g.cell.leader.id,
+                    fullName: g.cell.leader.profile?.fullName
+                } : null
+            } : null,
             calls: g.calls.map(c => ({ ...c, caller: c.caller ? { fullName: c.caller.profile?.fullName } : null })),
             visits: g.visits.map(v => ({ ...v, visitor: v.visitor ? { fullName: v.visitor.profile?.fullName } : null }))
         }));

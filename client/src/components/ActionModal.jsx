@@ -1,33 +1,27 @@
-import { X } from '@phosphor-icons/react';
+import Modal from './ui/Modal';
 
 const ActionModal = ({
     isOpen,
     title,
     onClose,
     children,
+    size = 'lg',
     containerClassName = '',
 }) => {
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full h-[95vh] overflow-hidden flex flex-col ${containerClassName}`}
-            >
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h3>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
-                    >
-                        <X size={24} />
-                    </button>
-                </div>
-                <div className="flex-1 overflow-y-auto">
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={title}
+            size={size}
+            className={containerClassName}
+        >
+            <Modal.Content className="p-0">
+                <div className="animate-in fade-in duration-500">
                     {children}
                 </div>
-            </div>
-        </div>
+            </Modal.Content>
+        </Modal>
     );
 };
 

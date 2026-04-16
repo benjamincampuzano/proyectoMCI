@@ -1,29 +1,30 @@
-import { CheckCircle, XCircle, Clock, Pen, Trash, X, Warning } from '@phosphor-icons/react';
+import { CheckCircle, XCircle, Clock, Pen, Trash, Warning, Calendar, Target } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
+import ConfirmationModal from './ConfirmationModal';
 
-// Mapeos de colores estáticos para Tailwind
+// Mapeos de colores estáticos para Tailwind actualizados a Linear
 const COLOR_CLASSES = {
     green: {
-        bg: 'bg-green-500',
-        bgLight: 'bg-green-50 dark:bg-green-900/20',
-        text: 'text-green-500',
-        textDark: 'text-green-600 dark:text-green-400',
-        border: 'border-green-100 dark:border-green-800/50'
+        bg: 'bg-emerald-500',
+        bgLight: 'bg-emerald-500/10',
+        text: 'text-emerald-500',
+        textDark: 'text-emerald-600',
+        border: 'border-emerald-500/20'
     },
     blue: {
-        bg: 'bg-blue-500',
-        bgLight: 'bg-blue-50 dark:bg-blue-900/20',
-        text: 'text-blue-500',
-        textDark: 'text-blue-600 dark:text-blue-400',
-        border: 'border-blue-100 dark:border-blue-800/50'
+        bg: 'bg-[var(--ln-brand-indigo)]',
+        bgLight: 'bg-[var(--ln-brand-indigo)]/10',
+        text: 'text-[var(--ln-brand-indigo)]',
+        textDark: 'text-[var(--ln-brand-indigo)]',
+        border: 'border-[var(--ln-brand-indigo)]/20'
     },
     red: {
         bg: 'bg-red-500',
-        bgLight: 'bg-red-50 dark:bg-red-900/20',
+        bgLight: 'bg-red-500/10',
         text: 'text-red-500',
-        textDark: 'text-red-600 dark:text-red-400',
-        border: 'border-red-100 dark:border-red-800/50'
+        textDark: 'text-red-600',
+        border: 'border-red-500/20'
     }
 };
 
@@ -67,138 +68,119 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
 
     return (
         <>
-            <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0">
-            <td className="p-4">
-                <div className="flex flex-col">
-                    <span className="font-bold text-gray-900 dark:text-gray-100">
-                        {goal.user?.profile?.fullName || 'N/A'}
-                    </span>
-                    <span className="text-xs text-gray-400">Líder 12</span>
-                </div>
-            </td>
-            <td className="p-4">
-                <div className="flex flex-col">
-                    <span className="font-medium text-gray-800 dark:text-gray-200">{goalName}</span>
-                    <span className="text-xs text-gray-500 capitalize">{goal.type.replace(/_/g, ' ').toLowerCase()}</span>
-                </div>
-            </td>
-            <td className="p-4 text-center">
-                <span className="font-black text-gray-900 dark:text-white px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    {goal.targetValue}
-                </span>
-            </td>
-            <td className="p-4 text-center">
-                <div className="flex flex-col items-center gap-1">
-                    <span className="font-bold text-gray-700 dark:text-gray-300">{goal.currentValue}</span>
-                    {goal.extraData?.totalPaid !== undefined && (
-                        <span className="text-[10px] text-green-600 font-medium">
-                            Abonado: ${goal.extraData.totalPaid.toLocaleString()}
-                        </span>
-                    )}
-                </div>
-            </td>
-            <td className="p-4">
-                <div className="w-full max-w-[140px] mx-auto">
-                    <div className="flex justify-between mb-1">
-                        <span className={`text-xs font-bold ${colors.text}`}>{percent}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                            className={`h-full ${colors.bg} transition-all duration-500`}
-                            style={{ width: `${percent}%` }}
-                        ></div>
-                    </div>
-                </div>
-            </td>
-            <td className="p-4 text-center text-sm text-gray-500 dark:text-gray-400 font-medium">
-                {formatDeadlineText(goal)}
-            </td>
-            <td className="p-4">
-                <div className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full ${colors.bgLight} ${colors.textDark} text-xs font-bold ${colors.border} w-fit mx-auto`}>
-                    <StatusIcon size={14} />
-                    {status.label}
-                </div>
-            </td>
-            {isEditor && (
-                <td className="p-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                        <button
-                            onClick={() => onEdit(goal)}
-                            className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                            title="Editar"
-                        >
-                            <Pen size={16} />
-                        </button>
-                        <button
-                            onClick={() => setShowDeleteConfirm(true)}
-                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                            title="Eliminar"
-                        >
-                            <Trash size={16} />
-                        </button>
+            <tr className="hover:bg-white/[0.02] transition-colors border-b border-[var(--ln-border-standard)]/50 group">
+                <td className="py-5 px-10">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-[var(--ln-brand-indigo)]/10 flex items-center justify-center text-[var(--ln-brand-indigo)] weight-590 text-sm border border-[var(--ln-brand-indigo)]/20 uppercase">
+                            {goal.user?.profile?.fullName?.charAt(0) || '?'}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[14px] weight-590 text-[var(--ln-text-primary)] tracking-tight">
+                                {goal.user?.profile?.fullName || 'N/A'}
+                            </span>
+                            <span className="text-[10px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-widest mt-0.5 opacity-60">Líder Doce</span>
+                        </div>
                     </div>
                 </td>
-            )}
-        </tr>
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-full">
-                            <Warning size={24} className="text-red-600 dark:text-red-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                Confirmar Eliminación
-                            </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                ¿Estás seguro de eliminar esta meta?
-                            </p>
-                        </div>
+                <td className="py-5 px-6">
+                    <div className="flex flex-col">
+                        <span className="text-[13px] weight-590 text-[var(--ln-text-primary)]">{goalName}</span>
+                        <span className="text-[11px] weight-510 text-[var(--ln-text-tertiary)] opacity-60 uppercase tracking-tight mt-0.5">{goal.type.replace(/_/g, ' ').toLowerCase()}</span>
                     </div>
-
-                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-6">
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Meta:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{goalName}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Responsable:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{goal.user?.profile?.fullName || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Objetivo:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{goal.targetValue}</span>
-                            </div>
+                </td>
+                <td className="py-5 px-4 text-center">
+                    <span className="inline-block px-3 py-1 bg-[var(--ln-bg-panel)] text-[var(--ln-text-primary)] weight-590 text-[13px] rounded-lg border border-[var(--ln-border-standard)] shadow-sm">
+                        {goal.targetValue}
+                    </span>
+                </td>
+                <td className="py-5 px-4 text-center">
+                    <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-[15px] weight-590 text-[var(--ln-text-primary)]">{goal.currentValue}</span>
+                        {goal.extraData?.totalPaid !== undefined && (
+                            <span className="text-[10px] weight-700 text-emerald-500 uppercase tracking-tighter opacity-80">
+                                ${goal.extraData.totalPaid.toLocaleString()}
+                            </span>
+                        )}
+                    </div>
+                </td>
+                <td className="py-5 px-4">
+                    <div className="w-full max-w-[180px] mx-auto space-y-2">
+                        <div className="flex justify-between items-center px-1">
+                            <span className={`text-[11px] weight-700 ${colors.text}`}>{percent}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-[var(--ln-border-standard)] rounded-full overflow-hidden shadow-inner">
+                            <div
+                                className={`h-full ${colors.bg} transition-all duration-1000 ease-out shadow-lg shadow-current/10`}
+                                style={{ width: `${percent}%` }}
+                            ></div>
                         </div>
                     </div>
-
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center">
-                        Esta acción no se puede deshacer. Se perderán todos los datos asociados a esta meta.
-                    </p>
-
-                    <div className="flex justify-end gap-3">
-                        <button
-                            onClick={() => setShowDeleteConfirm(false)}
-                            className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            onClick={() => {
-                                onDelete(goal.id);
-                                setShowDeleteConfirm(false);
-                            }}
-                            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
-                        >
-                            Eliminar Meta
-                        </button>
+                </td>
+                <td className="py-5 px-4 text-center">
+                    <div className="inline-flex items-center gap-2 text-[12px] weight-510 text-[var(--ln-text-tertiary)] opacity-70">
+                        <Calendar size={14} weight="bold" />
+                        {formatDeadlineText(goal)}
                     </div>
+                </td>
+                <td className="py-5 px-6 text-center">
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${colors.bgLight} ${colors.text} text-[10px] weight-700 uppercase tracking-widest border ${colors.border} shadow-sm group-hover:scale-105 transition-transform duration-300`}>
+                        <StatusIcon size={12} weight="bold" />
+                        {status.label}
+                    </div>
+                </td>
+                {isEditor && (
+                    <td className="py-5 px-10 text-right">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                            <button
+                                onClick={() => onEdit(goal)}
+                                className="p-2 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-brand-indigo)] hover:bg-[var(--ln-brand-indigo)]/5 rounded-xl transition-all border border-transparent hover:border-[var(--ln-brand-indigo)]/10"
+                                title="Editar"
+                            >
+                                <Pen size={16} weight="bold" />
+                            </button>
+                            <button
+                                onClick={() => setShowDeleteConfirm(true)}
+                                className="p-2 text-[var(--ln-text-tertiary)] hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all border border-transparent hover:border-red-500/10"
+                                title="Eliminar"
+                            >
+                                <Trash size={16} weight="bold" />
+                            </button>
+                        </div>
+                    </td>
+                )}
+            </tr>
+
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={() => {
+                    onDelete(goal.id);
+                    setShowDeleteConfirm(false);
+                }}
+                title="⚠️ Confirmar Eliminación"
+                message="Esta acción es irreversible y eliminará todos los registros históricos asociados a esta meta."
+                confirmText="Eliminar Permanentemente"
+                variant="danger"
+            >
+                <div className="mt-6 space-y-1.5 p-5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-[20px] relative overflow-hidden group/modal-item">
+                    <div className="flex justify-between items-center relative z-10">
+                        <span className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-widest">Meta</span>
+                        <span className="text-[13px] weight-590 text-[var(--ln-text-primary)]">{goalName}</span>
+                    </div>
+                    <div className="flex justify-between items-center relative z-10">
+                        <span className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-widest">Responsable</span>
+                        <span className="text-[13px] weight-590 text-[var(--ln-text-secondary)] opacity-80">{goal.user?.profile?.fullName || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 mt-2 border-t border-[var(--ln-border-standard)] relative z-10">
+                        <span className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-widest">Objetivo Final</span>
+                        <div className="flex items-center gap-2">
+                            <Target size={14} className="text-[var(--ln-brand-indigo)]" weight="bold" />
+                            <span className="text-[15px] weight-590 text-[var(--ln-brand-indigo)]">{goal.targetValue}</span>
+                        </div>
+                    </div>
+                    <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-red-500 opacity-[0.03] blur-3xl rounded-full" />
                 </div>
-            </div>
-        )}
+            </ConfirmationModal>
         </>
     );
 };

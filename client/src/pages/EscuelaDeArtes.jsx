@@ -27,7 +27,10 @@ const EscuelaDeArtes = () => {
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
-    const hasAdminOrCoordinator = hasAnyRole(['ADMIN']) || isCoordinator();
+    const isModuleCoordinator = isCoordinator('escuela-de-artes');
+    const isModuleSubCoordinator = user?.isModuleSubCoordinator || 
+                                   (user?.moduleSubCoordinations && user.moduleSubCoordinations.includes('escuela-de-artes'));
+    const hasFullEditAccess = hasAdminOrPastor || isModuleCoordinator || isModuleSubCoordinator;
 
     // Handler for coordinator changes
     const handleCoordinatorChange = (newCoordinator) => {
@@ -301,8 +304,8 @@ const EscuelaDeArtes = () => {
         };
     }, [classes]);
 
-    const canCreateOrDelete = hasAdminOrCoordinator;
-    const canViewReport = hasAdminOrCoordinator;
+    const canCreateOrDelete = hasFullEditAccess;
+    const canViewReport = hasFullEditAccess;
 
     // Renderizar contenido según vista
     const renderContent = () => {
@@ -462,7 +465,7 @@ const EscuelaDeArtes = () => {
                             moduleSubCoordinator={moduleSubCoordinator}
                             moduleName="Escuela de Artes"
                             onSubCoordinatorChange={handleSubCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
+                            disabled={!hasAdminOrPastor && !isModuleCoordinator}
                             currentUserId={user?.id}
                             isModuleCoordinator={user?.isCoordinator || isCoordinator()}
                         />
@@ -470,7 +473,7 @@ const EscuelaDeArtes = () => {
                             moduleTreasurer={moduleTreasurer}
                             moduleName="Escuela de Artes"
                             onTreasurerChange={handleTreasurerChange}
-                            disabled={!hasAdminOrPastor}
+                            disabled={!hasAdminOrPastor && !isModuleCoordinator}
                             currentUserId={user?.id}
                             isModuleCoordinator={user?.isCoordinator || isCoordinator()}
                         />

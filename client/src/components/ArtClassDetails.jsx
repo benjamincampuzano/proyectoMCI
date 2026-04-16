@@ -11,7 +11,7 @@ import { DATA_POLICY_URL } from '../constants/policies';
 import ConfirmationModal from './ConfirmationModal';
 
 const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
-    const { user, isSuperAdmin } = useAuth();
+    const { user, isSuperAdmin, hasAnyRole, isCoordinator } = useAuth();
     
     const [activeTab, setActiveTab] = useState('general'); // general | attendance | report
     const [reportData, setReportData] = useState([]);
@@ -60,7 +60,12 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
     const [paymentType, setPaymentType] = useState('TUITION');
     const [paymentNotes, setPaymentNotes] = useState('');
 
-    const canModify = parseInt(user?.id) === parseInt(artClass?.professorId) || user?.roles?.includes('ADMIN');
+    const hasAdminOrPastor = hasAnyRole(['ADMIN', 'PASTOR']);
+    const isModuleCoordinator = isCoordinator('escuela-de-artes');
+    const isModuleSubCoordinator = user?.isModuleSubCoordinator || 
+                                   (user?.moduleSubCoordinations && user.moduleSubCoordinations.includes('escuela-de-artes'));
+    const hasFullEditAccess = hasAdminOrPastor || isModuleCoordinator || isModuleSubCoordinator;
+    const canModify = hasFullEditAccess || parseInt(user?.id) === parseInt(artClass?.professorId);
 
     useEffect(() => {
         if (activeTab === 'report' && artClass) {

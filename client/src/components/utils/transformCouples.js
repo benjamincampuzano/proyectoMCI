@@ -132,11 +132,6 @@ export function buildCoupleNetwork(root) {
       lideresCelula: person.lideresCelula,
     };
     
-    // console.log('transformCouples - person.pastor:', person.pastor);
-    // console.log('transformCouples - person.liderDoce:', person.liderDoce);
-    // console.log('transformCouples - result.pastor:', result.pastor);
-    // console.log('transformCouples - result.liderDoce:', result.liderDoce);
-
     return result;
   }
 

@@ -50,14 +50,11 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                 newPassword: '',
                 confirmPassword: '',
             });
-            // Update auth context if it's different
             if (JSON.stringify(userData) !== JSON.stringify(user)) {
                 localStorage.setItem('user', JSON.stringify(userData));
                 updateProfile(userData);
             }
         } catch (err) {
-            console.error('Error fetching profile:', err);
-            // Fallback to context user if fetch fails
             if (user) {
                 setFormData(prev => ({
                     ...prev,
@@ -107,7 +104,6 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                 }
             );
 
-            // Update local storage and context
             const updatedUser = res.data.user;
             localStorage.setItem('user', JSON.stringify(updatedUser));
             updateProfile(updatedUser);
@@ -164,281 +160,260 @@ const UserProfileModal = ({ isOpen, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl md:max-w-4xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Mi Perfil</h2>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[4px] flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+            <div className="bg-[var(--ln-bg-panel)]/95 backdrop-blur-xl rounded-[24px] shadow-2xl w-full max-w-4xl border border-[var(--ln-border-standard)] max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-500">
+                {/* Header */}
+                <div className="flex items-center justify-between px-8 py-6 border-b border-[var(--ln-border-standard)] bg-white/5">
+                    <div>
+                        <h2 className="text-2xl weight-590 text-[var(--ln-text-primary)] tracking-tight">Mi Perfil</h2>
+                        <p className="text-[13px] text-[var(--ln-text-tertiary)] mt-1 opacity-70">Gestiona tu información personal y seguridad.</p>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
+                        className="p-2 rounded-lg text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/10 transition-all active:scale-95"
                     >
-                        <X size={24} />
+                        <X size={20} weight="bold" />
                     </button>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    {error && (
-                        <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded">
-                            {error}
-                        </div>
-                    )}
-                    {success && (
-                        <div className="bg-green-900/20 border border-green-500 text-green-400 px-4 py-3 rounded">
-                            {success}
-                        </div>
-                    )}
-
-                    {/* Profile Form */}
-                    <form onSubmit={handleUpdateProfile} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tipo de Documento</label>
-                                <select
-                                    name="documentType"
-                                    value={formData.documentType}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                >
-                                    <option value="">Seleccionar...</option>
-                                    <option value="RC">RC</option>
-                                    <option value="TI">TI</option>
-                                    <option value="CC">CC</option>
-                                    <option value="CE">CE</option>
-                                    <option value="PP">PPT</option>
-                                    <option value="PEP">PEP</option>
-                                </select>
+                <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar">
+                    <div className="max-w-3xl mx-auto space-y-10">
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl text-[13px] font-medium animate-in slide-in-from-top-2">
+                                {error}
                             </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Número de Documento</label>
-                                <input
-                                    type="text"
-                                    name="documentNumber"
-                                    value={formData.documentNumber || ''}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Nombre Completo
-                                </label>
-                                <input
-                                    type="text"
-                                    name="fullName"
-                                    value={formData.fullName}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha de Nacimiento</label>
-                                <input
-                                    type="date"
-                                    name="birthDate"
-                                    value={formData.birthDate || ''}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Correo Electrónico
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Teléfono
-                                </label>
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Sexo
-                                </label>
-                                <select
-                                    name="sex"
-                                    value={formData.sex}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                >
-                                    <option value="HOMBRE">Hombre</option>
-                                    <option value="MUJER">Mujer</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Dirección
-                                </label>
-                                <input
-                                    type="text"
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Ciudad
-                                </label>
-                                <input
-                                    type="text"
-                                    name="city"
-                                    value={formData.city}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                            {loading ? (
-                                <Spinner size={20} className="animate-spin" />
-                            ) : (
-                                <>
-                                    <FloppyDisk size={20} />
-                                    <span>Guardar Cambios</span>
-                                </>
-                            )}
-                        </button>
-                    </form>
-
-                    {/* Password Change Section */}
-                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                        {!showPasswordFields ? (
-                            <button
-                                onClick={() => setShowPasswordFields(true)}
-                                className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm"
-                            >
-                                Cambiar Contraseña
-                            </button>
-                        ) : (
-                            <form onSubmit={handleChangePassword} className="space-y-4">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Cambiar Contraseña</h3>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Contraseña Actual
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="currentPassword"
-                                        value={formData.currentPassword}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Nueva Contraseña
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="newPassword"
-                                        value={formData.newPassword}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                        required
-                                    />
-                                    {formData.newPassword && (
-                                        <div className="mt-2 space-y-2">
-                                            <div className="flex gap-1">
-                                                {[...Array(4)].map((_, i) => (
-                                                    <div
-                                                        key={i}
-                                                        className={`h-1 flex-1 rounded-full transition-colors ${i < getPasswordStrength(formData.newPassword)
-                                                            ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'][getPasswordStrength(formData.newPassword) - 1]
-                                                            : 'bg-gray-700'
-                                                            }`}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2 text-[10px]">
-                                                <Requirement label="8+ caracteres" met={formData.newPassword.length >= 8} />
-                                                <Requirement label="Mayúscula/Minúscula" met={/[A-Z]/.test(formData.newPassword) && /[a-z]/.test(formData.newPassword)} />
-                                                <Requirement label="Número" met={/\d/.test(formData.newPassword)} />
-                                                <Requirement label="Símbolo" met={/[!@#$%^&*(),.?":{}|<>]/.test(formData.newPassword)} />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Confirmar Nueva Contraseña
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="confirmPassword"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="flex space-x-3">
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="flex-1 flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                                    >
-                                        {loading ? (
-                                            <Spinner size={20} className="animate-spin" />
-                                        ) : (
-                                            <>
-                                                <FloppyDisk size={20} />
-                                                <span>Cambiar</span>
-                                            </>
-                                        )}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowPasswordFields(false);
-                                            setFormData({
-                                                ...formData,
-                                                currentPassword: '',
-                                                newPassword: '',
-                                                confirmPassword: '',
-                                            });
-                                        }}
-                                        className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-white rounded-lg transition-colors"
-                                    >
-                                        Cancelar
-                                    </button>
-                                </div>
-                            </form>
                         )}
+                        {success && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 px-4 py-3 rounded-xl text-[13px] font-medium animate-in slide-in-from-top-2">
+                                {success}
+                            </div>
+                        )}
+
+                        {/* Profile Form */}
+                        <form onSubmit={handleUpdateProfile} className="space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Tipo de Documento</label>
+                                    <select
+                                        name="documentType"
+                                        value={formData.documentType}
+                                        onChange={handleChange}
+                                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm appearance-none"
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        <option value="RC">RC</option>
+                                        <option value="TI">TI</option>
+                                        <option value="CC">CC</option>
+                                        <option value="CE">CE</option>
+                                        <option value="PP">PPT</option>
+                                        <option value="PEP">PEP</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Número de Documento</label>
+                                    <input
+                                        type="text"
+                                        name="documentNumber"
+                                        value={formData.documentNumber || ''}
+                                        onChange={handleChange}
+                                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                        placeholder="12345678"
+                                    />
+                                </div>
+
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Nombre Completo</label>
+                                    <input
+                                        type="text"
+                                        name="fullName"
+                                        value={formData.fullName}
+                                        onChange={handleChange}
+                                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                        placeholder="Nombre y Apellido"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Fecha de Nacimiento</label>
+                                    <input
+                                        type="date"
+                                        name="birthDate"
+                                        value={formData.birthDate || ''}
+                                        onChange={handleChange}
+                                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Correo Electrónico</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Teléfono</label>
+                                    <input
+                                        type="text"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                        placeholder="+57 321..."
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Sexo</label>
+                                    <select
+                                        name="sex"
+                                        value={formData.sex}
+                                        onChange={handleChange}
+                                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm appearance-none"
+                                    >
+                                        <option value="HOMBRE">Hombre</option>
+                                        <option value="MUJER">Mujer</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Dirección</label>
+                                    <input
+                                        type="text"
+                                        name="address"
+                                        value={formData.address}
+                                        onChange={handleChange}
+                                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                        placeholder="Calle 123..."
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Ciudad</label>
+                                    <input
+                                        type="text"
+                                        name="city"
+                                        value={formData.city}
+                                        onChange={handleChange}
+                                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                        placeholder="Bogotá"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end pt-4">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="px-8 py-2.5 bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] text-white rounded-xl weight-510 transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-[0.98] disabled:opacity-50 flex items-center gap-2.5"
+                                >
+                                    {loading ? <Spinner size={18} className="animate-spin" /> : <FloppyDisk size={18} />}
+                                    <span>Guardar Cambios</span>
+                                </button>
+                            </div>
+                        </form>
+
+                        {/* Password Change Section */}
+                        <div className="border-t border-[var(--ln-border-standard)] pt-10">
+                            {!showPasswordFields ? (
+                                <button
+                                    onClick={() => setShowPasswordFields(true)}
+                                    className="text-[13px] weight-510 text-[var(--ln-brand-indigo)] hover:text-[var(--ln-accent-hover)] transition-colors flex items-center gap-2 group"
+                                >
+                                    <Check size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    ¿Deseas cambiar tu contraseña?
+                                </button>
+                            ) : (
+                                <form onSubmit={handleChangePassword} className="space-y-6 animate-in slide-in-from-top-4 duration-500">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="text-lg weight-590 text-[var(--ln-text-primary)]">Cambiar Contraseña</h3>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setShowPasswordFields(false)}
+                                            className="text-[12px] text-[var(--ln-text-tertiary)] hover:text-red-500 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="md:col-span-2 space-y-2">
+                                            <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Contraseña Actual</label>
+                                            <input
+                                                type="password"
+                                                name="currentPassword"
+                                                value={formData.currentPassword}
+                                                onChange={handleChange}
+                                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Nueva Contraseña</label>
+                                            <input
+                                                type="password"
+                                                name="newPassword"
+                                                value={formData.newPassword}
+                                                onChange={handleChange}
+                                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                                required
+                                            />
+                                            {formData.newPassword && (
+                                                <div className="mt-3 px-1 animate-in fade-in">
+                                                    <div className="flex gap-1 mb-2">
+                                                        {[...Array(4)].map((_, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className={`h-1 flex-1 rounded-full transition-all duration-500 ${i < getPasswordStrength(formData.newPassword)
+                                                                    ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500'][getPasswordStrength(formData.newPassword) - 1]
+                                                                    : 'bg-white/5 border border-white/5'
+                                                                    }`}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <Requirement label="8+ caracteres" met={formData.newPassword.length >= 8} />
+                                                        <Requirement label="Mayús/Minús" met={/[A-Z]/.test(formData.newPassword) && /[a-z]/.test(formData.newPassword)} />
+                                                        <Requirement label="Números" met={/\d/.test(formData.newPassword)} />
+                                                        <Requirement label="Símbolos" met={/[!@#$%^&*(),.?":{}|<>]/.test(formData.newPassword)} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest ml-1">Confirmar Contraseña</label>
+                                            <input
+                                                type="password"
+                                                name="confirmPassword"
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-2.5 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end">
+                                        <button
+                                            type="submit"
+                                            disabled={loading}
+                                            className="px-6 py-2.5 bg-white/5 border border-[var(--ln-border-standard)] hover:bg-white/10 text-[var(--ln-text-primary)] rounded-xl weight-510 transition-all active:scale-[0.98] disabled:opacity-50"
+                                        >
+                                            Actualizar Contraseña
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -447,9 +422,9 @@ const UserProfileModal = ({ isOpen, onClose }) => {
 };
 
 const Requirement = ({ label, met }) => (
-    <div className={`flex items-center gap-1 ${met ? 'text-green-500' : 'text-gray-500'}`}>
-        {met ? <Check size={10} /> : <XIcon size={10} />}
-        <span>{label}</span>
+    <div className={`flex items-center gap-1.5 ${met ? 'text-emerald-500' : 'text-[var(--ln-text-tertiary)] opacity-30'} transition-all`}>
+        {met ? <Check size={12} weight="bold" /> : <X size={12} weight="bold" className="opacity-50" />}
+        <span className="text-[10px] weight-510 tracking-wide">{label}</span>
     </div>
 );
 

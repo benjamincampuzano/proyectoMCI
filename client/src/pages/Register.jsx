@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LockIcon, User, Calendar, Check, Shield, X, EyeIcon, EyeClosedIcon, Plus, Envelope, ArrowsClockwiseIcon, Sun, Moon } from '@phosphor-icons/react';
+import { LockIcon, User, DotIcon, Calendar, Check, Shield, X, EyeIcon, EyeClosedIcon, Plus, Envelope, ArrowsClockwiseIcon, Sun, Moon } from '@phosphor-icons/react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -157,57 +157,40 @@ const Register = () => {
     };
 
     return (
-        <div className={`min-h-[100dvh] ${theme === 'dark' ? 'bg-black' : 'bg-[#f5f5f7]'} flex items-center justify-center p-4 relative transition-colors duration-300`}>
-            {/* Apple-style subtle static elements */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className={`absolute top-0 left-0 w-96 h-96 ${theme === 'dark' ? 'bg-[#0071e3]' : 'bg-[#0066cc]'} opacity-3 rounded-full blur-3xl`}></div>
-                <div className={`absolute bottom-0 right-0 w-80 h-80 ${theme === 'dark' ? 'bg-[#2997ff]' : 'bg-[#0071e3]'} opacity-2 rounded-full blur-3xl`}></div>
+        <div className="min-h-[100dvh] bg-[var(--ln-bg-marketing)] flex items-center justify-center p-4 relative transition-colors duration-300">
+            {/* Linear-style subtle static elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--ln-brand-indigo)] opacity-[0.03] rounded-full blur-[120px]"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--ln-accent-violet)] opacity-[0.02] rounded-full blur-[120px]"></div>
             </div>
             
-            {/* Floating theme toggle button */}
-            <button
-                onClick={toggleTheme}
-                className={`fixed top-6 right-6 p-3 rounded-full z-50 transition-all duration-300 ${
-                    theme === 'dark' 
-                        ? 'bg-[#272729] text-white hover:bg-[#2a2a2d]' 
-                        : 'bg-white text-[#1d1d1f] hover:bg-[#fafafc] border border-[#e5e5e7]'
-                } shadow-lg hover:scale-105 active:scale-95`}
-                aria-label="Toggle theme"
-            >
-                {theme === 'dark' ? (
-                    <Sun size={20} weight="regular" />
-                ) : (
-                    <Moon size={20} weight="regular" />
-                )}
-            </button>
-            
-            <div className={`${theme === 'dark' ? 'bg-black' : 'bg-white'} p-8 rounded-lg w-full max-w-md md:max-w-4xl max-h-[90vh] overflow-y-auto relative z-10`}>
-                <div className="text-center mb-8">
-                    <h2 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1d1d1f]'}`}>Crear Cuenta</h2>
-                    <p className={`mt-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Únete a la plataforma</p>
+            <div className="ln-card p-8 w-full max-w-md md:max-w-4xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl backdrop-blur-sm">
+                <div className="text-center mb-10">
+                    <h1 className="text-4xl mb-2">Crear Cuenta</h1>
+                    <p className="text-[var(--ln-text-secondary)] text-lg">Únete a la plataforma de MCI</p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-6 text-sm text-center">
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg mb-8 text-sm text-center font-medium">
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
                         {/* Left Column */}
-                        <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Tipo de Documento</label>
+                                    <label className="ln-label">Tipo de Documento</label>
                                     <select
                                         name="documentType"
                                         value={formData.documentType}
                                         onChange={handleChange}
-                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                                        className="ln-input"
                                         required
                                     >
-                                        <option value="">Tipo Documento</option>
+                                        <option value="">Seleccione...</option>
                                         <option value="RC">RC</option>
                                         <option value="TI">TI</option>
                                         <option value="CC">CC</option>
@@ -217,95 +200,93 @@ const Register = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Número de Documento</label>
+                                    <label className="ln-label">Número Documento</label>
                                     <input
                                         type="text"
                                         name="documentNumber"
                                         value={formData.documentNumber}
                                         onChange={handleChange}
-                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                                        placeholder="123456789"
+                                        className="ln-input"
                                         required
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Nombre Completo</label>
+                                <label className="ln-label">Nombre Completo</label>
                                 <div className="relative">
-                                    <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`} size={20} />
                                     <input
                                         type="text"
                                         name="fullName"
                                         value={formData.fullName}
                                         onChange={handleChange}
-                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                                        placeholder="Juan Pérez"
+                                        className="ln-input pl-10"
                                         required
                                     />
                                 </div>
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Fecha de Nacimiento</label>
-                                <input
-                                    type="date"
-                                    name="birthDate"
-                                    value={formData.birthDate}
-                                    onChange={handleChange}
-                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Email</label>
+                                <label className="ln-label">Fecha de Nacimiento</label>
                                 <div className="relative">
-                                    <Envelope className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`} size={20} />
                                     <input
+                                        type="date"
+                                        name="birthDate"
+                                        value={formData.birthDate}
+                                        onChange={handleChange}
+                                        className="ln-input pl-10"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="ln-label">Email</label>
+                                <div className="relative">
+                                   <input
                                         type="email"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                                        placeholder="tu_email@email.com"
+                                        className="ln-input pl-10"
                                         required
                                     />
                                 </div>
                             </div>
+
                             <div>
-                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Contraseña</label>
+                                <label className="ln-label">Contraseña</label>
                                 <div className="relative">
-                                    <LockIcon className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`} size={20} />
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         name="password"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-10 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors pr-12`}
-                                        placeholder="••••••••••••••••"
+                                        className="ln-input px-10 pr-12"
                                         required
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className={`absolute right-3 top-1/2 transform -translate-y-1/2 transition-colors ${theme === 'dark' ? 'text-[#98989d] hover:text-white' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] transition-colors"
                                     >
-                                        {showPassword ? <EyeIcon size={20} /> : <EyeClosedIcon size={20} />}
+                                        {showPassword ? <EyeIcon size={18} /> : <EyeClosedIcon size={18} />}
                                     </button>
                                 </div>
                                 {formData.password && (
-                                    <div className="mt-2 space-y-2">
-                                        <div className="flex gap-1">
+                                    <div className="mt-3 space-y-2">
+                                        <div className="flex gap-1.5">
                                             {[...Array(4)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    className={`h-1 flex-1 rounded-full transition-colors ${i < getPasswordStrength(formData.password)
-                                                        ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'][getPasswordStrength(formData.password) - 1]
-                                                        : theme === 'dark' ? 'bg-[#3a3a3c]' : 'bg-[#e5e5e7]'
+                                                    className={`h-1 flex-1 rounded-full transition-all duration-300 ${i < getPasswordStrength(formData.password)
+                                                        ? ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500'][getPasswordStrength(formData.password) - 1]
+                                                        : 'bg-[var(--ln-border-standard)]'
                                                         }`}
                                                 />
                                             ))}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
                                             <Requirement label="8+ caracteres" met={formData.password.length >= 8} />
                                             <Requirement label="Mayúscula/Minúscula" met={/[A-Z]/.test(formData.password) && /[a-z]/.test(formData.password)} />
                                             <Requirement label="Número" met={/\d/.test(formData.password)} />
@@ -314,29 +295,19 @@ const Register = () => {
                                     </div>
                                 )}
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Teléfono</label>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                                    placeholder="Teléfono"
-                                    required
-                                />
-                            </div>
+
+                            
                         </div>
 
                         {/* Right Column */}
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Estado Civil</label>
+                                <label className="ln-label">Estado Civil</label>
                                 <select
                                     name="maritalStatus"
                                     value={formData.maritalStatus}
                                     onChange={handleChange}
-                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                                    className="ln-input"
                                     required
                                 >
                                     <option value="">Seleccione...</option>
@@ -349,14 +320,14 @@ const Register = () => {
                                 </select>
                             </div>
 
-                            <div>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Sexo</label>
+                                    <label className="ln-label">Sexo</label>
                                     <select
                                         name="sex"
                                         value={formData.sex}
                                         onChange={handleChange}
-                                        className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                                        className="ln-input"
                                         required
                                     >
                                         <option value="">Seleccione...</option>
@@ -364,142 +335,158 @@ const Register = () => {
                                         <option value="MUJER">Mujer</option>
                                     </select>
                                 </div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">RED</label>
-                                <select
-                                    name="network"
-                                    value={formData.network}
-                                    onChange={handleChange}
-                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                                    required
-                                >
-                                    <option value="">Seleccione...</option>
-                                    <option value="MUJERES">Mujeres</option>
-                                    <option value="HOMBRES">Hombres</option>
-                                    <option value="KIDS 1">Kids1 (5 a 7 años)</option>
-                                    <option value="KIDS 2">Kids2 (8 a 10 años)</option>
-                                    <option value="TEENS">Teens (11 a 13 años)</option>
-                                    <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
-                                </select>
+                                <div>
+                                    <label className="ln-label">RED</label>
+                                    <select
+                                        name="network"
+                                        value={formData.network}
+                                        onChange={handleChange}
+                                        className="ln-input"
+                                        required
+                                    >
+                                        <option value="">Seleccione...</option>
+                                        <option value="MUJERES">Mujeres</option>
+                                        <option value="HOMBRES">Hombres</option>
+                                        <option value="KIDS">Kids1 (5 a 7 años)</option>
+                                        <option value="ROCAS">Kids2 (8 a 10 años)</option>
+                                        <option value="TEENS">Teens (11 a 13 años)</option>
+                                        <option value="JOVENES">Jovenes (14 años en adelante solteros)</option>
+                                    </select>
+                                </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Dirección</label>
+                                <label className="ln-label">Dirección</label>
                                 <input
                                     type="text"
                                     name="address"
                                     value={formData.address}
                                     onChange={handleChange}
-                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                                    placeholder="Dirección"
+                                    className="ln-input"
                                     required
                                 />
                             </div>
+                                    
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Barrio</label>
+                                <label className="ln-label">Barrio</label>
                                 <input
                                     type="text"
                                     name="neighborhood"
                                     value={formData.neighborhood}
                                     onChange={handleChange}
-                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                                    placeholder="Barrio"
+                                    className="ln-input"
                                 />
                             </div>
+                            </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Ciudad</label>
+                                <label className="ln-label">Ciudad</label>
                                 <input
                                     type="text"
                                     name="city"
                                     value={formData.city}
                                     onChange={handleChange}
-                                    className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                                    placeholder="Ciudad"
+                                    className="ln-input"
                                     required
+                                />
+                            </div>
+                            <div>
+                                <label className="ln-label">Teléfono</label>
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    className="ln-input"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="ln-label">Líder de Los Doce</label>
+                                <AsyncSearchSelect
+                                    fetchItems={fetchLeaders}
+                                    onSelect={handleLeaderSelect}
+                                    selectedValue={selectedLeader}
+                                    placeholder="Buscar líder por nombre..."
+                                    labelKey="fullName"
+                                    valueKey="id"
+                                    className="ln-input !p-0 border-none"
                                 />
                             </div>
                         </div>
                     </div>
-                    <div>
-                        <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Líder de Los Doce</label>
-                        <AsyncSearchSelect
-                            fetchItems={fetchLeaders}
-                            onSelect={handleLeaderSelect}
-                            selectedValue={selectedLeader}
-                            placeholder="Buscar líder..."
-                            labelKey="fullName"
-                            valueKey="id"
-                            className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                        />
-                    </div>
+
                     {/* Captcha */}
-                    <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-700/50">
-                        <label className="block text-sm font-medium text-gray-400 mb-3">Verificación de Seguridad</label>
-                        <div className="flex items-center gap-3">
-                            <div className="bg-gray-800/50 px-3 py-2 rounded-lg border border-gray-600/50">
-                                <span className="text-white font-medium text-sm">
+                    <div className="bg-[var(--ln-bg-marketing)]/50 p-5 rounded-xl border border-[var(--ln-border-standard)]">
+                        <label className="ln-label !mb-3">Verificación de Seguridad</label>
+                        <div className="flex items-center gap-4">
+                            <div className="bg-[var(--ln-bg-surface)] px-4 py-2.5 rounded-lg border border-[var(--ln-border-standard)] shadow-inner">
+                                <span className="text-[var(--ln-text-primary)] font-semibold text-lg tracking-wider">
                                     {captcha.num1} {captcha.operator} {captcha.num2} = ?
                                 </span>
                             </div>
                             <button
                                 type="button"
                                 onClick={generateCaptcha}
-                                className="p-2 text-gray-500 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+                                className="p-2.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.05] rounded-lg transition-all"
                                 title="Generar nuevo captcha"
                             >
-                                <ArrowsClockwiseIcon size={16} />
+                                <ArrowsClockwiseIcon size={20} />
                             </button>
                             <input
                                 type="text"
                                 name="captchaAnswer"
                                 value={formData.captchaAnswer}
                                 onChange={handleChange}
-                                placeholder="Respuesta"
-                                className="flex-1 bg-gray-800/50 border border-gray-600/50 text-white px-3 py-2 rounded-lg focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                                placeholder="Resuelve..."
+                                className="flex-1 ln-input !py-2.5"
                                 required
                             />
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">Resuelve la operación para continuar</p>
+                        <p className="text-[11px] text-[var(--ln-text-tertiary)] mt-3">Confirma que no eres un robot resolviendo esta operación.</p>
                     </div>
 
                     {/* Data Authorization Checks */}
-                    <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-700 space-y-3 mt-4">
-                        <label className="flex items-start gap-3 cursor-pointer group">
+                    <div className="bg-[var(--ln-bg-marketing)]/50 p-6 rounded-xl border border-[var(--ln-border-standard)] space-y-4">
+                        <label className="flex items-start gap-4 cursor-pointer group">
                             <input
                                 type="checkbox"
                                 name="dataPolicyAccepted"
                                 required
-                                className="mt-1 w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
+                                className="mt-1 w-4.5 h-4.5 rounded border-[var(--ln-border-standard)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)] bg-[var(--ln-bg-surface)] cursor-pointer"
                                 checked={formData.dataPolicyAccepted}
                                 onChange={e => setFormData({ ...formData, dataPolicyAccepted: e.target.checked })}
                             />
-                            <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
-                                Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos Personales</a> de MCI.
+                            <span className="text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
+                                Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-hover)] hover:underline font-semibold">Política de Tratamiento de Datos Personales</a> de MCI.
                             </span>
                         </label>
-                        <label className="flex items-start gap-3 cursor-pointer group">
+                        
+                        <label className="flex items-start gap-4 cursor-pointer group">
                             <input
                                 type="checkbox"
                                 name="dataTreatmentAuthorized"
                                 required
-                                className="mt-1 w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
+                                className="mt-1 w-4.5 h-4.5 rounded border-[var(--ln-border-standard)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)] bg-[var(--ln-bg-surface)] cursor-pointer"
                                 checked={formData.dataTreatmentAuthorized}
                                 onChange={e => setFormData({ ...formData, dataTreatmentAuthorized: e.target.checked })}
                             />
-                            <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                            <span className="text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
                                 Autorizo de manera expresa el tratamiento de mis datos conforme a la <strong>Ley 1581 de 2012</strong>.
                             </span>
                         </label>
-                        <label className="flex items-start gap-3 cursor-pointer group">
+
+                        <label className="flex items-start gap-4 cursor-pointer group">
                             <input
                                 type="checkbox"
                                 name="minorConsentAuthorized"
                                 required={isMinor}
-                                className="mt-1 w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500 bg-gray-800"
+                                className="mt-1 w-4.5 h-4.5 rounded border-[var(--ln-border-standard)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)] bg-[var(--ln-bg-surface)] cursor-pointer"
                                 checked={formData.minorConsentAuthorized}
                                 onChange={e => setFormData({ ...formData, minorConsentAuthorized: e.target.checked })}
                             />
-                            <span className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
+                            <span className="text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
                                 {isMinor ? (
-                                    <span className="text-blue-500 font-semibold">
+                                    <span className="text-[var(--ln-accent-violet)] font-semibold">
                                         Cuento con el documento de autorización física/digital firmado por el padre o tutor legal para el tratamiento de datos del menor. (Obligatorio para menores)
                                     </span>
                                 ) : (
@@ -509,17 +496,16 @@ const Register = () => {
                         </label>
                     </div>
 
-                    <button
-                        type="submit"
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 rounded-lg transition-colors shadow-lg shadow-blue-600/20 mt-6 text-lg"
-                    >
-                        Registrarse
-                    </button>
+                    <div className="pt-4">
+                        <button type="submit" className="w-full ln-btn-primary py-4 text-lg">
+                            Crear cuenta MCI
+                        </button>
+                    </div>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-gray-400">
-                    ¿Ya tienes cuenta?{' '}
-                    <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium">
+                <div className="mt-10 pt-6 border-t border-[var(--ln-border-standard)] text-center text-sm text-[var(--ln-text-secondary)]">
+                    ¿Ya tienes una cuenta?{' '}
+                    <Link to="/login" className="text-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-hover)] font-semibold transition-colors">
                         Inicia sesión aquí
                     </Link>
                 </div>
@@ -529,9 +515,9 @@ const Register = () => {
 };
 
 const Requirement = ({ label, met }) => (
-    <div className={`flex items-center gap-1 ${met ? 'text-green-500' : 'text-gray-500'}`}>
-        {met ? <Check size={10} /> : <X size={10} />}
-        <span>{label}</span>
+    <div className={`flex items-center gap-1.5 transition-colors duration-200 ${met ? 'text-emerald-500' : 'text-[var(--ln-text-tertiary)]'}`}>
+        {met ? <Check size={12} weight="bold" /> : <div className="w-3 h-[1px] bg-current opacity-30"></div>}
+        <span className="text-[10px] uppercase tracking-wider font-semibold opacity-80">{label}</span>
     </div>
 );
 

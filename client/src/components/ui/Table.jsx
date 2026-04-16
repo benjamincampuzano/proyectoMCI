@@ -15,21 +15,21 @@ const Table = ({
   ...props
 }) => {
   const baseClasses = 'w-full border-collapse';
-  const headerBaseClasses = 'bg-[#f5f5f7] dark:bg-[#272729] border-b border-[#d1d1d6] dark:border-[#3a3a3c]';
-  const rowBaseClasses = 'border-b border-[#d1d1d6] dark:border-[#3a3a3c]';
-  const cellBaseClasses = 'px-4 py-3 text-sm text-[#1d1d1f] dark:text-white';
+  const headerBaseClasses = 'bg-[var(--ln-bg-panel)]/50 border-b border-[var(--ln-border-standard)]';
+  const rowBaseClasses = 'border-b border-[var(--ln-border-standard)]';
+  const cellBaseClasses = 'px-4 py-3.5 text-[13px] text-[var(--ln-text-primary)]';
 
-  const sizeClasses = compact ? 'px-3 py-2' : 'px-4 py-3';
+  const sizeClasses = compact ? 'px-3 py-2.5' : 'px-4 py-4';
 
   const getRowClasses = (index) => {
     let classes = rowBaseClasses;
     
     if (striped && index % 2 === 1) {
-      classes += ' bg-[#f5f5f7]/50 dark:bg-[#272729]/50';
+      classes += ' bg-white/[0.01] dark:bg-white/[0.01]';
     }
     
     if (hover) {
-      classes += ' hover:bg-[#f5f5f7] dark:hover:bg-[#272729] transition-colors';
+      classes += ' hover:bg-white/[0.03] dark:hover:bg-white/[0.03] transition-colors';
     }
     
     return `${classes} ${rowClassName}`;
@@ -40,7 +40,7 @@ const Table = ({
   };
 
   const getHeaderClasses = () => {
-    return `${headerBaseClasses} ${sizeClasses} font-semibold text-[#1d1d1f] dark:text-white/80 text-left ${headerClassName}`;
+    return `${headerBaseClasses} ${sizeClasses} weight-510 text-[var(--ln-text-tertiary)] text-left uppercase text-[11px] tracking-wider ${headerClassName}`;
   };
 
   if (loading) {
@@ -53,14 +53,14 @@ const Table = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className={`text-center py-8 text-[#86868b] dark:text-[#98989d] ${className}`}>
+      <div className={`text-center py-12 text-[var(--ln-text-tertiary)] bg-[var(--ln-bg-panel)]/30 rounded-xl border border-dashed border-[var(--ln-border-standard)] ${className}`}>
         {emptyMessage}
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg">
+    <div className="overflow-x-auto rounded-xl border border-[var(--ln-border-standard)] bg-[var(--ln-bg-surface)]">
       <table className={`${baseClasses} ${className}`} {...props}>
         <thead>
           <tr>
@@ -75,7 +75,7 @@ const Table = ({
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-[var(--ln-border-standard)]">
           {data.map((row, rowIndex) => (
             <tr key={rowIndex} className={getRowClasses(rowIndex)}>
               {columns.map((column, colIndex) => (
@@ -92,59 +92,57 @@ const Table = ({
 };
 
 const TableSkeleton = ({ rows = 5, columns = 4, compact = false }) => {
-  const sizeClasses = compact ? 'h-8' : 'h-12';
+  const sizeClasses = compact ? 'h-10' : 'h-14';
   
   return (
-    <div className="w-full">
-      <div className="overflow-x-auto rounded-lg">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-[#f5f5f7] dark:bg-[#272729] border-b border-[#d1d1d6] dark:border-[#3a3a3c]">
-              {Array.from({ length: columns }).map((_, index) => (
-                <th
-                  key={index}
-                  className={`px-4 py-3 font-semibold text-[#1d1d1f] dark:text-white/80 text-left ${compact ? 'px-3 py-2' : ''}`}
+    <div className="w-full border border-[var(--ln-border-standard)] rounded-xl overflow-hidden bg-[var(--ln-bg-surface)]">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-[var(--ln-bg-panel)]/50 border-b border-[var(--ln-border-standard)]">
+            {Array.from({ length: columns }).map((_, index) => (
+              <th
+                key={index}
+                className={`px-4 py-4 text-left ${compact ? 'px-3 py-3' : ''}`}
+              >
+                <div className="h-3 bg-[var(--ln-border-standard)] rounded w-16 animate-pulse opacity-50"></div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: rows }).map((_, rowIndex) => (
+            <tr
+              key={rowIndex}
+              className={`border-b border-[var(--ln-border-standard)] ${rowIndex % 2 === 1 ? 'bg-white/[0.01]' : ''}`}
+            >
+              {Array.from({ length: columns }).map((_, colIndex) => (
+                <td
+                  key={colIndex}
+                  className={`px-4 py-4 ${compact ? 'px-3 py-3' : ''}`}
                 >
-                  <div className="h-4 bg-[#d1d1d6] dark:bg-[#3a3a3c] rounded w-24 animate-pulse"></div>
-                </th>
+                  <div className={`h-4 bg-[var(--ln-border-standard)] rounded w-full animate-pulse opacity-30`}></div>
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: rows }).map((_, rowIndex) => (
-              <tr
-                key={rowIndex}
-                className={`border-b border-[#d1d1d6] dark:border-[#3a3a3c] ${rowIndex % 2 === 1 ? 'bg-[#f5f5f7]/50 dark:bg-[#272729]/50' : ''}`}
-              >
-                {Array.from({ length: columns }).map((_, colIndex) => (
-                  <td
-                    key={colIndex}
-                    className={`px-4 py-3 text-sm text-[#1d1d1f] dark:text-white ${compact ? 'px-3 py-2' : ''}`}
-                  >
-                    <div className={`h-4 bg-[#e5e5ea] dark:bg-[#3a3a3c] rounded w-full animate-pulse`}></div>
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
 
 const TableActions = ({ actions, row, className = '' }) => (
-  <div className={`flex items-center gap-1 ${className}`}>
+  <div className={`flex items-center gap-1.5 ${className}`}>
     {actions.map((action, index) => (
       <button
         key={index}
         onClick={() => action.onClick(row)}
-        className={`inline-flex items-center justify-center p-1.5 rounded-lg transition-colors ${
+        className={`inline-flex items-center justify-center p-2 rounded-lg transition-all ${
           action.variant === 'primary'
-            ? 'text-[#0071e3] hover:bg-[#0071e3]/10'
+            ? 'text-[var(--ln-brand-indigo)] hover:bg-[var(--ln-brand-indigo)]/10'
             : action.variant === 'danger'
-            ? 'text-[#ff3b30] hover:bg-[#ff3b30]/10'
-            : 'text-[#86868b] hover:bg-[#f5f5f7] dark:hover:bg-[#272729]'
+            ? 'text-red-500 hover:bg-red-500/10'
+            : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.05]'
         }`}
         title={action.title}
       >

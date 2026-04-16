@@ -29,14 +29,12 @@ const ASISTENCIA_TIPOS = [
     { key: 'encuentro', label: 'Encuentro', icon: GraduationCap },
     { key: 'ganar', label: 'Ganar', icon: PhoneCall }
 ];
-
-const UserActivityList = () => {
+const UserActivityList = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     
-
     useEffect(() => {
         fetchActivityData();
     }, []);
@@ -55,16 +53,12 @@ const UserActivityList = () => {
 
     const filteredData = useMemo(() => {
         return data.filter(item => {
-            // Filtro por búsqueda de nombre/rol
             const matchesSearch = !searchTerm || 
                 item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.roles.some(r => r.toLowerCase().includes(searchTerm.toLowerCase()));
-
-
             return matchesSearch;
         });
     }, [data, searchTerm]);
-
 
     const hasActiveFilters = searchTerm;
 
@@ -73,12 +67,12 @@ const UserActivityList = () => {
             header: 'Usuario',
             key: 'fullName',
             render: (name, row) => (
-                <div className="flex flex-col space-y-1">
-                    <span className="font-bold text-gray-900 dark:text-white">{name}</span>
-                    <div className="flex flex-wrap gap-1">
+                <div className="flex flex-col gap-1.5">
+                    <span className="weight-590 text-[var(--ln-text-primary)] tracking-tight text-[14px]">{name}</span>
+                    <div className="flex flex-wrap gap-1.5">
                         {row.roles.map(role => (
-                            <span key={role} className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded uppercase tracking-wider">
-                                {role}
+                            <span key={role} className="px-2 py-0.5 text-[9px] weight-590 bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-brand-indigo)] border border-[var(--ln-brand-indigo)]/20 rounded uppercase tracking-widest">
+                                {role.replace(/_/g, ' ')}
                             </span>
                         ))}
                     </div>
@@ -89,23 +83,23 @@ const UserActivityList = () => {
             header: 'Invitados',
             key: 'invitadosCount',
             render: (count) => (
-                <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-lg">
-                        <Users size={16} />
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-amber-500/10 text-amber-500 rounded-lg flex items-center justify-center border border-amber-500/20">
+                        <Users size={16} weight="bold" />
                     </div>
-                    <span className="font-semibold">{count}</span>
+                    <span className="weight-590 text-[var(--ln-text-primary)] text-sm">{count}</span>
                 </div>
             )
         },
         {
-            header: 'Líder de 12 o Inmediato',
+            header: 'Líder Inmediato',
             key: 'liderDoce',
             render: (liderName) => (
-                <div className="flex items-center space-x-2">
-                    <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
-                        <Medal size={14} />
+                <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 bg-purple-500/10 text-purple-500 rounded-lg flex items-center justify-center border border-purple-500/20">
+                        <Medal size={14} weight="bold" />
                     </div>
-                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                    <span className="text-[13px] weight-510 text-[var(--ln-text-tertiary)] group-hover:text-[var(--ln-text-primary)] transition-colors">
                         {liderName && liderName !== 'N/A' ? liderName : 'Sin líder asignado'}
                     </span>
                 </div>
@@ -115,54 +109,55 @@ const UserActivityList = () => {
             header: 'Asistencias',
             key: 'asistencias',
             render: (asistencias) => (
-                <div className="grid grid-cols-5 gap-2 min-w-[200px]">
-                    <div className="flex flex-col items-center group relative cursor-default" title="Iglesia">
-                        <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded group-hover:scale-110 transition-transform">
-                            <House size={14} />
+                <div className="flex items-center gap-4 min-w-[220px]">
+                    <div className="flex flex-col items-center gap-1.5 group relative" title="Iglesia">
+                        <div className="p-2 bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 rounded-lg group-hover:scale-110 transition-all duration-300">
+                            <House size={14} weight="bold" />
                         </div>
-                        <span className="text-[10px] font-bold mt-1">{asistencias.iglesia}</span>
+                        <span className="text-[11px] weight-590 text-[var(--ln-text-primary)]">{asistencias.iglesia}</span>
                     </div>
-                    <div className="flex flex-col items-center group relative cursor-default" title="Célula">
-                        <div className="p-1.5 bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 rounded group-hover:scale-110 transition-transform">
-                            <Heart size={14} />
+                    <div className="flex flex-col items-center gap-1.5 group relative" title="Célula">
+                        <div className="p-2 bg-pink-500/10 text-pink-500 border border-pink-500/20 rounded-lg group-hover:scale-110 transition-all duration-300">
+                            <Heart size={14} weight="bold" />
                         </div>
-                        <span className="text-[10px] font-bold mt-1">{asistencias.celula}</span>
+                        <span className="text-[11px] weight-590 text-[var(--ln-text-primary)]">{asistencias.celula}</span>
                     </div>
-                    <div className="flex flex-col items-center group relative cursor-default" title="Escuela">
-                        <div className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded group-hover:scale-110 transition-transform">
-                            <BookOpen size={14} />
+                    <div className="flex flex-col items-center gap-1.5 group relative" title="Escuela">
+                        <div className="p-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-lg group-hover:scale-110 transition-all duration-300">
+                            <BookOpen size={14} weight="bold" />
                         </div>
-                        <span className="text-[10px] font-bold mt-1">{asistencias.escuela}</span>
+                        <span className="text-[11px] weight-590 text-[var(--ln-text-primary)]">{asistencias.escuela}</span>
                     </div>
-                    <div className="flex flex-col items-center group relative cursor-default" title="Encuentro">
-                        <div className="p-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded group-hover:scale-110 transition-transform">
-                            <GraduationCap size={14} />
+                    <div className="flex flex-col items-center gap-1.5 group relative" title="Encuentro">
+                        <div className="p-2 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-lg group-hover:scale-110 transition-all duration-300">
+                            <GraduationCap size={14} weight="bold" />
                         </div>
-                        <span className="text-[10px] font-bold mt-1">{asistencias.encuentro}</span>
+                        <span className="text-[11px] weight-590 text-[var(--ln-text-primary)]">{asistencias.encuentro}</span>
                     </div>
-                    <div className="flex flex-col items-center group relative cursor-default" title="Ganar (Reportes)">
-                        <div className="p-1.5 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 rounded group-hover:scale-110 transition-transform">
-                            <PhoneCall size={14} />
+                    <div className="flex flex-col items-center gap-1.5 group relative" title="Ganar">
+                        <div className="p-2 bg-sky-500/10 text-sky-500 border border-sky-500/20 rounded-lg group-hover:scale-110 transition-all duration-300">
+                            <PhoneCall size={14} weight="bold" />
                         </div>
-                        <span className="text-[10px] font-bold mt-1">{asistencias.ganar}</span>
+                        <span className="text-[11px] weight-590 text-[var(--ln-text-primary)]">{asistencias.ganar}</span>
                     </div>
                 </div>
             )
         },
         {
-            header: 'Célula',
+            header: 'En Célula',
             key: 'celula',
             render: (celula) => (
-                <div className="flex flex-col space-y-1">
-                    <div className="flex items-center space-x-1.5">
-                        <MapPin size={12} className="text-gray-400" />
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                <div className="flex flex-col gap-1.5 min-w-[140px]">
+                    <div className="flex items-center gap-2">
+                        <MapPin size={12} className="text-[var(--ln-text-tertiary)]" />
+                        <span className="text-[13px] weight-510 text-[var(--ln-text-primary)]">
                             {celula.nombre}
                         </span>
                     </div>
                     {celula.isAnfitrion && (
-                        <span className="w-fit px-1.5 py-0.5 text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-md font-bold flex items-center gap-1">
-                            🏠 ANFITRIÓN
+                        <span className="w-fit px-2 py-0.5 text-[9px] weight-590 bg-purple-500/10 text-purple-500 border border-purple-500/20 rounded uppercase tracking-widest flex items-center gap-1.5">
+                            <House size={10} weight="bold" />
+                            Anfitrión
                         </span>
                     )}
                 </div>
@@ -172,12 +167,12 @@ const UserActivityList = () => {
             header: 'Clases',
             key: 'clases',
             render: (clases) => (
-                <div className="flex -space-x-2 overflow-hidden">
+                <div className="flex -space-x-2 overflow-hidden items-center min-w-[100px]">
                     {clases.length > 0 ? (
                         clases.slice(0, 3).map((c, i) => (
                             <div
                                 key={i}
-                                className={`w-8 h-8 rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center text-[10px] font-bold ${c.finalGrade >= 70 ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
+                                className={`w-8 h-8 rounded-full border-2 border-[var(--ln-bg-panel)] flex items-center justify-center text-[10px] weight-590 shadow-sm relative z-[${10-i}] ${c.finalGrade >= 70 ? 'bg-emerald-500 text-white' : 'bg-[var(--ln-border-standard)] text-[var(--ln-text-tertiary)]'
                                     }`}
                                 title={`${c.moduleName}: ${c.finalGrade || 'En curso'}`}
                             >
@@ -185,10 +180,10 @@ const UserActivityList = () => {
                             </div>
                         ))
                     ) : (
-                        <span className="text-xs text-gray-400 italic">Ninguna</span>
+                        <span className="text-[11px] text-[var(--ln-text-tertiary)] font-italic opacity-40">Sin registros</span>
                     )}
                     {clases.length > 3 && (
-                        <div className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-900 bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">
+                        <div className="w-8 h-8 rounded-full border-2 border-[var(--ln-bg-panel)] bg-white/5 text-[var(--ln-text-tertiary)] flex items-center justify-center text-[10px] weight-700 z-0">
                             +{clases.length - 3}
                         </div>
                     )}
@@ -196,36 +191,15 @@ const UserActivityList = () => {
             )
         },
         {
-            header: 'Eventos',
-            key: 'id',
-            render: (id, row) => (
-                <div className="flex space-x-4 text-xs">
-                    <div className="flex flex-col items-center">
-                        <span className="text-gray-400 uppercase text-[9px] font-bold">Encuentros</span>
-                        <span className="font-mono font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded mt-1">
-                            {row.encuentrosAsistidos}
-                        </span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                        <span className="text-gray-400 uppercase text-[9px] font-bold">Conv.</span>
-                        <span className="font-mono font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded mt-1">
-                            {row.convencionesAsistidas}
-                        </span>
-                    </div>
-                </div>
-            )
-        },
-        {
             header: 'Acceso',
             key: 'ultimoAcceso',
             render: (date) => (
-                <div className="flex items-center space-x-1.5 text-xs text-gray-500 dark:text-gray-400">
-                    <Clock size={12} />
+                <div className="flex items-center gap-2 text-[12px] text-[var(--ln-text-tertiary)] opacity-60">
+                    <Clock size={12} weight="bold" />
                     <span>
                         {date
                             ? formatDistanceToNow(new Date(date), { addSuffix: true, locale: es })
-                            : 'Nunca'
-                        }
+                            : 'Sin actividad'}
                     </span>
                 </div>
             )
@@ -234,80 +208,85 @@ const UserActivityList = () => {
 
     if (error) {
         return (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 p-4 rounded-xl flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                    <Info size={20} />
-                    <span>{error}</span>
+            <div className="bg-red-500/5 border border-red-500/20 p-6 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500">
+                <div className="flex items-center gap-4 text-red-500">
+                    <Info size={24} weight="bold" />
+                    <span className="text-sm weight-510">{error}</span>
                 </div>
-                <button onClick={fetchActivityData} className="text-sm font-bold underline bg-transparent">Reintentar</button>
+                <button 
+                    onClick={fetchActivityData} 
+                    className="px-4 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs weight-590 transition-all border border-red-500/20"
+                >
+                    Reintentar
+                </button>
             </div>
         );
     }
 
     return (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+        <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[24px] border border-[var(--ln-border-standard)] shadow-2xl overflow-hidden animate-in fade-in duration-700">
+            <div className="p-8 border-b border-[var(--ln-border-standard)] bg-white/[0.02]">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <Medal className="text-amber-500" size={24} />
-                            Reporte del Ministerio
+                        <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] flex items-center gap-3 tracking-tight">
+                            <Medal className="text-amber-500" size={24} weight="bold" />
+                            Reporte de Actividad Ministerial
                         </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Seguimiento en tiempo real de progresos y asistencias</p>
+                        <p className="text-[13px] text-[var(--ln-text-tertiary)] mt-1 opacity-70">Monitoreo preciso de progresos, asistencias y cobertura espiritual.</p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-4">
                         {hasActiveFilters && (
-                            <Button variant="ghost" size="sm" onClick={() => setSearchTerm('')} className="text-xs">
-                                Limpiar búsqueda
-                            </Button>
+                            <button 
+                                onClick={() => setSearchTerm('')} 
+                                className="text-[12px] weight-590 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] transition-colors px-3 py-1.5"
+                            >
+                                Limpiar Filtros
+                            </button>
                         )}
+                        <div className="relative group min-w-[300px]">
+                            <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ln-text-tertiary)] w-4 h-4 transition-colors group-focus-within:text-[var(--ln-brand-indigo)]" weight="bold" />
+                            <input
+                                type="text"
+                                placeholder="Filtrar por nombre o rol..."
+                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-xl text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/40"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 
-                {/* Panel de búsqueda y filtros rápidos */}
-                <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                        <MagnifyingGlass size={18} />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Buscar por nombre o rol..."
-                        className="pl-10 pr-4 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-full md:w-64"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                <div className="flex items-center gap-6 text-[10px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest opacity-60">
+                    <div className="flex items-center gap-2"><House size={14} weight="bold" className="text-indigo-500" /> Iglesia</div>
+                    <div className="flex items-center gap-2"><Heart size={14} weight="bold" className="text-pink-500" /> Célula</div>
+                    <div className="flex items-center gap-2"><BookOpen size={14} weight="bold" className="text-emerald-500" /> Escuela</div>
+                    <div className="flex items-center gap-2"><GraduationCap size={14} weight="bold" className="text-amber-500" /> Encuentro</div>
+                    <div className="flex items-center gap-2"><PhoneCall size={14} weight="bold" className="text-sky-500" /> Ganar</div>
                 </div>
-
-                            </div>
+            </div>
 
             <div className="relative">
                 {loading ? (
                     <div className="p-8">
-                        <Table.Skeleton rows={5} columns={8} />
+                        <Table.Skeleton rows={6} columns={7} />
                     </div>
                 ) : (
                     <Table
                         data={filteredData}
                         columns={columns}
-                        emptyMessage="No se encontraron miembros con actividad registrada."
-                        rowClassName="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors"
-                        headerClassName="uppercase text-[10px] tracking-widest text-gray-400 font-black py-4"
+                        emptyMessage="No se encontraron registros activos para los criterios seleccionados."
+                        rowClassName="hover:bg-white/[0.02] border-b border-[var(--ln-border-standard)]/50 transition-all duration-300 group"
+                        headerClassName="uppercase text-[10px] weight-590 tracking-widest text-[var(--ln-text-tertiary)] py-5 px-6 opacity-60 border-b border-[var(--ln-border-standard)]"
                     />
                 )}
             </div>
 
             {!loading && data.length > 0 && (
-                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800 flex flex-col md:flex-row items-center justify-between gap-2">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                        Mostrando <b>{filteredData.length}</b> usuarios
+                <div className="px-8 py-5 border-t border-[var(--ln-border-standard)] bg-white/[0.01]">
+                    <span className="text-[12px] weight-510 text-[var(--ln-text-tertiary)]">
+                        Mostrando <span className="text-[var(--ln-text-primary)] weight-590">{filteredData.length}</span> resultados de la red inmediata
                     </span>
-                    <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                        <div className="flex items-center gap-1"><House size={10} /> IG: Iglesia</div>
-                        <div className="flex items-center gap-1"><Heart size={10} /> CE: Célula</div>
-                        <div className="flex items-center gap-1"><BookOpen size={10} /> ES: Escuela</div>
-                        <div className="flex items-center gap-1"><GraduationCap size={10} /> EN: Encuentro</div>
-                    </div>
                 </div>
             )}
         </div>

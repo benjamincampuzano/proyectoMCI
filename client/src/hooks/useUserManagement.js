@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
+import { validatePassword } from '../utils/passwordValidator';
 
 const useUserManagement = () => {
     const [users, setUsers] = useState([]);
@@ -365,6 +366,23 @@ const useUserManagement = () => {
         setCurrentPage(1);
     }, [searchTerm, roleFilter, sexFilter, liderDoceFilter]);
 
+    const validatePasswordRealTime = useCallback((password, fullName = '') => {
+        const result = validatePassword(password, { fullName });
+        if (result.isValid) return [];
+
+        const req = result.requirements || {};
+        const errors = [];
+
+        if (req.length === false) errors.push('Mínimo 8 caracteres');
+        if (req.upper === false) errors.push('Al menos una mayúscula');
+        if (req.lower === false) errors.push('Al menos una minúscula');
+        if (req.number === false) errors.push('Al menos un número');
+        if (req.symbol === false) errors.push('Al menos un símbolo');
+
+        if (errors.length === 0 && result.message) return [result.message];
+        return errors;
+    }, []);
+
     // Helper para calcular edad (usado en exportToExcel)
     const calculateAge = (birthDate) => {
         if (!birthDate) return null;
@@ -528,7 +546,9 @@ const useUserManagement = () => {
         usersPerPage,
         totalPages,
         pagination: paginationInfo,
-        exportToExcel
+        exportToExcel,
+        validatePasswordRealTime,
+        calculateAge
     };
 };
 

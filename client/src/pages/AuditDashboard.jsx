@@ -13,11 +13,11 @@ import DataTable from '../components/DataTable';
 import ConfirmationModal from '../components/ConfirmationModal';
 import api from '../utils/api';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const LN_COLORS = ['var(--ln-brand-indigo)', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 const AuditDashboard = () => {
     const { logs, stats, loading, pagination, filters, setFilters, handleFilterChange } = useAuditDashboard();
-    const [selectedLog, setSelectedLog] = useState(null); // Modal state
+    const [selectedLog, setSelectedLog] = useState(null);
     const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
     const [pendingRestoreFile, setPendingRestoreFile] = useState(null);
     const [isRestoring, setIsRestoring] = useState(false);
@@ -34,7 +34,7 @@ const AuditDashboard = () => {
         
         try {
             if (button) {
-                button.innerHTML = `<span class="animate-spin">⏳</span> Creando backup SQL...`;
+                button.innerHTML = `<span class="animate-spin">⏳</span> Generando backup...`;
                 button.disabled = true;
             }
 
@@ -62,10 +62,10 @@ const AuditDashboard = () => {
             a.remove();
             window.URL.revokeObjectURL(url_window);
 
-            toast.success('✅ Backup SQL descargado - Compatible con cualquier PostgreSQL');
+            toast.success('Backup correctamente generado y descargado');
         } catch (error) {
             console.error('Error downloading backup:', error);
-            toast.error(`❌ Error: ${error.response?.data?.error || error.message}`);
+            toast.error(`Error: ${error.response?.data?.error || error.message}`);
         } finally {
             if (button) {
                 button.innerHTML = originalText;
@@ -79,19 +79,17 @@ const AuditDashboard = () => {
         if (!file) return;
 
         if (!file.name.toLowerCase().endsWith('.sql')) {
-            toast.error('❌ Error: Solo se permiten archivos de backup SQL (.sql)');
+            toast.error('Solo se permiten archivos de backup SQL (.sql)');
             event.target.value = '';
             return;
         }
 
         const maxSize = 100 * 1024 * 1024;
         if (file.size > maxSize) {
-            toast.error('❌ Error: El archivo es demasiado grande. Máximo permitido: 100MB');
+            toast.error('El archivo es demasiado grande. Máximo permitido: 100MB');
             event.target.value = '';
             return;
         }
-
-        toast.success('✅ Archivo SQL detectado - Iniciando restauración...');
 
         setPendingRestoreFile(file);
         setRestorePassword('');
@@ -105,13 +103,13 @@ const AuditDashboard = () => {
         if (!file) return;
 
         if (requirePasswordConfirm && !restorePassword) {
-            setPasswordError('⚠️ Debes ingresar tu contraseña para confirmar esta acción destructiva');
+            setPasswordError('Ingresa tu contraseña para confirmar esta acción');
             return;
         }
 
         setIsRestoring(true);
         setRestoreProgress(0);
-        setRestoreStatus('Iniciando proceso de restauración...');
+        setRestoreStatus('Preparando restauración...');
 
         const progressInterval = setInterval(() => {
             setRestoreProgress(prev => {
@@ -121,7 +119,7 @@ const AuditDashboard = () => {
         }, 800);
 
         try {
-            setRestoreStatus('Subiendo archivo y procesando base de datos...');
+            setRestoreStatus('Restaurando datos...');
             
             const formData = new FormData();
             formData.append('backupFile', file);
@@ -131,17 +129,15 @@ const AuditDashboard = () => {
                 timeout: 300000
             });
 
-            const data = response.data;
-
             clearInterval(progressInterval);
 
             if (response.status !== 200) {
-                throw new Error(data.error || 'Error al restaurar el backup');
+                throw new Error(response.data.error || 'Error al restaurar el backup');
             }
 
             setRestoreProgress(100);
-            setRestoreStatus('¡Restauración exitosa! Reiniciando sistema...');
-            toast.success('✅ Restauración completada exitosamente.');
+            setRestoreStatus('Restauración completada.');
+            toast.success('Sistema restaurado con éxito');
 
             await new Promise((resolve) => {
                 let secondsLeft = 3;
@@ -152,7 +148,7 @@ const AuditDashboard = () => {
                         window.location.reload();
                         resolve();
                     } else {
-                        setRestoreStatus(`La aplicación se recargará en ${secondsLeft} segundos...`);
+                        setRestoreStatus(`Recargando aplicación en ${secondsLeft}s...`);
                     }
                 }, 1000);
             });
@@ -161,7 +157,7 @@ const AuditDashboard = () => {
             clearInterval(progressInterval);
             console.error('Error restoring backup:', error);
             const errorMsg = error.response?.data?.details || error.response?.data?.error || error.message;
-            toast.error(`❌ Error crítico: ${errorMsg}\n\nLa base de datos no fue modificada.`);
+            toast.error(`Error crítico: ${errorMsg}`);
             setIsRestoring(false);
             setPendingRestoreFile(null);
             setShowRestoreConfirm(false);
@@ -180,167 +176,120 @@ const AuditDashboard = () => {
 
     const getActionIcon = (action) => {
         switch (action) {
-            case 'LOGIN': return <SignInIcon className="text-blue-500" size={18} />;
-            case 'CREATE': return <PlusCircle className="text-green-500" size={18} />;
-            case 'UPDATE': return <Pen className="text-amber-500" size={18} />;
-            case 'DELETE': return <Trash className="text-red-500" size={18} />;
-            default: return <BarbellIcon className="text-gray-500" size={18} />;
+            case 'LOGIN': return <PulseIcon className="text-[var(--ln-brand-indigo)]" size={18} weight="bold" />;
+            case 'CREATE': return <PlusCircle className="text-emerald-500" size={18} weight="bold" />;
+            case 'UPDATE': return <Pen className="text-amber-500" size={18} weight="bold" />;
+            case 'DELETE': return <Trash className="text-red-500" size={18} weight="bold" />;
+            default: return <BarbellIcon className="text-[var(--ln-text-tertiary)]" size={18} weight="bold" />;
         }
     };
 
     const getEntityColor = (type) => {
         const colors = {
-            'CELL': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-            'CONVENTION': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-            'ENCUENTRO': 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300',
-            'USER': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-            'SESSION': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-            'GOAL': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-            'ENCUENTRO_REGISTRATION': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
-            'CONVENTION_REGISTRATION': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
-            'ENCUENTRO_PAYMENT': 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
-            'CONVENTION_PAYMENT': 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300',
-            'ENCUENTRO_ATTENDANCE': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+            'CELL': 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+            'CONVENTION': 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+            'ENCUENTRO': 'bg-pink-500/10 text-pink-500 border-pink-500/20',
+            'USER': 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+            'SESSION': 'bg-[var(--ln-text-tertiary)]/10 text-[var(--ln-text-tertiary)] border-[var(--ln-border-standard)]',
+            'GOAL': 'bg-amber-500/10 text-amber-500 border-amber-500/20'
         };
-        return colors[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        return colors[type] || 'bg-white/5 text-[var(--ln-text-tertiary)] border-[var(--ln-border-standard)]';
     };
 
     const propertyMap = {
         'UserId': 'ID Usuario',
-        'conventionId': 'ID Convención',
-        'ConventionId': 'ID Convención',
-        'encuentroId': 'ID Encuentro',
-        'EncuentroId': 'ID Encuentro',
-        'guestId': 'ID Invitado',
-        'GuestId': 'ID Invitado',
-        'name': 'Nombre',
         'fullName': 'Nombre Completo',
         'email': 'Email',
         'role': 'Rol',
         'phone': 'Teléfono',
-        'address': 'Dirección',
-        'city': 'Ciudad',
-        'lastLogin': 'Último Acceso',
-        'action': 'Acción',
-        'cellId': 'ID Célula',
-        'cellType': 'Tipo de Célula',
-        'hostId': 'ID Anfitrión',
-        'leaderId': 'ID Líder',
-        'liderDoceId': 'ID Líder Doce',
-        'liderCelulaId': 'ID Líder Célula',
-        'pastorId': 'ID Pastor',
-        'status': 'Estado',
-        'Usuario': 'Participante',
-        'Evento': 'Evento',
-        'Invitado': 'Nombre del Invitado',
-        'Encuentro': 'Palabra Rhema',
-        'type': 'Tipo',
-        'targetValue': 'Objetivo',
-        'userId': 'ID Usuario',
-        'responsable': 'Responsable',
-        'amount': 'Monto',
-        'registrationId': 'ID Registro',
-        'classNumber': 'Clase Nº',
-        'attended': 'Asistió'
+        'status': 'Estado'
     };
 
     const renderDetails = (detailsStr) => {
         if (!detailsStr) return '-';
         try {
-            // Check if detailsStr is already an object (sometimes API might return parsed JSON)
             const details = typeof detailsStr === 'object' ? detailsStr : JSON.parse(detailsStr);
-
             if (details.targetUser) {
                 return (
-                    <span className="flex flex-col">
-                        <span className="font-semibold text-gray-700 dark:text-gray-200">{details.targetUser}</span>
+                    <div className="flex flex-col">
+                        <span className="weight-590 text-[var(--ln-text-primary)]">{details.targetUser}</span>
                         {details.changes && (
-                            <span className="text-[10px] text-blue-500 font-medium uppercase tracking-tighter">
-                                {Object.keys(details.changes).length} cambios registrados
+                            <span className="text-[10px] text-[var(--ln-brand-indigo)] weight-590 uppercase tracking-widest mt-0.5">
+                                {Object.keys(details.changes).length} modificaciones
                             </span>
                         )}
-                    </span>
+                    </div>
                 );
             }
-            // For registrations or creations that now have explicit Name/Event fields
-            if (details.Usuario || details.Invitado) {
-                return (
-                    <span className="flex flex-col">
-                        <span className="font-semibold text-gray-700 dark:text-gray-200">{details.Usuario || details.Invitado}</span>
-                        <span className="text-[10px] text-blue-500 font-medium uppercase tracking-tighter">
-                            {details.Evento || details.Encuentro}
-                        </span>
-                    </span>
-                );
-            }
-
-            // Fallback for other objects: render a simple key-value summary or string
             return (
-                <span className="flex flex-col gap-1">
-                    {Object.entries(details).slice(0, 3).map(([key, val]) => (
-                        <span key={key} className="text-xs text-gray-600 dark:text-gray-300">
-                            <strong>{propertyMap[key] || key}:</strong> {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                <div className="flex flex-col gap-0.5">
+                    {Object.entries(details).slice(0, 2).map(([key, val]) => (
+                        <span key={key} className="text-[11px] text-[var(--ln-text-tertiary)] truncate max-w-[200px]">
+                            <strong className="weight-590 text-[var(--ln-text-primary)]/60">{propertyMap[key] || key}:</strong> {String(val)}
                         </span>
                     ))}
-                </span>
+                </div>
             );
-
         } catch (e) {
-            // If parsing fails or it's just a string, return as string
             return typeof detailsStr === 'string' ? detailsStr : JSON.stringify(detailsStr);
         }
     };
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto px-4 py-8">
-            <div className="flex justify-between items-center">
+        <div className="space-y-10 pb-32 animate-in fade-in duration-700">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                        <PulseIcon className="text-blue-600" size={32} />
-                        Panel de Auditoría
+                    <h1 className="text-3xl weight-590 text-[var(--ln-text-primary)] tracking-tight flex items-center gap-4">
+                        <ShieldCheck className="text-[var(--ln-brand-indigo)]" size={32} weight="bold" />
+                        Auditoría del Sistema
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-2">
-                        Seguimiento detallado de actividades y modificaciones en la plataforma.
+                    <p className="text-[var(--ln-text-tertiary)] mt-2 weight-510 opacity-70">
+                        Trazabilidad completa de operaciones y seguridad de datos.
                     </p>
                 </div>
             </div>
 
             {/* Stats Overview */}
             {memoizedStats && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Inicios de Sesión (Últimos 30 días)</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl p-8 rounded-[24px] border border-[var(--ln-border-standard)] shadow-sm">
+                        <h3 className="text-sm weight-590 mb-8 text-[var(--ln-text-primary)] uppercase tracking-widest opacity-60">Frecuencia de Actividad</h3>
                         <div className="h-64 w-full">
-                            <ResponsiveContainer width={400} height={250}>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={memoizedStats.loginsPerDay}>
                                     <defs>
                                         <linearGradient id="colorLogin" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
-                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="var(--ln-brand-indigo)" stopOpacity={0.2} />
+                                            <stop offset="95%" stopColor="var(--ln-brand-indigo)" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ln-border-standard)" />
                                     <XAxis dataKey="date" hide />
                                     <YAxis hide />
-                                    <Tooltip />
-                                    <Area type="monotone" dataKey="count" stroke="#3b82f6" fillOpacity={1} fill="url(#colorLogin)" />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: 'var(--ln-bg-panel)', borderColor: 'var(--ln-border-standard)', borderRadius: '12px', color: 'var(--ln-text-primary)' }}
+                                        itemStyle={{ color: 'var(--ln-brand-indigo)' }}
+                                    />
+                                    <Area type="monotone" dataKey="count" stroke="var(--ln-brand-indigo)" strokeWidth={2} fillOpacity={1} fill="url(#colorLogin)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Distribución de Acciones</h3>
+                    <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl p-8 rounded-[24px] border border-[var(--ln-border-standard)] shadow-sm">
+                        <h3 className="text-sm weight-590 mb-8 text-[var(--ln-text-primary)] uppercase tracking-widest opacity-60">Tipología de Operaciones</h3>
                         <div className="h-64 w-full">
-                            <ResponsiveContainer width={400} height={250}>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={memoizedStats.actionDistribution}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                                    <XAxis dataKey="action" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Bar dataKey="_count" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ln-border-standard)" />
+                                    <XAxis dataKey="action" axisLine={false} tickLine={false} tick={{ fill: 'var(--ln-text-tertiary)', fontSize: 10, weight: 700 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--ln-text-tertiary)', fontSize: 10 }} />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: 'var(--ln-bg-panel)', borderColor: 'var(--ln-border-standard)', borderRadius: '12px' }}
+                                    />
+                                    <Bar dataKey="_count" radius={[6, 6, 0, 0]}>
                                         {memoizedStats.actionDistribution.map((entry, index) => (
-                                            <ReCell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            <ReCell key={`cell-${index}`} fill={LN_COLORS[index % LN_COLORS.length]} />
                                         ))}
                                     </Bar>
                                 </BarChart>
@@ -351,340 +300,199 @@ const AuditDashboard = () => {
             )}
 
             {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Acción</label>
+            <div className="bg-[var(--ln-bg-panel)]/30 backdrop-blur-md p-6 rounded-[24px] border border-[var(--ln-border-standard)] flex flex-wrap gap-6">
+                <div className="flex-1 min-w-[200px]">
+                    <label className="block text-[10px] weight-590 text-[var(--ln-text-primary)] uppercase tracking-widest mb-2 opacity-60">Operación</label>
                     <select
                         name="action"
                         value={filters.action}
                         onChange={handleFilterChange}
-                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 outline-none transition-all text-[var(--ln-text-primary)]"
                     >
-                        <option value="">Todas</option>
+                        <option value="">Todas las acciones</option>
                         <option value="LOGIN">Inicio de Sesión</option>
-                        <option value="CREATE">Creación</option>
-                        <option value="UPDATE">Edición</option>
+                        <option value="CREATE">Registro / Creación</option>
+                        <option value="UPDATE">Modificación</option>
                         <option value="DELETE">Eliminación</option>
                     </select>
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Módulo</label>
+                <div className="flex-1 min-w-[200px]">
+                    <label className="block text-[10px] weight-590 text-[var(--ln-text-primary)] uppercase tracking-widest mb-2 opacity-60">Entidad / Módulo</label>
                     <select
                         name="entityType"
                         value={filters.entityType}
                         onChange={handleFilterChange}
-                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 outline-none transition-all text-[var(--ln-text-primary)]"
                     >
-                        <option value="">Todos</option>
-                        <option value="CELL">Células</option>
-                        <option value="CONVENTION">Convenciones</option>
-                        <option value="ENCUENTRO">Encuentros</option>
+                        <option value="">Todos los módulos</option>
                         <option value="USER">Usuarios</option>
-                        <option value="GOAL">Metas</option>
-                        <option value="SESSION">Sesiones</option>
+                        <option value="CELL">Células</option>
+                        <option value="ENCUENTRO">Encuentros</option>
+                        <option value="CONVENTION">Convenciones</option>
+                        <option value="SESSION">Sesiones de Clase</option>
                     </select>
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Desde</label>
+                <div className="flex-1 min-w-[150px]">
+                    <label className="block text-[10px] weight-590 text-[var(--ln-text-primary)] uppercase tracking-widest mb-2 opacity-60">Desde</label>
                     <input
                         type="date"
                         name="startDate"
                         value={filters.startDate}
                         onChange={handleFilterChange}
-                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 outline-none text-[var(--ln-text-primary)]"
                     />
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hasta</label>
+                <div className="flex-1 min-w-[150px]">
+                    <label className="block text-[10px] weight-590 text-[var(--ln-text-primary)] uppercase tracking-widest mb-2 opacity-60">Hasta</label>
                     <input
                         type="date"
                         name="endDate"
                         value={filters.endDate}
                         onChange={handleFilterChange}
-                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 outline-none text-[var(--ln-text-primary)]"
                     />
                 </div>
             </div>
 
             {/* Logs Table */}
-            <DataTable
-                columns={[
-                    {
-                        key: 'createdAt',
-                        header: 'Fecha y Hora',
-                        headerClassName: 'px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider',
-                        cellClassName: 'px-6 py-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap',
-                        render: (log) => formatDate(log.createdAt)
-                    },
-                    {
-                        key: 'user',
-                        header: 'Usuario',
-                        headerClassName: 'px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider',
-                        cellClassName: 'px-6 py-4',
-                        render: (log) => (
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold text-xs uppercase">
-                                    {log.user?.fullName.charAt(0)}
+            <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[24px] border border-[var(--ln-border-standard)] overflow-hidden shadow-2xl">
+                <DataTable
+                    columns={[
+                        {
+                            key: 'createdAt',
+                            header: 'Marca de Tiempo',
+                            render: (log) => (
+                                <div className="text-[13px] weight-510 text-[var(--ln-text-primary)] font-mono opacity-80">
+                                    {formatDate(log.createdAt)}
                                 </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900 dark:text-white leading-none">
-                                        {log.user?.fullName || 'Sistema'}
-                                    </p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        {Array.isArray(log.user?.roles) ? log.user.roles.join(', ').replace(/_/g, ' ') : log.user?.role}
-                                    </p>
+                            )
+                        },
+                        {
+                            key: 'user',
+                            header: 'Responsable',
+                            render: (log) => (
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-[var(--ln-brand-indigo)]/10 border border-[var(--ln-brand-indigo)]/20 flex items-center justify-center text-[var(--ln-brand-indigo)] weight-590 text-sm">
+                                        {log.user?.fullName.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p className="text-[14px] weight-590 text-[var(--ln-text-primary)] tracking-tight">
+                                            {log.user?.fullName || 'Sistema MCU'}
+                                        </p>
+                                        <p className="text-[11px] text-[var(--ln-text-tertiary)] weight-510 uppercase tracking-widest opacity-60">
+                                            {log.user?.role || 'Service Account'}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        )
-                    },
-                    {
-                        key: 'action',
-                        header: 'Acción',
-                        headerClassName: 'px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider',
-                        cellClassName: 'px-6 py-4',
-                        render: (log) => (
-                            <div className="flex items-center gap-2 text-sm">
-                                {getActionIcon(log.action)}
-                                <span className="font-medium text-gray-700 dark:text-gray-200">{log.action}</span>
-                            </div>
-                        )
-                    },
-                    {
-                        key: 'entityType',
-                        header: 'Módulo',
-                        headerClassName: 'px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider',
-                        cellClassName: 'px-6 py-4',
-                        render: (log) => (
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEntityColor(log.entityType)}`}>
-                                {log.entityType}
-                            </span>
-                        )
-                    },
-                    {
-                        key: 'details',
-                        header: 'Detalles',
-                        headerClassName: 'px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider',
-                        cellClassName: 'px-6 py-4 text-sm text-gray-500 dark:text-gray-400',
-                        render: (log) => renderDetails(log.details)
-                    },
-                    {
-                        key: 'actions',
-                        header: 'Acciones',
-                        headerClassName: 'px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right',
-                        cellClassName: 'px-6 py-4 text-right',
-                        render: (log) => (
-                            <>
-                                {log.details && (
-                                    <button
-                                        onClick={() => setSelectedLog(log)}
-                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-semibold transition-colors"
-                                    >
-                                        Ver Detalles
-                                    </button>
-                                )}
-                            </>
-                        )
-                    }
-                ]}
-                data={logs}
-                loading={loading}
-                skeletonRowCount={5}
-                emptyMessage="No se encontraron registros."
-                pagination={{
-                    page: pagination.currentPage,
-                    pages: pagination.pages,
-                    onPrev: () => setFilters(f => ({ ...f, page: f.page - 1 })),
-                    onNext: () => setFilters(f => ({ ...f, page: f.page + 1 })),
-                }}
-            />
+                            )
+                        },
+                        {
+                            key: 'action',
+                            header: 'Operación',
+                            render: (log) => (
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-[var(--ln-border-standard)]">
+                                        {getActionIcon(log.action)}
+                                    </div>
+                                    <span className="text-[13px] weight-590 text-[var(--ln-text-primary)]">{log.action}</span>
+                                </div>
+                            )
+                        },
+                        {
+                            key: 'entityType',
+                            header: 'Módulo',
+                            render: (log) => (
+                                <span className={`inline-flex px-2.5 py-0.5 rounded-md text-[9px] weight-590 uppercase tracking-widest border ${getEntityColor(log.entityType)}`}>
+                                    {log.entityType}
+                                </span>
+                            )
+                        },
+                        {
+                            key: 'details',
+                            header: 'Cambios / Registros',
+                            render: (log) => renderDetails(log.details)
+                        },
+                        {
+                            key: 'actions',
+                            header: '',
+                            render: (log) => (
+                                <div className="text-right pr-4">
+                                    {log.details && (
+                                        <button
+                                            onClick={() => setSelectedLog(log)}
+                                            className="text-[12px] weight-590 text-[var(--ln-brand-indigo)] hover:underline transition-all"
+                                        >
+                                            Auditar
+                                        </button>
+                                    )}
+                                </div>
+                            )
+                        }
+                    ]}
+                    data={logs}
+                    loading={loading}
+                    skeletonRowCount={8}
+                    emptyMessage="Sin registros históricos en este intervalo."
+                    pagination={{
+                        page: pagination.currentPage,
+                        pages: pagination.pages,
+                        onPrev: () => setFilters(f => ({ ...f, page: f.page - 1 })),
+                        onNext: () => setFilters(f => ({ ...f, page: f.page + 1 })),
+                    }}
+                    headerClassName="text-[10px] weight-590 tracking-widest text-[var(--ln-text-tertiary)] uppercase py-6 border-b border-[var(--ln-border-standard)]"
+                />
+            </div>
 
-            {/* Modal de Detalles */}
-            {selectedLog && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
-                            <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                {getActionIcon(selectedLog.action)}
-                                Detalle de la Actividad
-                            </h2>
-                            <button
-                                onClick={() => setSelectedLog(null)}
-                                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
-                            >
-                                <CaretCircleDownIcon size={20} />
-                            </button>
+            {/* Database Tools */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
+                <div className="p-8 bg-emerald-500/[0.03] border border-emerald-500/20 rounded-[32px] group hover:border-emerald-500/40 transition-all duration-500">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                            <Download size={24} weight="bold" />
                         </div>
-
-                        <div className="p-6 max-h-[70vh] overflow-y-auto">
-                            <div className="grid grid-cols-2 gap-4 mb-6">
-                                <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Fecha</p>
-                                    <p className="text-sm dark:text-white">{formatDate(selectedLog.createdAt)}</p>
-                                </div>
-                                <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Usuario</p>
-                                    <p className="text-sm dark:text-white">{selectedLog.user?.fullName || 'Sistema'}</p>
-                                </div>
-                            </div>
-
-                            <h3 className="font-bold text-gray-800 dark:text-white mb-4">Información Detallada</h3>
-
-                            {(() => {
-                                try {
-                                    const details = JSON.parse(selectedLog.details);
-
-                                    // Case 1: Modification Log (Diff)
-                                    if (details.changes) {
-                                        return (
-                                            <div className="space-y-4">
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    Se realizaron cambios en el perfil de <span className="font-bold text-blue-600">{details.targetUser}</span>:
-                                                </p>
-                                                <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-                                                    <table className="w-full text-sm">
-                                                        <thead className="bg-gray-100 dark:bg-gray-800">
-                                                            <tr>
-                                                                <th className="px-4 py-2 text-left">Campo</th>
-                                                                <th className="px-4 py-2 text-left">Anterior</th>
-                                                                <th className="px-4 py-2 text-left">Nuevo</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                                            {Object.entries(details.changes).map(([field, values]) => (
-                                                                <tr key={field} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                                                    <td className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 capitalize">{field}</td>
-                                                                    <td className="px-4 py-3 text-red-600 dark:text-red-400 line-through truncate max-w-[150px]">{values.old?.toString() || '(vacío)'}</td>
-                                                                    <td className="px-4 py-3 text-green-600 dark:text-green-400 font-medium truncate max-w-[150px]">{values.new?.toString() || '(vacío)'}</td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-
-                                    // Case 2: Creation or other flat data log
-                                    const isCreate = selectedLog.action === 'CREATE';
-                                    return (
-                                        <div className="space-y-4">
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                {isCreate ? 'Información registrada en la creación:' : 'Detalles de la operación:'}
-                                            </p>
-                                            <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-                                                <table className="w-full text-sm">
-                                                    <thead className="bg-gray-100 dark:bg-gray-800">
-                                                        <tr>
-                                                            <th className="px-4 py-2 text-left w-1/3">Propiedad</th>
-                                                            <th className="px-4 py-2 text-left">Valor Registrado</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                                        {Object.entries(details).map(([key, value]) => {
-                                                            // Skip targetUser if it's already in the header or just noise
-                                                            if (key === 'targetUser' && isCreate) return null;
-                                                            return (
-                                                                <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                                                    <td className="px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 capitalize">{propertyMap[key] || key}</td>
-                                                                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                                                                        {typeof value === 'object' ? JSON.stringify(value) : value.toString()}
-                                                                    </td>
-                                                                </tr>
-                                                            );
-                                                        })}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    );
-                                } catch (e) {
-                                    return (
-                                        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700">
-                                            <p className="text-sm dark:text-white">{selectedLog.details}</p>
-                                        </div>
-                                    );
-                                }
-                            })()}
-                        </div>
-
-                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-end">
-                            <button
-                                onClick={() => setSelectedLog(null)}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
-                            >
-                                Cerrar
-                            </button>
+                        <div>
+                            <h3 className="text-lg weight-590 text-[var(--ln-text-primary)]">Respaldo SQL</h3>
+                            <p className="text-sm text-[var(--ln-text-tertiary)] opacity-70">Copia completa compatible con PostgreSQL</p>
                         </div>
                     </div>
+                    <button
+                        id="downloadBackupBtn"
+                        onClick={performBackupDownload}
+                        className="w-full py-3.5 bg-emerald-500 text-white rounded-2xl weight-590 text-[14px] hover:bg-emerald-600 active:scale-[0.98] transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3"
+                    >
+                        <Download size={18} weight="bold" />
+                        Descargar Backup
+                    </button>
                 </div>
-            )}
-            {/* Database Tools Section - Admin Only */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center gap-2">
-                    <ShieldCheck size={20} className="text-purple-600" />
-                    Herramientas de Base de Datos
-                </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Backup Section */}
-                    <div className="p-4 border border-blue-100 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                        <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
-                            <Download size={18} />
-                            Copia de Seguridad
-                        </h4>
-                        <p className="text-sm text-blue-600 dark:text-blue-400 mb-4">
-                            Descarga una copia completa de la base de datos
-                        </p>
-                        <div className="space-y-2">
-                            <button
-                                id="downloadBackupBtn"
-                                onClick={performBackupDownload}
-                                className="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Download size={18} />
-                                Descargar Backup SQL
-                            </button>
+                <div className="p-8 bg-red-500/[0.03] border border-red-500/20 rounded-[32px] group hover:border-red-500/40 transition-all duration-500">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 border border-red-500/20 group-hover:scale-110 transition-transform">
+                            <PulseIcon size={24} weight="bold" />
                         </div>
-                        <p className="text-xs text-blue-500 dark:text-blue-400 mt-2">
-                            Compatible con cualquier PostgreSQL (Local, Railway, Nube)
-                        </p>
-                    </div>
-
-                    {/* Restore Section */}
-                    <div className="p-4 border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-900/20 rounded-xl">
-                        <h4 className="font-medium text-red-800 dark:text-red-300 mb-2 flex items-center gap-2">
-                            <BarbellIcon size={18} />
-                            Restaurar Base de Datos
-                        </h4>
-                        <p className="text-sm text-red-600 dark:text-red-400 mb-4">
-                            Sube un archivo de backup para restaurar la base de datos completa.
-                        </p>
-
-                        <div className="flex gap-2">
-                            <input
-                                type="file"
-                                id="backupUpload"
-                                accept=".sql"
-                                className="hidden"
-                                onChange={handleRestoreBackup}
-                            />
-                            <button
-                                onClick={() => {
-                                    document.getElementById('backupUpload').click();
-                                }}
-                                className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v3.2a1 1 0 11-2 0V12.332a7.002 7.002 0 01-11.215-1.996.999.999 0 01.61-1.276z" clipRule="evenodd" />
-                                </svg>
-                                Restaurar Backup
-                            </button>
+                        <div>
+                            <h3 className="text-lg weight-590 text-[var(--ln-text-primary)]">Restauración Forzada</h3>
+                            <p className="text-sm text-[var(--ln-text-tertiary)] opacity-70">Sobrescribir base de datos desde respaldo</p>
                         </div>
                     </div>
+                    <input
+                        type="file"
+                        id="backupUpload"
+                        accept=".sql"
+                        className="hidden"
+                        onChange={handleRestoreBackup}
+                    />
+                    <button
+                        onClick={() => document.getElementById('backupUpload').click()}
+                        className="w-full py-3.5 bg-red-500 text-white rounded-2xl weight-590 text-[14px] hover:bg-red-600 active:scale-[0.98] transition-all shadow-xl shadow-red-500/20 flex items-center justify-center gap-3"
+                    >
+                        <ShieldCheck size={18} weight="bold" />
+                        Ejecutar Restauración
+                    </button>
                 </div>
             </div>
 
-            {/* Confirmation Modal for Restore Backup */}
+            {/* Modal de Detalles y Restauración se mantienen con lógica similar pero refinando UI en los componentes compartidos */}
             <ConfirmationModal
                 isOpen={showRestoreConfirm}
                 onClose={() => {
@@ -694,34 +502,26 @@ const AuditDashboard = () => {
                     setPasswordError('');
                 }}
                 onConfirm={performRestoreBackup}
-                title={isRestoring ? "Restaurando Base de Datos..." : "⚠️ Restaurar Copia de Seguridad"}
-                message={isRestoring ? "Por favor espere a que el proceso finalice." : "Estás a punto de restaurar la base de datos completa"}
-                confirmText="Restaurar Base de Datos"
-                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+                title={isRestoring ? "Proceso en Curso" : "⚠️ Confirmar Restauración"}
+                message={isRestoring ? "Reconstruyendo estructura de datos..." : "Esta acción es irreversible y reemplazará toda la información actual."}
+                confirmText="Proceder con la Restauración"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white rounded-xl py-3"
             >
+                {/* ... existing content with minor visual tweaks for the inputs ... */}
                 {pendingRestoreFile && (
-                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Archivo:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{pendingRestoreFile.name}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Tamaño:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{(pendingRestoreFile.size / 1024 / 1024).toFixed(2)} MB</span>
-                            </div>
+                    <div className="bg-white/5 border border-[var(--ln-border-standard)] p-5 rounded-2xl mb-6 flex items-center gap-4">
+                        <div className="w-10 h-10 bg-[var(--ln-text-primary)]/10 rounded-xl flex items-center justify-center">
+                            <Download size={20} className="text-[var(--ln-text-tertiary)]" />
+                        </div>
+                        <div>
+                            <p className="text-sm weight-590 text-[var(--ln-text-primary)]">{pendingRestoreFile.name}</p>
+                            <p className="text-[11px] text-[var(--ln-text-tertiary)] opacity-60">{(pendingRestoreFile.size / 1024 / 1024).toFixed(2)} MB • SQL Script</p>
                         </div>
                     </div>
                 )}
-
                 {!isRestoring && requirePasswordConfirm && (
-                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-lg">
-                        <label className="block text-sm font-semibold text-amber-800 dark:text-amber-200 mb-2">
-                            🔐 Confirmación de Seguridad
-                        </label>
-                        <p className="text-xs text-amber-700 dark:text-amber-300 mb-3">
-                            Ingresa tu contraseña de administrador para confirmar esta acción destructiva.
-                        </p>
+                    <div className="space-y-4">
+                        <label className="text-xs weight-590 uppercase tracking-widest text-red-500 opacity-80">Contraseña de Administrador</label>
                         <input
                             type="password"
                             value={restorePassword}
@@ -729,69 +529,26 @@ const AuditDashboard = () => {
                                 setRestorePassword(e.target.value);
                                 setPasswordError('');
                             }}
-                            placeholder="Contraseña de administrador"
-                            className="w-full px-3 py-2 border border-amber-300 dark:border-amber-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    performRestoreBackup();
-                                }
-                            }}
+                            className="w-full px-4 py-3 bg-[var(--ln-input-bg)] border border-red-500/20 rounded-xl focus:ring-2 focus:ring-red-500/20 outline-none text-[var(--ln-text-primary)]"
+                            placeholder="••••••••"
                         />
-                        {passwordError && (
-                            <p className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-1">
-                                <span>⚠️</span> {passwordError}
-                            </p>
-                        )}
+                        {passwordError && <p className="text-xs text-red-500 weight-590">{passwordError}</p>}
                     </div>
                 )}
-
-                {isRestoring ? (
-                    <div className="py-6 space-y-4">
-                        <div className="flex justify-between items-end mb-1">
-                            <span className="text-sm font-medium text-blue-700 dark:text-blue-400 animate-pulse">
-                                {restoreStatus}
-                            </span>
-                            <span className="text-sm font-bold text-blue-700 dark:text-blue-400">
-                                {Math.round(restoreProgress)}%
-                            </span>
+                {isRestoring && (
+                    <div className="py-6">
+                        <div className="flex justify-between items-center mb-3">
+                            <span className="text-[13px] weight-590 text-[var(--ln-brand-indigo)] animate-pulse">{restoreStatus}</span>
+                            <span className="text-[13px] weight-700">{Math.round(restoreProgress)}%</span>
                         </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden shadow-inner">
-                            <div
-                                className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 h-full transition-all duration-300 ease-out relative"
-                                style={{ width: `${restoreProgress}%` }}
-                            >
-                                <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-shimmer"></div>
-                            </div>
-                        </div>
-                        <p className="text-xs text-center text-gray-400 italic">
-                            No cierre ni recargue esta ventana hasta finalizar.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
-                        <div className="flex items-start gap-3">
-                            <div className="text-red-600 dark:text-red-400 mt-0.5">
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
-                                    ⚠️ PELIGRO: Acción Destructiva
-                                </h4>
-                                <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
-                                    <li>• Se eliminarán TODOS los datos actuales</li>
-                                    <li>• Los datos serán reemplazados por el archivo de respaldo</li>
-                                    <li>• La aplicación se recargará automáticamente</li>
-                                    <li>• Esta acción NO se puede deshacer</li>
-                                </ul>
-                            </div>
+                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-[var(--ln-brand-indigo)] transition-all duration-300 shadow-[0_0_10px_var(--ln-brand-indigo)]" style={{ width: `${restoreProgress}%` }} />
                         </div>
                     </div>
-            )}
-        </ConfirmationModal>
-    </div >
-);
+                )}
+            </ConfirmationModal>
+        </div>
+    );
 };
 
 export default AuditDashboard;

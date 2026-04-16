@@ -95,63 +95,146 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
 
     if (!isOpen) return null;
 
+const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) => {
+    const [availableUsers, setAvailableUsers] = useState([]);
+    const [filteredUsers, setFilteredUsers] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedUserId, setSelectedUserId] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (isOpen && leaderId) {
+            fetchAvailableUsers();
+        }
+    }, [isOpen, leaderId]);
+
+    useEffect(() => {
+        if (searchTerm.trim() === '') {
+            setFilteredUsers(availableUsers);
+        } else {
+            const term = searchTerm.toLowerCase();
+            const filtered = availableUsers.filter(user =>
+                (user.fullName && user.fullName.toLowerCase().includes(term)) ||
+                (user.email && user.email.toLowerCase().includes(term)) ||
+                (user.phone && user.phone.includes(term))
+            );
+            setFilteredUsers(filtered);
+        }
+    }, [searchTerm, availableUsers]);
+
+    const fetchAvailableUsers = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await api.get(`/network/available-users/${leaderId}`);
+            const data = response.data;
+            setAvailableUsers(data);
+            setFilteredUsers(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAssignUser = async () => {
+        if (!selectedUserId) {
+            setError('Por favor selecciona un usuario');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            setError(null);
+            const response = await api.post('/network/assign', {
+                userId: selectedUserId,
+                leaderId: leaderId
+            });
+
+            const data = response.data;
+            toast.success(data.message);
+            if (onUserAdded) {
+                onUserAdded();
+            }
+            handleClose();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleClose = () => {
+        setSearchTerm('');
+        setSelectedUserId(null);
+        setError(null);
+        onClose();
+    };
+
+    if (!isOpen) return null;
+
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[4px] z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div className="bg-[var(--ln-bg-panel)]/95 backdrop-blur-xl rounded-[24px] shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-[var(--ln-border-standard)] animate-in zoom-in-95 slide-in-from-bottom-4 duration-500">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between px-8 py-6 border-b border-[var(--ln-border-standard)] bg-white/5">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <UserPlus className="w-6 h-6 text-blue-600" />
-                            Agregar Usuario a la Red
+                        <h2 className="text-xl weight-590 text-[var(--ln-text-primary)] tracking-tight flex items-center gap-2.5">
+                            <UserPlus className="w-5 h-5 text-[var(--ln-brand-indigo)]" weight="bold" />
+                            Agregar a la Red
                         </h2>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            Agregar a la red de: <span className="font-semibold">{leaderName}</span>
+                        <p className="text-[13px] text-[var(--ln-text-tertiary)] mt-1">
+                            Añadiendo a la red de: <span className="weight-590 text-[var(--ln-text-primary)]">{leaderName}</span>
                         </p>
                     </div>
                     <button
                         onClick={handleClose}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="p-2 rounded-lg text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/10 transition-all active:scale-95"
                         disabled={submitting}
                     >
-                        <X className="w-6 h-6" />
+                        <X size={20} weight="bold" />
                     </button>
                 </div>
 
                 {/* Search Bar */}
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <div className="relative">
-                        <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <div className="px-8 py-5 border-b border-[var(--ln-border-standard)] bg-white/[0.02]">
+                    <div className="relative group">
+                        <MagnifyingGlass className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-[var(--ln-text-tertiary)] w-4 h-4 transition-colors group-focus-within:text-[var(--ln-brand-indigo)]" weight="bold" />
                         <input
                             type="text"
                             placeholder="Buscar por nombre, email o teléfono..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full pl-10 pr-4 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm placeholder:text-[var(--ln-text-tertiary)]/50"
                             disabled={loading || submitting}
                         />
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
                     {loading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Spinner className="w-8 h-8 text-blue-600 animate-spin" />
-                            <span className="ml-3 text-gray-600 dark:text-gray-400">Cargando usuarios...</span>
+                        <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                            <Spinner className="w-8 h-8 text-[var(--ln-brand-indigo)] animate-spin" weight="bold" />
+                            <span className="mt-4 text-sm text-[var(--ln-text-tertiary)] tracking-wide">Analizando red de usuarios...</span>
                         </div>
                     ) : error ? (
-                        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded">
+                        <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl text-sm font-medium animate-in slide-in-from-top-2">
                             {error}
                         </div>
                     ) : filteredUsers.length === 0 ? (
-                        <div className="text-center py-12">
-                            <p className="text-gray-500 dark:text-gray-400">
-                                {searchTerm ? 'No se encontraron usuarios con ese criterio' : 'No hay usuarios disponibles para agregar'}
+                        <div className="text-center py-20 flex flex-col items-center">
+                            <div className="w-12 h-12 rounded-full bg-white/[0.03] flex items-center justify-center mb-4 border border-[var(--ln-border-standard)]">
+                                <MagnifyingGlass className="w-6 h-6 text-[var(--ln-text-tertiary)] opacity-30" />
+                            </div>
+                            <p className="text-[var(--ln-text-tertiary)] text-sm max-w-[240px] leading-relaxed">
+                                {searchTerm ? 'No se encontraron resultados para tu búsqueda.' : 'No hay usuarios disponibles en este momento.'}
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-1 gap-3">
                             {filteredUsers.map((user) => (
                                 <div
                                     key={user.id}
@@ -160,47 +243,67 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                                     role="button"
                                     tabIndex={0}
                                     className={`
-                                        p-4 rounded-lg border-2 cursor-pointer transition-all
+                                        p-4 rounded-xl border transition-all duration-300 group relative overflow-hidden
                                         ${selectedUserId === user.id
-                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                            : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                            ? 'border-[var(--ln-brand-indigo)] bg-[var(--ln-brand-indigo)]/[0.04] shadow-sm'
+                                            : 'border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 hover:bg-white/[0.02]'
                                         }
                                     `}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1">
-                                            <h3 className="font-semibold text-gray-900 dark:text-white">{user.fullName}</h3>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
-                                            {user.phone && (
-                                                <p className="text-sm text-gray-500 dark:text-gray-400">{user.phone}</p>
-                                            )}
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <h3 className="weight-590 text-[var(--ln-text-primary)] text-[14px] truncate">{user.fullName}</h3>
+                                                {selectedUserId === user.id && (
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--ln-brand-indigo)] animate-pulse" />
+                                                )}
+                                            </div>
+                                            <p className="text-[12px] text-[var(--ln-text-tertiary)] truncate opacity-70">{user.email}</p>
+                                            
+                                            {/* Reassignment Warning */}
                                             {(user.pastorId || user.liderDoceId || user.liderCelulaId) && (
-                                                <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                                                    <span className="font-medium">⚠ Reasignación:</span>
-                                                    <div className="ml-4 mt-1 space-y-0.5">
+                                                <div className="mt-3 p-2.5 rounded-lg bg-amber-500/[0.05] border border-amber-500/10">
+                                                    <div className="flex items-center gap-1.5 text-amber-500 text-[10px] weight-590 uppercase tracking-wider mb-1">
+                                                        <span>⚠ Reasignación requerida</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-amber-500/70">
                                                         {user.pastor && (
-                                                            <div className="text-gray-700 dark:text-gray-300">Pastor: {user.pastor.fullName}</div>
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="opacity-50">PT:</span>
+                                                                <span className="weight-510">{user.pastor.fullName}</span>
+                                                            </div>
                                                         )}
                                                         {user.liderDoce && (
-                                                            <div className="text-gray-700 dark:text-gray-300">Líder Doce: {user.liderDoce.fullName}</div>
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="opacity-50">L12:</span>
+                                                                <span className="weight-510">{user.liderDoce.fullName}</span>
+                                                            </div>
                                                         )}
                                                         {user.liderCelula && (
-                                                            <div className="text-gray-700 dark:text-gray-300">Líder Célula: {user.liderCelula.fullName}</div>
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="opacity-50">LC:</span>
+                                                                <span className="weight-510">{user.liderCelula.fullName}</span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </div>
                                             )}
                                         </div>
-                                        <span className={`
-                                            px-3 py-1 text-xs font-medium rounded-full
-                                            ${user.roles?.includes('ADMIN') ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                                                user.roles?.includes('PASTOR') ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                                    user.roles?.includes('LIDER_DOCE') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                                        user.roles?.includes('LIDER_CELULA') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                                                            'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
-                                        `}>
-                                            {user.roles ? user.roles.join(', ').replace(/_/g, ' ') : 'Usuario'}
-                                        </span>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <span className={`
+                                                px-2.5 py-1 text-[10px] weight-590 rounded-md border
+                                                ${user.roles?.includes('ADMIN') ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                                    user.roles?.includes('PASTOR') ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                                        user.roles?.includes('LIDER_DOCE') ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' :
+                                                            user.roles?.includes('LIDER_CELULA') ? 'bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-brand-indigo)] border-[var(--ln-brand-indigo)]/20' :
+                                                                'bg-white/5 text-[var(--ln-text-tertiary)] border-[var(--ln-border-standard)]'}
+                                            `}>
+                                                {user.roles ? user.roles[0].replace(/_/g, ' ') : 'Usuario'}
+                                            </span>
+                                            {user.phone && (
+                                                <span className="text-[11px] text-[var(--ln-text-tertiary)] opacity-40">{user.phone}</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -209,11 +312,11 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+                <div className="px-8 py-6 border-t border-[var(--ln-border-standard)] bg-white/[0.04]">
                     <div className="flex justify-end gap-3">
                         <button
                             onClick={handleClose}
-                            className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            className="px-5 py-2 text-[13px] weight-510 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] transition-all"
                             disabled={submitting}
                         >
                             Cancelar
@@ -221,17 +324,23 @@ const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) =>
                         <button
                             onClick={handleAssignUser}
                             disabled={!selectedUserId || submitting}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                            className={`
+                                px-6 py-2 rounded-xl text-[13px] weight-510 transition-all flex items-center gap-2.5 shadow-lg
+                                ${!selectedUserId || submitting 
+                                    ? 'bg-white/5 text-[var(--ln-text-tertiary)]/50 cursor-not-allowed border border-[var(--ln-border-standard)] shadow-none' 
+                                    : 'bg-[var(--ln-brand-indigo)] text-white hover:bg-[var(--ln-accent-hover)] shadow-[var(--ln-brand-indigo)]/20 active:scale-[0.98]'
+                                }
+                            `}
                         >
                             {submitting ? (
                                 <>
                                     <Spinner className="w-4 h-4 animate-spin" />
-                                    Agregando...
+                                    <span>Asignando...</span>
                                 </>
                             ) : (
                                 <>
-                                    <UserPlus className="w-4 h-4" />
-                                    Agregar Usuario
+                                    <UserPlus className="w-4 h-4" weight="bold" />
+                                    <span>Agregar a la Red</span>
                                 </>
                             )}
                         </button>

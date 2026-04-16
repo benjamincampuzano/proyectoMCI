@@ -85,8 +85,8 @@ const Enviar = () => {
         fetchSubCoordinator();
     }, []);
     const tabs = [
-        { id: 'attendance', label: 'Asistencia', component: CellAttendance },
         { id: 'cells', label: 'Células', component: (props) => <CellManagement {...props} moduleCoordinator={moduleCoordinator} />, customCheck: hasCellsTabAccess },
+        { id: 'attendance', label: 'Asistencia', component: CellAttendance },
         { id: 'stats', label: 'Estadísticas', component: AttendanceChart, roles: ROLE_GROUPS.CAN_VIEW_STATS },
     ];
 
@@ -107,9 +107,9 @@ const Enviar = () => {
                             moduleSubCoordinator={moduleSubCoordinator}
                             moduleName="Enviar"
                             onSubCoordinatorChange={handleSubCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
+                            disabled={!hasAdminOrPastor && !(moduleCoordinator && moduleCoordinator.id === user?.id)}
                             currentUserId={user?.id}
-                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
+                            isModuleCoordinator={moduleCoordinator && moduleCoordinator.id === user?.id}
                         />
                     </div>
                 }
@@ -128,7 +128,7 @@ const Enviar = () => {
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="attendance" />
+            <TabNavigator tabs={tabs} initialTabId="cells" />
         </div>
     );
 };

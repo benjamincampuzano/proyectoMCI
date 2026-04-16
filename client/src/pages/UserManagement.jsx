@@ -31,7 +31,6 @@ const UserManagement = () => {
         pastores,
         lideresDoce,
         lideresCelula,
-        filteredUsers,
         handleCreateUser,
         handleUpdateUser,
         handleDeleteUser,
@@ -46,125 +45,125 @@ const UserManagement = () => {
         setShowErrorModal,
         errorDetails,
         pagination,
-        currentPage,
         totalUsers,
-        exportToExcel
+        exportToExcel,
+        validatePasswordRealTime,
+        calculateAge
     } = useUserManagement();
 
-    // Validate password in real-time
-    const validatePasswordRealTime = (password, fullName) => {
-        const errors = [];
-
-        if (password.length > 0 && password.length < 8) {
-            errors.push('La contraseña debe tener al menos 8 caracteres');
-        }
-
-        const hasUpperCase = /[A-Z]/.test(password);
-        const hasLowerCase = /[a-z]/.test(password);
-        const hasNumbers = /\d/.test(password);
-        const hasSymbols = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-        if (password.length >= 8 && !(hasUpperCase && hasLowerCase && hasNumbers && hasSymbols)) {
-            errors.push('Debe incluir mayúsculas, minúsculas, números y símbolos');
-        }
-
-        if (fullName && password.length > 0) {
-            const names = fullName.toLowerCase().split(' ').filter(n => n.length > 2);
-            if (names.some(name => password.toLowerCase().includes(name))) {
-                errors.push('La contraseña no debe contener tu nombre');
-            }
-        }
-
-        return errors;
-    };
-
-    const calculateAge = (birthDate) => {
-        if (!birthDate) return null;
-        const today = new Date();
-        const birth = new Date(birthDate);
-        let age = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-            age--;
-        }
-        return age;
-    };
-
     return (
-        <div className="space-y-6 max-w-7xl mx-auto px-4 py-8">
+        <div className="space-y-10 pb-32 animate-in fade-in duration-700">
             <PageHeader
-                title={<div className="flex items-center gap-3"><Users className="text-blue-600" size={32} />Gestión de Usuarios</div>}
-                description="Administra perfiles, roles y jerarquía de la iglesia."
+                title={<div className="flex items-center gap-4"><Users className="text-[var(--ln-brand-indigo)]" size={32} weight="bold" />Gestión de Usuarios</div>}
+                description="Panel administrativo para el control de perfiles, roles y permisos de la red ministerial."
                 action={
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                         {isAdmin && (
                             <Button
                                 onClick={exportToExcel}
                                 icon={Download}
                                 variant="secondary"
-                                className="shadow-lg shadow-green-500/20"
+                                className="shadow-lg"
                             >
-                                Exportar Excel
+                                Exportar
                             </Button>
                         )}
                         {canCreateUsers && (
                             <Button
                                 onClick={() => setShowCreateForm(true)}
                                 icon={UserPlus}
-                                className="shadow-lg shadow-blue-500/20"
+                                size="lg"
+                                className="shadow-xl shadow-[var(--ln-brand-indigo)]/10"
                             >
-                                Nuevo Usuario
+                                Registrar Usuario
                             </Button>
                         )}
                     </div>
                 }
             />
 
-            {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm">{error}</div>}
-            {success && <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm">{success}</div>}
+            <div className="space-y-8">
+                {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
+                        <span className="text-[13px] weight-510">{error}</span>
+                    </div>
+                )}
+                {success && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                        <span className="text-[13px] weight-510">{success}</span>
+                    </div>
+                )}
 
-            <UserFilters
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                roleFilter={roleFilter}
-                setRoleFilter={setRoleFilter}
-                sexFilter={sexFilter}
-                setSexFilter={setSexFilter}
-                liderDoceFilter={liderDoceFilter}
-                setLiderDoceFilter={setLiderDoceFilter}
-                lideresDoce={lideresDoce}
-                totalCount={totalUsers}
-                filteredCount={users.length}
-            />
+                <UserFilters
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    roleFilter={roleFilter}
+                    setRoleFilter={setRoleFilter}
+                    sexFilter={sexFilter}
+                    setSexFilter={setSexFilter}
+                    liderDoceFilter={liderDoceFilter}
+                    setLiderDoceFilter={setLiderDoceFilter}
+                    lideresDoce={lideresDoce}
+                    totalCount={totalUsers}
+                    filteredCount={users.length}
+                />
 
-            <UserTable
-                users={users}
-                loading={loading}
-                canEdit={canEdit}
-                pagination={pagination}
-                onEdit={(user) => setEditingUser({
-                    ...user,
-                    birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : '',
-                    pastorIds: user.pastorIds || (user.pastorId ? [user.pastorId] : []),
-                    pastorSpouseIds: user.pastorSpouseIds || [],
-                    liderDoceIds: user.liderDoceIds || (user.liderDoceId ? [user.liderDoceId] : []),
-                    liderDoceSpouseIds: user.liderDoceSpouseIds || [],
-                    liderCelulaIds: user.liderCelulaIds || (user.liderCelulaId ? [user.liderCelulaId] : []),
-                    liderCelulaSpouseIds: user.liderCelulaSpouseIds || [],
-                    spouseId: user.spouseId || '',
-                    neighborhood: user.neighborhood || '',
-                    role: user.roles?.find(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'].includes(r)) || user.roles?.[0] || 'DISCIPULO',
-                    sex: user.sex || '',
-                    documentType: user.documentType || ''
-                })}
-                onDelete={handleDeleteUser}
-                onResetPassword={setPasswordResetUser}
-            />
+                <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[32px] border border-[var(--ln-border-standard)] overflow-hidden shadow-2xl relative">
+                    <div className="px-10 py-8 border-b border-[var(--ln-border-standard)] bg-white/[0.02] flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 bg-[var(--ln-brand-indigo)]/10 rounded-xl text-[var(--ln-brand-indigo)]">
+                                <Users size={20} weight="bold" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] tracking-tight">Directorio de Usuarios</h3>
+                                <p className="text-[12px] text-[var(--ln-text-tertiary)] opacity-60">Resultados de búsqueda y jerarquía ministerial.</p>
+                            </div>
+                        </div>
+                        
+                        {!loading && users.length > 0 && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] text-[11px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-widest shadow-sm">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                Base de Datos Dinámica
+                            </div>
+                        )}
+                    </div>
 
+                    <UserTable
+                        users={users}
+                        loading={loading}
+                        canEdit={canEdit}
+                        pagination={pagination}
+                        onEdit={(user) => setEditingUser({
+                            ...user,
+                            birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : '',
+                            pastorIds: user.pastorIds || (user.pastorId ? [user.pastorId] : []),
+                            pastorSpouseIds: user.pastorSpouseIds || [],
+                            liderDoceIds: user.liderDoceIds || (user.liderDoceId ? [user.liderDoceId] : []),
+                            liderDoceSpouseIds: user.liderDoceSpouseIds || [],
+                            liderCelulaIds: user.liderCelulaIds || (user.liderCelulaId ? [user.liderCelulaId] : []),
+                            liderCelulaSpouseIds: user.liderCelulaSpouseIds || [],
+                            spouseId: user.spouseId || '',
+                            neighborhood: user.neighborhood || '',
+                            role: user.roles?.find(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'].includes(r)) || user.roles?.[0] || 'DISCIPULO',
+                            sex: user.sex || '',
+                            documentType: user.documentType || ''
+                        })}
+                        onDelete={handleDeleteUser}
+                        onResetPassword={setPasswordResetUser}
+                    />
+                    
+                    {/* Environmental Decoration */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--ln-brand-indigo)] opacity-[0.02] blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+            </div>
+
+            {/* Modales Informativos y de Acción */}
             <UserFormModal
                 isOpen={showCreateForm}
                 onClose={() => setShowCreateForm(false)}
-                title="Crear Nuevo Usuario"
+                title="Registrar Nuevo Usuario"
                 formData={formData}
                 setFormData={setFormData}
                 mode="create"
@@ -173,7 +172,7 @@ const UserManagement = () => {
                 pastores={pastores}
                 lideresDoce={lideresDoce}
                 lideresCelula={lideresCelula}
-                users={users} // To select spouse
+                users={users}
                 isAdmin={isAdmin}
                 validatePasswordRealTime={validatePasswordRealTime}
                 calculateAge={calculateAge}
@@ -184,7 +183,7 @@ const UserManagement = () => {
                 <UserFormModal
                     isOpen={!!editingUser}
                     onClose={() => setEditingUser(null)}
-                    title={`Editar: ${editingUser.fullName}`}
+                    title={`Editar Perfil: ${editingUser.fullName}`}
                     formData={editingUser}
                     setFormData={setEditingUser}
                     mode="edit"
@@ -193,7 +192,7 @@ const UserManagement = () => {
                     pastores={pastores}
                     lideresDoce={lideresDoce}
                     lideresCelula={lideresCelula}
-                    users={users} // To select spouse
+                    users={users}
                     isAdmin={isAdmin}
                     validatePasswordRealTime={validatePasswordRealTime}
                     calculateAge={calculateAge}

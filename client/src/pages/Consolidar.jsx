@@ -109,15 +109,13 @@ const Consolidar = () => {
 
             {/* Floating Refresh Button */}
             <div className="fixed bottom-8 right-8 z-40">
-                <Button
-                    variant="primary"
-                    size="sm"
-                    icon={ArrowsClockwise}
+                <button
                     onClick={() => window.location.reload()}
-                    className="shadow-xl"
+                    className="flex items-center gap-2.5 px-4 py-2.5 bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] text-white rounded-xl weight-510 text-[13px] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95"
                 >
+                    <ArrowsClockwise className="w-4 h-4" weight="bold" />
                     Actualizar
-                </Button>
+                </button>
             </div>
 
             <TabNavigator tabs={tabs} initialTabId="attendance" />

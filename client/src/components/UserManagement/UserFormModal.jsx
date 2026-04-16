@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { SpinnerIcon } from '@phosphor-icons/react';
+import { Spinner, CheckCircle, X } from '@phosphor-icons/react';
 import ActionModal from '../ActionModal';
 import UserFormFields from './UserFormFields';
 import PropTypes from 'prop-types';
+import { Button } from '../ui';
 
 const UserFormModal = ({
     isOpen,
@@ -25,7 +26,6 @@ const UserFormModal = ({
     const [showPassword, setShowPassword] = useState(false);
     const [passwordErrors, setPasswordErrors] = useState([]);
 
-    // Initialize password errors when form opens or formData changes
     useEffect(() => {
         if (isOpen && formData.password && mode === 'create') {
             setPasswordErrors(validatePasswordRealTime(formData.password, formData.fullName));
@@ -36,12 +36,7 @@ const UserFormModal = ({
 
     const handleSubmit = (e) => {
         if (e) e.preventDefault();
-        
-        // Prevent submission if there are password validation errors
-        if (passwordErrors.length > 0) {
-            return;
-        }
-        
+        if (passwordErrors.length > 0) return;
         onSubmit(e);
     };
 
@@ -50,47 +45,49 @@ const UserFormModal = ({
             isOpen={isOpen}
             title={title}
             onClose={onClose}
-            containerClassName="max-w-2xl md:max-w-4xl"
+            containerClassName="max-w-4xl"
         >
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <UserFormFields
-                    formData={formData}
-                    setFormData={setFormData}
-                    mode={mode}
-                    pastores={pastores}
-                    lideresDoce={lideresDoce}
-                    lideresCelula={lideresCelula}
-                    users={users}
-                    isAdmin={isAdmin}
-                    showPassword={showPassword}
-                    setShowPassword={setShowPassword}
-                    passwordErrors={passwordErrors}
-                    setPasswordErrors={setPasswordErrors}
-                    validatePasswordRealTime={validatePasswordRealTime}
-                    calculateAge={calculateAge}
-                    getAssignableRoles={getAssignableRoles}
-                />
+            <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[85vh]">
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                    <UserFormFields
+                        formData={formData}
+                        setFormData={setFormData}
+                        mode={mode}
+                        pastores={pastores}
+                        lideresDoce={lideresDoce}
+                        lideresCelula={lideresCelula}
+                        users={users}
+                        isAdmin={isAdmin}
+                        showPassword={showPassword}
+                        setShowPassword={setShowPassword}
+                        passwordErrors={passwordErrors}
+                        setPasswordErrors={setPasswordErrors}
+                        validatePasswordRealTime={validatePasswordRealTime}
+                        calculateAge={calculateAge}
+                        getAssignableRoles={getAssignableRoles}
+                    />
+                </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <button
+                <div className="flex justify-end items-center gap-4 p-6 bg-[var(--ln-bg-panel)] border-t border-[var(--ln-border-standard)] rounded-b-2xl">
+                    <Button
                         type="button"
+                        variant="ghost"
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
                     >
                         Cancelar
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="submit"
+                        variant="primary"
                         disabled={submitting || passwordErrors.length > 0}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-lg shadow-blue-500/30"
+                        icon={submitting ? Spinner : (mode === 'create' ? CheckCircle : null)}
+                        className={submitting ? 'animate-pulse' : ''}
                     >
-                        {submitting ? (
-                            <div className="flex items-center gap-2">
-                                <SpinnerIcon className="animate-spin" size={18} />
-                                <span>{mode === 'create' ? 'Creando...' : 'Guardando...'}</span>
-                            </div>
-                        ) : (mode === 'create' ? 'Crear Usuario' : 'Guardar Cambios')}
-                    </button>
+                        {submitting ? 
+                            (mode === 'create' ? 'Creando Usuario...' : 'Guardando Cambios...') : 
+                            (mode === 'create' ? 'Crear Usuario' : 'Guardar Cambios')
+                        }
+                    </Button>
                 </div>
             </form>
         </ActionModal>
