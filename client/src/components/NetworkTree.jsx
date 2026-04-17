@@ -6,9 +6,9 @@ import CoupleNodeTree from './tree/CoupleNodeTree';
 import UnassignedUsersModal from './unassigned/UnassignedUsersModal';
 import AssignConfirmDialog from './common/AssignConfirmDialog';
 import RadialView from './radial/RadialView';
-import { buildCoupleNetwork } from './utils/transformCouples';
-import { getRootNodeForRole } from './utils/buildHierarchy';
-import { getUnassignedUsers } from './utils/unassigned';
+import { buildCoupleNetwork } from '../utils/transformCouples';
+import { getRootNodeForRole } from '../utils/buildHierarchy';
+import { getUnassignedUsers } from '../utils/unassigned';
 import api from '../utils/api';
 import CardsView from './cards/CardsView';
 import ConfirmationModal from './ConfirmationModal';
@@ -223,10 +223,6 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
         {view === VIEW_TREE && (
           <div className="p-6">
             <div className="mb-4 flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-2">
-                <CaretDown size={14} />
-                <span>Ministerio de</span>
-              </div>
             </div>
             <div className="grid grid-cols-1 gap-6">
               <CoupleNodeTree

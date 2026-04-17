@@ -53,15 +53,25 @@ const formatUser = (user) => {
     let pastorSpouseIds = [];
     let liderDoceSpouseIds = [];
     let liderCelulaSpouseIds = [];
+    let pastorName = null;
+    let liderDoceName = null;
 
     // Handle parents field gracefully - default to empty array if not included
     const parents = user.parents || [];
     if (parents.length > 0) {
         // Legacy single IDs
-        pastorId = parents.find(p => p.role === 'PASTOR')?.parentId || null;
-        liderDoceId = parents.find(p => p.role === 'LIDER_DOCE')?.parentId || null;
-        liderCelulaId = parents.find(p => p.role === 'LIDER_CELULA')?.parentId || null;
-        
+        const pastorParent = parents.find(p => p.role === 'PASTOR');
+        const liderDoceParent = parents.find(p => p.role === 'LIDER_DOCE');
+        const liderCelulaParent = parents.find(p => p.role === 'LIDER_CELULA');
+
+        pastorId = pastorParent?.parentId || null;
+        liderDoceId = liderDoceParent?.parentId || null;
+        liderCelulaId = liderCelulaParent?.parentId || null;
+
+        // Get names from parent profiles
+        pastorName = pastorParent?.parent?.profile?.fullName || null;
+        liderDoceName = liderDoceParent?.parent?.profile?.fullName || null;
+
         // New array format
         pastorIds = parents.filter(p => p.role === 'PASTOR').map(p => p.parentId);
         liderDoceIds = parents.filter(p => p.role === 'LIDER_DOCE').map(p => p.parentId);
@@ -131,6 +141,8 @@ const formatUser = (user) => {
         pastorSpouseIds,
         liderDoceSpouseIds,
         liderCelulaSpouseIds,
+        pastorName,
+        liderDoceName,
         isCoordinator: user.isCoordinator || (user.moduleCoordinations && user.moduleCoordinations.length > 0),
         isModuleTreasurer: user.moduleTreasurers && user.moduleTreasurers.length > 0,
         moduleCoordinations: user.moduleCoordinations?.map(mc => mc.moduleName) || [],

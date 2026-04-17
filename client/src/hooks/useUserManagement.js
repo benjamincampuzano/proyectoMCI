@@ -10,10 +10,12 @@ const useUserManagement = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [roleFilter, setRoleFilter] = useState('');
-    const [sexFilter, setSexFilter] = useState('');
+    const [nombreFilter, setNombreFilter] = useState('');
     const [liderDoceFilter, setLiderDoceFilter] = useState('');
+    const [redFilter, setRedFilter] = useState('');
+    const [sexoFilter, setSexoFilter] = useState('');
+    const [rolFilter, setRolFilter] = useState('');
+    const [asignacionesFilter, setAsignacionesFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalUsers, setTotalUsers] = useState(0);
     const [usersPerPage] = useState(50); // Límite para no ADMIN
@@ -135,10 +137,12 @@ const useUserManagement = () => {
             }
 
             // Enviar filtros al backend
-            if (roleFilter) params.append('role', roleFilter);
-            if (searchTerm) params.append('search', searchTerm);
-            if (sexFilter) params.append('sexFilter', sexFilter);
+            if (nombreFilter) params.append('search', nombreFilter);
             if (liderDoceFilter) params.append('liderDoceFilter', liderDoceFilter);
+            if (redFilter) params.append('network', redFilter);
+            if (sexoFilter) params.append('sex', sexoFilter);
+            if (rolFilter) params.append('role', rolFilter);
+            if (asignacionesFilter) params.append('asignaciones', asignacionesFilter);
 
             const response = await api.get(`/users?${params.toString()}`);
 
@@ -154,7 +158,7 @@ const useUserManagement = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, roleFilter, searchTerm, sexFilter, liderDoceFilter, usersPerPage, currentUser, auth]);
+    }, [currentPage, nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, usersPerPage, currentUser, auth]);
 
     useEffect(() => {
         fetchUsers();
@@ -364,7 +368,7 @@ const useUserManagement = () => {
     // Resetear página cuando cambian los filtros
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, roleFilter, sexFilter, liderDoceFilter]);
+    }, [nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter]);
 
     const validatePasswordRealTime = useCallback((password, fullName = '') => {
         const result = validatePassword(password, { fullName });
@@ -407,10 +411,12 @@ const useUserManagement = () => {
             // Obtener todos los usuarios (sin paginación para ADMIN)
             const params = new URLSearchParams();
             params.append('export', 'true');
-            if (roleFilter) params.append('role', roleFilter);
-            if (searchTerm) params.append('search', searchTerm);
-            if (sexFilter) params.append('sexFilter', sexFilter);
+            if (nombreFilter) params.append('search', nombreFilter);
             if (liderDoceFilter) params.append('liderDoceFilter', liderDoceFilter);
+            if (redFilter) params.append('network', redFilter);
+            if (sexoFilter) params.append('sex', sexoFilter);
+            if (rolFilter) params.append('role', rolFilter);
+            if (asignacionesFilter) params.append('asignaciones', asignacionesFilter);
 
             const response = await api.get(`/users?${params.toString()}`);
             const usersData = response.data.users || response.data || [];
@@ -497,21 +503,25 @@ const useUserManagement = () => {
         } catch (err) {
             handleError(err, 'export');
         }
-    }, [isUserAdmin, roleFilter, searchTerm, sexFilter, liderDoceFilter, handleError]);
+    }, [isUserAdmin, nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, handleError]);
 
     return {
         users,
         loading,
         error,
         success,
-        searchTerm,
-        setSearchTerm,
-        roleFilter,
-        setRoleFilter,
-        sexFilter,
-        setSexFilter,
+        nombreFilter,
+        setNombreFilter,
         liderDoceFilter,
         setLiderDoceFilter,
+        redFilter,
+        setRedFilter,
+        sexoFilter,
+        setSexoFilter,
+        rolFilter,
+        setRolFilter,
+        asignacionesFilter,
+        setAsignacionesFilter,
         editingUser,
         setEditingUser,
         showCreateForm,

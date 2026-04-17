@@ -1,5 +1,5 @@
-import { EnvelopeOpen, Phone, MapPin, Pencil, Trash, Key, IdentificationCard, GenderIntersex, Cake, CheckCircle, Warning, UserCircle } from '@phosphor-icons/react';
-import DataTable from '../DataTable';
+import { EnvelopeOpen, Phone, MapPin, Pencil, Trash, Key, IdentificationCard, GenderMale, GenderFemale, Cake, CheckCircle, Warning, UserCircle, WhatsappLogo } from '@phosphor-icons/react';
+import DataTable from '../ui/DataTable';
 import PropTypes from 'prop-types';
 
 const calculateAge = (birthDate) => {
@@ -36,31 +36,59 @@ const labelMap = (role) => {
 const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onResetPassword }) => {
     const columns = [
         {
-            key: 'user',
-            header: 'Usuario',
-            headerClassName: 'px-10 py-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 w-64',
-            cellClassName: 'px-10 py-5',
-            render: (user) => (
+            key: 'fullName',
+            title: 'Usuario',
+            render: (_, user) => (
                 <div className="flex items-center gap-3.5 min-w-0 group/user">
                     <div className="w-10 h-10 flex-shrink-0 rounded-xl bg-[var(--ln-brand-indigo)]/10 flex items-center justify-center text-[var(--ln-brand-indigo)] weight-590 text-sm border border-[var(--ln-brand-indigo)]/20 transition-transform group-hover/user:scale-110 shadow-sm uppercase">
                         {user.fullName?.charAt(0)}
                     </div>
                     <div className="min-w-0">
                         <p className="text-[14px] weight-590 text-[var(--ln-text-primary)] truncate tracking-tight" title={user.fullName}>{user.fullName}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                            <IdentificationCard size={12} className="text-[var(--ln-text-quaternary)] opacity-60" />
-                            <span className="text-[10px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-wider">{user.document || 'S/D'}</span>
+                        <div className="flex items-center gap-3 mt-0.5">
+                            <div className="flex items-center gap-1.5">
+                                {user.sex === 'HOMBRE' ? (
+                                    <GenderMale size={12} className="text-blue-500" />
+                                ) : user.sex === 'MUJER' ? (
+                                    <GenderFemale size={12} className="text-pink-500" />
+                                ) : (
+                                    <GenderMale size={12} className="text-[var(--ln-text-quaternary)] opacity-60" />
+                                )}
+                                <span className="text-[10px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-wider">{user.sex === 'HOMBRE' ? 'Hombre' : user.sex === 'MUJER' ? 'Mujer' : 'S/D'}</span>
+                            </div>
+                            {(() => {
+                                const isPastor = user.roles?.includes('PASTOR');
+                                const isLiderDoce = user.roles?.includes('LIDER_DOCE');
+
+                                let displayValue = null;
+                                let label = 'L12';
+
+                                if (isPastor) {
+                                    displayValue = user.fullName;
+                                    label = 'PASTOR';
+                                } else if (isLiderDoce) {
+                                    displayValue = user.pastorName;
+                                    label = 'PA';
+                                } else {
+                                    displayValue = user.liderDoceName;
+                                    label = 'L12';
+                                }
+
+                                return displayValue ? (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[var(--ln-brand-indigo)]/10 border border-[var(--ln-brand-indigo)]/20">
+                                        <span className="text-[9px] weight-700 text-[var(--ln-brand-indigo)] uppercase tracking-wider">{label}: {displayValue}</span>
+                                    </div>
+                                ) : null;
+                            })()}
                         </div>
                     </div>
                 </div>
             )
         },
         {
-            key: 'contact',
-            header: 'Contacto',
-            headerClassName: 'px-6 py-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 w-64',
-            cellClassName: 'px-6 py-5',
-            render: (user) => {
+            key: 'email',
+            title: 'Contacto',
+            render: (_, user) => {
                 const age = calculateAge(user.birthDate);
                 return (
                     <div className="space-y-1">
@@ -73,6 +101,15 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
                                 <div className="flex items-center gap-1.5 text-[11px] weight-510 text-[var(--ln-text-tertiary)] opacity-80">
                                     <Phone size={13} className="text-[var(--ln-text-quaternary)]" weight="bold" />
                                     <span>{user.phone}</span>
+                                    <a
+                                        href={`https://wa.me/${user.phone.replace(/\D/g, '')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-1 p-1 rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 hover:text-emerald-700 transition-colors"
+                                        title="Enviar WhatsApp"
+                                    >
+                                        <WhatsappLogo size={14} weight="bold" />
+                                    </a>
                                 </div>
                             )}
                             {age !== null && (
@@ -88,10 +125,8 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
         },
         {
             key: 'authorization',
-            header: 'Permisos',
-            headerClassName: 'px-4 py-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 w-32 text-center',
-            cellClassName: 'px-4 py-5 text-center',
-            render: (user) => {
+            title: 'Permisos',
+            render: (_, user) => {
                 const isMinor = calculateAge(user.birthDate) < 18;
                 return (
                     <div className="flex gap-1.5 justify-center">
@@ -106,10 +141,8 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
         },
         {
             key: 'primary_role',
-            header: 'Rol / Perfil',
-            headerClassName: 'px-6 py-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 w-44',
-            cellClassName: 'px-6 py-5',
-            render: (user) => {
+            title: 'Rol / Perfil',
+            render: (_, user) => {
                 const primaryRole = user.roles?.find(r => PRIMARY_ROLES.includes(r));
                 const needsLiderDoce = !user.liderDoceId &&
                     !user.roles?.includes('ADMIN') &&
@@ -135,12 +168,10 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
             }
         },
         {
-            key: 'secondary_roles',
-            header: 'Asignaciones',
-            headerClassName: 'px-6 py-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 w-48',
-            cellClassName: 'px-6 py-5',
-            render: (user) => {
-                const secondary = user.secondaryRoles || [];
+            key: 'secondaryRoles',
+            title: 'Asignaciones',
+            render: (value, user) => {
+                const secondary = value || [];
                 if (secondary.length === 0) {
                     return <span className="text-[11px] weight-510 text-[var(--ln-text-quaternary)] italic opacity-40">Funciones generales</span>;
                 }
@@ -157,11 +188,9 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
         },
         ...(canEdit ? [{
             key: 'actions',
-            header: 'Acciones',
-            headerClassName: 'px-10 py-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-right w-44',
-            cellClassName: 'px-10 py-5 text-right',
-            render: (user) => (
-                <div className="flex justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300 transform lg:translate-x-2 lg:group-hover:translate-x-0">
+            title: 'Acciones',
+            render: (_, user) => (
+                <div className="flex justify-end gap-1">
                     <button
                         onClick={() => onEdit(user)}
                         className="p-2 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-brand-indigo)] hover:bg-[var(--ln-brand-indigo)]/5 rounded-xl transition-all border border-transparent hover:border-[var(--ln-brand-indigo)]/10"
@@ -193,20 +222,7 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
             columns={columns}
             data={users}
             loading={loading}
-            skeletonRowCount={5}
-            emptyMessage={
-                <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                    <div className="w-16 h-16 bg-[var(--ln-bg-panel)] rounded-2xl flex items-center justify-center border border-[var(--ln-border-standard)] text-[var(--ln-text-quaternary)] shadow-sm">
-                        <UserCircle size={32} weight="bold" />
-                    </div>
-                    <div className="text-center">
-                        <p className="weight-590 text-[var(--ln-text-primary)]">No se encontraron usuarios</p>
-                        <p className="text-[12px] text-[var(--ln-text-tertiary)] opacity-60 mt-1">Intente ajustar los filtros de búsqueda o red.</p>
-                    </div>
-                </div>
-            }
-            tableClassName="w-full text-left"
-            rowClassName="group hover:bg-white/[0.02] transition-colors border-b border-[var(--ln-border-standard)] last:border-0"
+            emptyMessage="No se encontraron usuarios"
             pagination={pagination}
         />
     );

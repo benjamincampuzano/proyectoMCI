@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, MapPin, Clock, Calendar, DotIcon, Trash, Pen, X, List, SquaresFourIcon, MapTrifold, Tag, Image, UserIcon } from '@phosphor-icons/react';
+import { Plus, Users, MapPin, Clock, Calendar, DotIcon, Trash, Pen, X, List, SquaresFour, MapTrifold, Tag, Image, UserIcon } from '@phosphor-icons/react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -574,8 +574,8 @@ const CellManagement = ({ moduleCoordinator }) => {
 
             {/* Management Modal */}
             {selectedCell && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
-                    <div className="bg-white dark:bg-[#272729] rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] sm:p-4">
+                    <div className="bg-white dark:bg-[#272729] sm:rounded-lg shadow-xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto">
                         <div className="p-4 sm:p-6 border-b border-[#d1d1d6] dark:border-[#3a3a3c] flex justify-between items-center sticky top-0 bg-white dark:bg-[#272729]">
                             <h3 className="text-lg sm:text-xl font-bold text-[#1d1d1f] dark:text-white">
                                 Agregar Usuarios a la Célula: {selectedCell.name}
@@ -862,8 +862,8 @@ const CellManagement = ({ moduleCoordinator }) => {
 
             {/* Create/Edit Form Modal */}
             {showCreateForm && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-                    <div className="bg-white dark:bg-[#272729] rounded-2xl shadow-xl w-full max-w-2xl h-[95vh] sm:h-auto max-h-[95vh] flex flex-col overflow-hidden">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center sm:p-4">
+                    <div className="bg-white dark:bg-[#272729] sm:rounded-2xl shadow-xl w-full max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[95vh] flex flex-col overflow-hidden">
                         {/* Header */}
                         <div className="p-4 sm:p-6 border-b border-[#d1d1d6] dark:border-[#3a3a3c] flex justify-between items-center flex-shrink-0">
                             <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -906,7 +906,7 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                         {/* Content */}
                         <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
-                            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+                            <div className="flex-1 overflow-y-auto p-4">
                                 <div className="space-y-4 sm:space-y-6">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="sm:col-span-2">
@@ -1168,8 +1168,8 @@ const CellManagement = ({ moduleCoordinator }) => {
                             </div>
 
                             {/* Footer - Fixed at bottom outside scroll area */}
-                            <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-gray-900">
-                                <div className="p-6 flex justify-end gap-3">
+                            <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-gray-900 flex-shrink-0">
+                                <div className="p-4 flex justify-end gap-2">
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -1198,21 +1198,21 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 cellType: 'ABIERTA'
                                             });
                                         }}
-                                        className="px-4 py-2 text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#272729] border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-[#f5f5f7] dark:hover:bg-gray-700 transition-colors"
+                                        className="px-3 py-2 text-sm text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#272729] border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-[#f5f5f7] dark:hover:bg-gray-700 transition-colors"
                                     >
                                         Cancelar
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
+                                        className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
                                     >
                                         {loading ? (
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                                         ) : (
                                             <>
-                                                <Plus size={20} />
-                                                <span>{isEditing ? 'Actualizar Célula' : 'Guardar Célula'}</span>
+                                                <Plus size={18} />
+                                                <span>{isEditing ? 'Actualizar' : 'Guardar'}</span>
                                             </>
                                         )}
                                     </button>
@@ -1225,8 +1225,8 @@ const CellManagement = ({ moduleCoordinator }) => {
 
             {/* Map Selection Modal */}
             {showMapModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-                    <div className="bg-white dark:bg-[#272729] rounded-2xl shadow-xl w-full max-w-4xl h-[90vh] sm:h-auto max-h-[90vh] flex flex-col overflow-hidden">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center sm:p-4">
+                    <div className="bg-white dark:bg-[#272729] sm:rounded-2xl shadow-xl w-full max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden">
                         <div className="p-3 sm:p-4 border-b border-[#d1d1d6] dark:border-[#3a3a3c] flex justify-between items-center flex-shrink-0">
                             <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                 <MapTrifold className="w-5 h-5 text-green-600" />
@@ -1335,7 +1335,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                             </div>
                         </div>
 
-                        <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-gray-900 p-4 flex justify-end gap-3">
+                        <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-gray-900 p-4 flex justify-end gap-2 flex-shrink-0">
                             <button
                                 type="button"
                                 onClick={() => {
@@ -1344,7 +1344,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                     setMapAddress('');
                                     setMapResults([]);
                                 }}
-                                className="px-4 py-2 text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#272729] border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-[#f5f5f7] dark:hover:bg-gray-700 transition-colors"
+                                className="px-3 py-2 text-sm text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#272729] border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-[#f5f5f7] dark:hover:bg-gray-700 transition-colors"
                             >
                                 Cancelar
                             </button>
@@ -1352,9 +1352,9 @@ const CellManagement = ({ moduleCoordinator }) => {
                                 type="button"
                                 onClick={handleConfirmCoords}
                                 disabled={!selectedCoords}
-                                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                             >
-                                <MapPin size={18} />
+                                <MapPin size={16} />
                                 <span>Confirmar</span>
                             </button>
                         </div>
@@ -1419,33 +1419,31 @@ const CellManagement = ({ moduleCoordinator }) => {
                         ))}
                     </select>
                 </div>
-                <div className="flex bg-[#f5f5f7] dark:bg-[#272729] rounded-lg p-1">
-                    <button
-                        onClick={() => setViewMode('table')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                            viewMode === 'table'
-                                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-[#1d1d1f] dark:text-white/80 hover:text-[#1d1d1f] dark:hover:text-white'
-                        }`}
-                        title="Vista de tabla"
-                    >
-                        <List size={18} />
-                    </button>
-                    <button
-                        onClick={() => setViewMode('cards')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                            viewMode === 'cards'
-                                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-[#1d1d1f] dark:text-white/80 hover:text-[#1d1d1f] dark:hover:text-white'
-                        }`}
-                        title="Vista de tarjetas"
-                    >
-                        <SquaresFourIcon size={18} />
-                    </button>
-                </div>
-                <p className="text-xs text-[#86868b] whitespace-nowrap">
-                    Mostrando {filteredCells.length} células
-                </p>
+                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
+                        <button
+                            onClick={() => setViewMode('cards')}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'cards' 
+                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
+                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                            }`}
+                        >
+                            <SquaresFour size={18} weight="bold" />
+                            Tarjetas
+                        </button>
+                        <button
+                            onClick={() => setViewMode('table')}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'table' 
+                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
+                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                            }`}
+                        >
+                            <List size={18} weight="bold" />
+                            Tabla
+                        </button>
+                    </div>
+                        <p className="text-xs text-[#86868b] whitespace-nowrap">
+                            Mostrando {filteredCells.length} células
+                        </p>
             </div>
 
             {/* List of Cells */}

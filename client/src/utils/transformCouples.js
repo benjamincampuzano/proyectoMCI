@@ -1,15 +1,3 @@
-// Build a couple-oriented tree from a person-centric tree
-// Input node shape (expected from current codebase):
-// { id, fullName, spouseId?, isCouple?, roles?, disciples?, assignedGuests?, invitedGuests? }
-// Output shape CoupleNode:
-// {
-//   id: string,
-//   partners: [{ id, fullName, roles: [] }],
-//   roles: string[],
-//   disciples: CoupleNode[],
-//   guests: { assigned: [], invited: [] },
-// }
-
 export function buildIdIndex(root) {
   const index = new Map();
   function dfs(node) {
@@ -29,7 +17,6 @@ export function buildCoupleNetwork(root) {
   const index = buildIdIndex(root);
   const visited = new Set();
   
-  // Build bidirectional spouse map for robust matching
   const spouseMap = new Map();
   index.forEach((node, id) => {
     if (node.spouseId) {
@@ -40,12 +27,10 @@ export function buildCoupleNetwork(root) {
   });
   
 
-
   function toCoupleNode(person) {
     if (!person) return null;
     const pId = String(person.id);
 
-    // Avoid double-processing same physical person
     if (visited.has(pId)) return null;
 
     const partners = [];
@@ -55,7 +40,6 @@ export function buildCoupleNetwork(root) {
     };
 
     if (Array.isArray(person.partners) && person.partners.length > 0) {
-      // Use pre-grouped partners from API if available
       person.partners.forEach(p => {
         visited.add(String(p.id));
         partners.push({ ...p, roles: Array.isArray(p.roles) ? p.roles : [], sex: p.profile?.sex });
@@ -64,7 +48,6 @@ export function buildCoupleNetwork(root) {
       visited.add(pId);
       pushPartner(person);
 
-      // Try to find spouse in both directions using spouseMap
       const sIdFromMap = spouseMap.get(pId);
       if (sIdFromMap) {
         const spouse = index.get(sIdFromMap);
@@ -75,26 +58,17 @@ export function buildCoupleNetwork(root) {
       }
     }
 
-    // Sort partners: men (HOMBRE) first, then women (MUJER)
     partners.sort((a, b) => {
-      // If both have the same sex, maintain original order
       if (a.sex === b.sex) return 0;
-      
-      // HOMBRE comes before MUJER
       if (a.sex === 'HOMBRE' && b.sex === 'MUJER') return -1;
       if (a.sex === 'MUJER' && b.sex === 'HOMBRE') return 1;
-      
-      // If one has no sex, put it after the one with sex
       if (a.sex && !b.sex) return -1;
       if (!a.sex && b.sex) return 1;
-      
-      // If neither has sex, maintain original order
       return 0;
     });
 
     const roleUnion = Array.from(new Set(partners.flatMap(p => p.roles)));
 
-    // children: combine disciples from both partners, drop duplicates/partners
     const childrenMap = new Map();
     for (const partner of partners) {
       const ds = (index.get(String(partner.id))?.disciples) || [];
@@ -106,7 +80,6 @@ export function buildCoupleNetwork(root) {
     }
     const children = Array.from(childrenMap.values()).map(toCoupleNode).filter(Boolean);
 
-    // guests: merge
     const assigned = [];
     const invited = [];
     for (const partner of partners) {
@@ -123,7 +96,6 @@ export function buildCoupleNetwork(root) {
       roles: roleUnion,
       disciples: children,
       guests: { assigned, invited },
-      // Preserve leader information from the original person
       pastor: person.pastor,
       liderDoce: person.liderDoce,
       liderCelula: person.liderCelula,

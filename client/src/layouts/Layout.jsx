@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { House, Users, CrossIcon, UserPlus, Heart, PaperPlaneTilt, Calendar, BookOpen, SignOut, TreeStructure, Target, ShieldCheck, Baby, CaretLeft, CaretRight, GuitarIcon } from '@phosphor-icons/react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';
-import PasswordChangeModal from '../components/auth/PasswordChangeModal';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 import logo from '../assets/logo.jpg';
 import api from '../utils/api';
 
@@ -155,7 +155,7 @@ const Layout = () => {
                 onClose={() => setShowProfileModal(false)}
             />
 
-            <PasswordChangeModal
+            <ChangePasswordModal
                 isOpen={user?.mustChangePassword}
                 onClose={() => { }}
             />

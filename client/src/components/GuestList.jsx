@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SpinnerIcon, MagnifyingGlass, Funnel, PencilIcon, Trash, UserPlus, X, FloppyDiskIcon, UserCheckIcon, Users, Calendar, Clock, Phone, MapPin, Star, CheckCircle } from '@phosphor-icons/react';
+import { SpinnerIcon, MagnifyingGlass, Funnel, PencilIcon, Trash, UserPlus, X, FloppyDiskIcon, UserCheckIcon, Users, CheckCircle, Crown, CaretCircleDownIcon, SlidersHorizontal } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import { AsyncSearchSelect, Button } from './ui';
@@ -7,6 +7,14 @@ import useGuestManagement from '../hooks/useGuestManagement';
 import { useAuth } from '../context/AuthContext';
 import { DATA_POLICY_URL } from '../constants/policies';
 import api from '../utils/api';
+
+// Configuración de colores para filtros (misma estética que UserFilters)
+const FILTER_COLORS = {
+    search: { bg: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-200', ring: 'focus:ring-blue-500/20', focusBorder: 'focus:border-blue-500', icon: 'text-blue-500', label: 'Nombre' },
+    status: { bg: 'bg-purple-500', text: 'text-purple-600', border: 'border-purple-200', ring: 'focus:ring-purple-500/20', focusBorder: 'focus:border-purple-500', icon: 'text-purple-500', label: 'Estado' },
+    invitedBy: { bg: 'bg-emerald-500', text: 'text-emerald-600', border: 'border-emerald-200', ring: 'focus:ring-emerald-500/20', focusBorder: 'focus:border-emerald-500', icon: 'text-emerald-500', label: 'Invitado por' },
+    liderDoce: { bg: 'bg-amber-500', text: 'text-amber-600', border: 'border-amber-200', ring: 'focus:ring-amber-500/20', focusBorder: 'focus:border-amber-500', icon: 'text-amber-500', label: 'Ministerio' },
+};
 
 const GuestList = ({ refreshTrigger }) => {
     const {
@@ -99,135 +107,8 @@ const GuestList = ({ refreshTrigger }) => {
         return labels[status] || status;
     };
 
-    // Estado para el filtro activo
-    const [activeQuickFilter, setActiveQuickFilter] = useState('all');
-
-    // Filtros rápidos modernos con iconos y colores
-    const quickFilters = [
-        { 
-            id: 'all', 
-            label: 'Todos', 
-            icon: Users, 
-            color: 'bg-[#f5f5f7] text-[#1d1d1f] dark:bg-[#272729] dark:text-white/80 border-[#d1d1d6] dark:border-[#3a3a3c]',
-            activeColor: 'bg-blue-500 text-white border-blue-600 dark:bg-blue-600'
-        },
-        { 
-            id: 'mine', 
-            label: 'Mis invitados', 
-            icon: UserPlus, 
-            color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-300 dark:border-green-700',
-            activeColor: 'bg-green-500 text-white border-green-600 dark:bg-green-600'
-        },
-        { 
-            id: 'uncontacted', 
-            label: 'Sin contactar', 
-            icon: Clock, 
-            color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700',
-            activeColor: 'bg-yellow-500 text-white border-yellow-600 dark:bg-yellow-600'
-        },
-        { 
-            id: 'contacted', 
-            label: 'Contactados', 
-            icon: Phone, 
-            color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-300 dark:border-blue-700',
-            activeColor: 'bg-blue-500 text-white border-blue-600 dark:bg-blue-600'
-        },
-        { 
-            id: 'visited', 
-            label: 'Visitados', 
-            icon: MapPin, 
-            color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-300 dark:border-purple-700',
-            activeColor: 'bg-purple-500 text-white border-purple-600 dark:bg-purple-600'
-        },
-        { 
-            id: 'consolidated', 
-            label: 'Consolidados', 
-            icon: Star, 
-            color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700',
-            activeColor: 'bg-emerald-500 text-white border-emerald-600 dark:bg-emerald-600'
-        },
-        { 
-            id: 'this_week', 
-            label: 'Esta semana', 
-            icon: Calendar, 
-            color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700',
-            activeColor: 'bg-indigo-500 text-white border-indigo-600 dark:bg-indigo-600'
-        },
-        { 
-            id: 'this_month', 
-            label: 'Este mes', 
-            icon: Calendar, 
-            color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 border-pink-300 dark:border-pink-700',
-            activeColor: 'bg-pink-500 text-white border-pink-600 dark:bg-pink-600'
-        },
-    ];
-
-    const handleQuickFilter = (filterId) => {
-        // Limpiar filtros anteriores
-        setStatusFilter('');
-        setInvitedByFilter(null);
-        setLiderDoceFilter(null);
-        setSearchTerm('');
-        
-        // Establecer filtro activo
-        setActiveQuickFilter(filterId);
-
-        switch (filterId) {
-            case 'mine':
-                setInvitedByFilter(currentUser?.id);
-                break;
-            case 'uncontacted':
-                setStatusFilter('NUEVO');
-                break;
-            case 'contacted':
-                setStatusFilter('CONTACTADO');
-                break;
-            case 'visited':
-                setStatusFilter('CONSOLIDADO');
-                break;
-            case 'consolidated':
-                setStatusFilter('GANADO');
-                break;
-            case 'this_week':
-                // El backend manejará este filtro
-                setSearchTerm('__this_week__');
-                break;
-            case 'this_month':
-                setSearchTerm('__this_month__');
-                break;
-            default:
-                // 'all' - no aplicar filtros específicos
-                break;
-        }
-
-        // Aplicar el filtro
-        setTimeout(() => fetchGuests(), 0);
-    };
-
-    // Función para verificar si un filtro está activo
-    const isFilterActive = (filterId) => {
-        if (activeQuickFilter === filterId) return true;
-        
-        // Verificación adicional basada en los valores actuales de los filtros
-        switch (filterId) {
-            case 'mine':
-                return invitedByFilter === currentUser?.id;
-            case 'uncontacted':
-                return statusFilter === 'NUEVO';
-            case 'contacted':
-                return statusFilter === 'CONTACTADO';
-            case 'visited':
-                return statusFilter === 'CONSOLIDADO';
-            case 'consolidated':
-                return statusFilter === 'GANADO';
-            case 'this_week':
-                return searchTerm === '__this_week__';
-            case 'this_month':
-                return searchTerm === '__this_month__';
-            default:
-                return false;
-        }
-    };
+    // Estado para mostrar/ocultar filtros avanzados (ocultos por defecto en móvil)
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
     // Funciones auxiliares de permisos
     const canEditAllFields = (guest) => {
@@ -242,6 +123,39 @@ const GuestList = ({ refreshTrigger }) => {
         return roles.includes('ADMIN') || roles.includes('LIDER_DOCE');
     };
 
+    // Funciones auxiliares para clases de filtros
+    const getInputClass = (colorKey) => {
+        const colors = FILTER_COLORS[colorKey];
+        return `w-full pl-11 pr-4 py-3 bg-white dark:bg-gray-800 border-2 ${colors.border} ${colors.focusBorder} ${colors.ring} text-[14px] font-semibold text-gray-900 dark:text-white rounded-xl outline-none transition-all placeholder:text-gray-400 hover:shadow-lg hover:shadow-${colorKey === 'search' ? 'blue' : colorKey === 'status' ? 'purple' : colorKey === 'invitedBy' ? 'emerald' : 'amber'}-500/10`;
+    };
+
+    const getLabelClass = (colorKey) => {
+        const colors = FILTER_COLORS[colorKey];
+        return `block text-[11px] font-extrabold ${colors.text} uppercase tracking-widest mb-2 pl-1 flex items-center gap-1.5`;
+    };
+
+    const getIconClass = (colorKey) => {
+        const colors = FILTER_COLORS[colorKey];
+        return `absolute left-4 top-1/2 -translate-y-1/2 ${colors.icon} transition-all duration-300 group-focus-within:scale-110`;
+    };
+
+    const FilterBadge = ({ color, children }) => (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold text-white ${color} shadow-lg`}>
+            {children}
+        </span>
+    );
+
+    const hasAdvancedFilters = searchTerm || statusFilter || invitedByFilter || liderDoceFilter;
+    const activeAdvancedCount = [searchTerm, statusFilter, invitedByFilter, liderDoceFilter].filter(Boolean).length;
+
+    const clearAdvancedFilters = () => {
+        setSearchTerm('');
+        setStatusFilter('');
+        setInvitedByFilter(null);
+        setLiderDoceFilter(null);
+        setTimeout(() => fetchGuests(), 0);
+    };
+
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
             <h2 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-6">Lista de Invitados</h2>
@@ -252,130 +166,200 @@ const GuestList = ({ refreshTrigger }) => {
                 </div>
             )}
 
-            {/* Filtros rápidos modernos */}
-            <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                    <Funnel size={18} className="text-[#86868b] dark:text-gray-400" />
-                    <h3 className="text-sm font-semibold text-[#1d1d1f] dark:text-white/80">Filtros rápidos</h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {quickFilters.map((filter) => {
-                        const isActive = isFilterActive(filter.id);
-                        const Icon = filter.icon;
-                        return (
+            {/* Sección de Filtros con estética unificada */}
+            <div className="bg-gradient-to-br from-white via-white to-gray-50/50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800/80 backdrop-blur-xl rounded-[24px] border-2 border-gray-200 dark:border-gray-700 shadow-xl shadow-black/5 dark:shadow-none overflow-hidden mb-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                {/* Header con toggle en móvil */}
+                <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50/80 to-white dark:from-gray-800 dark:to-gray-800/80">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
+                            <SlidersHorizontal size={20} weight="bold" className="text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">Filtros Avanzados</h3>
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 hidden sm:block">Filtra invitados por múltiples criterios</p>
+                        </div>
+                        {activeAdvancedCount > 0 && (
+                            <span className="ml-2 px-2.5 py-1 rounded-full bg-gradient-to-r from-red-500 to-pink-500 text-white text-[11px] font-bold shadow-lg shadow-red-500/30">
+                                {activeAdvancedCount} activo{activeAdvancedCount > 1 ? 's' : ''}
+                            </span>
+                        )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                        {hasAdvancedFilters && (
                             <button
-                                key={filter.id}
-                                onClick={() => handleQuickFilter(filter.id)}
-                                className={`
-                                    px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-200 transform hover:scale-105
-                                    flex items-center gap-2 shadow-sm hover:shadow-md
-                                    ${isActive 
-                                        ? filter.activeColor + ' shadow-md ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800' 
-                                        : filter.color + ' hover:opacity-80'
-                                    }
-                                `}
-                                title={filter.label}
+                                onClick={clearAdvancedFilters}
+                                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all active:scale-95"
                             >
-                                {Icon && <Icon size={16} weight={isActive ? 'fill' : 'regular'} />}
-                                <span className="whitespace-nowrap">{filter.label}</span>
-                                {isActive && (
-                                    <CheckCircle size={14} weight="fill" className="ml-1" />
-                                )}
+                                <X size={14} weight="bold" /> Limpiar
                             </button>
-                        );
-                    })}
-                </div>
-                {activeQuickFilter !== 'all' && (
-                    <div className="mt-3 flex items-center gap-2">
-                        <span className="text-xs text-[#86868b] dark:text-gray-400">
-                            Filtro activo: <strong>{quickFilters.find(f => f.id === activeQuickFilter)?.label}</strong>
-                        </span>
+                        )}
+                        {/* Botón toggle solo en móvil */}
                         <button
-                            onClick={() => handleQuickFilter('all')}
-                            className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                            className="sm:hidden flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500 text-white text-[13px] font-semibold shadow-lg shadow-blue-500/30 transition-all active:scale-95"
                         >
-                            Limpiar filtro
+                            {showAdvancedFilters ? 'Ocultar' : 'Mostrar'}
+                            <CaretCircleDownIcon size={16} weight="bold" className={`transition-transform duration-300 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
                         </button>
                     </div>
-                )}
-            </div>
-
-            {/* Filtros */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="relative">
-                    <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                        placeholder="Buscar por nombre..."
-                        className="w-full pl-10 pr-4 py-2 bg-[#f5f5f7] dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                    />
                 </div>
 
-                <div>
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full px-4 py-2 bg-[#f5f5f7] dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                    >
-                        <option value="">Estado (Todos)</option>
-                        <option value="NUEVO">Nuevo</option>
-                        <option value="CONTACTADO">Llamado</option>
-                        <option value="CONSOLIDADO">Visitado</option>
-                        <option value="GANADO">Consolidado</option>
-                    </select>
-                </div>
-
-                <div>
-                    <AsyncSearchSelect
-                        fetchItems={(term) =>
-                            api.get('/users/search', { params: { search: term } })
-                                .then(res => res.data)
-                        }
-                        selectedValue={invitedByFilter}
-                        onSelect={(user) => setInvitedByFilter(user || null)}
-                        placeholder="Invitado por..."
-                        labelKey="fullName"
-                        renderItem={(user) => (
-                            <div>
-                                <div className="font-medium">{user.fullName}</div>
-                                <div className="text-xs text-[#86868b]">{user.email}</div>
+                {/* Filtros avanzados - visible en PC siempre, en móvil según estado */}
+                <div className={`transition-all duration-500 ease-out overflow-hidden ${showAdvancedFilters ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 md:max-h-[2000px] md:opacity-100'}`}>
+                    <div className="p-4 sm:p-5 space-y-6">
+                        {/* Filtros avanzados con colores llamativos */}
+                        <div className="flex flex-wrap gap-3 items-start">
+                            {/* Filtro de Nombre - Azul */}
+                            <div className="relative group flex-1 min-w-[200px]">
+                                <label className={getLabelClass('search')}>
+                                    <div className="w-4 h-4 rounded-full bg-blue-500 shadow-md shadow-blue-500/30" />
+                                    Nombre
+                                </label>
+                                <div className="relative">
+                                    <MagnifyingGlass className={getIconClass('search')} size={18} weight="bold" />
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                        placeholder="Buscar por nombre..."
+                                        className={getInputClass('search')}
+                                    />
+                                    {searchTerm && (
+                                        <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                            <X size={14} weight="bold" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        )}
-                    />
-                </div>
 
-                <div>
-                    <AsyncSearchSelect
-                        fetchItems={(term) => {
-                            const roleFilter = currentUser?.roles?.includes('PASTOR') ? "LIDER_DOCE,PASTOR" : "LIDER_DOCE";
-                            return api.get('/users/search', {
-                                params: { search: term, role: roleFilter }
-                            }).then(res => res.data);
-                        }}
-                        selectedValue={liderDoceFilter}
-                        onSelect={(user) => setLiderDoceFilter(user || null)}
-                        placeholder={currentUser?.roles?.includes('PASTOR') ? "Líder de Célula..." : "Ministerio de..."}
-                        labelKey="fullName"
-                        renderItem={(user) => (
-                            <div>
-                                <div className="font-medium">{user.fullName}</div>
-                                <div className="text-xs text-[#86868b]">{user.email}</div>
+                            {/* Filtro de Estado - Púrpura */}
+                            <div className="relative flex-1 min-w-[160px] group">
+                                <label className={getLabelClass('status')}>
+                                    <div className="w-4 h-4 rounded-full bg-purple-500 shadow-md shadow-purple-500/30" />
+                                    Estado
+                                </label>
+                                <div className="relative">
+                                    <CheckCircle className={getIconClass('status')} size={18} weight="bold" />
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        className={`${getInputClass('status')} appearance-none cursor-pointer`}
+                                    >
+                                        <option value="">Todos los estados</option>
+                                        <option value="NUEVO">Nuevo</option>
+                                        <option value="CONTACTADO">Llamado</option>
+                                        <option value="CONSOLIDADO">Visitado</option>
+                                        <option value="GANADO">Consolidado</option>
+                                    </select>
+                                    <CaretCircleDownIcon className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-400 pointer-events-none" size={16} weight="bold" />
+                                </div>
                             </div>
-                        )}
-                    />
+
+                            {/* Filtro de Invitado por - Esmeralda */}
+                            <div className="relative flex-[1.5] min-w-[240px] group">
+                                <label className={getLabelClass('invitedBy')}>
+                                    <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/30" />
+                                    Invitado por
+                                </label>
+                                <div className="relative">
+                                    <UserPlus className={getIconClass('invitedBy')} size={18} weight="bold" />
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) =>
+                                            api.get('/users/search', { params: { search: term } })
+                                                .then(res => res.data)
+                                        }
+                                        selectedValue={invitedByFilter}
+                                        onSelect={(user) => setInvitedByFilter(user || null)}
+                                        placeholder="Buscar invitador..."
+                                        labelKey="fullName"
+                                        className="bg-white dark:bg-gray-800 border-2 border-emerald-200 focus:border-emerald-500 rounded-xl"
+                                    />
+                                </div>
+                                {invitedByFilter && (
+                                    <FilterBadge color="bg-emerald-500">Invitador seleccionado</FilterBadge>
+                                )}
+                            </div>
+
+                            {/* Filtro de Ministerio/Líder Doce - Ámbar */}
+                            <div className="relative flex-[1.5] min-w-[240px] group">
+                                <label className={getLabelClass('liderDoce')}>
+                                    <div className="w-4 h-4 rounded-full bg-amber-500 shadow-md shadow-amber-500/30" />
+                                    {currentUser?.roles?.includes('PASTOR') ? 'Líder de Célula' : 'Ministerio'}
+                                </label>
+                                <div className="relative">
+                                    <Crown className={getIconClass('liderDoce')} size={18} weight="bold" />
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) => {
+                                            const roleFilter = currentUser?.roles?.includes('PASTOR') ? "LIDER_DOCE,PASTOR" : "LIDER_DOCE";
+                                            return api.get('/users/search', {
+                                                params: { search: term, role: roleFilter }
+                                            }).then(res => res.data);
+                                        }}
+                                        selectedValue={liderDoceFilter}
+                                        onSelect={(user) => setLiderDoceFilter(user || null)}
+                                        placeholder={currentUser?.roles?.includes('PASTOR') ? "Buscar líder..." : "Buscar ministerio..."}
+                                        labelKey="fullName"
+                                        className="bg-white dark:bg-gray-800 border-2 border-amber-200 focus:border-amber-500 rounded-xl"
+                                    />
+                                </div>
+                                {liderDoceFilter && (
+                                    <FilterBadge color="bg-amber-500">{currentUser?.roles?.includes('PASTOR') ? 'Líder seleccionado' : 'Ministerio seleccionado'}</FilterBadge>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Botón Aplicar Filtros */}
+                        <div className="flex items-center gap-3">
+                            <Button
+                                onClick={handleSearch}
+                                icon={Funnel}
+                                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95"
+                            >
+                                Aplicar Filtros
+                            </Button>
+                            
+                            {hasAdvancedFilters && (
+                                <button
+                                    onClick={clearAdvancedFilters}
+                                    className="md:hidden flex items-center gap-1.5 px-4 py-3 rounded-xl text-sm font-semibold text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 transition-all active:scale-95"
+                                >
+                                    <X size={16} weight="bold" /> Limpiar
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Barra de estado y estadísticas */}
+                    <div className="px-4 sm:px-5 py-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2.5 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+                                    <Users size={16} className="text-blue-500" />
+                                    <span className="text-[13px] font-semibold text-gray-700 dark:text-gray-300">
+                                        {guests.length} invitados
+                                    </span>
+                                </div>
+                                
+                                {hasAdvancedFilters && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {searchTerm && <FilterBadge color="bg-blue-500">Nombre</FilterBadge>}
+                                        {statusFilter && <FilterBadge color="bg-purple-500">Estado</FilterBadge>}
+                                        {invitedByFilter && <FilterBadge color="bg-emerald-500">Invitado por</FilterBadge>}
+                                        {liderDoceFilter && <FilterBadge color="bg-amber-500">{currentUser?.roles?.includes('PASTOR') ? 'Líder' : 'Ministerio'}</FilterBadge>}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+                                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Listo</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <Button
-                onClick={handleSearch}
-                icon={Funnel}
-                className="mb-6"
-            >
-                Aplicar Filtros
-            </Button>
 
             {/* Tabla de Invitados */}
             <div className="overflow-x-auto">

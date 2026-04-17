@@ -29,19 +29,19 @@ const Button = ({
     primary: 'bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] text-white shadow-[rgba(0,0,0,0.1)_0px_4px_12px] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] border border-transparent',
     
     // Linear Ghost Button (Default)
-    ghost: 'bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] border border-[rgb(36,40,44)] text-[#e2e4e7] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px]',
+    ghost: 'bg-[var(--ln-bg-panel)] hover:bg-[var(--ln-border-standard)]/20 border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px]',
     
     // Linear Subtle Button
-    subtle: 'bg-[rgba(255,255,255,0.04)] text-[#d0d6e0] hover:bg-[rgba(255,255,255,0.06)] focus:bg-[rgba(255,255,255,0.06)] border border-transparent',
+    subtle: 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-secondary)] hover:bg-[var(--ln-border-standard)]/30 focus:bg-[var(--ln-border-standard)]/30 border border-transparent',
     
     // Linear Icon Button (Circle)
-    'icon-circle': 'bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)] text-[#f7f8f8] rounded-full',
+    'icon-circle': 'bg-[var(--ln-bg-panel)] hover:bg-[var(--ln-border-standard)]/20 border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-full',
     
     // Linear Pill Button
-    pill: 'bg-transparent text-[#d0d6e0] border border-[rgb(35,37,42)] rounded-full hover:bg-[rgba(255,255,255,0.02)]',
+    pill: 'bg-transparent text-[var(--ln-text-secondary)] border border-[var(--ln-border-standard)] rounded-full hover:bg-[var(--ln-border-standard)]/20 hover:text-[var(--ln-text-primary)]',
     
     // Linear Small Toolbar Button
-    'toolbar': 'bg-[rgba(255,255,255,0.05)] text-[#62666d] border border-[rgba(255,255,255,0.05)] rounded-[2px] shadow-[rgba(0,0,0,0.03)_0px_1.2px_0px_0px]',
+    'toolbar': 'bg-[var(--ln-bg-panel)] text-[var(--ln-text-tertiary)] border border-[var(--ln-border-standard)] rounded-[2px] shadow-[rgba(0,0,0,0.03)_0px_1.2px_0px_0px]',
     
     // Success variant
     success: 'bg-[#10b981] hover:bg-[#059669] text-white shadow-[rgba(0,0,0,0.1)_0px_4px_12px]',

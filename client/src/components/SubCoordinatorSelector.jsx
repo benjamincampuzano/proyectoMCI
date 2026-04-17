@@ -85,10 +85,10 @@ const SubCoordinatorSelector = ({ moduleSubCoordinator, moduleName, onSubCoordin
 
     const renderSelectedUser = (user) => (
         <div className="flex items-center gap-2">
-            <PersonIcon size={16} className="text-indigo-600 dark:text-indigo-400" />
-            <div>
-                <div className="font-medium text-gray-900 dark:text-gray-100">{user.fullName}</div>
-                <div className="text-xs text-indigo-600 dark:text-indigo-400">Subcoordinador</div>
+            <PersonIcon size={16} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+            <div className="min-w-0">
+                <div className="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm truncate max-w-[100px] sm:max-w-[150px] md:max-w-none">{user.fullName}</div>
+                <div className="text-[10px] sm:text-xs text-indigo-600 dark:text-indigo-400 hidden sm:block">Subcoordinador</div>
             </div>
         </div>
     );

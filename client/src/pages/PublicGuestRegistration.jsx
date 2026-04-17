@@ -196,53 +196,46 @@ const PublicGuestRegistration = () => {
     const isMinor = formData.birthDate ? calculateAge(formData.birthDate) < 18 : false;
 
     return (
-        <div className={`min-h-[100dvh] ${theme === 'dark' ? 'bg-black' : 'bg-[#f5f5f7]'} flex items-center justify-center p-4 relative transition-colors duration-300`}>
-            {/* Apple-style subtle static elements */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className={`absolute top-0 left-0 w-96 h-96 ${theme === 'dark' ? 'bg-[#0071e3]' : 'bg-[#0066cc]'} opacity-3 rounded-full blur-3xl`}></div>
-                <div className={`absolute bottom-0 right-0 w-80 h-80 ${theme === 'dark' ? 'bg-[#2997ff]' : 'bg-[#0071e3]'} opacity-2 rounded-full blur-3xl`}></div>
+        <div className="min-h-[100dvh] bg-[var(--ln-bg-marketing)] flex items-center justify-center p-4 relative transition-colors duration-300">
+            {/* Linear-style subtle static elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--ln-brand-indigo)] opacity-[0.03] rounded-full blur-[120px]"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--ln-accent-violet)] opacity-[0.02] rounded-full blur-[120px]"></div>
             </div>
-            
-            {/* Floating theme toggle button */}
+
             <button
                 onClick={toggleTheme}
-                className={`fixed top-6 right-6 p-3 rounded-full z-50 transition-all duration-300 ${
-                    theme === 'dark' 
-                        ? 'bg-[#272729] text-white hover:bg-[#2a2a2d]' 
-                        : 'bg-white text-[#1d1d1f] hover:bg-[#fafafc] border border-[#e5e5e7]'
-                } shadow-lg hover:scale-105 active:scale-95`}
+                className="fixed top-8 right-8 p-3 rounded-xl z-50 transition-all duration-300 bg-white/[0.05] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.1] shadow-sm backdrop-blur-md group"
                 aria-label="Toggle theme"
             >
-                {theme === 'dark' ? (
-                    <Sun size={20} weight="regular" />
-                ) : (
-                    <Moon size={20} weight="regular" />
-                )}
+                <div className="group-hover:rotate-12 transition-transform">
+                    {theme === 'dark' ? <Sun size={20} weight="regular" /> : <Moon size={20} weight="regular" />}
+                </div>
             </button>
-            
-            <div className={`${theme === 'dark' ? 'bg-black' : 'bg-white'} p-8 rounded-lg w-full max-w-2xl relative z-10`}>
-                <div className="flex items-center justify-between mb-8">
+
+            <div className="ln-card p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-10">
                     <button
                         onClick={() => navigate('/login')}
-                        className={`text-gray-400 hover:text-white flex items-center space-x-2 transition-colors ${theme === 'dark' ? '' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}
+                        className="text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] flex items-center gap-2 transition-colors text-sm font-medium"
                         type="button"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={18} />
                         <span>Volver</span>
                     </button>
                     <div className="text-right">
-                        <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1d1d1f]'}`}>Registro de Invitado</h1>
-                        <p className={`mt-1 italic ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>¡Es un gusto tenerte Aquí!</p>
+                        <h1 className="text-3xl weight-590 text-[var(--ln-text-primary)] tracking-[-0.7px] mb-2">Registro de Invitado</h1>
+                        <p className="text-[14px] text-[var(--ln-text-secondary)] italic">¡Es un gusto tenerte aquí!</p>
                     </div>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded mb-6 text-sm" role="alert">
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-sm font-medium" role="alert">
                         {error}
                     </div>
                 )}
                 {success && (
-                    <div className="bg-green-500/10 border border-green-500 text-green-500 p-4 rounded mb-6 text-sm font-medium" role="status">
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl mb-6 text-sm font-medium" role="status">
                         {success}
                     </div>
                 )}
@@ -250,20 +243,20 @@ const PublicGuestRegistration = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="name" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Nombre Completo *</label>
+                            <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Nombre Completo *</label>
                             <input
                                 id="name"
                                 type="text"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
-                                placeholder={"Nombre"}
-                                className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                                placeholder="Nombre completo"
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
                                 required
                             />
                         </div>
                         <div>
-                            <label htmlFor="phone" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Teléfono *</label>
+                            <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Teléfono *</label>
                             <input
                                 id="phone"
                                 type="tel"
@@ -271,7 +264,7 @@ const PublicGuestRegistration = () => {
                                 value={formData.phone}
                                 onChange={handleChange}
                                 placeholder="Teléfono"
-                                className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
                                 required
                             />
                         </div>
@@ -279,13 +272,13 @@ const PublicGuestRegistration = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="sex" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Sexo *</label>
+                            <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Sexo *</label>
                             <select
                                 id="sex"
                                 name="sex"
                                 value={formData.sex}
                                 onChange={handleChange}
-                                className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all"
                                 required
                             >
                                 <option value="">Seleccionar...</option>
@@ -294,61 +287,60 @@ const PublicGuestRegistration = () => {
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="birthDate" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Fecha de Nacimiento</label>
+                            <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Fecha de Nacimiento</label>
                             <input
                                 id="birthDate"
                                 type="date"
                                 name="birthDate"
                                 value={formData.birthDate}
                                 onChange={handleChange}
-                                className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all"
                             />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label htmlFor="address" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Dirección</label>
+                            <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Dirección</label>
                             <input
                                 id="address"
                                 type="text"
                                 name="address"
                                 value={formData.address}
                                 onChange={handleChange}
-                                className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
                                 placeholder="Dirección"
                             />
                         </div>
                         <div>
-                            <label htmlFor="city" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Ciudad</label>
+                            <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Ciudad</label>
                             <input
                                 id="city"
                                 type="text"
                                 name="city"
                                 value={formData.city}
                                 onChange={handleChange}
-                                className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
                                 placeholder="Ciudad"
                             />
                         </div>
-                        
                     </div>
-<div>
-                            <label htmlFor="neighborhood" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Barrio</label>
-                            <input
-                                id="neighborhood"
-                                type="text"
-                                name="neighborhood"
-                                value={formData.neighborhood}
-                                onChange={handleChange}
-                                className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
-                                placeholder="Nombre del barrio"
-                            />
-                        </div>
+                    <div>
+                        <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Barrio</label>
+                        <input
+                            id="neighborhood"
+                            type="text"
+                            name="neighborhood"
+                            value={formData.neighborhood}
+                            onChange={handleChange}
+                            className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
+                            placeholder="Nombre del barrio"
+                        />
+                    </div>
                     <div className="relative" ref={dropdownRef}>
-                        <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>¿Quién te invitó? *</label>
+                        <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">¿Quién te invitó? *</label>
                         <div
-                            className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg flex items-center justify-between cursor-pointer hover:ring-2 hover:ring-[#0071e3] transition-colors`}
+                            className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl flex items-center justify-between cursor-pointer hover:border-[var(--ln-brand-indigo)]/50 transition-all"
                             onClick={() => dispatch({ type: 'SET_DROPDOWN_OPEN', payload: !isDropdownOpen })}
                             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && dispatch({ type: 'SET_DROPDOWN_OPEN', payload: !isDropdownOpen })}
                             role="combobox"
@@ -358,10 +350,10 @@ const PublicGuestRegistration = () => {
                         >
                             {selectedInviter ? (
                                 <div className="flex items-center justify-between w-full">
-                                    <span className={`font-medium ${theme === 'dark' ? 'text-[#0071e3]' : 'text-[#0071e3]'}`}>{selectedInviter.fullName}</span>
+                                    <span className="font-medium text-[var(--ln-accent-violet)]">{selectedInviter.fullName}</span>
                                     <X
                                         size={18}
-                                        className={`${theme === 'dark' ? 'text-[#98989d] hover:text-white' : 'text-[#86868b] hover:text-[#1d1d1f]'}`}
+                                        className="text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] transition-colors"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             dispatch({ type: 'SET_SELECTED_INVITER', payload: null });
@@ -378,22 +370,22 @@ const PublicGuestRegistration = () => {
                                     />
                                 </div>
                             ) : (
-                                <span className={theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}>Buscar por nombre...</span>
+                                <span className="text-[var(--ln-text-tertiary)]">Buscar por nombre...</span>
                             )}
-                            <CaretDownIcon size={20} className={`${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'} transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                            <CaretDownIcon size={20} className={`text-[var(--ln-text-tertiary)] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                         </div>
 
                         {isDropdownOpen && (
-                            <div className={`absolute z-50 w-full mt-2 ${theme === 'dark' ? 'bg-black' : 'bg-white'} border-none rounded-lg shadow-2xl max-h-60 overflow-hidden flex flex-col`} role="listbox">
-                                <div className={`p-3 ${theme === 'dark' ? 'border-b border-[#3a3a3c]' : 'border-b border-[#e5e5e7]'}`}>
+                            <div className="absolute z-50 w-full mt-2 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-xl shadow-2xl max-h-60 overflow-hidden flex flex-col" role="listbox">
+                                <div className="p-3 border-b border-[var(--ln-border-standard)]">
                                     <div className="relative">
-                                        <MagnifyingGlassIcon className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`} size={18} />
+                                        <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--ln-text-tertiary)]" size={18} />
                                         <input
                                             type="text"
                                             value={searchTerm}
                                             onChange={(e) => handleSearch(e.target.value)}
                                             placeholder="Escribe al menos 3 letras..."
-                                            className={`w-full pl-10 pr-4 py-2 ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors`}
+                                            className="w-full pl-10 pr-4 py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all"
                                             onClick={(e) => e.stopPropagation()}
                                             aria-label="Buscar persona que invitó"
                                         />
@@ -401,9 +393,9 @@ const PublicGuestRegistration = () => {
                                 </div>
                                 <div className="overflow-y-auto">
                                     {searchLoading ? (
-                                        <div className={`p-4 text-center ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Buscando...</div>
+                                        <div className="p-4 text-center text-[var(--ln-text-tertiary)]">Buscando...</div>
                                     ) : foundUsers.length === 0 ? (
-                                        <div className={`p-4 text-center ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>
+                                        <div className="p-4 text-center text-[var(--ln-text-tertiary)]">
                                             {searchTerm.length < 3 ? 'Escribe para buscar' : 'No se encontraron resultados'}
                                         </div>
                                     ) : (
@@ -416,11 +408,11 @@ const PublicGuestRegistration = () => {
                                                         handleSelectInviter(user);
                                                     }
                                                 }}
-                                                className={`px-4 py-3 cursor-pointer border-b last:border-b-0 transition-colors ${theme === 'dark' ? 'hover:bg-[#1c1c1e] border-[#3a3a3c]' : 'hover:bg-[#fafafc] border-[#e5e5e7]'}`}
+                                                className="px-4 py-3 cursor-pointer border-b last:border-b-0 border-[var(--ln-border-standard)] transition-colors hover:bg-white/[0.05]"
                                                 role="option"
                                                 tabIndex={0}
                                             >
-                                                <p className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-[#1d1d1f]'}`}>{user.fullName}</p>
+                                                <p className="text-sm font-medium text-[var(--ln-text-primary)]">{user.fullName}</p>
                                             </div>
                                         ))
                                     )}
@@ -430,32 +422,32 @@ const PublicGuestRegistration = () => {
                     </div>
 
                     <div>
-                        <label htmlFor="prayerRequest" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-[#98989d]' : 'text-[#86868b]'}`}>Petición de Oración (Opcional)</label>
+                        <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Petición de Oración (Opcional)</label>
                         <textarea
                             id="prayerRequest"
                             name="prayerRequest"
                             value={formData.prayerRequest}
                             onChange={handleChange}
                             rows="3"
-                            className={`w-full ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-[#1d1d1f]'} border-none px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0071e3] transition-colors resize-none`}
+                            className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all resize-none placeholder:text-[var(--ln-text-tertiary)]/50"
                             placeholder="¿Cómo podemos orar por ti?"
                         />
                     </div>
 
                     
                     {/* Data Authorization Checks */}
-                    <div className={`${theme === 'dark' ? 'bg-[#1c1c1e]' : 'bg-[#fafafc]'} p-6 rounded-xl space-y-4`}>
+                    <div className="bg-white/[0.02] p-6 rounded-xl border border-[var(--ln-border-standard)] space-y-4">
                         <label className="flex items-start gap-4 cursor-pointer group">
                             <input
                                 type="checkbox"
                                 name="dataPolicyAccepted"
                                 required
-                                className={`mt-1 w-5 h-5 rounded ${theme === 'dark' ? 'border-[#3a3a3c] bg-black' : 'border-[#e5e5e7] bg-white'} text-[#0071e3] focus:ring-[#0071e3] transition-colors`}
+                                className="mt-1 w-5 h-5 rounded border-[var(--ln-border-standard)] bg-[var(--ln-input-bg)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)] transition-colors"
                                 checked={formData.dataPolicyAccepted}
                                 onChange={handleChange}
                             />
-                            <span className={`text-sm transition-colors ${theme === 'dark' ? 'text-[#98989d] group-hover:text-white' : 'text-[#86868b] group-hover:text-[#1d1d1f]'}`}>
-                                Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos Personales</a> de MCI.
+                            <span className="text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
+                                Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-hover)] hover:underline font-semibold">Política de Tratamiento de Datos Personales</a> de MCI.
                             </span>
                         </label>
                         <label className="flex items-start gap-4 cursor-pointer group">
@@ -463,11 +455,11 @@ const PublicGuestRegistration = () => {
                                 type="checkbox"
                                 name="dataTreatmentAuthorized"
                                 required
-                                className={`mt-1 w-5 h-5 rounded ${theme === 'dark' ? 'border-[#3a3a3c] bg-black' : 'border-[#e5e5e7] bg-white'} text-[#0071e3] focus:ring-[#0071e3] transition-colors`}
+                                className="mt-1 w-5 h-5 rounded border-[var(--ln-border-standard)] bg-[var(--ln-input-bg)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)] transition-colors"
                                 checked={formData.dataTreatmentAuthorized}
                                 onChange={handleChange}
                             />
-                            <span className={`text-sm transition-colors ${theme === 'dark' ? 'text-[#98989d] group-hover:text-white' : 'text-[#86868b] group-hover:text-[#1d1d1f]'}`}>
+                            <span className="text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
                                 Autorizo de manera expresa el tratamiento de mis datos personales conforme a la Ley 1581 de 2012.
                             </span>
                         </label>
@@ -476,13 +468,13 @@ const PublicGuestRegistration = () => {
                                 type="checkbox"
                                 name="minorConsentAuthorized"
                                 required={isMinor}
-                                className={`mt-1 w-5 h-5 rounded ${theme === 'dark' ? 'border-[#3a3a3c] bg-black' : 'border-[#e5e5e7] bg-white'} text-[#0071e3] focus:ring-[#0071e3] transition-colors`}
+                                className="mt-1 w-5 h-5 rounded border-[var(--ln-border-standard)] bg-[var(--ln-input-bg)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)] transition-colors"
                                 checked={formData.minorConsentAuthorized}
                                 onChange={handleChange}
                             />
-                            <span className={`text-sm transition-colors ${theme === 'dark' ? 'text-[#98989d] group-hover:text-white' : 'text-[#86868b] group-hover:text-[#1d1d1f]'}`}>
+                            <span className="text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
                                 {isMinor ? (
-                                    <a href="/login" className={`font-semibold ${theme === 'dark' ? 'text-[#0071e3] hover:text-[#0077ed]' : 'text-[#0071e3] hover:text-[#0077ed]'} transition-colors`}>Inicia sesión aquí</a>
+                                    <a href="/login" className="font-semibold text-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-hover)] transition-colors">Inicia sesión aquí</a>
                                 ) : (
                                     "En caso de registrar información de menores de edad, declaro contar con la autorización de su representante legal."
                                 )}
@@ -493,13 +485,13 @@ const PublicGuestRegistration = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full ${theme === 'dark' ? 'bg-[#0071e3] hover:bg-[#0077ed]' : 'bg-[#0071e3] hover:bg-[#0077ed]'} text-white font-bold py-4 rounded-lg transition-all shadow-lg ${theme === 'dark' ? 'shadow-[#0071e3]/20' : 'shadow-[#0071e3]/20'} disabled:opacity-50 flex items-center justify-center space-x-2 text-lg`}
+                        className="w-full bg-[#5e6ad2] hover:bg-[#828fff] text-white font-medium py-3 px-4 rounded-md transition-all shadow-lg shadow-[#5e6ad2]/20 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                     >
                         {loading ? (
-                            <Spinner size={24} className="animate-spin" aria-hidden="true" />
+                            <Spinner size={20} className="animate-spin" aria-hidden="true" />
                         ) : (
                             <>
-                                <UserPlus size={24} aria-hidden="true" />
+                                <UserPlus size={20} aria-hidden="true" />
                                 <span>Registrarme</span>
                             </>
                         )}

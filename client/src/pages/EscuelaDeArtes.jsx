@@ -567,26 +567,26 @@ const EscuelaDeArtes = () => {
             {/* Toggle de Vista y Reporte */}
             {!showReport && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
                         <button
                             onClick={() => setViewMode('cards')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'cards'
-                                ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                            title="Vista de tarjetas"
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] font-semibold ${viewMode === 'cards'
+                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
+                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                            }`}
                         >
-                            <SquaresFour size={18} />
+                            <SquaresFour size={18} weight="bold" />
+                            Tarjetas
                         </button>
                         <button
                             onClick={() => setViewMode('table')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'table'
-                                ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                            title="Vista de tabla"
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] font-semibold ${viewMode === 'table'
+                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
+                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                            }`}
                         >
-                            <List size={18} />
+                            <List size={18} weight="bold" />
+                            Tabla
                         </button>
                     </div>
 
@@ -626,6 +626,7 @@ const EscuelaDeArtes = () => {
                 title="Nueva Clase"
                 onClose={() => setShowCreateModal(false)}
                 containerClassName="max-w-lg"
+                noContentScroll={false}
             >
                 <form onSubmit={handleCreate} className="p-6 space-y-4">
                     <div>
@@ -785,21 +786,23 @@ const EscuelaDeArtes = () => {
                             />
                         </div>
                     </div>
-                    <div className="pt-4 flex space-x-3">
+                    <div className="pt-4 flex gap-2 sm:gap-3">
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => setShowCreateModal(false)}
-                            className="flex-1"
+                            className="flex-1 text-sm"
+                            size="sm"
                         >
                             Cancelar
                         </Button>
                         <Button
                             type="submit"
                             variant="primary"
-                            className="flex-1"
+                            className="flex-1 text-sm"
+                            size="sm"
                         >
-                            Crear Clase
+                            Crear
                         </Button>
                     </div>
                 </form>
@@ -825,6 +828,7 @@ const EscuelaDeArtes = () => {
                     setSelectedCoordinator(null);
                 }}
                 containerClassName="max-w-lg"
+                noContentScroll={false}
             >
                 <form onSubmit={handleUpdate} className="p-6 space-y-4">
                     <div>
@@ -947,7 +951,7 @@ const EscuelaDeArtes = () => {
                             />
                         </div>
                     </div>
-                    <div className="pt-4 flex space-x-3">
+                    <div className="pt-4 flex gap-2 sm:gap-3">
                         <Button
                             type="button"
                             variant="secondary"
@@ -964,16 +968,18 @@ const EscuelaDeArtes = () => {
                                     coordinatorId: null
                                 });
                             }}
-                            className="flex-1"
+                            className="flex-1 text-sm"
+                            size="sm"
                         >
                             Cancelar
                         </Button>
                         <Button
                             type="submit"
                             variant="primary"
-                            className="flex-1"
+                            className="flex-1 text-sm"
+                            size="sm"
                         >
-                            Actualizar Clase
+                            Actualizar
                         </Button>
                     </div>
                 </form>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LockIcon, User, DotIcon, Calendar, Check, Shield, X, EyeIcon, EyeClosedIcon, Plus, Envelope, ArrowsClockwiseIcon, Sun, Moon } from '@phosphor-icons/react';
+import { LockIcon, User, DotIcon, Calendar, Check, Shield, X, EyeIcon, EyeClosedIcon, Plus, Envelope, ArrowsClockwiseIcon, Sun, Moon, ArrowLeft } from '@phosphor-icons/react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -163,15 +163,35 @@ const Register = () => {
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--ln-brand-indigo)] opacity-[0.03] rounded-full blur-[120px]"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--ln-accent-violet)] opacity-[0.02] rounded-full blur-[120px]"></div>
             </div>
-            
+
+            <button
+                onClick={toggleTheme}
+                className="fixed top-8 right-8 p-3 rounded-xl z-50 transition-all duration-300 bg-white/[0.05] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.1] shadow-sm backdrop-blur-md group"
+                aria-label="Toggle theme"
+            >
+                <div className="group-hover:rotate-12 transition-transform">
+                    {theme === 'dark' ? <Sun size={20} weight="regular" /> : <Moon size={20} weight="regular" />}
+                </div>
+            </button>
+
             <div className="ln-card p-8 w-full max-w-md md:max-w-4xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl backdrop-blur-sm">
-                <div className="text-center mb-10">
-                    <h1 className="text-4xl mb-2">Crear Cuenta</h1>
-                    <p className="text-[var(--ln-text-secondary)] text-lg">Únete a la plataforma de MCI</p>
+                <div className="flex items-center justify-between mb-10">
+                    <button
+                        onClick={() => navigate('/login')}
+                        className="text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] flex items-center gap-2 transition-colors text-sm font-medium"
+                        type="button"
+                    >
+                        <ArrowLeft size={18} />
+                        <span>Volver</span>
+                    </button>
+                    <div className="text-right">
+                        <h1 className="text-3xl weight-590 text-[var(--ln-text-primary)] tracking-[-0.7px] mb-2">Crear Cuenta</h1>
+                        <p className="text-[14px] text-[var(--ln-text-secondary)]">Únete a la plataforma de MCI</p>
+                    </div>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg mb-8 text-sm text-center font-medium">
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-8 text-sm text-center font-medium">
                         {error}
                     </div>
                 )}
@@ -416,33 +436,34 @@ const Register = () => {
                     </div>
 
                     {/* Captcha */}
-                    <div className="bg-[var(--ln-bg-marketing)]/50 p-5 rounded-xl border border-[var(--ln-border-standard)]">
-                        <label className="ln-label !mb-3">Verificación de Seguridad</label>
-                        <div className="flex items-center gap-4">
-                            <div className="bg-[var(--ln-bg-surface)] px-4 py-2.5 rounded-lg border border-[var(--ln-border-standard)] shadow-inner">
-                                <span className="text-[var(--ln-text-primary)] font-semibold text-lg tracking-wider">
+                    <div className="bg-[var(--ln-bg-marketing)]/50 p-3 sm:p-5 rounded-xl border border-[var(--ln-border-standard)]">
+                        <label className="ln-label !mb-2 sm:!mb-3 text-[11px] sm:text-xs">Verificación de Seguridad</label>
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <div className="bg-[var(--ln-bg-surface)] px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-[var(--ln-border-standard)] shadow-inner">
+                                <span className="text-[var(--ln-text-primary)] font-semibold text-base sm:text-lg tracking-wider">
                                     {captcha.num1} {captcha.operator} {captcha.num2} = ?
                                 </span>
                             </div>
                             <button
                                 type="button"
                                 onClick={generateCaptcha}
-                                className="p-2.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.05] rounded-lg transition-all"
+                                className="p-2 sm:p-2.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.05] rounded-lg transition-all"
                                 title="Generar nuevo captcha"
                             >
-                                <ArrowsClockwiseIcon size={20} />
+                                <ArrowsClockwiseIcon size={18} className="sm:w-5 sm:h-5" />
                             </button>
                             <input
                                 type="text"
                                 name="captchaAnswer"
                                 value={formData.captchaAnswer}
-                                onChange={handleChange}
-                                placeholder="Resuelve..."
-                                className="flex-1 ln-input !py-2.5"
+                                onChange={(e) => setFormData({ ...formData, captchaAnswer: e.target.value.slice(0, 3) })}
+                                placeholder="..."
+                                className="w-16 sm:w-20 ln-input !py-2 sm:!py-2.5 text-center text-sm"
                                 required
+                                maxLength={3}
                             />
                         </div>
-                        <p className="text-[11px] text-[var(--ln-text-tertiary)] mt-3">Confirma que no eres un robot resolviendo esta operación.</p>
+                        <p className="text-[10px] sm:text-[11px] text-[var(--ln-text-tertiary)] mt-2 sm:mt-3">Confirma que no eres un robot.</p>
                     </div>
 
                     {/* Data Authorization Checks */}
@@ -503,11 +524,16 @@ const Register = () => {
                     </div>
                 </form>
 
-                <div className="mt-10 pt-6 border-t border-[var(--ln-border-standard)] text-center text-sm text-[var(--ln-text-secondary)]">
-                    ¿Ya tienes una cuenta?{' '}
-                    <Link to="/login" className="text-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-hover)] font-semibold transition-colors">
-                        Inicia sesión aquí
-                    </Link>
+                <div className="mt-10 pt-6 border-t border-[var(--ln-border-standard)] text-center">
+                    <p className="text-[13px] text-[var(--ln-text-secondary)] mb-4">
+                        ¿Ya tienes una cuenta?
+                    </p>
+                    <button
+                        onClick={() => navigate('/login')}
+                        className="pt-4 w-full bg-[var(--ln-brand-indigo)] text-white font-medium py-3.5 rounded-xl hover:bg-[var(--ln-accent-hover)] active:scale-[0.98] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 text-[14px]"
+                    >
+                        Iniciar Sesión
+                    </button>
                 </div>
             </div>
         </div>

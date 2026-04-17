@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { Plus, Calendar, Users, Trash, Pencil, Eye, List, SquaresFourIcon, BookOpen } from '@phosphor-icons/react';
+import { Plus, Calendar, Users, Trash, Pencil, Eye, List, SquaresFour, BookOpen } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from "../../context/AuthContext";
 import { ROLES } from '../../constants/roles';
@@ -178,26 +178,26 @@ const CourseManagement = () => {
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Escuelas de Discipulado</h2>
                 <div className="flex items-center gap-2">
-                    <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'table'
-                                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
-                                }`}
-                            title="Vista de tabla"
-                        >
-                            <List size={18} />
-                        </button>
+                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
                         <button
                             onClick={() => setViewMode('cards')}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'cards'
-                                ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
-                                }`}
-                            title="Vista de tarjetas"
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'cards' 
+                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
+                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                            }`}
                         >
-                            <SquaresFourIcon size={18} />
+                            <SquaresFour size={18} weight="bold" />
+                            Tarjetas
+                        </button>
+                        <button
+                            onClick={() => setViewMode('table')}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'table' 
+                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
+                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                            }`}
+                        >
+                            <List size={18} weight="bold" />
+                            Tabla
                         </button>
                     </div>
                     {(hasAnyRole([ROLES.ADMIN]) || isCoordinator()) && (
@@ -370,16 +370,16 @@ const CourseManagement = () => {
 
             {/* Create/Edit Modal */}
             {(showCreateModal || showEditModal) && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 transition-all">
-                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full h-[95vh] overflow-hidden flex flex-col">
-                        <div className="p-8 flex-shrink-0">
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white border-b pb-2">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 backdrop-blur-sm bg-black/40 transition-all">
+                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md sm:rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full h-full sm:h-auto sm:max-h-[95vh] overflow-hidden flex flex-col">
+                        <div className="p-4 sm:p-8 flex-shrink-0">
+                            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white border-b pb-2">
                                 {showEditModal ? 'Editar Clase' : 'Nueva Clase'}
                             </h3>
                         </div>
 
                         <form onSubmit={showEditModal ? handleUpdate : handleCreate} className="flex-1 flex flex-col overflow-hidden">
-                            <div className="flex-1 overflow-y-auto p-8 space-y-5">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-5">
 
                                 {/* Nivel/Seccion Selection - Available for both Create and Edit */}
                                 <div className="grid grid-cols-1 gap-4">
@@ -466,10 +466,10 @@ const CourseManagement = () => {
                             </div>
 
                             {/* Submit Buttons - Fixed at bottom outside scroll area */}
-                            <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-                                <div className="p-8 flex justify-end space-x-3">
-                                    <Button type="button" onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} variant="secondary">Cancelar</Button>
-                                    <Button type="submit" className="bg-gradient-to-r from-purple-600 to-blue-600">{showEditModal ? 'Guardar Cambios' : 'Crear Clase'}</Button>
+                            <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex-shrink-0">
+                                <div className="p-4 sm:p-8 flex justify-end gap-2 sm:gap-3">
+                                    <Button type="button" onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} variant="secondary" size="sm" className="text-sm">Cancelar</Button>
+                                    <Button type="submit" className="bg-gradient-to-r from-purple-600 to-blue-600 text-sm" size="sm">{showEditModal ? 'Guardar' : 'Crear'}</Button>
                                 </div>
                             </div>
                         </form>

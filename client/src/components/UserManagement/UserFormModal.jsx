@@ -47,8 +47,8 @@ const UserFormModal = ({
             onClose={onClose}
             containerClassName="max-w-4xl"
         >
-            <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[85vh]">
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
                     <UserFormFields
                         formData={formData}
                         setFormData={setFormData}
@@ -68,11 +68,13 @@ const UserFormModal = ({
                     />
                 </div>
 
-                <div className="flex justify-end items-center gap-4 p-6 bg-[var(--ln-bg-panel)] border-t border-[var(--ln-border-standard)] rounded-b-2xl">
+                <div className="flex justify-end items-center gap-2 sm:gap-4 p-4 sm:p-6 bg-[var(--ln-bg-panel)] border-t border-[var(--ln-border-standard)] flex-shrink-0 sticky bottom-0">
                     <Button
                         type="button"
                         variant="ghost"
                         onClick={onClose}
+                        size="sm"
+                        className="text-sm"
                     >
                         Cancelar
                     </Button>
@@ -81,11 +83,12 @@ const UserFormModal = ({
                         variant="primary"
                         disabled={submitting || passwordErrors.length > 0}
                         icon={submitting ? Spinner : (mode === 'create' ? CheckCircle : null)}
-                        className={submitting ? 'animate-pulse' : ''}
+                        className={`${submitting ? 'animate-pulse' : ''} text-sm`}
+                        size="sm"
                     >
                         {submitting ? 
-                            (mode === 'create' ? 'Creando Usuario...' : 'Guardando Cambios...') : 
-                            (mode === 'create' ? 'Crear Usuario' : 'Guardar Cambios')
+                            (mode === 'create' ? 'Creando...' : 'Guardando...') : 
+                            (mode === 'create' ? 'Crear' : 'Guardar')
                         }
                     </Button>
                 </div>

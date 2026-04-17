@@ -13,14 +13,18 @@ const UserManagement = () => {
         loading,
         error,
         success,
-        searchTerm,
-        setSearchTerm,
-        roleFilter,
-        setRoleFilter,
-        sexFilter,
-        setSexFilter,
+        nombreFilter,
+        setNombreFilter,
         liderDoceFilter,
         setLiderDoceFilter,
+        redFilter,
+        setRedFilter,
+        sexoFilter,
+        setSexoFilter,
+        rolFilter,
+        setRolFilter,
+        asignacionesFilter,
+        setAsignacionesFilter,
         editingUser,
         setEditingUser,
         showCreateForm,
@@ -97,14 +101,18 @@ const UserManagement = () => {
                 )}
 
                 <UserFilters
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    roleFilter={roleFilter}
-                    setRoleFilter={setRoleFilter}
-                    sexFilter={sexFilter}
-                    setSexFilter={setSexFilter}
+                    nombreFilter={nombreFilter}
+                    setNombreFilter={setNombreFilter}
                     liderDoceFilter={liderDoceFilter}
                     setLiderDoceFilter={setLiderDoceFilter}
+                    redFilter={redFilter}
+                    setRedFilter={setRedFilter}
+                    sexoFilter={sexoFilter}
+                    setSexoFilter={setSexoFilter}
+                    rolFilter={rolFilter}
+                    setRolFilter={setRolFilter}
+                    asignacionesFilter={asignacionesFilter}
+                    setAsignacionesFilter={setAsignacionesFilter}
                     lideresDoce={lideresDoce}
                     totalCount={totalUsers}
                     filteredCount={users.length}

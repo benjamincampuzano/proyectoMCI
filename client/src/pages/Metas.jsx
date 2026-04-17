@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
     Target, Plus, Clock, CheckCircle, XCircle, Pen, Trash, 
-    FileText, Minus, SquaresFour, List, Calendar, ArrowUpRight, ArrowDownRight 
+    FileText, Minus, SquaresFour, List, Calendar, ArrowUpRight, ArrowDownRight, Users
 } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import GoalForm from '../components/GoalForm';
 import GoalRow from '../components/GoalRow';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { ROLE_GROUPS } from '../constants/roles';
 import { useAuth } from '../context/AuthContext';
 import { PageHeader, Button } from '../components/ui';
@@ -104,6 +105,7 @@ const Metas = () => {
     const [showGoalForm, setShowGoalForm] = useState(false);
     const [editingGoal, setEditingGoal] = useState(null);
     const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
+    const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, goal: null });
 
     const isEditor = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_GOALS);
 
@@ -285,7 +287,6 @@ const Metas = () => {
         return Object.values(groups);
     }, [goals]);
 
-    // Componente GroupedGoalCard para la vista de tarjetas agrupadas
     const GroupedGoalCard = ({ group }) => {
         const percent = group.targetTotal > 0 ? Math.min(Math.round((group.currentTotal / group.targetTotal) * 100), 100) : 0;
         const firstGoal = group.leaders[0];
@@ -621,6 +622,7 @@ const Metas = () => {
                                             isEditor={isEditor}
                                             onEdit={(g) => { setEditingGoal(g); setShowGoalForm(true); }}
                                             onDelete={handleDelete}
+                                            onRequestDelete={(g) => setDeleteConfirm({ isOpen: true, goal: g })}
                                         />
                                     ))
                                 )}
@@ -638,6 +640,50 @@ const Metas = () => {
                     initialData={editingGoal}
                 />
             )}
+
+            <ConfirmationModal
+                isOpen={deleteConfirm.isOpen}
+                onClose={() => setDeleteConfirm({ isOpen: false, goal: null })}
+                onConfirm={() => {
+                    if (deleteConfirm.goal) {
+                        handleDelete(deleteConfirm.goal.id);
+                    }
+                    setDeleteConfirm({ isOpen: false, goal: null });
+                }}
+                title="⚠️ Confirmar Eliminación"
+                message="Esta acción es irreversible y eliminará todos los registros históricos asociados a esta meta."
+                confirmText="Eliminar Permanentemente"
+                variant="danger"
+            >
+                {deleteConfirm.goal && (
+                    <div className="mt-6 space-y-1.5 p-5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-[20px] relative overflow-hidden group/modal-item">
+                        <div className="flex justify-between items-center relative z-10">
+                            <span className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-widest">Meta</span>
+                            <span className="text-[13px] weight-590 text-[var(--ln-text-primary)]">
+                                {deleteConfirm.goal.type.includes('CELL') 
+                                    ? (deleteConfirm.goal.type === 'CELL_COUNT' ? 'Meta Células' : 'Asistencia Células')
+                                    : deleteConfirm.goal.encuentro 
+                                        ? `Encuentro: ${deleteConfirm.goal.encuentro.name}`
+                                        : deleteConfirm.goal.convention 
+                                            ? `Convención: ${deleteConfirm.goal.convention.theme}`
+                                            : 'Meta'}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center relative z-10">
+                            <span className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-widest">Responsable</span>
+                            <span className="text-[13px] weight-590 text-[var(--ln-text-secondary)] opacity-80">{deleteConfirm.goal.user?.profile?.fullName || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-2 mt-2 border-t border-[var(--ln-border-standard)] relative z-10">
+                            <span className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-widest">Objetivo Final</span>
+                            <div className="flex items-center gap-2">
+                                <Target size={14} className="text-[var(--ln-brand-indigo)]" weight="bold" />
+                                <span className="text-[15px] weight-590 text-[var(--ln-brand-indigo)]">{deleteConfirm.goal.targetValue}</span>
+                            </div>
+                        </div>
+                        <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-red-500 opacity-[0.03] blur-3xl rounded-full" />
+                    </div>
+                )}
+            </ConfirmationModal>
         </div>
     );
 };

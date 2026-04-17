@@ -137,10 +137,10 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white dark:bg-gray-900 w-full max-w-md h-[95vh] rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 animate-in zoom-in-95 duration-300 flex flex-col">
-                <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50 flex-shrink-0">
-                    <h2 className="text-xl font-black text-gray-900 dark:text-white">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-gray-900 w-full max-w-md h-full sm:h-auto sm:max-h-[90vh] sm:rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-800 animate-in zoom-in-95 duration-300 flex flex-col">
+                <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50 flex-shrink-0">
+                    <h2 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white">
                         {initialData ? 'Editar Meta' : 'Nueva Meta'}
                     </h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-500">
@@ -149,7 +149,7 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
-                    <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
                         {error && (
                             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-2xl flex items-center gap-3 text-red-600 dark:text-red-400">
                                 <Warning size={20} />
@@ -301,19 +301,19 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
                     </div>
 
                     {/* Submit Button - Fixed at bottom outside scroll area */}
-                    <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
-                        <div className="p-6">
+                    <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex-shrink-0">
+                        <div className="p-4 sm:p-6">
                             <button
                                 type="submit"
                                 disabled={loading || fetching}
-                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black py-3 sm:py-4 rounded-2xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm sm:text-base"
                             >
                                 {loading || fetching ? (
-                                    <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                 ) : (
                                     <>
-                                        <FloppyDisk size={20} />
-                                        {initialData ? 'Actualizar Meta' : 'Establecer Objetivo'}
+                                        <FloppyDisk size={18} className="sm:w-5 sm:h-5" />
+                                        {initialData ? 'Actualizar' : 'Guardar'}
                                     </>
                                 )}
                             </button>

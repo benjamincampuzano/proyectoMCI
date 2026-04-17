@@ -7,6 +7,7 @@ const ActionModal = ({
     children,
     size = 'lg',
     containerClassName = '',
+    noContentScroll = true,
 }) => {
     return (
         <Modal
@@ -15,9 +16,10 @@ const ActionModal = ({
             title={title}
             size={size}
             className={containerClassName}
+            noContentScroll={noContentScroll}
         >
-            <Modal.Content className="p-0">
-                <div className="animate-in fade-in duration-500">
+            <Modal.Content className="p-0 h-full">
+                <div className="animate-in fade-in duration-500 h-full">
                     {children}
                 </div>
             </Modal.Content>

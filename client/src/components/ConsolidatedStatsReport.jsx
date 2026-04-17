@@ -17,6 +17,11 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
     });
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const ALLOWED_ROLES = ['PASTOR', 'LIDER_DOCE', 'ADMIN'];
     const hasAccess = hasAnyRole(ALLOWED_ROLES);
@@ -149,7 +154,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                             <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-500 border border-blue-500/20 group-hover:scale-110 transition-transform">
                                 <Users size={20} weight="bold" />
                             </div>
-                            <span className="text-[10px] weight-590 text-blue-500 uppercase tracking-widest opacity-80">Volumen General</span>
+                            <span className="text-[10px] weight-590 text-blue-500 uppercase tracking-widest opacity-80">Total Invitados</span>
                         </div>
                         <div className="flex flex-col">
                             <span className="text-4xl weight-590 text-[var(--ln-text-primary)] tracking-tighter">{stats.summary.totalGuests}</span>
@@ -169,7 +174,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                 <span className="text-4xl weight-590 text-[var(--ln-text-primary)] tracking-tighter">{stats.summary.totalConversions}</span>
                                 <span className="text-lg weight-590 text-emerald-500">{stats.summary.conversionRate}%</span>
                             </div>
-                            <span className="text-[11px] text-[var(--ln-text-tertiary)] weight-510 mt-1">Miembros Consolidados</span>
+                            <span className="text-[11px] text-[var(--ln-text-tertiary)] weight-510 mt-1">Invitados Ganados</span>
                         </div>
                     </div>
 
@@ -178,11 +183,11 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                             <div className="p-2.5 bg-red-500/10 rounded-xl text-red-500 border border-red-500/20 group-hover:scale-110 transition-transform">
                                 <MapPin size={20} weight="bold" />
                             </div>
-                            <span className="text-[10px] weight-590 text-red-500 uppercase tracking-widest opacity-80">Estructura</span>
+                            <span className="text-[10px] weight-590 text-red-500 uppercase tracking-widest opacity-80">Células</span>
                         </div>
                         <div className="flex flex-col">
                             <span className="text-4xl weight-590 text-[var(--ln-text-primary)] tracking-tighter">{stats.summary.totalCells}</span>
-                            <span className="text-[11px] text-[var(--ln-text-tertiary)] weight-510 mt-1">Células en Funcionamiento</span>
+                            <span className="text-[11px] text-[var(--ln-text-tertiary)] weight-510 mt-1">Células Activas</span>
                         </div>
                     </div>
 
@@ -195,7 +200,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                         </div>
                         <div className="flex flex-col">
                             <span className="text-4xl weight-590 text-[var(--ln-text-primary)] tracking-tighter">{stats.summary.activeStudents}</span>
-                            <span className="text-[11px] text-[var(--ln-text-tertiary)] weight-510 mt-1">Alumnos en Capacitación</span>
+                            <span className="text-[11px] text-[var(--ln-text-tertiary)] weight-510 mt-1">Alumnos Inscritos</span>
                         </div>
                     </div>
                 </div>
@@ -273,7 +278,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                             Invitados por Lider Doce
                         </h3>
                         <div className="h-80 w-full">
-                            {guestsData.length > 0 ? (
+                            {mounted && guestsData.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={guestsData} layout="vertical" margin={{ left: 40 }}>
                                         <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: 'var(--ln-text-tertiary)', fontSize: 10 }} />
@@ -295,7 +300,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                             Dinámica de Asistencia Mensual
                         </h3>
                         <div className="h-96 w-full">
-                            {attendanceData.length > 0 ? (
+                            {mounted && attendanceData.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={attendanceData}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ln-border-standard)" />

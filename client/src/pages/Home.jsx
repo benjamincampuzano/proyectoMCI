@@ -166,8 +166,7 @@ const Home = () => {
                         </div>
                     ) : (
                         <div className="space-y-8">
-                            {network ? (
-                                <>
+                            {network ? (<>
                                     <div className="flex items-center justify-between">
                                         <h2 className="text-xl weight-590 text-[var(--ln-text-primary)] tracking-tight">
                                             {isSuperAdmin()

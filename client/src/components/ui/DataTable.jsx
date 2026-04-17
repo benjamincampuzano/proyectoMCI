@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { CaretUp, CaretDown, CaretUpDown } from '@phosphor-icons/react';
 import Button from './Button';
-import Typography from './Typography';
 
 /**
  * Data Table Component - Estilo Linear completo
@@ -166,9 +165,9 @@ const DataTable = ({
                   onClick={() => handleSort(column.key)}
                 >
                   <div className="flex items-center gap-2">
-                    <Typography variant="caption" className="font-[510] text-[var(--ln-text-secondary)] uppercase tracking-wider">
+                    <span className="text-[var(--ln-text-secondary)] uppercase tracking-wider text-[13px] font-[510]">
                       {column.title}
-                    </Typography>
+                    </span>
                     {sortable && getSortIcon(column.key)}
                   </div>
                 </th>
@@ -203,9 +202,9 @@ const DataTable = ({
             {paginatedData.length === 0 ? (
               <tr>
                 <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-4 py-8 text-center">
-                  <Typography variant="body" className="text-[var(--ln-text-tertiary)]">
+                  <span className="text-[var(--ln-text-tertiary)]">
                     {emptyMessage}
-                  </Typography>
+                  </span>
                 </td>
               </tr>
             ) : (
@@ -228,9 +227,9 @@ const DataTable = ({
                   )}
                   {columns.map((column) => (
                     <td key={column.key} className="px-4 py-3">
-                      <Typography variant="body" className="text-[var(--ln-text-secondary)]">
+                      <span className="text-[var(--ln-text-secondary)]">
                         {column.render ? column.render(row[column.key], row) : row[column.key]}
-                      </Typography>
+                      </span>
                     </td>
                   ))}
                 </tr>
@@ -242,22 +241,21 @@ const DataTable = ({
 
       {/* Pagination */}
       {pagination && totalPages > 1 && (
-        <div className="border-t border-[rgba(255,255,255,0.08)] px-4 py-3">
+        <div className="border-t border-[var(--ln-border-standard)] px-4 py-3 bg-[var(--ln-bg-panel)]">
           <div className="flex items-center justify-between">
-            <Typography variant="caption" className="text-[var(--ln-text-tertiary)]">
-              Mostrando {startIndex + 1} - {Math.min(startIndex + pageSize, processedData.length)} de {processedData.length} resultados
-            </Typography>
-            
+            <span className="text-[var(--ln-text-secondary)] text-[13px] font-[510]">
+              Mostrando <span className="text-[var(--ln-text-primary)] font-[700]">{startIndex + 1}</span> - <span className="text-[var(--ln-text-primary)] font-[700]">{Math.min(startIndex + pageSize, processedData.length)}</span> de <span className="text-[var(--ln-text-primary)] font-[700]">{processedData.length}</span> resultados
+            </span>
+
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
+                className="px-3 py-1.5 text-[12px] font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-[4px] hover:bg-[var(--ln-border-standard)]/20 hover:text-[var(--ln-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
               >
                 Anterior
-              </Button>
-              
+              </button>
+
               <div className="flex items-center gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let pageNum;
@@ -270,28 +268,32 @@ const DataTable = ({
                   } else {
                     pageNum = currentPage - 2 + i;
                   }
-                  
+
+                  const isActive = currentPage === pageNum;
+
                   return (
-                    <Button
+                    <button
                       key={pageNum}
-                      variant={currentPage === pageNum ? 'primary' : 'ghost'}
-                      size="sm"
                       onClick={() => setCurrentPage(pageNum)}
+                      className={`min-w-[28px] h-7 px-2 text-[12px] font-[510] rounded-[4px] transition-all duration-200 ${
+                        isActive
+                          ? 'bg-[var(--ln-brand-indigo)] text-white shadow-md'
+                          : 'text-[var(--ln-text-secondary)] bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] hover:bg-[var(--ln-border-standard)]/20 hover:text-[var(--ln-text-primary)]'
+                      }`}
                     >
                       {pageNum}
-                    </Button>
+                    </button>
                   );
                 })}
               </div>
-              
-              <Button
-                variant="ghost"
-                size="sm"
+
+              <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-[12px] font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-[4px] hover:bg-[var(--ln-border-standard)]/20 hover:text-[var(--ln-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
               >
                 Siguiente
-              </Button>
+              </button>
             </div>
           </div>
         </div>

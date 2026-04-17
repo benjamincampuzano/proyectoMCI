@@ -10,7 +10,6 @@ import LoadingOverlay from './components/LoadingOverlay';
 import TransitionLoader from './components/TransitionLoader';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import api from './utils/api';
-// import MobileDebugger from './components/MobileDebugger';
 import './utils/logger';
 import mobileDebug from './utils/mobileDebug';
 
@@ -234,7 +233,6 @@ function App() {
             <ConnectivityHandler />
             <RouteTransitionHandler />
             <LoadingOverlay />
-            {/* <MobileDebugger /> */}
             {/* <Toaster position="top-right" toastOptions={{ duration: 4000 }} /> */}
             <Suspense fallback={<TransitionLoader />}>
               <Routes>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Plus, Calendar, Users, Trash, Pen, List, SquaresFourIcon } from '@phosphor-icons/react';
+import { Plus, Calendar, Users, Trash, Pen, List, SquaresFour } from '@phosphor-icons/react';
 import { AsyncSearchSelect, Button } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
 import { useAuth } from "../../context/AuthContext";
@@ -56,28 +56,26 @@ const KidsCourseManagement = () => {
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Clases Kids</h2>
                 <div className="flex items-center gap-2">
-                    <div className="flex bg-[#f5f5f7] dark:bg-[#272729] rounded-lg p-1">
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                                viewMode === 'table'
-                                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                    : 'text-[#86868b] dark:text-white/80 hover:text-gray-800 dark:hover:text-white'
-                            }`}
-                            title="Vista de tabla"
-                        >
-                            <List size={18} />
-                        </button>
+                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
                         <button
                             onClick={() => setViewMode('cards')}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                                viewMode === 'cards'
-                                    ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                                    : 'text-[#86868b] dark:text-white/80 hover:text-gray-800 dark:hover:text-white'
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'cards' 
+                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
+                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
                             }`}
-                            title="Vista de tarjetas"
                         >
-                            <SquaresFourIcon size={18} />
+                            <SquaresFour size={18} weight="bold" />
+                            Tarjetas
+                        </button>
+                        <button
+                            onClick={() => setViewMode('table')}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'table' 
+                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
+                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                            }`}
+                        >
+                            <List size={18} weight="bold" />
+                            Tabla
                         </button>
                     </div>
                 </div>

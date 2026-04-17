@@ -20,8 +20,8 @@ const CoordinatorBadge = ({ moduleCoordinator, moduleName }) => {
                     Coordinador {moduleName}
                 </span>
                 <div className="flex items-center gap-1.5">
-                    <UserCheck size={14} className="text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <UserCheck size={14} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[100px] sm:max-w-[150px] md:max-w-none">
                         {moduleCoordinator.fullName}
                     </span>
                 </div>

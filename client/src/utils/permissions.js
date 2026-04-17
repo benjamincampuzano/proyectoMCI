@@ -1,16 +1,35 @@
+export function isSelfOrPartner(node, currentUserId) {
+  if (!currentUserId || !node || !Array.isArray(node.partners)) return false;
+  return node.partners.some(p => p.id === currentUserId);
+}
 
-// utils/permissions.js
-export function isSelfOrPartner(node, currentUserId){return node?.partners?.some(p=>p.id===currentUserId);} 
-export function isAncestorOrSelfPartner(anc,node,id){return isSelfOrPartner(node,id)||anc?.some(a=>isSelfOrPartner(a,id));}
-export function canAddToNode({node,ancestors=[],currentUser}){
- const r=currentUser?.roles||[];const id=currentUser?.id;
- if(r.includes('ADMIN'))return true;
- if(r.includes('PASTOR')||r.includes('LIDER_DOCE')||r.includes('LIDER_CELULA'))return isAncestorOrSelfPartner(ancestors,node,id);
- return false;}
-export function canRemoveFromNode({node,ancestors=[],currentUser,level=0}){
- const r=currentUser?.roles||[];const id=currentUser?.id;
- if(level===0)return false;
- if(r.includes('ADMIN'))return true;
- if(r.includes('PASTOR')||r.includes('LIDER_DOCE')||r.includes('LIDER_CELULA'))return isAncestorOrSelfPartner(ancestors,node,id);
- return false;}
-export function canManageAssignments(u){const r=u?.roles||[];return r.includes('ADMIN')||r.includes('PASTOR')||r.includes('LIDER_DOCE')||r.includes('LIDER_CELULA');}
+export function isAncestorOrSelfPartner(ancestors, node, currentUserId) {
+  if (isSelfOrPartner(node, currentUserId)) return true;
+  return ancestors?.some(a => isSelfOrPartner(a, currentUserId));
+}
+
+export function canAddToNode({ node, ancestors = [], currentUser }) {
+  const roles = currentUser?.roles || [];
+  const uid = currentUser?.id;
+  if (roles.includes('ADMIN')) return true;
+  if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
+    return isAncestorOrSelfPartner(ancestors, node, uid);
+  }
+  return false;
+}
+
+export function canRemoveFromNode({ node, ancestors = [], currentUser, level = 0 }) {
+  const roles = currentUser?.roles || [];
+  const uid = currentUser?.id;
+  if (level === 0) return false;
+  if (roles.includes('ADMIN')) return true;
+  if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
+    return isAncestorOrSelfPartner(ancestors, node, uid);
+  }
+  return false;
+}
+
+export function canManageAssignments(currentUser) {
+  const roles = currentUser?.roles || [];
+  return roles.includes('ADMIN') || roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA');
+}

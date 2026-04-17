@@ -115,12 +115,12 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
     // Custom render for selected user
     const renderSelectedUser = (user, title = "Coordinador") => (
         <div className="flex items-center gap-2">
-            <AngularLogoIcon size={16} className="text-purple-600 dark:text-purple-400" />
-            <div>
-                <div className="font-medium text-gray-900 dark:text-gray-100">
+            <AngularLogoIcon size={16} className="text-purple-600 dark:text-purple-400 flex-shrink-0" />
+            <div className="min-w-0">
+                <div className="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm truncate max-w-[100px] sm:max-w-[150px] md:max-w-none">
                     {user.fullName}
                 </div>
-                <div className="text-xs text-purple-600 dark:text-purple-400">
+                <div className="text-[10px] sm:text-xs text-purple-600 dark:text-purple-400 hidden sm:block">
                     {title}
                 </div>
             </div>

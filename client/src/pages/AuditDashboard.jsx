@@ -9,7 +9,7 @@ import {
 } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import useAuditDashboard from '../hooks/useAuditDashboard';
-import DataTable from '../components/DataTable';
+import DataTable from '../components/ui/DataTable';
 import ConfirmationModal from '../components/ConfirmationModal';
 import api from '../utils/api';
 
@@ -360,8 +360,8 @@ const AuditDashboard = () => {
                     columns={[
                         {
                             key: 'createdAt',
-                            header: 'Marca de Tiempo',
-                            render: (log) => (
+                            title: 'Marca de Tiempo',
+                            render: (_, log) => (
                                 <div className="text-[13px] weight-510 text-[var(--ln-text-primary)] font-mono opacity-80">
                                     {formatDate(log.createdAt)}
                                 </div>
@@ -369,8 +369,8 @@ const AuditDashboard = () => {
                         },
                         {
                             key: 'user',
-                            header: 'Responsable',
-                            render: (log) => (
+                            title: 'Responsable',
+                            render: (_, log) => (
                                 <div className="flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-xl bg-[var(--ln-brand-indigo)]/10 border border-[var(--ln-brand-indigo)]/20 flex items-center justify-center text-[var(--ln-brand-indigo)] weight-590 text-sm">
                                         {log.user?.fullName.charAt(0)}
@@ -388,8 +388,8 @@ const AuditDashboard = () => {
                         },
                         {
                             key: 'action',
-                            header: 'Operación',
-                            render: (log) => (
+                            title: 'Operación',
+                            render: (_, log) => (
                                 <div className="flex items-center gap-2.5">
                                     <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-[var(--ln-border-standard)]">
                                         {getActionIcon(log.action)}
@@ -400,8 +400,8 @@ const AuditDashboard = () => {
                         },
                         {
                             key: 'entityType',
-                            header: 'Módulo',
-                            render: (log) => (
+                            title: 'Módulo',
+                            render: (_, log) => (
                                 <span className={`inline-flex px-2.5 py-0.5 rounded-md text-[9px] weight-590 uppercase tracking-widest border ${getEntityColor(log.entityType)}`}>
                                     {log.entityType}
                                 </span>
@@ -409,14 +409,14 @@ const AuditDashboard = () => {
                         },
                         {
                             key: 'details',
-                            header: 'Cambios / Registros',
-                            render: (log) => renderDetails(log.details)
+                            title: 'Cambios / Registros',
+                            render: (_, log) => renderDetails(log.details)
                         },
                         {
                             key: 'actions',
-                            header: '',
-                            render: (log) => (
-                                <div className="text-right pr-4">
+                            title: '',
+                            render: (_, log) => (
+                                <div className="text-right">
                                     {log.details && (
                                         <button
                                             onClick={() => setSelectedLog(log)}
@@ -431,7 +431,6 @@ const AuditDashboard = () => {
                     ]}
                     data={logs}
                     loading={loading}
-                    skeletonRowCount={8}
                     emptyMessage="Sin registros históricos en este intervalo."
                     pagination={{
                         page: pagination.currentPage,
@@ -439,7 +438,6 @@ const AuditDashboard = () => {
                         onPrev: () => setFilters(f => ({ ...f, page: f.page - 1 })),
                         onNext: () => setFilters(f => ({ ...f, page: f.page + 1 })),
                     }}
-                    headerClassName="text-[10px] weight-590 tracking-widest text-[var(--ln-text-tertiary)] uppercase py-6 border-b border-[var(--ln-border-standard)]"
                 />
             </div>
 

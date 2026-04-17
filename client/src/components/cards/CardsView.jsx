@@ -1,6 +1,6 @@
 import React from 'react';
-import { computeLevels } from '../utils/transformCouples';
-import { canAddToNode, canRemoveFromNode } from '../utils/permissions';
+import { computeLevels } from '../../utils/transformCouples';
+import { canAddToNode, canRemoveFromNode } from '../../utils/permissions';
 import { Users, UserPlus, UserMinus } from '@phosphor-icons/react';
 
 export default function CardsView({ root, currentUser, onAddUser, onRemoveUser }) {

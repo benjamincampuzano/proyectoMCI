@@ -1,0 +1,77 @@
+/* Mejorar contraste de placeholders en UserFormFields */
+
+/* Estilo base para placeholders */
+.ln-input::placeholder {
+    color: var(--ln-text-tertiary);
+    opacity: 0.9;
+}
+
+/* Placeholder en estado focus */
+.ln-input:focus::placeholder {
+    opacity: 0.6;
+}
+
+/* Para navegadores que requieren prefijos */
+.ln-input::-webkit-input-placeholder {
+    color: var(--ln-text-tertiary);
+    opacity: 0.9;
+}
+
+.ln-input::-moz-placeholder {
+    color: var(--ln-text-tertiary);
+    opacity: 0.9;
+}
+
+.ln-input:-ms-input-placeholder {
+    color: var(--ln-text-tertiary);
+    opacity: 0.9;
+}
+
+.ln-input::-ms-input-placeholder {
+    color: var(--ln-text-tertiary);
+    opacity: 0.9;
+}
+
+/* Estilos para selects (opciones por defecto) */
+.ln-input option:first-child,
+.ln-input option[value=""] {
+    color: var(--ln-text-tertiary);
+    opacity: 0.9;
+}
+
+/* Asegurar contraste en inputs deshabilitados */
+.ln-input:disabled,
+.ln-input:disabled::placeholder {
+    opacity: 0.5;
+}
+
+/* Borde/contorno visible para inputs en ambos temas */
+.ln-input {
+    border: 1px solid var(--ln-border-standard);
+    background-color: var(--ln-bg-panel);
+}
+
+.ln-input:focus {
+    border-color: var(--ln-brand-indigo);
+    box-shadow: 0 0 0 2px rgba(113, 112, 255, 0.1);
+}
+
+/* Estilo para selects */
+select.ln-input {
+    border: 1px solid var(--ln-border-standard);
+    background-color: var(--ln-bg-panel);
+}
+
+/* Contorno para las etiquetas/labels */
+.group > label {
+    background-color: var(--ln-bg-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--ln-border-standard);
+}
+
+/* En estado focus, el label cambia de borde */
+.group:focus-within > label {
+    border-color: var(--ln-brand-indigo);
+    background-color: var(--ln-bg-panel);
+}

@@ -304,12 +304,12 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose, readOnly = false
     if (loading) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-md bg-black/50">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-white/20">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 backdrop-blur-md bg-black/50">
+            <div className="bg-white dark:bg-gray-800 sm:rounded-2xl shadow-2xl w-full max-w-2xl h-full sm:h-auto sm:max-h-[90vh] overflow-hidden border border-white/20 flex flex-col">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50 flex-shrink-0">
                     <div>
-                        <h3 className="text-xl font-bold text-gray-800 dark:text-white">Material de Clase {classNumber}</h3>
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">Material de Clase {classNumber}</h3>
                         <p className="text-xs text-gray-500 uppercase font-semibold mt-1">Gestión de Contenidos Didácticos</p>
                     </div>
                     <Button onClick={onClose} variant="ghost" size="icon" className="p-2">
@@ -317,7 +317,7 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose, readOnly = false
                     </Button>
                 </div>
 
-                <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
                     {/* Description */}
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -374,7 +374,7 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose, readOnly = false
                                             <>
                                                 {section.field === 'documents' ? (
                                                     // Campos separados para documentos: nombre y URL
-                                                    <div className="flex-1 flex gap-2">
+                                                    <div className="flex-1 flex flex-col sm:flex-row gap-2">
                                                         <input
                                                             type="text"
                                                             className="flex-1 text-sm p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white"
@@ -384,7 +384,7 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose, readOnly = false
                                                         />
                                                         <input
                                                             type="text"
-                                                            className="flex-1 text-sm p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white"
+                                                            className="flex-1 sm:flex-[2] text-sm p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white"
                                                             value={link.url || ''}
                                                             onChange={e => updateItem(section.field, idx, e.target.value, 'url')}
                                                             placeholder="URL del documento"
@@ -416,8 +416,8 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose, readOnly = false
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex justify-end gap-3">
-                    <Button onClick={onClose} variant="secondary">
+                <div className="p-4 sm:p-6 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex justify-end gap-2 sm:gap-3 flex-shrink-0">
+                    <Button onClick={onClose} variant="secondary" size="sm" className="text-sm">
                         {readOnly ? 'Cerrar' : 'Cancelar'}
                     </Button>
                     {!readOnly && (
@@ -426,8 +426,10 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose, readOnly = false
                             disabled={saving}
                             variant="primary"
                             icon={saving ? null : FloppyDisk}
+                            size="sm"
+                            className="text-sm"
                         >
-                            {saving ? 'Guardando...' : 'Guardar Información'}
+                            {saving ? 'Guardando...' : 'Guardar'}
                         </Button>
                     )}
                 </div>

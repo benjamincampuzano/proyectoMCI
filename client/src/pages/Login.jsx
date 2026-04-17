@@ -172,10 +172,10 @@ const Login = () => {
                                 <input
                                     type="text"
                                     value={captchaAnswer}
-                                    onChange={(e) => setCaptchaAnswer(e.target.value)}
-                                    placeholder="Respuesta"
-                                    className="flex-1 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-3 py-2.5 rounded-lg focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
+                                    onChange={(e) => setCaptchaAnswer(e.target.value.slice(0, 3))}
+                                    className="w-20 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-3 py-2.5 rounded-lg focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm text-center"
                                     required
+                                    maxLength={3}
                                 />
                             </div>
                         </div>
@@ -189,22 +189,30 @@ const Login = () => {
                     </form>
 
                     <div className="mt-8 pt-6 border-t border-[var(--ln-border-standard)] text-center">
-                        <p className="text-[13px] text-[var(--ln-text-secondary)]">
-                            No tienes cuenta?{' '}
-                            <Link to="/register" className="text-[var(--ln-brand-indigo)] weight-510 hover:underline transition-all">
-                                Registrate aquí
-                            </Link>
+                        <p className="text-[13px] text-[var(--ln-text-secondary)] mb-4">
+                            No tienes cuenta?
                         </p>
+                        <button
+                            onClick={() => navigate('/register')}
+                            className="w-full bg-[var(--ln-brand-indigo)] text-white font-medium py-3.5 rounded-xl hover:bg-[var(--ln-accent-hover)] active:scale-[0.98] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 text-[14px]"
+                        >
+                            Registrate aquí
+                        </button>
                     </div>
+                    <div className="mt-8 pt-6 border-t border-[var(--ln-border-standard)] text-center">
+                        <p className="text-[13px] text-[var(--ln-text-secondary)] mb-4">
+                            Quieres registrar a un Invitado?
+                        </p>
+                        <button
+                            onClick={() => navigate('/public-guest-registration')}
+                            className="w-full bg-[var(--ln-brand-indigo)] text-white font-medium py-3.5 rounded-xl hover:bg-[var(--ln-accent-hover)] active:scale-[0.98] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 text-[14px]"
+                        >
+                            Registrar Nuevo Invitado
+                        </button>
+                    </div>
+                    
                 </div>
-
-                <div className="mt-8 flex flex-col items-center gap-4">
-                    <button
-                        onClick={() => navigate('/public-guest-registration')}
-                        className="w-full py-3.5 rounded-xl border border-[var(--ln-border-standard)] bg-white/[0.02] hover:bg-white/[0.05] text-[var(--ln-text-primary)] text-[13px] weight-510 transition-all active:scale-[0.98]"
-                    >
-                        Registrar Nuevo Invitado
-                    </button>
+                <div className="pt-6 text-center">
                     <p className="text-[11px] text-[var(--ln-text-tertiary)] opacity-60">© 2026 MCI. Todos los derechos reservados.</p>
                 </div>
             </div>

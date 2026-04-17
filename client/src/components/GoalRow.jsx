@@ -1,7 +1,5 @@
 import { CheckCircle, XCircle, Clock, Pen, Trash, Warning, Calendar, Target } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
-import { useState } from 'react';
-import ConfirmationModal from './ConfirmationModal';
 
 // Mapeos de colores estáticos para Tailwind actualizados a Linear
 const COLOR_CLASSES = {
@@ -54,8 +52,7 @@ const formatDeadlineText = (goal) => {
     return 'N/A';
 };
 
-const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+const GoalRow = ({ goal, isEditor, onEdit, onDelete, onRequestDelete }) => {
     const percent = Math.min(Math.round((goal.currentValue / goal.targetValue) * 100), 100);
     const status = calculateGoalStatus(goal, percent);
     const StatusIcon = status.icon;
@@ -67,8 +64,7 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
     else if (goal.convention) goalName = `Convención: ${goal.convention.theme}`;
 
     return (
-        <>
-            <tr className="hover:bg-white/[0.02] transition-colors border-b border-[var(--ln-border-standard)]/50 group">
+        <tr className="hover:bg-white/[0.02] transition-colors border-b border-[var(--ln-border-standard)]/50 group">
                 <td className="py-5 px-10">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-[var(--ln-brand-indigo)]/10 flex items-center justify-center text-[var(--ln-brand-indigo)] weight-590 text-sm border border-[var(--ln-brand-indigo)]/20 uppercase">
@@ -139,7 +135,7 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
                                 <Pen size={16} weight="bold" />
                             </button>
                             <button
-                                onClick={() => setShowDeleteConfirm(true)}
+                                onClick={() => onRequestDelete?.(goal)}
                                 className="p-2 text-[var(--ln-text-tertiary)] hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all border border-transparent hover:border-red-500/10"
                                 title="Eliminar"
                             >
@@ -149,39 +145,6 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete }) => {
                     </td>
                 )}
             </tr>
-
-            <ConfirmationModal
-                isOpen={showDeleteConfirm}
-                onClose={() => setShowDeleteConfirm(false)}
-                onConfirm={() => {
-                    onDelete(goal.id);
-                    setShowDeleteConfirm(false);
-                }}
-                title="⚠️ Confirmar Eliminación"
-                message="Esta acción es irreversible y eliminará todos los registros históricos asociados a esta meta."
-                confirmText="Eliminar Permanentemente"
-                variant="danger"
-            >
-                <div className="mt-6 space-y-1.5 p-5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-[20px] relative overflow-hidden group/modal-item">
-                    <div className="flex justify-between items-center relative z-10">
-                        <span className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-widest">Meta</span>
-                        <span className="text-[13px] weight-590 text-[var(--ln-text-primary)]">{goalName}</span>
-                    </div>
-                    <div className="flex justify-between items-center relative z-10">
-                        <span className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-widest">Responsable</span>
-                        <span className="text-[13px] weight-590 text-[var(--ln-text-secondary)] opacity-80">{goal.user?.profile?.fullName || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-2 mt-2 border-t border-[var(--ln-border-standard)] relative z-10">
-                        <span className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-widest">Objetivo Final</span>
-                        <div className="flex items-center gap-2">
-                            <Target size={14} className="text-[var(--ln-brand-indigo)]" weight="bold" />
-                            <span className="text-[15px] weight-590 text-[var(--ln-brand-indigo)]">{goal.targetValue}</span>
-                        </div>
-                    </div>
-                    <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-red-500 opacity-[0.03] blur-3xl rounded-full" />
-                </div>
-            </ConfirmationModal>
-        </>
     );
 };
 
@@ -190,6 +153,7 @@ GoalRow.propTypes = {
     isEditor: PropTypes.bool,
     onEdit: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
+    onRequestDelete: PropTypes.func,
 };
 
 export default GoalRow;

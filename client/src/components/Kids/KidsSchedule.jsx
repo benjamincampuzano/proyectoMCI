@@ -18,7 +18,7 @@ const CATEGORY_INFO = {
 const KidsSchedule = ({ moduleCoordinator }) => {
     const { user, hasAnyRole } = useAuth();
     const [courses, setCourses] = useState([]);
-    const [expandedCourseId, setExpandedCourseId] = useState(null);
+    const [expandedCourseIds, setExpandedCourseIds] = useState(new Set());
     const [schedules, setSchedules] = useState({});
     const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
     
@@ -93,9 +93,14 @@ const KidsSchedule = ({ moduleCoordinator }) => {
         try {
             const res = await api.get('/kids/modules');
             setCourses(res.data);
-            if (res.data.length > 0 && expandedCourseId === null) {
-                // Optionally expand the first course by default
-            }
+            // Expand all courses by default
+            setExpandedCourseIds(new Set(res.data.map(c => c.id)));
+            // Fetch schedules for all courses
+            res.data.forEach(course => {
+                if (!schedules[course.id]) {
+                    fetchSchedulesForCourse(course.id);
+                }
+            });
         } catch (error) {
             console.error('Error fetching courses:', error);
             toast.error('Error al cargar los cursos');
@@ -178,18 +183,22 @@ const KidsSchedule = ({ moduleCoordinator }) => {
     };
 
     const toggleCourse = (courseId) => {
-        if (expandedCourseId === courseId) {
-            setExpandedCourseId(null);
-        } else {
-            setExpandedCourseId(courseId);
-            if (!schedules[courseId]) {
-                fetchSchedulesForCourse(courseId);
+        setExpandedCourseIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(courseId)) {
+                newSet.delete(courseId);
+            } else {
+                newSet.add(courseId);
+                if (!schedules[courseId]) {
+                    fetchSchedulesForCourse(courseId);
+                }
             }
-        }
+            return newSet;
+        });
     };
 
     const handleOpenCreateModal = (courseId, e) => {
-        e.stopPropagation();
+        if (e) e.stopPropagation();
         setFormCourseId(courseId);
         setEditingSchedule(null);
         setFormData({
@@ -301,7 +310,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                     </div>
                 ) : (
                     courses.map(course => {
-                        const isExpanded = expandedCourseId === course.id;
+                        const isExpanded = expandedCourseIds.has(course.id);
                         const categoryInfo = CATEGORY_INFO[course.category] || CATEGORY_INFO['KIDS1'];
                         const safeColor = categoryInfo?.color || 'indigo';
                         const courseSchedules = schedules[course.id] || [];
@@ -325,39 +334,6 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        {isKidsCoordinatorOrAdmin && (
-                                            <Button
-                                                onClick={(e) => handleOpenCreateModal(course.id, e)}
-                                                variant="primary"
-                                                size="sm"
-                                                icon={Plus}
-                                                className="bg-indigo-600 hover:bg-indigo-700"
-                                            >
-                                                Agregar Fila
-                                            </Button>
-                                        )}
-                                        {hasAnyRole([ROLES.ADMIN]) && (
-                                            <>
-                                                <Button
-                                                    onClick={(e) => handleEditCourse(e, course)}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-amber-600 hover:text-amber-800"
-                                                    icon={Pen}
-                                                >
-                                                    Editar
-                                                </Button>
-                                                <Button
-                                                    onClick={(e) => handleDeleteCourse(e, course)}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-red-500 hover:text-red-700"
-                                                    icon={Trash}
-                                                >
-                                                    Eliminar
-                                                </Button>
-                                            </>
-                                        )}
                                         <div className="text-gray-400 dark:text-[#86868b] p-1">
                                             {isExpanded ? <CaretUp size={20} weight="bold" /> : <CaretDown size={20} weight="bold" />}
                                         </div>
@@ -367,6 +343,52 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                 {/* Accordion Content */}
                                 {isExpanded && (
                                     <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-[#272729]/80 p-0 sm:p-4">
+                                        {(isKidsCoordinatorOrAdmin || hasAnyRole([ROLES.ADMIN])) && (
+                                            <div className="px-4 py-3 sm:px-0 sm:py-0 sm:mb-4 flex flex-wrap gap-2">
+                                                {isKidsCoordinatorOrAdmin && (
+                                                    <Button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleOpenCreateModal(course.id, e);
+                                                        }}
+                                                        variant="primary"
+                                                        size="sm"
+                                                        icon={Plus}
+                                                        className="bg-indigo-600 hover:bg-indigo-700 flex-1 sm:flex-none"
+                                                    >
+                                                        Fila
+                                                    </Button>
+                                                )}
+                                                {hasAnyRole([ROLES.ADMIN]) && (
+                                                    <>
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditCourse(e, course);
+                                                            }}
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-amber-600 hover:text-amber-800 flex-1 sm:flex-none"
+                                                            icon={Pen}
+                                                        >
+                                                            Editar
+                                                        </Button>
+                                                        <Button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteCourse(e, course);
+                                                            }}
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-red-500 hover:text-red-700 flex-1 sm:flex-none"
+                                                            icon={Trash}
+                                                        >
+                                                            Eliminar
+                                                        </Button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
                                         <div className="overflow-x-auto rounded-lg shadow-inner bg-white dark:bg-black border border-[#d1d1d6] dark:border-[#3a3a3c]">
                                             {courseSchedules.length === 0 ? (
                                                 <div className="p-8 text-center text-[#86868b] dark:text-[#98989d]">
@@ -446,18 +468,19 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
             {/* Create/Edit Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-black/50 transition-all">
-                    <div className="bg-white dark:bg-[#272729] rounded-2xl shadow-2xl border border-[#d1d1d6] dark:border-[#3a3a3c] w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-                        <div className="p-6 border-b border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-[#272729]/80 flex-shrink-0">
-                            <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 backdrop-blur-sm bg-black/50 transition-all">
+                    <div className="bg-white dark:bg-[#272729] sm:rounded-2xl shadow-2xl border border-[#d1d1d6] dark:border-[#3a3a3c] w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden">
+                        <div className="p-4 sm:p-6 border-b border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-[#272729]/80 flex-shrink-0">
+                            <h3 className="text-lg sm:text-xl font-bold text-[#1d1d1f] dark:text-white">
                                 {editingSchedule ? 'Editar Cronograma' : 'Añadir al Cronograma'}
                             </h3>
-                            <p className="text-sm text-[#86868b] dark:text-[#98989d] mt-1">
+                            <p className="text-xs sm:text-sm text-[#86868b] dark:text-[#98989d] mt-1">
                                 Completa la información para esta clase
                             </p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
+                        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-white/80 mb-1.5">Unidad</label>
@@ -521,10 +544,11 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                 </div>
                             </div>
                             
-                            <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-[#d1d1d6] dark:border-[#3a3a3c]">
-                                <Button type="button" onClick={() => setShowModal(false)} variant="secondary">Cancelar</Button>
-                                <Button type="submit" variant="primary" className="bg-indigo-600 hover:bg-indigo-700">
-                                    {editingSchedule ? 'Guardar Cambios' : 'Añadir Fila'}
+                            </div>
+                            <div className="flex justify-end gap-2 pt-4 border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-[#272729]/80 flex-shrink-0 p-4">
+                                <Button type="button" onClick={() => setShowModal(false)} variant="secondary" size="sm" className="text-sm">Cancelar</Button>
+                                <Button type="submit" variant="primary" className="bg-indigo-600 hover:bg-indigo-700 text-sm" size="sm">
+                                    {editingSchedule ? 'Guardar' : 'Añadir'}
                                 </Button>
                             </div>
                         </form>
@@ -534,16 +558,16 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
             {/* Create Course Modal */}
             {showCreateCourseModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 transition-all">
-                    <div className="bg-white/90 dark:bg-[#272729]/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-md w-full overflow-hidden flex flex-col">
-                        <div className="p-6 flex-shrink-0">
-                            <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white border-b pb-2">
-                                Nueva Clase - {CATEGORY_INFO[courseFormData.category]?.label || courseFormData.category}
+                <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 backdrop-blur-sm bg-black/40 transition-all">
+                    <div className="bg-white/90 dark:bg-[#272729]/90 backdrop-filter backdrop-blur-md sm:rounded-2xl shadow-2xl border border-white/20 max-w-md w-full h-full sm:h-auto overflow-hidden flex flex-col">
+                        <div className="p-4 sm:p-6 flex-shrink-0">
+                            <h3 className="text-lg sm:text-xl font-bold text-[#1d1d1f] dark:text-white border-b pb-2">
+                                Nueva Clase
                             </h3>
                         </div>
 
                         <form onSubmit={handleCreateCourse} className="flex-1 flex flex-col overflow-hidden">
-                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-white/80 mb-2">Categoría</label>
                                     <select
@@ -562,10 +586,10 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                             </div>
 
                             {/* Submit Buttons - Fixed at bottom outside scroll area */}
-                            <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7]/50 dark:bg-[#272729]/50">
-                                <div className="p-6 flex justify-end space-x-3">
-                                    <Button type="button" onClick={() => setShowCreateCourseModal(false)} variant="secondary">Cancelar</Button>
-                                    <Button type="submit" className="bg-gradient-to-r from-pink-600 to-purple-600">Crear Clase</Button>
+                            <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7]/50 dark:bg-[#272729]/50 flex-shrink-0">
+                                <div className="p-4 sm:p-6 flex justify-end gap-2">
+                                    <Button type="button" onClick={() => setShowCreateCourseModal(false)} variant="secondary" size="sm" className="text-sm">Cancelar</Button>
+                                    <Button type="submit" className="bg-gradient-to-r from-pink-600 to-purple-600 text-sm" size="sm">Crear</Button>
                                 </div>
                             </div>
                         </form>
@@ -575,16 +599,16 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
             {/* Edit Course Modal */}
             {showEditCourseModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/40 transition-all">
-                    <div className="bg-white/90 dark:bg-[#272729]/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-md w-full overflow-hidden flex flex-col">
-                        <div className="p-6 flex-shrink-0">
-                            <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white border-b pb-2">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 backdrop-blur-sm bg-black/40 transition-all">
+                    <div className="bg-white/90 dark:bg-[#272729]/90 backdrop-filter backdrop-blur-md sm:rounded-2xl shadow-2xl border border-white/20 max-w-md w-full h-full sm:h-auto overflow-hidden flex flex-col">
+                        <div className="p-4 sm:p-6 flex-shrink-0">
+                            <h3 className="text-lg sm:text-xl font-bold text-[#1d1d1f] dark:text-white border-b pb-2">
                                 Editar Clase
                             </h3>
                         </div>
 
                         <form onSubmit={handleUpdateCourse} className="flex-1 flex flex-col overflow-hidden">
-                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-white/80 mb-2">Nombre</label>
                                     <input
@@ -612,10 +636,10 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                             </div>
 
                             {/* Submit Buttons - Fixed at bottom outside scroll area */}
-                            <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7]/50 dark:bg-[#272729]/50">
-                                <div className="p-6 flex justify-end space-x-3">
-                                    <Button type="button" onClick={() => setShowEditCourseModal(false)} variant="secondary">Cancelar</Button>
-                                    <Button type="submit" className="bg-gradient-to-r from-amber-600 to-orange-600">Guardar Cambios</Button>
+                            <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7]/50 dark:bg-[#272729]/50 flex-shrink-0">
+                                <div className="p-4 sm:p-6 flex justify-end gap-2">
+                                    <Button type="button" onClick={() => setShowEditCourseModal(false)} variant="secondary" size="sm" className="text-sm">Cancelar</Button>
+                                    <Button type="submit" className="bg-gradient-to-r from-amber-600 to-orange-600 text-sm" size="sm">Guardar</Button>
                                 </div>
                             </div>
                         </form>

@@ -2,6 +2,7 @@ import { Eye, EyeClosed, MapPin } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
 import { AsyncSearchSelect } from '../ui';
 import api from '../../utils/api';
+import './UserFormFields.css';
 
 const UserFormFields = ({
     formData,
@@ -22,7 +23,7 @@ const UserFormFields = ({
 }) => {
     const inputGroup = (label, children, required = false) => (
         <div className="space-y-1.5 group">
-            <label className="text-[11px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-wider flex items-center gap-1.5 px-1 opacity-70 group-focus-within:opacity-100 group-focus-within:text-[var(--ln-brand-indigo)] transition-all">
+            <label className="text-[11px] weight-700 text-[var(--ln-text-secondary)] uppercase tracking-wider flex items-center gap-1.5 px-1 group-focus-within:text-[var(--ln-brand-indigo)] transition-all">
                 {label} {required && <span className="text-red-500">*</span>}
             </label>
             {children}
@@ -120,7 +121,45 @@ const UserFormFields = ({
                     />
                 </div>
             , true)}
-                    
+
+            {/* Campo de Contraseña - Solo en modo create */}
+            {mode === 'create' && inputGroup("Contraseña",
+                <div className="relative">
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        className="ln-input pr-12"
+                        value={formData.password || ''}
+                        onChange={e => {
+                            const newPassword = e.target.value;
+                            setFormData({ ...formData, password: newPassword });
+                            if (validatePasswordRealTime && setPasswordErrors) {
+                                setPasswordErrors(validatePasswordRealTime(newPassword, formData.fullName));
+                            }
+                        }}
+                        placeholder="Mínimo 8 caracteres"
+                        required
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword && setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-md bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-brand-indigo)] hover:border-[var(--ln-brand-indigo)]/30 hover:bg-[var(--ln-brand-indigo)]/10 transition-all"
+                        title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                        {showPassword ? <EyeClosed size={16} /> : <Eye size={16} />}
+                    </button>
+                    {passwordErrors && passwordErrors.length > 0 && (
+                        <div className="mt-1.5 space-y-1">
+                            {passwordErrors.map((error, idx) => (
+                                <p key={idx} className="text-[11px] text-red-500 flex items-center gap-1">
+                                    <span className="w-1 h-1 rounded-full bg-red-500" />
+                                    {error}
+                                </p>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            , true)}
+
             {/* Sección: Entorno Civil y Red */}
             {inputGroup("Estado Civil", 
                 <select
@@ -173,19 +212,29 @@ const UserFormFields = ({
                 </select>
             , true)}
 
-            {inputGroup("Barrio", 
+            {inputGroup("Barrio",
                 <div className="relative">
-                    <input 
-                        type="text" 
-                        className="ln-input pl-11" 
-                        value={formData.neighborhood || ''} 
-                        onChange={e => setFormData({ ...formData, neighborhood: e.target.value })} 
+                    <input
+                        type="text"
+                        className="ln-input pl-11"
+                        value={formData.neighborhood || ''}
+                        onChange={e => setFormData({ ...formData, neighborhood: e.target.value })}
                         placeholder="Nombre del barrio"
                     />
                 </div>
             )}
 
-
+            {inputGroup("Ciudad",
+                <div className="relative">
+                    <input
+                        type="text"
+                        className="ln-input pl-11"
+                        value={formData.city || ''}
+                        onChange={e => setFormData({ ...formData, city: e.target.value })}
+                        placeholder="Nombre de la ciudad"
+                    />
+                </div>
+            )}
 
             {/* Sección: Jerarquía Ministerial */}
             <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">

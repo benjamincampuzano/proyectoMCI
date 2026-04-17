@@ -344,35 +344,38 @@ const Encuentros = () => {
                 title="Encuentros"
                 description="Gestión de Encuentros (Pre y Pos encuentros)"
                 action={
-                    <div className="flex items-center gap-4">
-                        <CoordinatorSelector 
-                            moduleCoordinator={moduleCoordinator}
-                            moduleName="Encuentros"
-                            onCoordinatorChange={handleCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                        />
-                        <SubCoordinatorSelector 
-                            moduleSubCoordinator={moduleSubCoordinator}
-                            moduleName="Encuentros"
-                            onSubCoordinatorChange={handleSubCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                            currentUserId={user?.id}
-                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
-                        />
-                        <TreasurerSelector 
-                            moduleTreasurer={moduleTreasurer}
-                            moduleName="Encuentros"
-                            onTreasurerChange={handleTreasurerChange}
-                            disabled={!hasAdminOrPastor}
-                            currentUserId={user?.id}
-                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
-                        />
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <CoordinatorSelector
+                                moduleCoordinator={moduleCoordinator}
+                                moduleName="Encuentros"
+                                onCoordinatorChange={handleCoordinatorChange}
+                                disabled={!hasAdminOrPastor}
+                            />
+                            <SubCoordinatorSelector
+                                moduleSubCoordinator={moduleSubCoordinator}
+                                moduleName="Encuentros"
+                                onSubCoordinatorChange={handleSubCoordinatorChange}
+                                disabled={!hasAdminOrPastor}
+                                currentUserId={user?.id}
+                                isModuleCoordinator={user?.isCoordinator || isCoordinator()}
+                            />
+                            <TreasurerSelector
+                                moduleTreasurer={moduleTreasurer}
+                                moduleName="Encuentros"
+                                onTreasurerChange={handleTreasurerChange}
+                                disabled={!hasAdminOrPastor}
+                                currentUserId={user?.id}
+                                isModuleCoordinator={user?.isCoordinator || isCoordinator()}
+                            />
+                        </div>
                         {canCreateOrDelete && (
                             <Button
                                 variant="primary"
                                 icon={Plus}
                                 onClick={() => setShowCreateModal(true)}
-                                className="shadow-lg shadow-blue-500/30"
+                                className="shadow-lg shadow-blue-500/30 w-full sm:w-auto text-sm sm:text-base"
+                                size="sm"
                             >
                                 Nuevo Encuentro
                             </Button>
@@ -455,26 +458,26 @@ const Encuentros = () => {
             {/* Toggle de Vista y Reporte */}
             {!showReport && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
                         <button
                             onClick={() => setViewMode('cards')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'cards'
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                            title="Vista de tarjetas"
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] font-semibold ${viewMode === 'cards'
+                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
+                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                            }`}
                         >
-                            <SquaresFour size={18} />
+                            <SquaresFour size={18} weight="bold" />
+                            Tarjetas
                         </button>
                         <button
                             onClick={() => setViewMode('table')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'table'
-                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                            title="Vista de tabla"
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] font-semibold ${viewMode === 'table'
+                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
+                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                            }`}
                         >
-                            <List size={18} />
+                            <List size={18} weight="bold" />
+                            Tabla
                         </button>
                     </div>
 
@@ -594,21 +597,23 @@ const Encuentros = () => {
                             labelKey="fullName"
                         />
                     </div>
-                    <div className="pt-4 flex space-x-3">
+                    <div className="pt-4 flex gap-2 sm:gap-3">
                         <Button
                             type="button"
                             variant="secondary"
                             onClick={() => setShowCreateModal(false)}
-                            className="flex-1"
+                            className="flex-1 text-sm"
+                            size="sm"
                         >
                             Cancelar
                         </Button>
                         <Button
                             type="submit"
                             variant="primary"
-                            className="flex-1"
+                            className="flex-1 text-sm"
+                            size="sm"
                         >
-                            Crear Encuentro
+                            Crear
                         </Button>
                     </div>
                 </form>

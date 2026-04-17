@@ -174,8 +174,8 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
     // PASTOR no puede crear invitados - mostrar mensaje informativo
     if (currentUser?.roles?.includes('PASTOR')) {
         return (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center sm:p-4">
+                <div className="bg-white dark:bg-gray-800 sm:rounded-2xl shadow-xl w-full h-full sm:h-auto sm:max-w-md flex flex-col">
                     <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                         <h3 className="text-xl font-bold text-gray-900 dark:text-white">Registrar Nuevo Invitado</h3>
                         <button
@@ -205,13 +205,14 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
     }
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl h-[95vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center sm:p-4 safe-area-inset">
+            <div className="bg-white dark:bg-gray-800 sm:rounded-2xl shadow-xl w-full h-[100dvh] sm:h-auto sm:max-w-2xl sm:max-h-[95vh] flex flex-col overflow-hidden relative z-[101]">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <UserPlus className="w-6 h-6 text-blue-600" />
-                        Registrar Nuevo Invitado
+                <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                        <span className="hidden sm:inline">Registrar Nuevo Invitado</span>
+                        <span className="sm:hidden">Nuevo Invitado</span>
                     </h3>
                     <button
                         type="button"
@@ -224,7 +225,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
 
                 {/* Content */}
                 <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
-                    <div className="flex-1 overflow-y-auto p-6">
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                         {error && (
                             <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
                                 {error}
@@ -428,26 +429,26 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                     </div>
 
                     {/* Footer - Fixed at bottom outside scroll area */}
-                    <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                        <div className="p-6 flex justify-end gap-3">
+                    <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0">
+                        <div className="p-4 sm:p-6 flex justify-end gap-2 sm:gap-3">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                className="px-3 sm:px-4 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
+                                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
                             >
                                 {loading ? (
-                                    <SpinnerIcon size={20} className="animate-spin" />
+                                    <SpinnerIcon size={18} className="animate-spin" />
                                 ) : (
                                     <>
-                                        <FloppyDiskIcon size={20} />
-                                        <span>Registrar Invitado</span>
+                                        <FloppyDiskIcon size={18} />
+                                        <span>Registrar</span>
                                     </>
                                 )}
                             </button>

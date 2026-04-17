@@ -110,29 +110,32 @@ const Ganar = () => {
                 title="Ganar"
                 description="Registro y seguimiento de invitados"
                 action={
-                    <div className="flex items-center gap-4">
-                        <CoordinatorSelector 
-                            moduleCoordinator={moduleCoordinator}
-                            moduleName="Ganar"
-                            onCoordinatorChange={handleCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                        />
-                        <SubCoordinatorSelector 
-                            moduleSubCoordinator={moduleSubCoordinator}
-                            moduleName="Ganar"
-                            onSubCoordinatorChange={handleSubCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                            currentUserId={user?.id}
-                            isModuleCoordinator={user?.isCoordinator || hasRole('LIDER_DOCE')}
-                        />
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <CoordinatorSelector
+                                moduleCoordinator={moduleCoordinator}
+                                moduleName="Ganar"
+                                onCoordinatorChange={handleCoordinatorChange}
+                                disabled={!hasAdminOrPastor}
+                            />
+                            <SubCoordinatorSelector
+                                moduleSubCoordinator={moduleSubCoordinator}
+                                moduleName="Ganar"
+                                onSubCoordinatorChange={handleSubCoordinatorChange}
+                                disabled={!hasAdminOrPastor}
+                                currentUserId={user?.id}
+                                isModuleCoordinator={user?.isCoordinator || hasRole('LIDER_DOCE')}
+                            />
+                        </div>
                         {activeTab === 'list' && (
                             <Button
                                 variant={isPastor ? 'outline' : (showRegistration ? 'error' : 'primary')}
                                 onClick={() => !isPastor && setShowRegistration(!showRegistration)}
                                 disabled={isPastor}
-                                className={isPastor ? 'opacity-50 cursor-not-allowed' : ''}
+                                className={`${isPastor ? 'opacity-50 cursor-not-allowed' : ''} w-full sm:w-auto text-sm sm:text-base`}
+                                size="sm"
                             >
-                                {isPastor ? 'Registro no disponible para Pastores' : (showRegistration ? 'Cancelar Registro' : 'Registrar Nuevo Invitado')}
+                                {isPastor ? 'Registro no disponible para Pastores' : (showRegistration ? 'Cancelar' : '+ Nuevo Invitado')}
                             </Button>
                         )}
                     </div>

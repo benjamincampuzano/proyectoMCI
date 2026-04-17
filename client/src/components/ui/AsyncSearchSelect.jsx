@@ -140,9 +140,10 @@ const AsyncSearchSelect = ({
                         <button
                             type="button"
                             onClick={clearSelection}
-                            className="p-1 hover:bg-[var(--ln-text-quaternary)]/10 rounded-full text-[var(--ln-text-quaternary)] hover:text-[var(--ln-text-primary)] transition-all active:scale-90"
+                            className="w-6 h-6 flex items-center justify-center rounded-md bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-brand-indigo)] hover:border-[var(--ln-brand-indigo)]/30 hover:bg-[var(--ln-brand-indigo)]/10 transition-all active:scale-90"
+                            title="Limpiar selección"
                         >
-                            <X className="w-3 h-3" weight="bold" />
+                            <X className="w-3.5 h-3.5" weight="bold" />
                         </button>
                     )}
                 </div>

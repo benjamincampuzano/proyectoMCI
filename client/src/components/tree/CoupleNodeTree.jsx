@@ -3,7 +3,7 @@
 import React, { useState, memo } from 'react';
 import CoupleCard from './CoupleCard';
 import GuestNode from './GuestNode';
-import { canAddToNode, canRemoveFromNode, canManageAssignments } from '../utils/permissions';
+import { canAddToNode, canRemoveFromNode, canManageAssignments } from '../../utils/permissions';
 
 export default memo(function CoupleNodeTree({ 
   node, 

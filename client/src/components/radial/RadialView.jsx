@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { canAddToNode, canRemoveFromNode } from '../utils/permissions';
+import { canAddToNode, canRemoveFromNode } from '../../utils/permissions';
 
 const ROLE_COLORS = {
   PASTOR: { primary: '#059669', bg: '#f0fdf4', border: '#16a34a' },

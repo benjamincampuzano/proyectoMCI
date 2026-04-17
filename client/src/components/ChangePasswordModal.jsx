@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Eye, EyeClosedIcon, CheckCircle, XCircle, WarningCircle } from '@phosphor-icons/react';
+import { Lock, Eye, EyeClosedIcon, CheckCircle, WarningCircle, ShieldCheck } from '@phosphor-icons/react';
 
 const validatePassword = (password, email = '', fullName = '') => {
     const requirements = [];
@@ -58,11 +58,10 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [showCurrent, setShowCurrent] = useState(false);
-    const [showNew, setShowNew] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
+    const [showPasswords, setShowPasswords] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
 
     const { requirements, allMet } = validatePassword(newPassword, user?.email, user?.fullName);
     const passwordsMatch = newPassword === confirmPassword && newPassword.length > 0;
@@ -73,6 +72,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
             setNewPassword('');
             setConfirmPassword('');
             setError('');
+            setSuccess(false);
         }
     }, [isOpen]);
 
@@ -100,147 +100,153 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
         setLoading(false);
 
         if (result.success) {
+            setSuccess(true);
             onPasswordChanged?.();
-            onClose();
+            setTimeout(() => {
+                onClose();
+            }, 3000);
         } else {
             setError(result.message);
         }
     };
 
-    if (!isOpen) return null;
+    if (!isOpen && !success) return null;
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}>
-            <div className="w-full max-w-md rounded-lg shadow-2xl border p-6" style={{ backgroundColor: '#0f1011', borderColor: 'rgba(255,255,255,0.08)', boxShadow: 'rgba(0,0,0,0) 0px 8px 2px, rgba(0,0,0,0.01) 0px 5px 2px, rgba(0,0,0,0.04) 0px 3px 2px, rgba(0,0,0,0.07) 0px 1px 1px, rgba(0,0,0,0.08) 0px 0px 1px' }}>
-                <div className="pb-4 mb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(122,127,173,0.15)' }}>
-                            <WarningCircle className="w-6 h-6" style={{ color: '#7a7fad' }} />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold" style={{ color: '#f7f8f8', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 590, letterSpacing: '-0.288px' }}>Cambio de Contraseña Requerido</h2>
-                            <p className="text-sm" style={{ color: '#8a8f98', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 400 }}>*</p>
-                        </div>
-                    </div>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {error && (
-                        <div className="p-3 rounded-lg text-sm border" style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)', color: '#f7f8f8' }}>
-                            {error}
-                        </div>
-                    )}
-
-                    <div>
-                        <label className="block text-sm mb-2" style={{ color: '#d0d6e0', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 510 }}>
-                            Contraseña Actual
-                        </label>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2" size={18} style={{ color: '#62666d' }} />
-                            <input
-                                type={showCurrent ? 'text' : 'password'}
-                                value={currentPassword}
-                                onChange={(e) => setCurrentPassword(e.target.value)}
-                                className="w-full px-10 py-3 rounded-lg focus:outline-none"
-                                style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', color: '#d0d6e0', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 400 }}
-                                placeholder="Ingresa tu contraseña actual"
-                                required
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowCurrent(!showCurrent)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:opacity-70"
-                                style={{ color: '#62666d' }}
-                            >
-                                {showCurrent ? <Eye size={18} /> : <EyeClosedIcon size={18} />}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm mb-2" style={{ color: '#d0d6e0', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 510 }}>
-                            Nueva Contraseña
-                        </label>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2" size={18} style={{ color: '#62666d' }} />
-                            <input
-                                type={showNew ? 'text' : 'password'}
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full px-10 py-3 rounded-lg focus:outline-none"
-                                style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', color: '#d0d6e0', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 400 }}
-                                placeholder="Ingresa tu nueva contraseña"
-                                required
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowNew(!showNew)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:opacity-70"
-                                style={{ color: '#62666d' }}
-                            >
-                                {showNew ? <Eye size={18} /> : <EyeClosedIcon size={18} />}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm mb-2" style={{ color: '#d0d6e0', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 510 }}>
-                            Confirmar Nueva Contraseña
-                        </label>
-                        <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2" size={18} style={{ color: '#62666d' }} />
-                            <input
-                                type={showConfirm ? 'text' : 'password'}
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-10 py-3 rounded-lg focus:outline-none"
-                                style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', color: '#d0d6e0', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 400 }}
-                                placeholder="Confirma tu nueva contraseña"
-                                required
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowConfirm(!showConfirm)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:opacity-70"
-                                style={{ color: '#62666d' }}
-                            >
-                                {showConfirm ? <Eye size={18} /> : <EyeClosedIcon size={18} />}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Password Requirements */}
-                    <div className="rounded-lg p-4 space-y-2" style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <p className="text-sm mb-2" style={{ color: '#d0d6e0', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 510 }}>Requisitos de contraseña:</p>
-                        <div className="grid grid-cols-2 gap-2">
-                            {requirements.map((req, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-xs" style={{ color: req.met ? '#10b981' : '#62666d', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 400 }}>
-                                    {req.met ? <CheckCircle size={14} style={{ color: '#10b981' }} /> : <XCircle size={14} style={{ color: '#62666d' }} />}
-                                    {req.label}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 dark:border-gray-700 animate-in zoom-in-95 duration-300">
+                <div className="px-6 py-8">
+                    {!success ? (
+                        <>
+                            <div className="flex flex-col items-center text-center mb-8">
+                                <div className="p-4 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-600 dark:text-blue-400 mb-4 ring-8 ring-blue-50 dark:ring-blue-900/10">
+                                    <ShieldCheck size={40} />
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                    Cambio de Contraseña
+                                </h2>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                                    Actualiza tu contraseña para mantener tu cuenta segura.
+                                </p>
+                            </div>
 
-                    {/* Password Match Indicator */}
-                    {confirmPassword && (
-                        <div className="flex items-center gap-2 text-sm" style={{ color: passwordsMatch ? '#10b981' : '#62666d', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 400 }}>
-                            {passwordsMatch ? <CheckCircle size={16} style={{ color: '#10b981' }} /> : <XCircle size={16} style={{ color: '#62666d' }} />}
-                            {passwordsMatch ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden'}
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                {error && (
+                                    <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-sm flex items-center gap-2 border border-red-200 dark:border-red-800 animate-in shake duration-300">
+                                        <WarningCircle size={18} />
+                                        <span>{error}</span>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                        Contraseña Actual
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type={showPasswords ? "text" : "password"}
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 pl-11 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-white"
+                                            placeholder="Ingresa tu clave actual"
+                                            required
+                                        />
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPasswords(!showPasswords)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                        >
+                                            {showPasswords ? <EyeClosedIcon size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                        Nueva Contraseña
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type={showPasswords ? "text" : "password"}
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 pl-11 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-white"
+                                            placeholder="Crea una clave segura"
+                                            required
+                                        />
+                                        <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 ml-1">
+                                        Confirmar Nueva Contraseña
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type={showPasswords ? "text" : "password"}
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 pl-11 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-white"
+                                            placeholder="Repite la nueva clave"
+                                            required
+                                        />
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                    </div>
+
+                                    {confirmPassword && (
+                                        <div className="flex items-center gap-2 text-sm mt-2" style={{ color: passwordsMatch ? '#10b981' : '#62666d' }}>
+                                            {passwordsMatch ? <CheckCircle size={16} /> : <WarningCircle size={16} />}
+                                            {passwordsMatch ? 'Las contraseñas coinciden' : 'Las contraseñas no coinciden'}
+                                        </div>
+                                    )}
+
+                                    <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl space-y-2 border border-gray-100 dark:border-gray-800">
+                                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Requisitos:</p>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            {requirements.map((req, idx) => (
+                                                <div key={idx} className={`flex items-center gap-2 text-[11px] ${req.met ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
+                                                    <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center ${req.met ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                                                        <CheckCircle size={10} weight={req.met ? "bold" : "regular"} />
+                                                    </div>
+                                                    {req.label}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={loading || !allMet || !passwordsMatch}
+                                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none flex items-center justify-center gap-2 mt-4"
+                                >
+                                    {loading ? (
+                                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        'Cambiar Contraseña'
+                                    )}
+                                </button>
+                            </form>
+                        </>
+                    ) : (
+                        <div className="flex flex-col items-center text-center py-8 animate-in zoom-in-95 duration-500">
+                            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 mb-6 scale-110">
+                                <CheckCircle size={48} />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                ¡Éxito!
+                            </h2>
+                            <p className="text-gray-500 dark:text-gray-400 mb-2">
+                                Tu contraseña ha sido actualizada correctamente.
+                            </p>
+                            <p className="text-sm text-blue-600 font-medium">
+                                Redireccionando en unos segundos...
+                            </p>
                         </div>
                     )}
-
-                    <button
-                        type="submit"
-                        disabled={loading || !allMet || !passwordsMatch}
-                        className="w-full py-3 rounded-lg transition-colors mt-4 font-medium"
-                        style={{ backgroundColor: loading || !allMet || !passwordsMatch ? 'rgba(255,255,255,0.05)' : '#5e6ad2', color: '#f7f8f8', fontFamily: 'Inter Variable, SF Pro Display, -apple-system, system-ui, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue', fontFeatureSettings: '"cv01", "ss03"', fontWeight: 510, cursor: loading || !allMet || !passwordsMatch ? 'not-allowed' : 'pointer', opacity: loading || !allMet || !passwordsMatch ? 0.5 : 1 }}
-                        onMouseEnter={(e) => { if (!loading && allMet && passwordsMatch) e.target.style.backgroundColor = '#828fff'; }}
-                        onMouseLeave={(e) => { if (!loading && allMet && passwordsMatch) e.target.style.backgroundColor = '#5e6ad2'; }}
-                    >
-                        {loading ? 'Cambiando contraseña...' : 'Cambiar Contraseña'}
-                    </button>
-                </form>
+                </div>
             </div>
         </div>
     );

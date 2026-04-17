@@ -103,3 +103,5 @@ const DataTable = ({
 };
 
 export default DataTable;
+
+// TODO: Eliminar tras verificación - Migrado a /components/ui/DataTable.jsx
