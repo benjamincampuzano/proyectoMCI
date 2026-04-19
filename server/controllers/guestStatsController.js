@@ -54,9 +54,10 @@ const getGuestStats = async (req, res) => {
         const { startDate, endDate } = req.query;
         const currentUserId = parseInt(req.user.id);
         const userRoles = req.user.roles || [];
-        const isSuperAdmin = userRoles.includes('ADMIN');
+        const isAdmin = userRoles.includes('ADMIN');
         const isPastor = userRoles.includes('PASTOR');
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
+        const isCoordinator = userRoles.includes('COORDINADOR');
 
         // Build date filter
         const dateFilter = {};
@@ -72,7 +73,8 @@ const getGuestStats = async (req, res) => {
 
         // Build security filter based on role
         let securityFilter = {};
-        if (isSuperAdmin) {
+        if (isAdmin || isCoordinator) {
+            // ADMIN y COORDINADOR ven todas las estadísticas
             securityFilter = {};
         } else if (isLiderDoce || isPastor) {
             // Get network IDs

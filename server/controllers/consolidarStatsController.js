@@ -9,11 +9,12 @@ const getGeneralStats = async (req, res) => {
         const currentUserId = req.user.id ? parseInt(req.user.id) : null;
 
         let networkIds = [];
-        const isSuperAdmin = userRoles.includes('ADMIN');
         const isAdmin = userRoles.includes('ADMIN');
+        const isCoordinator = userRoles.includes('COORDINADOR');
+        const isModuleCoordinator = req.user.isModuleCoordinator || false;
         const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
 
-        if (isLeader && currentUserId && !isSuperAdmin && !isAdmin) {
+        if (isLeader && currentUserId && !isAdmin && !isCoordinator && !isModuleCoordinator) {
             networkIds = await getUserNetwork(currentUserId);
             networkIds.push(currentUserId);
         }
@@ -24,8 +25,8 @@ const getGeneralStats = async (req, res) => {
 
             const conditions = [];
 
-            // Apply Network Filter if not admin
-            if (!isSuperAdmin && !isAdmin) {
+            // Apply Network Filter if not admin/coordinator
+            if (!isAdmin && !isCoordinator && !isModuleCoordinator) {
                 const networkFilters = [];
                 if (invitedKey) networkFilters.push({ [invitedKey]: { in: networkIds } });
                 if (assignedKey) networkFilters.push({ [assignedKey]: { in: networkIds } });
@@ -301,7 +302,7 @@ const getGeneralStats = async (req, res) => {
             where: {
                 status: { not: 'CANCELLED' },
                 encuentro: { startDate: { gte: start } },
-                OR: (isSuperAdmin || isAdmin) ? undefined : [
+                OR: isAdmin ? undefined : [
                     { guest: { invitedById: { in: networkIds } } },
                     { guest: { assignedToId: { in: networkIds } } },
                     { user: { id: { in: networkIds } } }
@@ -337,7 +338,7 @@ const getGeneralStats = async (req, res) => {
             where: {
                 status: { not: 'CANCELLED' },
                 convention: { startDate: { gte: start } },
-                OR: (isSuperAdmin || isAdmin) ? undefined : [
+                OR: isAdmin ? undefined : [
                     { user: { id: { in: networkIds } } },
                     { registeredById: { in: networkIds } }
                 ]
@@ -399,15 +400,17 @@ const getSeminarStatsByLeader = async (req, res) => {
         const userRoles = req.user.roles || [];
         const currentUserId = req.user.id ? parseInt(req.user.id) : null;
         let networkIds = [];
-        const isSuperAdmin = userRoles.includes('ADMIN');
+        const isAdmin = userRoles.includes('ADMIN');
+        const isCoordinator = userRoles.includes('COORDINADOR');
+        const isModuleCoordinator = req.user.isModuleCoordinator || false;
         const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
-        if (isLeader && currentUserId && !isSuperAdmin) {
+        if (isLeader && currentUserId && !isAdmin && !isCoordinator && !isModuleCoordinator) {
             networkIds = await getUserNetwork(currentUserId);
             networkIds.push(currentUserId);
         }
 
         const enrollments = await prisma.seminarEnrollment.findMany({
-            where: isSuperAdmin ? {} : { userId: { in: networkIds } },
+            where: (isAdmin || isCoordinator || isModuleCoordinator) ? {} : { userId: { in: networkIds } },
             include: {
                 user: {
                     include: {

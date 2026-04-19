@@ -11,14 +11,10 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
     const [invitedByFilter, setInvitedByFilter] = useState(null);
     const [liderDoceFilter, setLiderDoceFilter] = useState(null);
 
-    // Paginación
-    const [pagination, setPagination] = useState({
-        page: 1,
-        limit: 20,
-        total: 0,
-        totalPages: 0,
-        hasMore: false
-    });
+    // Paginación numérica (10 registros por página)
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalGuests, setTotalGuests] = useState(0);
+    const [guestsPerPage] = useState(10);
 
     const [currentUser, setCurrentUser] = useState(null);
 
@@ -29,14 +25,14 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         setCurrentUser(user);
     }, []);
 
-    const fetchGuests = useCallback(async (page = 1, append = false) => {
+    const fetchGuests = useCallback(async (page = 1) => {
         setLoading(true);
         setError('');
 
         try {
             const params = new URLSearchParams();
             params.append('page', page);
-            params.append('limit', pagination.limit);
+            params.append('limit', guestsPerPage);
 
             if (statusFilter) params.append('status', statusFilter);
             if (invitedByFilter && invitedByFilter.id !== undefined) params.append('invitedById', invitedByFilter.id);
@@ -47,20 +43,10 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
                 params: Object.fromEntries(params)
             });
 
-            if (append) {
-                setGuests(prev => [...prev, ...(res.data.guests || [])]);
-            } else {
-                setGuests(res.data.guests || []);
-            }
+            setGuests(res.data.guests || []);
 
             if (res.data.pagination) {
-                setPagination(prev => ({
-                    ...prev,
-                    page: res.data.pagination.page,
-                    total: res.data.pagination.total,
-                    totalPages: res.data.pagination.totalPages,
-                    hasMore: res.data.pagination.hasMore
-                }));
+                setTotalGuests(res.data.pagination.total || 0);
             }
         } catch (err) {
             setError(err.userMessage || err.response?.data?.message || 'Error al cargar invitados');
@@ -68,17 +54,46 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         } finally {
             setLoading(false);
         }
-    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, pagination.limit]);
+    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, guestsPerPage]);
 
-    const loadMore = () => {
-        if (!loading && pagination.hasMore) {
-            fetchGuests(pagination.page + 1, true);
+    // Obtener todos los invitados filtrados (sin paginación) para exportar
+    const fetchAllGuests = useCallback(async () => {
+        try {
+            const params = new URLSearchParams();
+            params.append('page', 1);
+            params.append('limit', 10000); // Límite alto para obtener todos
+
+            if (statusFilter) params.append('status', statusFilter);
+            if (invitedByFilter && invitedByFilter.id !== undefined) params.append('invitedById', invitedByFilter.id);
+            if (liderDoceFilter && liderDoceFilter.id !== undefined) params.append('liderDoceId', liderDoceFilter.id);
+            if (searchTerm) params.append('search', searchTerm);
+
+            const res = await api.get('/guests', {
+                params: Object.fromEntries(params)
+            });
+
+            return res.data.guests || [];
+        } catch (err) {
+            throw new Error(err.userMessage || err.response?.data?.message || 'Error al cargar invitados');
         }
-    };
+    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter]);
+
+    // Funciones de paginación
+    const handlePageChange = useCallback((newPage) => {
+        setCurrentPage(newPage);
+    }, []);
+
+    const handleNextPage = useCallback(() => {
+        setCurrentPage(prev => prev + 1);
+    }, []);
+
+    const handlePrevPage = useCallback(() => {
+        setCurrentPage(prev => Math.max(1, prev - 1));
+    }, []);
 
     useEffect(() => {
-        fetchGuests(1);
-    }, [fetchGuests, refreshTrigger, statusFilter, invitedByFilter, liderDoceFilter]);
+        fetchGuests(currentPage);
+    }, [fetchGuests, refreshTrigger, currentPage, statusFilter, invitedByFilter, liderDoceFilter]);
 
     useEffect(() => {
         if (searchDebounceTimeoutRef.current) {
@@ -86,6 +101,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         }
 
         searchDebounceTimeoutRef.current = setTimeout(() => {
+            setCurrentPage(1);
             fetchGuests(1);
         }, 500);
 
@@ -95,6 +111,11 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
             }
         };
     }, [fetchGuests, searchTerm]);
+
+    // Resetear página cuando cambian los filtros
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter, invitedByFilter, liderDoceFilter]);
 
     const updateGuest = useCallback(async (guestId, updates) => {
         try {
@@ -132,6 +153,18 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         }
     }, [fetchGuests]);
 
+    // Calcular información de paginación
+    const totalPages = Math.ceil(totalGuests / guestsPerPage) || 1;
+    const pagination = {
+        page: currentPage,
+        pages: totalPages,
+        total: totalGuests,
+        hasNext: currentPage < totalPages,
+        hasPrev: currentPage > 1,
+        onNext: handleNextPage,
+        onPrev: handlePrevPage
+    };
+
     return {
         guests,
         loading,
@@ -147,7 +180,13 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         setLiderDoceFilter,
         currentUser,
         fetchGuests,
-        loadMore,
+        fetchAllGuests, // Exportar función para obtener todos los datos filtrados
+        // Paginación
+        currentPage,
+        setCurrentPage: handlePageChange,
+        totalGuests,
+        guestsPerPage,
+        totalPages,
         pagination,
         updateGuest,
         deleteGuest,

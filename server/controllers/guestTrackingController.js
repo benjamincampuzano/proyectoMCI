@@ -13,11 +13,12 @@ const getGuestTrackingStats = async (req, res) => {
 
         let networkIds = [];
         // Check if user has relevant leadership roles
-        const isSuperAdmin = userRoles.includes('ADMIN');
         const isAdmin = userRoles.includes('ADMIN');
+        const isCoordinator = userRoles.includes('COORDINADOR');
+        const isModuleCoordinator = req.user.isModuleCoordinator || false;
         const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
 
-        if (isLeader && currentUserId && !isSuperAdmin && !isAdmin) {
+        if (isLeader && currentUserId && !isAdmin && !isCoordinator && !isModuleCoordinator) {
             networkIds = await getUserNetwork(currentUserId);
             networkIds.push(currentUserId);
         }
@@ -33,7 +34,7 @@ const getGuestTrackingStats = async (req, res) => {
                 }
             };
 
-            if (isSuperAdmin || isAdmin) return baseFilter;
+            if (isAdmin || isCoordinator || isModuleCoordinator) return baseFilter;
             // If no user ID, return empty result filter (impossible condition)
             if (!currentUserId) return { [path]: -1 };
             return {

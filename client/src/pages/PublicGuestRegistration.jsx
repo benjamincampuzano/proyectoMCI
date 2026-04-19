@@ -23,6 +23,7 @@ const INITIAL_STATE = {
         dataPolicyAccepted: false,
         dataTreatmentAuthorized: false,
         minorConsentAuthorized: false,
+        servidorCode: '',
     },
     loading: false,
     searchLoading: false,
@@ -114,7 +115,7 @@ const PublicGuestRegistration = () => {
 
         dispatch({ type: 'SET_SEARCH_LOADING', payload: true });
         try {
-            const res = await axios.get(`${API_URL}/auth/public/users/search?search=${term}`);
+            const res = await axios.get(`${API_URL}/auth/public/users/search?search=${term}&excludeRoles=ADMIN,PASTOR`);
             dispatch({ type: 'SET_FOUND_USERS', payload: res.data });
             dispatch({ type: 'SET_DROPDOWN_OPEN', payload: true });
         } catch (err) {
@@ -124,7 +125,6 @@ const PublicGuestRegistration = () => {
             // Fallback: show common users if the API fails
             if (err.response?.status === 404 || err.response?.status === 401) {
                 const fallbackUsers = [
-                    { id: 1, fullName: 'Pastor Principal' },
                     { id: 2, fullName: 'Líder de 12' },
                     { id: 3, fullName: 'Líder de Célula' },
                     { id: 4, fullName: 'Discípulo' }
@@ -421,6 +421,8 @@ const PublicGuestRegistration = () => {
                         )}
                     </div>
 
+                    
+
                     <div>
                         <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Petición de Oración (Opcional)</label>
                         <textarea
@@ -433,7 +435,27 @@ const PublicGuestRegistration = () => {
                             placeholder="¿Cómo podemos orar por ti?"
                         />
                     </div>
-
+                    
+                    {/* Código de Servidor - Campo Obligatorio */}
+                    <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <label className="block text-[11px] weight-590 uppercase tracking-widest mb-1 text-[var(--ln-text-tertiary)] ml-1">
+                            Código de Servidor *
+                        </label>
+                        <input
+                            id="servidorCode"
+                            type="text"
+                            name="servidorCode"
+                            value={formData.servidorCode}
+                            onChange={handleChange}
+                            placeholder="000000"
+                            maxLength={6}
+                            className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-center tracking-widest font-mono text-base"
+                            required
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1 ml-1">
+                            Código proporcionado por el coordinador del módulo Ganar
+                        </p>
+                    </div>
                     
                     {/* Data Authorization Checks */}
                     <div className="bg-white/[0.02] p-6 rounded-xl border border-[var(--ln-border-standard)] space-y-4">

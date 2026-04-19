@@ -12,7 +12,7 @@ import { DATA_POLICY_URL } from '../constants/policies';
 import ConfirmationModal from './ConfirmationModal';
 
 const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
-    const { user, isSuperAdmin, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
+    const { user, isAdmin, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
     
     const [activeTab, setActiveTab] = useState('general'); // general | classes | report
     const [reportData, setReportData] = useState([]);
@@ -496,7 +496,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                                 <UserPlus size={16} />
                                                             </button>
                                                         )}
-                                                        {isSuperAdmin() && (
+                                                        {isAdmin() && (
                                                             <button
                                                                 onClick={() => handleDelete(reg.id)}
                                                                 className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"

@@ -7,6 +7,7 @@ import GuestList from '../components/GuestList';
 import GuestTracking from '../components/GuestTracking';
 import GuestStats from '../components/GuestStats';
 import OracionDeTresManagement from '../components/OracionDeTresManagement';
+import ServerManager from '../components/ServerManager';
 import { PageHeader, Button } from '../components/ui';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import CoordinatorSelector from '../components/CoordinatorSelector';
@@ -99,6 +100,12 @@ const Ganar = () => {
             label: 'Oración de Tres',
             component: OracionDeTresManagement,
             roles: [ROLES.ADMIN, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA, ROLES.DISCIPULO]
+        },
+        {
+            id: 'servidores',
+            label: 'Servidores',
+            component: ServerManager,
+            roles: [ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA]
         }
     ];
 

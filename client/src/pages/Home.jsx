@@ -19,7 +19,7 @@ import {
 const ConsolidatedStatsReport = lazy(() => import('../components/ConsolidatedStatsReport'));
 
 const Home = () => {
-    const { user, hasRole, hasAnyRole, isSuperAdmin } = useAuth();
+    const { user, hasRole, hasAnyRole, isAdmin } = useAuth();
     const [activeTab, setActiveTab] = useState('red');
     const [pastores, setPastores] = useState([]);
     const [lideresDoce, setLideresDoce] = useState([]);
@@ -30,7 +30,7 @@ const Home = () => {
     const [error, setError] = useState(null);
     
     useEffect(() => {
-        if (isSuperAdmin()) {
+        if (isAdmin()) {
             fetchPastores();
         } else if (hasAnyRole(['PASTOR'])) {
             fetchLideresDoce(); 
@@ -132,7 +132,7 @@ const Home = () => {
     const refreshNetwork = () => {
         if (selectedLeader) {
             handleSelectLeader(selectedLeader);
-        } else if (isSuperAdmin()) {
+        } else if (isAdmin()) {
             fetchPastores();
         } else if (hasAnyRole(['PASTOR'])) {
             fetchLideresDoce();
@@ -146,7 +146,7 @@ const Home = () => {
         if (activeTab === 'red') {
             return (
                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                    {isSuperAdmin() && (
+                    {isAdmin() && (
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">
                                 <h2 className="text-xl weight-590 text-[var(--ln-text-primary)] tracking-tight">
@@ -169,7 +169,7 @@ const Home = () => {
                             {network ? (<>
                                     <div className="flex items-center justify-between">
                                         <h2 className="text-xl weight-590 text-[var(--ln-text-primary)] tracking-tight">
-                                            {isSuperAdmin()
+                                            {isAdmin()
                                                 ? `Ministerio de ${selectedLeader?.fullName}`
                                                 : 'Mi Red de Discipulado'
                                             }
@@ -248,7 +248,7 @@ const Home = () => {
                                     </div>
                                     <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] tracking-tight">Red No Cargada</h3>
                                     <p className="text-[var(--ln-text-tertiary)] text-sm max-w-[300px] mt-2 opacity-70">
-                                        {isSuperAdmin()
+                                        {isAdmin()
                                             ? 'Selecciona un pastor de la lista superior para visualizar la estructura de su ministerio.'
                                             : 'No se encontraron datos para tu red de discipulado en este momento.'
                                         }
@@ -306,7 +306,7 @@ const Home = () => {
                     <button 
                         onClick={() => { 
                             setError(null); 
-                            if (isSuperAdmin()) fetchPastores();
+                            if (isAdmin()) fetchPastores();
                             else if (hasAnyRole(['PASTOR'])) fetchLideresDoce();
                         }}
                         className="px-6 py-2 bg-[var(--ln-text-primary)] text-[var(--ln-bg-marketing)] rounded-xl weight-590 text-[13px] hover:opacity-90 transition-opacity"

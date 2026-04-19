@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { SpinnerIcon, MagnifyingGlass, Funnel, PencilIcon, Trash, UserPlus, X, FloppyDiskIcon, UserCheckIcon, Users, CheckCircle, Crown, CaretCircleDownIcon, SlidersHorizontal } from '@phosphor-icons/react';
+import { SpinnerIcon, MagnifyingGlass, Funnel, PencilIcon, Trash, UserPlus, X, FloppyDiskIcon, UserCheckIcon, Users, CheckCircle, Crown, CaretCircleDownIcon, SlidersHorizontal, FileXls } from '@phosphor-icons/react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import { AsyncSearchSelect, Button } from './ui';
@@ -7,6 +9,8 @@ import useGuestManagement from '../hooks/useGuestManagement';
 import { useAuth } from '../context/AuthContext';
 import { DATA_POLICY_URL } from '../constants/policies';
 import api from '../utils/api';
+import GuestEditModal from './GuestEditModal';
+import ConfirmationModal from './ConfirmationModal';
 
 // Configuración de colores para filtros (misma estética que UserFilters)
 const FILTER_COLORS = {
@@ -32,14 +36,22 @@ const GuestList = ({ refreshTrigger }) => {
         setLiderDoceFilter,
         currentUser,
         fetchGuests,
+        fetchAllGuests,
         updateGuest,
         deleteGuest,
         convertGuestToMember,
-        loadMore,
+        // Paginación
+        currentPage,
+        setCurrentPage,
+        guestsPerPage,
         pagination,
     } = useGuestManagement({ refreshTrigger });
 
     const [editingGuest, setEditingGuest] = useState(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedGuestForEdit, setSelectedGuestForEdit] = useState(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [guestToDelete, setGuestToDelete] = useState(null);
     const [convertingGuest, setConvertingGuest] = useState(null);
     const [conversionEmail, setConversionEmail] = useState('');
     const [conversionPassword, setConversionPassword] = useState('');
@@ -48,6 +60,7 @@ const GuestList = ({ refreshTrigger }) => {
         dataTreatmentAuthorized: false,
         minorConsentAuthorized: false
     });
+    const [exporting, setExporting] = useState(false);
 
     const handleSearch = () => {
         fetchGuests(1);
@@ -55,12 +68,41 @@ const GuestList = ({ refreshTrigger }) => {
 
     const handleUpdateGuest = async (guestId, updates) => {
         const res = await updateGuest(guestId, updates);
-        if (res.success) setEditingGuest(null);
+        if (res.success) {
+            setEditingGuest(null);
+            setIsEditModalOpen(false);
+            setSelectedGuestForEdit(null);
+        }
     };
 
-    const handleDeleteGuest = async (guestId) => {
-        if (!confirm('¿Estás seguro de que deseas eliminar este invitado?')) return;
-        await deleteGuest(guestId);
+    const handleOpenEditModal = (guest) => {
+        setSelectedGuestForEdit(guest);
+        setIsEditModalOpen(true);
+    };
+
+    const handleCloseEditModal = () => {
+        setIsEditModalOpen(false);
+        setSelectedGuestForEdit(null);
+    };
+
+    const handleGuestUpdated = (updatedGuest) => {
+        fetchGuests(1);
+    };
+
+    const handleOpenDeleteModal = (guest) => {
+        setGuestToDelete(guest);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleCloseDeleteModal = () => {
+        setIsDeleteModalOpen(false);
+        setGuestToDelete(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!guestToDelete) return;
+        await deleteGuest(guestToDelete.id);
+        setGuestToDelete(null);
     };
 
     const handleConvertToMember = async () => {
@@ -154,6 +196,70 @@ const GuestList = ({ refreshTrigger }) => {
         setInvitedByFilter(null);
         setLiderDoceFilter(null);
         setTimeout(() => fetchGuests(), 0);
+    };
+
+    const exportToExcel = async () => {
+        setExporting(true);
+        try {
+            // Obtener todos los invitados filtrados (sin paginación)
+            const allGuests = await fetchAllGuests();
+
+            if (allGuests.length === 0) {
+                toast.error('No hay datos para exportar');
+                return;
+            }
+
+            // Preparar datos para Excel
+            const data = allGuests.map(guest => ({
+            'Fecha Creación': guest.createdAt ? new Date(guest.createdAt).toLocaleDateString('es-ES') : 'N/A',
+            'Registrado Por': guest.registeredBy?.fullName || 'N/A',
+            'Nombre': guest.name || 'N/A',
+            'Teléfono': guest.phone || 'N/A',
+            'Dirección': guest.address || 'N/A',
+            'Estado': getStatusLabel(guest.status) || 'N/A',
+            'Invitado Por': guest.invitedBy?.fullName || 'N/A',
+            'Asignado a': guest.assignedTo?.fullName || 'Pendiente',
+            'Célula': guest.cell?.name || 'No asignado',
+            'Líder de Célula': guest.cell?.leader?.fullName || 'N/A',
+            'Encuentro': guest.encuentroRegistrations?.map(r => r.encuentro?.name || r.encuentro?.type).join(', ') || 'No registrado'
+        }));
+
+        // Crear hoja de trabajo
+        const worksheet = XLSX.utils.json_to_sheet(data);
+
+        // Ajustar anchos de columna
+        const colWidths = [
+            { wch: 15 }, // Fecha Creación
+            { wch: 20 }, // Registrado Por
+            { wch: 25 }, // Nombre
+            { wch: 15 }, // Teléfono
+            { wch: 30 }, // Dirección
+            { wch: 12 }, // Estado
+            { wch: 20 }, // Invitado Por
+            { wch: 20 }, // Asignado a
+            { wch: 20 }, // Célula
+            { wch: 20 }, // Líder de Célula
+            { wch: 30 }, // Encuentro
+        ];
+        worksheet['!cols'] = colWidths;
+
+        // Crear libro de trabajo
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Invitados');
+
+        // Generar archivo Excel
+        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+        // Descargar archivo
+        saveAs(blob, `invitados_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+        toast.success(`Exportados ${allGuests.length} invitados a Excel`);
+        } catch (err) {
+            toast.error(err.message || 'Error al exportar invitados');
+        } finally {
+            setExporting(false);
+        }
     };
 
     return (
@@ -341,6 +447,19 @@ const GuestList = ({ refreshTrigger }) => {
                                         {guests.length} invitados
                                     </span>
                                 </div>
+                                <button
+                                    onClick={exportToExcel}
+                                    disabled={loading || exporting || guests.length === 0}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-[12px] font-semibold shadow-lg shadow-green-500/30 transition-all active:scale-95"
+                                    title="Exportar a Excel"
+                                >
+                                    {exporting ? (
+                                        <SpinnerIcon size={16} className="animate-spin" />
+                                    ) : (
+                                        <FileXls size={18} weight="bold" />
+                                    )}
+                                    {exporting ? 'Exportando...' : 'Exportar Excel'}
+                                </button>
                                 
                                 {hasAdvancedFilters && (
                                     <div className="flex flex-wrap gap-2">
@@ -366,25 +485,29 @@ const GuestList = ({ refreshTrigger }) => {
                 <table className="w-full">
                     <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
                         <tr>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Fecha Creación</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Registrado Por</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Nombre</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Teléfono</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Dirección</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Estado</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Invitado Por</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Asignado a</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Célula</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Encuentro</th>
                             <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 dark:text-gray-200">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {loading ? (
                             <tr>
-                                <td colSpan="6" className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan="11" className="px-4 py-8 text-center text-gray-400">
                                     <SpinnerIcon size={24} className="animate-spin mx-auto" />
                                 </td>
                             </tr>
                         ) : guests.length === 0 ? (
                             <tr>
-                                <td colSpan="7" className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan="11" className="px-4 py-8 text-center text-gray-400">
                                     No se encontraron invitados
                                 </td>
                             </tr>
@@ -392,36 +515,27 @@ const GuestList = ({ refreshTrigger }) => {
                             guests.map((guest) => (
                                 <tr key={guest.id} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700/50 transition-colors">
                                     <td className="px-4 py-3">
+                                        <span className="text-gray-600 dark:text-white/80 text-sm">
+                                            {guest.createdAt ? new Date(guest.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.registeredBy?.fullName || 'N/A'}</p>
+                                    </td>
+                                    <td className="px-4 py-3">
                                         {editingGuest?.id === guest.id ? (
-                                            <div className="space-y-2">
-                                                <input
-                                                    type="text"
-                                                    value={editingGuest.name}
-                                                    onChange={(e) =>
-                                                        setEditingGuest({ ...editingGuest, name: e.target.value })
-                                                    }
-                                                    disabled={!canEditAllFields(guest)}
-                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    placeholder="Nombre"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={editingGuest.address || ''}
-                                                    onChange={(e) =>
-                                                        setEditingGuest({ ...editingGuest, address: e.target.value })
-                                                    }
-                                                    disabled={!canEditAllFields(guest)}
-                                                    className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    placeholder="Dirección"
-                                                />
-                                            </div>
+                                            <input
+                                                type="text"
+                                                value={editingGuest.name}
+                                                onChange={(e) =>
+                                                    setEditingGuest({ ...editingGuest, name: e.target.value })
+                                                }
+                                                disabled={!canEditAllFields(guest)}
+                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                placeholder="Nombre"
+                                            />
                                         ) : (
-                                            <div>
-                                                <p className="text-[#1d1d1f] dark:text-white text-sm font-medium">{guest.name}</p>
-                                                {guest.address && (
-                                                    <p className="text-[#86868b] dark:text-gray-400 text-xs">{guest.address}</p>
-                                                )}
-                                            </div>
+                                            <p className="text-[#1d1d1f] dark:text-white text-sm font-medium">{guest.name}</p>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -437,6 +551,22 @@ const GuestList = ({ refreshTrigger }) => {
                                             />
                                         ) : (
                                             <span className="text-gray-600 dark:text-white/80 text-sm">{guest.phone}</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        {editingGuest?.id === guest.id ? (
+                                            <input
+                                                type="text"
+                                                value={editingGuest.address || ''}
+                                                onChange={(e) =>
+                                                    setEditingGuest({ ...editingGuest, address: e.target.value })
+                                                }
+                                                disabled={!canEditAllFields(guest)}
+                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                placeholder="Dirección"
+                                            />
+                                        ) : (
+                                            <span className="text-gray-600 dark:text-white/80 text-sm">{guest.address || 'N/A'}</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -508,51 +638,35 @@ const GuestList = ({ refreshTrigger }) => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
+                                        {guest.encuentroRegistrations && guest.encuentroRegistrations.length > 0 ? (
+                                            <div>
+                                                {guest.encuentroRegistrations.map((reg) => (
+                                                    <div key={reg.id} className="text-sm">
+                                                        <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                                            {reg.encuentro?.type || 'Encuentro'}
+                                                        </span>
+                                                        <p className="text-[#86868b] dark:text-gray-400 text-xs mt-1">
+                                                            {reg.encuentro?.name || 'Sin nombre'}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400 dark:text-gray-500 text-sm">No registrado</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3">
                                         <div className="flex items-center justify-end space-x-2">
-                                            {editingGuest?.id === guest.id ? (
-                                                <>
-                                                    <button
-                                                        onClick={() =>
-                                                            handleUpdateGuest(guest.id, {
-                                                                name: editingGuest.name,
-                                                                phone: editingGuest.phone,
-                                                                address: editingGuest.address,
-                                                                status: editingGuest.status,
-                                                                invitedById: editingGuest.invitedById,
-                                                                assignedToId: editingGuest.assignedToId
-                                                            })
-                                                        }
-                                                        className="p-1 text-green-400 hover:text-green-300"
-                                                        title="Guardar"
-                                                    >
-                                                        <FloppyDiskIcon size={18} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setEditingGuest(null)}
-                                                        className="p-1 text-gray-400 hover:text-gray-300"
-                                                        title="Cancelar"
-                                                    >
-                                                        <X size={18} />
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() => setEditingGuest({
-                                                            ...guest,
-                                                            invitedById: guest.invitedBy?.id,
-                                                            assignedToId: guest.assignedTo?.id,
-                                                            invitedBy: typeof guest.invitedBy === 'object' ? guest.invitedBy : null,
-                                                            assignedTo: typeof guest.assignedTo === 'object' ? guest.assignedTo : null
-                                                        })}
-                                                        className="p-1 text-blue-400 hover:text-blue-300"
-                                                        title="Editar"
-                                                    >
-                                                        <PencilIcon size={18} />
-                                                    </button>
+                                            <button
+                                                onClick={() => handleOpenEditModal(guest)}
+                                                className="p-1 text-blue-400 hover:text-blue-300"
+                                                title="Editar"
+                                            >
+                                                <PencilIcon size={18} />
+                                            </button>
                                                     {canDelete(guest) && (
                                                         <button
-                                                            onClick={() => handleDeleteGuest(guest.id)}
+                                                            onClick={() => handleOpenDeleteModal(guest)}
                                                             className="p-1 text-red-400 hover:text-red-300"
                                                             title="Eliminar"
                                                         >
@@ -568,8 +682,6 @@ const GuestList = ({ refreshTrigger }) => {
                                                             <UserCheckIcon size={18} />
                                                         </button>
                                                     )}
-                                                </>
-                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -579,30 +691,68 @@ const GuestList = ({ refreshTrigger }) => {
                 </table>
             </div>
 
-            {/* Paginación - Cargar más */}
-            {pagination.hasMore && (
-                <div className="mt-6 text-center">
-                    <Button
-                        onClick={loadMore}
-                        disabled={loading}
-                        variant="secondary"
-                    >
-                        {loading ? (
-                            <>
-                                <SpinnerIcon size={18} className="animate-spin mr-2" />
-                                Cargando...
-                            </>
-                        ) : (
-                            `Cargar más (${pagination.total - guests.length} restantes)`
-                        )}
-                    </Button>
+            {/* Paginación numérica */}
+            {pagination.pages > 1 && (
+                <div className="mt-6 flex items-center justify-between bg-white dark:bg-gray-800 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                        Mostrando {(pagination.page - 1) * guestsPerPage + 1} - {Math.min(pagination.page * guestsPerPage, pagination.total)} de {pagination.total} invitados
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={pagination.onPrev}
+                            disabled={!pagination.hasPrev || loading}
+                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Anterior
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                                let pageNum;
+                                if (pagination.pages <= 5) {
+                                    pageNum = i + 1;
+                                } else if (pagination.page <= 3) {
+                                    pageNum = i + 1;
+                                } else if (pagination.page >= pagination.pages - 2) {
+                                    pageNum = pagination.pages - 4 + i;
+                                } else {
+                                    pageNum = pagination.page - 2 + i;
+                                }
+
+                                const isActive = pagination.page === pageNum;
+
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        disabled={loading}
+                                        className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-md'
+                                                : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            onClick={pagination.onNext}
+                            disabled={!pagination.hasNext || loading}
+                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
                 </div>
             )}
 
             {/* Información de paginación */}
             {pagination.total > 0 && (
                 <div className="mt-4 text-center text-sm text-[#86868b] dark:text-gray-400">
-                    Mostrando {guests.length} de {pagination.total} invitados
+                    Página {pagination.page} de {pagination.pages} - {pagination.total} invitados en total
                 </div>
             )}
 
@@ -695,6 +845,25 @@ const GuestList = ({ refreshTrigger }) => {
                     </div>
                 )
             }
+
+            {/* Modal de Edición */}
+            <GuestEditModal
+                isOpen={isEditModalOpen}
+                onClose={handleCloseEditModal}
+                guest={selectedGuestForEdit}
+                onGuestUpdated={handleGuestUpdated}
+            />
+
+            {/* Modal de Confirmación para Eliminar */}
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleCloseDeleteModal}
+                onConfirm={handleConfirmDelete}
+                title="Eliminar Invitado"
+                message={`¿Estás seguro de que deseas eliminar a "${guestToDelete?.name}"? Esta acción no se puede deshacer.`}
+                confirmText="Eliminar"
+                cancelText="Cancelar"
+            />
         </div >
     );
 };

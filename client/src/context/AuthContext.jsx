@@ -216,10 +216,6 @@ export const AuthProvider = ({ children }) => {
         return hasRole('ADMIN');
     };
 
-    const isSuperAdmin = () => {
-        return isAdmin();
-    };
-
     const isCoordinator = (moduleName) => {
         if (!user) return false;
         if (user.isCoordinator) return true;
@@ -237,7 +233,7 @@ export const AuthProvider = ({ children }) => {
         <AuthContext.Provider value={{
             user, login, register, setup, logout, updateProfile,
             loading, isInitialized,
-            hasRole, hasAnyRole, isAdmin, isSuperAdmin, isCoordinator, isTreasurer,
+            hasRole, hasAnyRole, isAdmin, isCoordinator, isTreasurer,
             changePassword, getSessions, logoutAll
         }}>
             {children}

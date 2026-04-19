@@ -578,11 +578,11 @@ const getUserActivityList = async (req, res) => {
     try {
         const { id: requesterId, roles: requesterRoles } = req.user;
         const currentUserId = parseInt(requesterId);
-        const isSuperAdmin = requesterRoles.includes('ADMIN');
+        const isAdmin = requesterRoles.includes('ADMIN');
 
         let targetUserIds = [];
 
-        if (isSuperAdmin) {
+        if (isAdmin) {
             // Admin can see all non-admin users
             const allUsers = await prisma.user.findMany({
                 where: {

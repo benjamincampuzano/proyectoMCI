@@ -66,6 +66,23 @@ model ModuleTreasurer {
   @@index([moduleName])
 }
 
+model RegistrarCode {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  code        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt   DateTime? @db.Timestamptz(6)
+  isDeleted   Boolean   @default(false)
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([code])
+  @@index([isActive])
+}
+
 model User {
   id                       Int                      @id @default(autoincrement())
   email                    String                   @unique
@@ -101,6 +118,7 @@ model User {
   goals                    Goal[]                   @relation("UserGoals")
   assignedGuests           Guest[]                  @relation("AssignedTo")
   invitedGuests            Guest[]                  @relation("InvitedBy")
+  registeredGuests         Guest[]                  @relation("RegisteredBy")
   guestCalls               GuestCall[]
   guestVisits              GuestVisit[]
   uploadedPhotos           KidsClassPhoto[]         @relation("UploadedPhotos")
@@ -110,6 +128,7 @@ model User {
   assignedSubCoordinations ModuleSubCoordinator[]   @relation("SubCoordinatorAssigner")
   moduleSubCoordinations   ModuleSubCoordinator[]   @relation("SubCoordinatorUser")
   moduleTreasurers         ModuleTreasurer[]
+  registrarCodes           RegistrarCode[]
   oracionesLed             OracionDeTres[]          @relation("LiderDoceOracion")
   oracionesMiembro         OracionDeTresMiembro[]
   refreshTokens            RefreshToken[]
@@ -204,6 +223,7 @@ model Guest {
   visitObservation        String?
   invitedById             Int
   assignedToId            Int?
+  registeredById          Int?                    // Persona que ingresó los datos en el sistema
   createdAt               DateTime                @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime                @updatedAt @db.Timestamptz(6)
   dataPolicyAccepted      Boolean                 @default(false)
@@ -215,6 +235,7 @@ model Guest {
   assignedTo              User?                   @relation("AssignedTo", fields: [assignedToId], references: [id])
   cell                    Cell?                   @relation(fields: [cellId], references: [id])
   invitedBy               User                    @relation("InvitedBy", fields: [invitedById], references: [id])
+  registeredBy            User?                   @relation("RegisteredBy", fields: [registeredById], references: [id])
   calls                   GuestCall[]
   visits                  GuestVisit[]
 
@@ -222,6 +243,7 @@ model Guest {
   @@index([createdAt])
   @@index([assignedToId])
   @@index([invitedById])
+  @@index([registeredById])
 }
 
 model GuestCall {
@@ -817,6 +839,7 @@ enum AuditAction {
   DELETE
   LOGIN
   LOGOUT
+  LOGOUT_ALL
   CONSOLIDATE
   EXPORT
   BACKUP_DOWNLOAD
@@ -849,6 +872,7 @@ enum EntityType {
   MODULE_COORDINATOR
   MODULE_SUBCOORDINATOR
   MODULE_TREASURER
+  REGISTRAR_CODE
   DATABASE
 }
 

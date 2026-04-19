@@ -22,7 +22,7 @@ const getCoordinates = async (address, city) => {
 
                 // User-Agent is required by Nominatim
                 const response = await axios.get(url, {
-                    headers: { 'User-Agent': 'IglesiaApp/1.0 (admin@iglesia.com)' },
+                    headers: { 'User-Agent': 'IglesiaApp/1.0' },
                     timeout: 5000 // 5 second timeout
                 });
 

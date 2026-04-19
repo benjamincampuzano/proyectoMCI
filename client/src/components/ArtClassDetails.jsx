@@ -11,7 +11,7 @@ import { DATA_POLICY_URL } from '../constants/policies';
 import ConfirmationModal from './ConfirmationModal';
 
 const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
-    const { user, isSuperAdmin, hasAnyRole, isCoordinator } = useAuth();
+    const { user, isAdmin, hasAnyRole, isCoordinator } = useAuth();
     
     const [activeTab, setActiveTab] = useState('general'); // general | attendance | report
     const [reportData, setReportData] = useState([]);
@@ -440,7 +440,7 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
                                                                         <UserPlus size={16} />
                                                                     </button>
                                                                 )}
-                                                                {isSuperAdmin() && (
+                                                                {isAdmin() && (
                                                                     <button
                                                                         onClick={() => handleDelete(enr.id)}
                                                                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"

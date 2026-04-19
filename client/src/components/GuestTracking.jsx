@@ -24,6 +24,7 @@ const GuestTracking = () => {
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [totalGuests, setTotalGuests] = useState(0);
     const [pageSize] = useState(10);
 
     useEffect(() => {
@@ -41,6 +42,7 @@ const GuestTracking = () => {
             });
             setGuests(response.data.guests || []);
             setTotalPages(response.data.totalPages || 1);
+            setTotalGuests(response.data.pagination?.total || response.data.guests?.length || 0);
         } catch (error) {
             console.error('Error fetching guests:', error);
             toast.error('Error al cargar invitados. Por favor intenta nuevamente.');
@@ -187,6 +189,7 @@ const GuestTracking = () => {
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Invitado</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contacto / Dirección</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Quién Invitó / Petición</th>
+                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Encuentro / Celula</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Llamada</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Visita</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
@@ -260,6 +263,38 @@ const GuestTracking = () => {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex flex-col items-center gap-1">
+                                                {/* Encuentro Registration Status */}
+                                                {guest.encuentroRegistrations && guest.encuentroRegistrations.length > 0 ? (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                                        Registrado a encuentro
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                                        Sin encuentro
+                                                    </span>
+                                                )}
+                                                {/* Cell Alert - Show warning if not assigned to cell */}
+                                                {!guest.cell ? (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                                        <WarningCircleIcon className="w-3 h-3 mr-1" />
+                                                        Sin celula asignada
+                                                    </span>
+                                                ) : (
+                                                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                                                        <span className="font-medium">Celula:</span> {guest.cell.name}
+                                                    </div>
+                                                )}
+                                                {/* Last Cell Attendance */}
+                                                {guest.cell && (
+                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                        Ult. asistencia: Pendiente
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex flex-col items-center gap-1">
                                                 <div className="flex items-center gap-2">
                                                     <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full ${callCount > 0
                                                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30'
@@ -325,25 +360,55 @@ const GuestTracking = () => {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between bg-white dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between bg-white dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700 rounded-b-xl">
                     <div className="text-sm text-gray-700 dark:text-gray-300">
-                        Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, guests.length)} de {guests.length} invitados
+                        Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalGuests)} de {totalGuests} invitados
                     </div>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-200"
+                            disabled={currentPage === 1 || loading}
+                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             Anterior
                         </button>
-                        <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
-                            Página {currentPage} de {totalPages}
-                        </span>
+
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                let pageNum;
+                                if (totalPages <= 5) {
+                                    pageNum = i + 1;
+                                } else if (currentPage <= 3) {
+                                    pageNum = i + 1;
+                                } else if (currentPage >= totalPages - 2) {
+                                    pageNum = totalPages - 4 + i;
+                                } else {
+                                    pageNum = currentPage - 2 + i;
+                                }
+
+                                const isActive = currentPage === pageNum;
+
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        disabled={loading}
+                                        className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-md'
+                                                : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-200"
+                            disabled={currentPage === totalPages || loading}
+                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             Siguiente
                         </button>

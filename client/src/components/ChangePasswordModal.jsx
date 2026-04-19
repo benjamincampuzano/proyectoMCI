@@ -35,7 +35,8 @@ const validatePassword = (password, email = '', fullName = '') => {
         requirements.push({ label: 'Un símbolo (!@#$%^&*+-_)', met: false });
     }
 
-    const commonPasswords = ['password', '12345678', 'contraseña', 'iglesia', 'mci2024', 'mci2025', 'qwerty', 'admin123'];
+    const commonPasswords = ['password', '12345678', 'contraseña', 'iglesia', 'mci2024', 'mci2025',
+    'qwerty', 'admin123', 'godisgood', 'jesus123'];
     if (commonPasswords.some(p => password.toLowerCase().includes(p))) {
         requirements.push({ label: 'No ser una contraseña común', met: false });
     } else {

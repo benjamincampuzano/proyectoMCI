@@ -80,7 +80,7 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
             title="Resetear Contraseña"
             containerClassName="max-w-md"
         >
-            <div className="p-8 space-y-8">
+            <div className="p-8 space-y-8 overflow-y-auto max-h-[60vh]">
                 {/* Warning Alert */}
                 <div className="bg-red-500/[0.03] border border-red-500/20 rounded-2xl p-5 flex items-start gap-4 shadow-sm">
                     <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 shrink-0">

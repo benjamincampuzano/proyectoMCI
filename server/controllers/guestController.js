@@ -6,11 +6,43 @@ const { getUserNetwork } = require('../utils/networkUtils');
 // Crear nuevo invitado
 const createGuest = async (req, res) => {
     try {
-        let { name, phone, address, city, prayerRequest, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
+        let { name, phone, address, city, prayerRequest, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized, servidorCode } = req.body;
         const { roles, id: currentUserId } = req.user;
 
         if (!name || !phone) {
             return res.status(400).json({ message: 'Name and phone are required' });
+        }
+
+        // Si no se proporciona código de servidor, buscar el código del usuario autenticado
+        let registrarCode = null;
+        if (!servidorCode) {
+            // Buscar el código de servidor asignado al usuario autenticado
+            registrarCode = await prisma.registrarCode.findFirst({
+                where: {
+                    userId: currentUserId,
+                    isActive: true,
+                    isDeleted: false
+                }
+            });
+            if (!registrarCode) {
+                return res.status(400).json({ message: 'No tiene un código de servidor asignado. Solicite uno al coordinador del módulo Ganar.' });
+            }
+        } else {
+            // Validar código de servidor proporcionado
+            if (servidorCode.length !== 6) {
+                return res.status(400).json({ message: 'El código de servidor debe tener 6 dígitos' });
+            }
+            // Verificar que el código de servidor existe y está activo
+            registrarCode = await prisma.registrarCode.findFirst({
+                where: {
+                    code: servidorCode,
+                    isActive: true,
+                    isDeleted: false
+                }
+            });
+            if (!registrarCode) {
+                return res.status(400).json({ message: 'Código de servidor inválido o inactivo' });
+            }
         }
 
         // Security: PASTOR only consumes network data, doesn't create guests directly (optional historical rule)
@@ -37,6 +69,7 @@ const createGuest = async (req, res) => {
                 prayerRequest,
                 invitedById: parseInt(invitedById),
                 assignedToId: assignedToId ? parseInt(assignedToId) : null,
+                registeredById: registrarCode.userId, // Servidor que proporcionó el código de registro
                 called: called || false,
                 callObservation,
                 visited: visited || false,
@@ -56,10 +89,17 @@ const createGuest = async (req, res) => {
                 assignedTo: {
                     include: { profile: true }
                 },
+                registeredBy: {
+                    include: { profile: true }
+                },
             },
         });
 
-        await logActivity(currentUserId, 'CREATE', 'GUEST', guest.id, { name: guest.name }, req.ip, req.headers['user-agent']);
+        await logActivity(currentUserId, 'CREATE', 'GUEST', guest.id, {
+            name: guest.name,
+            servidorCode: servidorCode,
+            servidorUserId: registrarCode.userId
+        }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({ guest });
     } catch (error) {
@@ -77,47 +117,44 @@ const getAllGuests = async (req, res) => {
         let securityFilter = {};
 
         // Aplicar visibilidad basada en roles
-        // Allow ADMIN to see everything like ADMIN
+        // Allow ADMIN, PASTOR, COORDINADOR, and Module Coordinators to see all guests
+        const isModuleCoordinator = req.user.isModuleCoordinator || false;
+        
         if (roles.includes('ADMIN')) {
             securityFilter = {};
         } else if (roles.includes('PASTOR')) {
             // PASTOR can see all guests (like ADMIN)
             securityFilter = {};
+        } else if (roles.includes('COORDINADOR') || isModuleCoordinator) {
+            // COORDINADOR and Module Coordinators can see all guests
+            securityFilter = {};
+        } else if (roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
+            // Regular leaders can only see guests from their network hierarchy
+            const networkUserIds = await getUserNetwork(currentUserId);
+            securityFilter = {
+                OR: [
+                    { invitedById: { in: [...networkUserIds, currentUserId] } },
+                    { assignedToId: { in: [...networkUserIds, currentUserId] } }
+                ]
+            };
         } else {
-            // Check if user is a module coordinator
-            const isModuleCoordinator = req.user.isModuleCoordinator || false;
-            
-            if (isModuleCoordinator && roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
-                // Module coordinators can see ALL guests in the system (for their module management)
-                securityFilter = {};
-            } else if (roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
-                // Regular leaders can only see guests from their network hierarchy
-                const networkUserIds = await getUserNetwork(currentUserId);
-                securityFilter = {
-                    OR: [
-                        { invitedById: { in: [...networkUserIds, currentUserId] } },
-                        { assignedToId: { in: [...networkUserIds, currentUserId] } }
-                    ]
-                };
-            } else {
-                // DISCIPULO and other roles can only see their own guests
-                securityFilter = {
-                    OR: [
-                        {
-                            AND: [
-                                { invitedById: currentUserId },
-                                {
-                                    OR: [
-                                        { assignedToId: null },
-                                        { assignedToId: currentUserId }
-                                    ]
-                                }
-                            ]
-                        },
-                        { assignedToId: currentUserId }
-                    ]
-                };
-            }
+            // DISCIPULO and other roles can only see their own guests
+            securityFilter = {
+                OR: [
+                    {
+                        AND: [
+                            { invitedById: currentUserId },
+                            {
+                                OR: [
+                                    { assignedToId: null },
+                                    { assignedToId: currentUserId }
+                                ]
+                            }
+                        ]
+                    },
+                    { assignedToId: currentUserId }
+                ]
+            };
         }
 
         // Construir filtros de consulta
@@ -190,6 +227,9 @@ const getAllGuests = async (req, res) => {
                 assignedTo: {
                     include: { profile: true }
                 },
+                registeredBy: {
+                    include: { profile: true }
+                },
                 cell: {
                     include: {
                         leader: {
@@ -208,6 +248,13 @@ const getAllGuests = async (req, res) => {
                         visitor: { include: { profile: true } }
                     },
                     orderBy: { date: 'desc' }
+                },
+                encuentroRegistrations: {
+                    include: {
+                        encuentro: true
+                    },
+                    orderBy: { createdAt: 'desc' },
+                    take: 1
                 }
             },
             orderBy: { createdAt: 'desc' },
@@ -220,6 +267,7 @@ const getAllGuests = async (req, res) => {
             ...g,
             invitedBy: g.invitedBy ? { id: g.invitedBy.id, fullName: g.invitedBy.profile?.fullName, email: g.invitedBy.email } : null,
             assignedTo: g.assignedTo ? { id: g.assignedTo.id, fullName: g.assignedTo.profile?.fullName, email: g.assignedTo.email } : null,
+            registeredBy: g.registeredBy ? { id: g.registeredBy.id, fullName: g.registeredBy.profile?.fullName, email: g.registeredBy.email } : null,
             cell: g.cell ? {
                 id: g.cell.id,
                 name: g.cell.name,
@@ -229,7 +277,17 @@ const getAllGuests = async (req, res) => {
                 } : null
             } : null,
             calls: g.calls.map(c => ({ ...c, caller: c.caller ? { fullName: c.caller.profile?.fullName } : null })),
-            visits: g.visits.map(v => ({ ...v, visitor: v.visitor ? { fullName: v.visitor.profile?.fullName } : null }))
+            visits: g.visits.map(v => ({ ...v, visitor: v.visitor ? { fullName: v.visitor.profile?.fullName } : null })),
+            encuentroRegistrations: g.encuentroRegistrations?.map(er => ({
+                id: er.id,
+                status: er.status,
+                encuentro: er.encuentro ? {
+                    id: er.encuentro.id,
+                    name: er.encuentro.name,
+                    type: er.encuentro.type,
+                    startDate: er.encuentro.startDate
+                } : null
+            })) || []
         }));
 
         res.status(200).json({
@@ -314,10 +372,11 @@ const updateGuest = async (req, res) => {
         let updateData = {};
         const isAdminValue = roles.includes('ADMIN');
         const isPastor = roles.includes('PASTOR');
-        const isModuleCoordinator = req.user.isModuleCoordinator || false;
+        const isCoordinator = roles.includes('COORDINADOR');
+        const isModuleCoordinatorValue = req.user.isModuleCoordinator || false;
         const isNetworkLeader = roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA'].includes(r));
 
-        if (isAdminValue || isPastor || (isModuleCoordinator && isNetworkLeader)) {
+        if (isAdminValue || isPastor || isCoordinator || isModuleCoordinatorValue || (isModuleCoordinatorValue && isNetworkLeader)) {
             // Admin, Pastor, and Coordinators can edit any guest
             // No additional checks needed for these roles
             updateData = {
@@ -431,10 +490,11 @@ const deleteGuest = async (req, res) => {
 
         const isAdminValue = roles.includes('ADMIN');
         const isPastor = roles.includes('PASTOR');
-        const isModuleCoordinator = req.user.isModuleCoordinator || false;
+        const isCoordinator = roles.includes('COORDINADOR');
+        const isModuleCoordinatorValue = req.user.isModuleCoordinator || false;
         const isNetworkLeader = roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA'].includes(r));
 
-        if (isAdminValue || isPastor || (isModuleCoordinator && isNetworkLeader)) {
+        if (isAdminValue || isPastor || isCoordinator || isModuleCoordinatorValue || (isModuleCoordinatorValue && isNetworkLeader)) {
             // Admin, Pastor, and Coordinators can delete any guest
             // No additional checks needed for these roles
         } else if (isNetworkLeader) {
@@ -814,10 +874,28 @@ const deleteVisit = async (req, res) => {
 // Crear invitado público (desde página de login)
 const createPublicGuest = async (req, res) => {
     try {
-        const { name, phone, address, city, prayerRequest, invitedById, sex, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized, assignedToId } = req.body;
+        const { name, phone, address, city, prayerRequest, invitedById, sex, documentType, documentNumber, birthDate, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized, assignedToId, servidorCode } = req.body;
 
         if (!name || !phone || !invitedById) {
             return res.status(400).json({ message: 'Name, phone and inviter are required' });
+        }
+
+        // Validar código de servidor obligatorio
+        if (!servidorCode || servidorCode.length !== 6) {
+            return res.status(400).json({ message: 'El código de servidor es obligatorio y debe tener 6 dígitos' });
+        }
+
+        // Verificar que el código de servidor existe y está activo
+        const registrarCode = await prisma.registrarCode.findFirst({
+            where: {
+                code: servidorCode,
+                isActive: true,
+                isDeleted: false
+            }
+        });
+
+        if (!registrarCode) {
+            return res.status(400).json({ message: 'Código de servidor inválido o inactivo' });
         }
 
         const guest = await prisma.guest.create({
@@ -837,12 +915,18 @@ const createPublicGuest = async (req, res) => {
                 dataTreatmentAuthorized: dataTreatmentAuthorized || false,
                 minorConsentAuthorized: minorConsentAuthorized || false,
                 assignedToId: assignedToId ? parseInt(assignedToId) : null,
+                registeredById: registrarCode.userId, // Servidor que proporcionó el código de registro
             }
         });
 
         // Use a generic system user ID or the inviter ID for the audit log
         // Since it's public, we log that it was a public creation
-        await logActivity(null, 'CREATE', 'GUEST', guest.id, { name: guest.name, type: 'PUBLIC_REGISTRATION' }, req.ip, req.headers['user-agent']);
+        await logActivity(null, 'CREATE', 'GUEST', guest.id, {
+            name: guest.name,
+            type: 'PUBLIC_REGISTRATION',
+            servidorCode: servidorCode,
+            servidorUserId: registrarCode.userId
+        }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({ guest });
     } catch (error) {

@@ -30,12 +30,6 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
         const user = JSON.parse(localStorage.getItem('user'));
         setCurrentUser(user);
 
-        // Auto-set invitedById for leadership roles if applicable logic exists, 
-        // however usually LIDER_CELULA and DISCIPULO set themselves.
-        if (user && user.roles?.some(r => ['LIDER_CELULA', 'DISCIPULO'].includes(r))) {
-            setFormData(prev => ({ ...prev, invitedById: user.id }));
-        }
-
         // Auto-assign DISCIPULO to themselves
         if (user && user.roles?.includes('DISCIPULO')) {
             setFormData(prev => ({ 
@@ -54,47 +48,13 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
             return () => Promise.resolve([]);
         }
         
-        if (roles.includes('LIDER_CELULA')) {
-            // LIDER_CELULA can only assign to their DISCIPULOS
-            return (term) => api.get('/users/my-network/all')
-                .then(res => {
-                    const network = res.data || [];
-                    const discipulos = network.filter(user => 
-                        user.id !== currentUser.id &&
-                        user.roles?.includes('DISCIPULO') && 
-                        user.fullName.toLowerCase().includes(term.toLowerCase())
-                    );
-                    return discipulos;
-                });
-        }
-        
-        if (roles.includes('LIDER_DOCE')) {
-            // LIDER_DOCE can assign to DISCIPULOS and LIDER_CELULA in their network
-            return (term) => api.get('/users/my-network/all')
-                .then(res => {
-                    const network = res.data || [];
-                    const assignableUsers = network.filter(user => 
-                        user.id !== currentUser.id &&
-                        (user.roles?.includes('DISCIPULO') || user.roles?.includes('LIDER_CELULA')) &&
-                        user.fullName.toLowerCase().includes(term.toLowerCase())
-                    );
-                    return assignableUsers;
-                });
-        }
-        
-        if (roles.includes('ADMIN')) {
-            // ADMIN can assign to any user except ADMIN and PASTOR
-            return (term) => api.get('/users/search', { 
-                params: { 
-                    search: term,
-                    excludeRoles: 'ADMIN,PASTOR'
-                } 
-            }).then(res => res.data);
-        }
-        
-        // Default case - should not happen
-        return (term) => api.get('/users/search', { params: { search: term } })
-            .then(res => res.data);
+        // All other roles can search any user except ADMIN and PASTOR
+        return (term) => api.get('/users/search', { 
+            params: { 
+                search: term,
+                excludeRoles: 'ADMIN,PASTOR'
+            } 
+        }).then(res => res.data);
     };
 
     const handleChange = (e) => {
@@ -338,23 +298,25 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                                 </div>
                             </div>
 
-                            {currentUser?.roles?.some((r) => ['ADMIN', 'LIDER_DOCE'].includes(r)) && (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Invitado Por <span className="text-red-400">*</span>
-                                    </label>
-                                    <AsyncSearchSelect
-                                        fetchItems={(term) =>
-                                            api.get('/users/search', { params: { search: term } })
-                                                .then((res) => res.data)
-                                        }
-                                        selectedValue={formData.invitedBy}
-                                        onSelect={(user) => setFormData({ ...formData, invitedById: user?.id, invitedBy: user })}
-                                        placeholder="Seleccionar Discípulo que invitó..."
-                                        labelKey="fullName"
-                                    />
-                                </div>
-                            )}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Invitado Por <span className="text-red-400">*</span>
+                                </label>
+                                <AsyncSearchSelect
+                                    fetchItems={(term) =>
+                                        api.get('/users/search', { 
+                                            params: { 
+                                                search: term,
+                                                excludeRoles: 'ADMIN,PASTOR'
+                                            } 
+                                        }).then((res) => res.data)
+                                    }
+                                    selectedValue={formData.invitedBy}
+                                    onSelect={(user) => setFormData({ ...formData, invitedById: user?.id, invitedBy: user })}
+                                    placeholder="Buscar usuario que invitó..."
+                                    labelKey="fullName"
+                                />
+                            </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

@@ -169,7 +169,7 @@ const GuestStats = () => {
                             className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm"
                         />
                     </div>
-                    {currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r)) && (
+                    {currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR', 'COORDINADOR'].includes(r)) && (
                         <button
                             onClick={exportToExcel}
                             disabled={!stats || loading}

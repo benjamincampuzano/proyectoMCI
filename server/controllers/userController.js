@@ -1337,22 +1337,38 @@ const getMyNetwork = async (req, res) => {
  */
 const searchPublicUsers = async (req, res) => {
     try {
-        const { search } = req.query;
+        const { search, excludeRoles } = req.query;
 
         if (!search || search.length < 3) {
             return res.status(400).json({ message: 'Search term must be at least 3 characters' });
         }
 
-        const users = await prisma.user.findMany({
-            where: {
-                isDeleted: false,
-                profile: {
-                    fullName: {
-                        contains: search,
-                        mode: 'insensitive'
+        let where = {
+            isDeleted: false,
+            profile: {
+                fullName: {
+                    contains: search,
+                    mode: 'insensitive'
+                }
+            }
+        };
+
+        // Add role exclusions if provided
+        if (excludeRoles) {
+            const excludedRolesArray = excludeRoles.split(',');
+            where['roles'] = {
+                none: {
+                    role: {
+                        name: {
+                            in: excludedRolesArray
+                        }
                     }
                 }
-            },
+            };
+        }
+
+        const users = await prisma.user.findMany({
+            where,
             select: {
                 id: true,
                 profile: {
@@ -1421,9 +1437,13 @@ const searchUsers = async (req, res) => {
         // Pre-process role for multiple role support
         const roleFilter = role ? (role.includes(',') ? { in: role.split(',') } : role) : null;
 
+        // Special case: when excludeRoles is provided without role filter, allow global search
+        // This enables any authenticated user to search all users except excluded roles
+        if (excludeRoles && !roleFilter) {
+            // No additional role restrictions - excludeRoles already handled in where clause
+        }
         // Special case for Art School enrollment - allow all roles
-        if (allowAllRolesBool && (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR') || req.user.isModuleCoordinator)) {
-            // No role restrictions for Art School enrollment
+        else if (allowAllRolesBool && (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR') || req.user.isModuleCoordinator)) {
             if (roleFilter) {
                 where['roles'] = { 
                     ...(where['roles'] || {}),
@@ -1440,14 +1460,11 @@ const searchUsers = async (req, res) => {
             }
         }
         else if (req.user.isModuleCoordinator) {
-            // Coordinators can search for LIDER_DOCE users to assign them as coordinators
             const allowedRoles = role === 'LIDER_DOCE' 
                 ? [...MANAGABLE_ROLES, 'LIDER_DOCE'] 
                 : MANAGABLE_ROLES;
             
-            // If specific roles are requested, ensure they are allowed
             if (role && !allowedRoles.includes(role)) {
-                // If it's a list, check each one
                 const requestedRoles = role.split(',');
                 if (requestedRoles.some(r => !allowedRoles.includes(r))) {
                     return res.status(403).json({ message: `You cannot search for one or more requested roles: ${role}` });
@@ -1466,13 +1483,11 @@ const searchUsers = async (req, res) => {
             }
             where['id'] = { in: requesterNetwork };
             
-            // LIDER_DOCE can search for other LIDER_DOCE users in their network
             const allowedRoles = role === 'LIDER_DOCE' 
                 ? [...MANAGABLE_ROLES, 'LIDER_DOCE'] 
                 : MANAGABLE_ROLES;
             
             if (role && !allowedRoles.includes(role)) {
-                // If it's a list, check each one
                 const requestedRoles = role.split(',');
                 if (requestedRoles.some(r => !allowedRoles.includes(r))) {
                     return res.status(403).json({ message: `You cannot search for one or more requested roles: ${role}` });

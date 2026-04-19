@@ -25,12 +25,12 @@ const recordCellAttendance = async (req, res) => {
 
         const userRoles = req.user.roles || [];
         const userId = req.user.id;
-        const isSuperAdmin = userRoles.includes('ADMIN');
+        const isAdmin = userRoles.includes('ADMIN');
         const isPastor = userRoles.includes('PASTOR');
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
         const isDiscipulo = userRoles.includes('DISCIPULO') || userRoles.includes('MIEMBRO');
 
-        const isAuthorized = isSuperAdmin || isLiderDoce || isPastor || cell.leaderId === userId;
+        const isAuthorized = isAdmin || isLiderDoce || isPastor || cell.leaderId === userId;
 
         if (!isAuthorized) {
             // If they are not leadership, they MUST be a DISCIPULO/MIEMBRO recording ONLY THEIR OWN attendance
@@ -104,15 +104,15 @@ const getCellAttendance = async (req, res) => {
             where: { id: userId, cellId: parseInt(cellId) }
         });
 
-        const isSuperAdmin = userRoles.includes('ADMIN');
+        const isAdmin = userRoles.includes('ADMIN');
         const isPastor = userRoles.includes('PASTOR');
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
 
         // Check if user is a standard member (DISCIPULO or MIEMBRO) without administrative roles or being the leader
         const isDiscipulo = (userRoles.includes('DISCIPULO') || userRoles.includes('MIEMBRO')) &&
-            !isSuperAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId;
+            !isAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId;
 
-        if (!isSuperAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId && !isMember) {
+        if (!isAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell attendance' });
         }
 
