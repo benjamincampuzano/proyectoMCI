@@ -57,7 +57,6 @@ const useAttendance = () => {
             console.error('Error fetching stats:', err);
             // Handle network errors silently
             if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
-                console.log('Server not available - using empty stats');
                 setStats([]);
             } else {
                 setError(err.response?.data?.error || 'Error fetching stats');

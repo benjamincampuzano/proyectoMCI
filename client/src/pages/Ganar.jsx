@@ -19,11 +19,7 @@ const Ganar = () => {
 
     // Debug: Verificar roles del usuario
     useEffect(() => {
-        console.log('=== Ganar Debug ===');
-        console.log('User:', user);
-        console.log('User roles:', user?.roles);
-        console.log('hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]):', hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]));
-        console.log('hasAnyRole([ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA]):', hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']));
+        
     }, [user, hasAnyRole]);
 
     const [refreshTrigger, setRefreshTrigger] = useState(0);

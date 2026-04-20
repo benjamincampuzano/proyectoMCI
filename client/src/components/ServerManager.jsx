@@ -11,10 +11,7 @@ const ServerManager = () => {
 
     // Debug: Verificar roles del usuario
     useEffect(() => {
-        console.log('=== ServerManager Debug ===');
-        console.log('User:', user);
-        console.log('User roles:', user?.roles);
-        console.log('hasAnyRole result for ADMIN/PASTOR/LIDER_DOCE:', hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']));
+        
     }, [user, hasAnyRole]);
 
     const [servidores, setServidores] = useState([]);

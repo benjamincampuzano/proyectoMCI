@@ -23,12 +23,7 @@ const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange =
     const hasCoordinatorAccess = tab.requiresCoordinator && isCoordinator();
 
     // Debug: Log tab filtering
-    console.log(`=== TabNavigator Debug - Tab: ${tab.id} ===`);
-    console.log('Tab roles:', tab.roles);
-    console.log('hasRoleAccess:', hasRoleAccess);
-    console.log('hasCoordinatorAccess:', hasCoordinatorAccess);
-    console.log('Result:', hasRoleAccess || hasCoordinatorAccess);
-
+    
     return hasRoleAccess || hasCoordinatorAccess;
   });
 
