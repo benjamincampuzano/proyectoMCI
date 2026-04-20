@@ -2,12 +2,21 @@ import { useState, useEffect } from 'react';
 import { Plus, Users, Trash, X, Copy, CheckCircle, MagnifyingGlass, Lightbulb } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Button, AsyncSearchSelect } from './ui';
 import ConfirmationModal from './ConfirmationModal';
 
 const ServerManager = () => {
     const { user, hasAnyRole } = useAuth();
+
+    // Debug: Verificar roles del usuario
+    useEffect(() => {
+        console.log('=== ServerManager Debug ===');
+        console.log('User:', user);
+        console.log('User roles:', user?.roles);
+        console.log('hasAnyRole result for ADMIN/PASTOR/LIDER_DOCE:', hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']));
+    }, [user, hasAnyRole]);
+
     const [servidores, setServidores] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);

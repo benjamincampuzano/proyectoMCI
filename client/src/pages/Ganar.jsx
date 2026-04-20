@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, ArrowsClockwise } from '@phosphor-icons/react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import TabNavigator from '../components/TabNavigator';
 import GuestRegistrationForm from '../components/GuestRegistrationForm';
 import GuestList from '../components/GuestList';
@@ -16,6 +16,16 @@ import api from '../utils/api';
 
 const Ganar = () => {
     const { user, hasRole, hasAnyRole } = useAuth();
+
+    // Debug: Verificar roles del usuario
+    useEffect(() => {
+        console.log('=== Ganar Debug ===');
+        console.log('User:', user);
+        console.log('User roles:', user?.roles);
+        console.log('hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]):', hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]));
+        console.log('hasAnyRole([ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA]):', hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']));
+    }, [user, hasAnyRole]);
+
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showRegistration, setShowRegistration] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);

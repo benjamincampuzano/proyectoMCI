@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, FloppyDisk, Spinner, Check } from '@phosphor-icons/react';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
 
 const UserProfileModal = ({ isOpen, onClose }) => {

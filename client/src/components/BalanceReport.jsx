@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { MicrosoftExcelLogoIcon, FunnelIcon, Users, HandCoinsIcon, MoneyIcon, CreditCardIcon } from '@phosphor-icons/react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const BalanceReport = ({ data, title }) => {
     const { user } = useAuth();

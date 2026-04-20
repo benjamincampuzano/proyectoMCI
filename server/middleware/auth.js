@@ -12,9 +12,12 @@ const authenticate = (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         // Normalizar: asegurar que tenemos el campo 'id' y 'roles' (array)
+        // Incluir las coordinaciones de módulo si están en el token
         req.user = {
             id: decoded.id || decoded.userId,
-            roles: decoded.roles || (decoded.role ? [decoded.role] : [])
+            roles: decoded.roles || (decoded.role ? [decoded.role] : []),
+            // Coordinaciones de módulo desde el token JWT
+            moduleCoordinationsFromToken: decoded.moduleCoordinations || null
         };
         next();
     } catch (error) {

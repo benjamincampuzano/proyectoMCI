@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import LosDoceGrid from '../components/LosDoceGrid';
 import api from '../utils/api';
 import NetworkTree from '../components/NetworkTree';

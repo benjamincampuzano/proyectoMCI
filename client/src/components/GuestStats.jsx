@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MicrosoftExcelLogoIcon, SpinnerIcon,Users, PhoneOutgoingIcon, UserCheck, HouseLineIcon, UserPlusIcon } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import * as XLSX from 'xlsx';
 import api from '../utils/api';
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Lock, Eye, EyeClosedIcon, CheckCircle, WarningCircle, ShieldCheck } from '@phosphor-icons/react';
 
 const validatePassword = (password, email = '', fullName = '') => {

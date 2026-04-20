@@ -1,7 +1,8 @@
 import { Suspense, lazy, useEffect, useState, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useLoading } from './context/LoadingContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { ThemeProvider } from './context/ThemeContext';
 import { LoadingProvider } from './context/LoadingContext';
 import Layout from './layouts/Layout';

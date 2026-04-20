@@ -2,7 +2,7 @@ import { createContext, useState, useEffect, useContext } from 'react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 const normalizeRoleName = (role) => {
     return String(role || '').toUpperCase().replace(/-/g, '_');
@@ -223,6 +223,23 @@ export const AuthProvider = ({ children }) => {
         return user.moduleCoordinations?.some(m => m.toLowerCase() === moduleName.toLowerCase());
     };
 
+    /**
+     * Check if user has ADMIN-level access for a specific module
+     * Returns true if user is global ADMIN OR coordinator of the specified module
+     * @param {string} moduleName - Module to check access for
+     * @returns {boolean} - True if user has ADMIN-level access for the module
+     */
+    const hasModuleAdminAccess = (moduleName) => {
+        if (!user || !moduleName) return false;
+
+        // Global ADMIN has access to all modules
+        if (hasRole('ADMIN')) return true;
+
+        // Check if user is coordinator of this specific module
+        const normalizedModule = moduleName.toLowerCase().trim().replace(/\s+/g, '-');
+        return user.moduleCoordinations?.some(m => m.toLowerCase() === normalizedModule);
+    };
+
     const isTreasurer = (moduleName) => {
         if (!user) return false;
         if (!moduleName) return user.isModuleTreasurer;
@@ -233,12 +250,10 @@ export const AuthProvider = ({ children }) => {
         <AuthContext.Provider value={{
             user, login, register, setup, logout, updateProfile,
             loading, isInitialized,
-            hasRole, hasAnyRole, isAdmin, isCoordinator, isTreasurer,
+            hasRole, hasAnyRole, isAdmin, isCoordinator, isTreasurer, hasModuleAdminAccess,
             changePassword, getSessions, logoutAll
         }}>
             {children}
         </AuthContext.Provider>
     );
 };
-
-export const useAuth = () => useContext(AuthContext);

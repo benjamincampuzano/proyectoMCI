@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Lock, User, Phone, MapPin, ShieldCheck, ArrowRight, Check, X as XIcon, Envelope } from '@phosphor-icons/react';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import toast from 'react-hot-toast';

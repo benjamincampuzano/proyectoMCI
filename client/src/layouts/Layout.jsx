@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { House, Users, CrossIcon, UserPlus, Heart, PaperPlaneTilt, Calendar, BookOpen, SignOut, TreeStructure, Target, ShieldCheck, Baby, CaretLeft, CaretRight, GuitarIcon } from '@phosphor-icons/react';
 import UserMenu from '../components/UserMenu';
 import UserProfileModal from '../components/UserProfileModal';

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Users, Calendar, Phone, CheckCircle, Clock, Pen, Trash, X } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import MultiUserSelect from './MultiUserSelect';
 import { Button } from './ui';
 import ConfirmationModal from './ConfirmationModal';

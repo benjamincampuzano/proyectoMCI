@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 /**
  * TabNavigator - Unified tab system for module pages
@@ -15,12 +15,20 @@ const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange =
     if (tab.customCheck && typeof tab.customCheck === 'function') {
       return tab.customCheck();
     }
-    
+
     // Otherwise, use role-based checking
     if (!tab.roles || tab.roles.length === 0) return true;
     // Check if user has required roles OR if tab allows coordinators
     const hasRoleAccess = hasAnyRole(tab.roles);
     const hasCoordinatorAccess = tab.requiresCoordinator && isCoordinator();
+
+    // Debug: Log tab filtering
+    console.log(`=== TabNavigator Debug - Tab: ${tab.id} ===`);
+    console.log('Tab roles:', tab.roles);
+    console.log('hasRoleAccess:', hasRoleAccess);
+    console.log('hasCoordinatorAccess:', hasCoordinatorAccess);
+    console.log('Result:', hasRoleAccess || hasCoordinatorAccess);
+
     return hasRoleAccess || hasCoordinatorAccess;
   });
 

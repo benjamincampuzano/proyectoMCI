@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import { AsyncSearchSelect, Button } from './ui';
 import useGuestManagement from '../hooks/useGuestManagement';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { DATA_POLICY_URL } from '../constants/policies';
 import api from '../utils/api';
 import GuestEditModal from './GuestEditModal';
@@ -149,6 +149,19 @@ const GuestList = ({ refreshTrigger }) => {
         return labels[status] || status;
     };
 
+    // Calcular edad a partir de la fecha de nacimiento
+    const calculateAge = (birthDate) => {
+        if (!birthDate) return null;
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
     // Estado para mostrar/ocultar filtros avanzados (ocultos por defecto en móvil)
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
@@ -163,6 +176,12 @@ const GuestList = ({ refreshTrigger }) => {
         // Solo ADMIN y LIDER_DOCE pueden eliminar invitados
         // DISCIPULO no tiene permiso para eliminar
         return roles.includes('ADMIN') || roles.includes('LIDER_DOCE');
+    };
+
+    const canExport = () => {
+        const roles = currentUser?.roles || [];
+        // Solo ADMIN, PASTOR y LIDER_DOCE (coordinador del módulo) pueden exportar
+        return roles.includes('ADMIN') || roles.includes('PASTOR') || roles.includes('LIDER_DOCE');
     };
 
     // Funciones auxiliares para clases de filtros
@@ -214,8 +233,10 @@ const GuestList = ({ refreshTrigger }) => {
             'Fecha Creación': guest.createdAt ? new Date(guest.createdAt).toLocaleDateString('es-ES') : 'N/A',
             'Registrado Por': guest.registeredBy?.fullName || 'N/A',
             'Nombre': guest.name || 'N/A',
+            'Edad': calculateAge(guest.birthDate) || 'N/A',
             'Teléfono': guest.phone || 'N/A',
             'Dirección': guest.address || 'N/A',
+            'Petición de Oración': guest.prayerRequest || 'N/A',
             'Estado': getStatusLabel(guest.status) || 'N/A',
             'Invitado Por': guest.invitedBy?.fullName || 'N/A',
             'Asignado a': guest.assignedTo?.fullName || 'Pendiente',
@@ -232,8 +253,10 @@ const GuestList = ({ refreshTrigger }) => {
             { wch: 15 }, // Fecha Creación
             { wch: 20 }, // Registrado Por
             { wch: 25 }, // Nombre
+            { wch: 8 },  // Edad
             { wch: 15 }, // Teléfono
             { wch: 30 }, // Dirección
+            { wch: 40 }, // Petición de Oración
             { wch: 12 }, // Estado
             { wch: 20 }, // Invitado Por
             { wch: 20 }, // Asignado a
@@ -447,19 +470,21 @@ const GuestList = ({ refreshTrigger }) => {
                                         {guests.length} invitados
                                     </span>
                                 </div>
-                                <button
-                                    onClick={exportToExcel}
-                                    disabled={loading || exporting || guests.length === 0}
-                                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-[12px] font-semibold shadow-lg shadow-green-500/30 transition-all active:scale-95"
-                                    title="Exportar a Excel"
-                                >
-                                    {exporting ? (
-                                        <SpinnerIcon size={16} className="animate-spin" />
-                                    ) : (
-                                        <FileXls size={18} weight="bold" />
-                                    )}
-                                    {exporting ? 'Exportando...' : 'Exportar Excel'}
-                                </button>
+                                {canExport() && (
+                                    <button
+                                        onClick={exportToExcel}
+                                        disabled={loading || exporting || guests.length === 0}
+                                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-[12px] font-semibold shadow-lg shadow-green-500/30 transition-all active:scale-95"
+                                        title="Exportar a Excel"
+                                    >
+                                        {exporting ? (
+                                            <SpinnerIcon size={16} className="animate-spin" />
+                                        ) : (
+                                            <FileXls size={18} weight="bold" />
+                                        )}
+                                        {exporting ? 'Exportando...' : 'Exportar Excel'}
+                                    </button>
+                                )}
                                 
                                 {hasAdvancedFilters && (
                                     <div className="flex flex-wrap gap-2">
@@ -488,8 +513,10 @@ const GuestList = ({ refreshTrigger }) => {
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Fecha Creación</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Registrado Por</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Nombre</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Edad</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Teléfono</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Dirección</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Petición de Oración</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Estado</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Invitado Por</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Asignado a</th>
@@ -501,13 +528,13 @@ const GuestList = ({ refreshTrigger }) => {
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {loading ? (
                             <tr>
-                                <td colSpan="11" className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan="13" className="px-4 py-8 text-center text-gray-400">
                                     <SpinnerIcon size={24} className="animate-spin mx-auto" />
                                 </td>
                             </tr>
                         ) : guests.length === 0 ? (
                             <tr>
-                                <td colSpan="11" className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan="13" className="px-4 py-8 text-center text-gray-400">
                                     No se encontraron invitados
                                 </td>
                             </tr>
@@ -539,6 +566,11 @@ const GuestList = ({ refreshTrigger }) => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
+                                        <span className="text-gray-600 dark:text-white/80 text-sm">
+                                            {calculateAge(guest.birthDate) || 'N/A'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3">
                                         {editingGuest?.id === guest.id ? (
                                             <input
                                                 type="text"
@@ -568,6 +600,11 @@ const GuestList = ({ refreshTrigger }) => {
                                         ) : (
                                             <span className="text-gray-600 dark:text-white/80 text-sm">{guest.address || 'N/A'}</span>
                                         )}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <span className="text-gray-600 dark:text-white/80 text-sm max-w-[150px] block truncate" title={guest.prayerRequest || ''}>
+                                            {guest.prayerRequest || 'N/A'}
+                                        </span>
                                     </td>
                                     <td className="px-4 py-3">
                                         {editingGuest?.id === guest.id ? (

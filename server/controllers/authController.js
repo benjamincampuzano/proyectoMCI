@@ -4,8 +4,35 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { logActivity } = require('../utils/auditLogger');
 const { validatePassword } = require('../utils/passwordValidator');
+const { normalizeModuleName } = require('../middleware/coordinatorAuth');
 
 const prisma = require('../utils/database');
+
+/**
+ * Obtiene las coordinaciones de módulo del usuario (para incluir en JWT)
+ */
+const getUserModuleCoordinations = async (userId) => {
+    const [coordinations, subCoordinations, treasurers] = await Promise.all([
+        prisma.moduleCoordinator.findMany({
+            where: { userId, isDeleted: false },
+            select: { moduleName: true }
+        }),
+        prisma.moduleSubCoordinator.findMany({
+            where: { userId, isDeleted: false },
+            select: { moduleName: true }
+        }),
+        prisma.moduleTreasurer.findMany({
+            where: { userId, isDeleted: false },
+            select: { moduleName: true }
+        })
+    ]);
+
+    return {
+        coordinating: coordinations.map(c => normalizeModuleName(c.moduleName)),
+        subCoordinating: subCoordinations.map(sc => normalizeModuleName(sc.moduleName)),
+        treasuring: treasurers.map(t => normalizeModuleName(t.moduleName))
+    };
+};
 
 // Helper function to generate refresh token
 const generateRefreshToken = async (userId, userAgent, ipAddress) => {
@@ -172,7 +199,12 @@ const register = async (req, res) => {
         });
 
         const roles = user.roles.map(r => r.role.name);
-        const token = jwt.sign({ userId: user.id, roles }, process.env.JWT_SECRET, {
+        const moduleCoordinations = await getUserModuleCoordinations(user.id);
+        const token = jwt.sign({ 
+            userId: user.id, 
+            roles,
+            moduleCoordinations 
+        }, process.env.JWT_SECRET, {
             expiresIn: '30m',
         });
         
@@ -254,16 +286,16 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const token = jwt.sign(
-            { 
-                userId: user.id, 
-                email: user.email, 
-                roles: user.roles.map(r => r.role.name),
-                mustChangePassword: user.mustChangePassword
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: '30m' }
-        );
+        const moduleCoordinations = await getUserModuleCoordinations(user.id);
+        const token = jwt.sign({
+            userId: user.id, 
+            email: user.email, 
+            roles: user.roles.map(r => r.role.name),
+            mustChangePassword: user.mustChangePassword,
+            moduleCoordinations
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '30m' });
         
         // Generate refresh token
         const refreshToken = await generateRefreshToken(user.id, req.headers['user-agent'], req.ip);
@@ -454,7 +486,8 @@ const registerSetup = async (req, res) => {
         });
 
         const roles = ['ADMIN'];
-        const token = jwt.sign({ userId: user.id, roles }, process.env.JWT_SECRET, {
+        const moduleCoordinations = await getUserModuleCoordinations(user.id);
+        const token = jwt.sign({ userId: user.id, roles, moduleCoordinations }, process.env.JWT_SECRET, {
             expiresIn: '30m',
         });
         
@@ -633,16 +666,16 @@ const refreshToken = async (req, res) => {
         }
 
         const roles = storedToken.user.roles.map(r => r.role.name);
-        const newAccessToken = jwt.sign(
-            { 
-                userId: storedToken.user.id, 
-                email: storedToken.user.email, 
-                roles,
-                mustChangePassword: storedToken.user.mustChangePassword
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: '30m' }
-        );
+        const moduleCoordinations = await getUserModuleCoordinations(storedToken.user.id);
+        const newAccessToken = jwt.sign({
+            userId: storedToken.user.id, 
+            email: storedToken.user.email, 
+            roles,
+            mustChangePassword: storedToken.user.mustChangePassword,
+            moduleCoordinations
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '30m' });
 
         await prisma.refreshToken.update({
             where: { id: storedToken.id },

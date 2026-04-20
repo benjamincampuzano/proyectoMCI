@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import AsyncSearchSelect from './ui/AsyncSearchSelect';
 import { Button } from './ui';
 import api from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
 
 /**

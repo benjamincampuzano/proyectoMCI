@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { User, Gear, Users, SignOut, ShieldCheck, DevicesIcon } from '@phosphor-icons/react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import ThemeToggle from './ThemeToggle';
 import { DATA_POLICY_URL } from '../constants/policies';
 import toast from 'react-hot-toast';

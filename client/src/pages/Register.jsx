@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { LockIcon, User, DotIcon, Calendar, Check, Shield, X, EyeIcon, EyeClosedIcon, Plus, Envelope, ArrowsClockwiseIcon, Sun, Moon, ArrowLeft } from '@phosphor-icons/react';
 import api from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import { DATA_POLICY_URL } from '../constants/policies';

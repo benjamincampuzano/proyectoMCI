@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { Lock, Eye, EyeClosedIcon, ArrowsClockwiseIcon, Sun, Moon } from '@phosphor-icons/react';
 import ChangePasswordModal from '../components/ChangePasswordModal';
