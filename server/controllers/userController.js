@@ -1435,7 +1435,14 @@ const searchUsers = async (req, res) => {
         }
 
         // Pre-process role for multiple role support
-        const roleFilter = role ? (role.includes(',') ? { in: role.split(',') } : role) : null;
+        // Handle both array ['ROLE1', 'ROLE2'] and comma-separated string "ROLE1,ROLE2"
+        const roleFilter = role
+            ? Array.isArray(role)
+                ? { in: role }
+                : role.includes(',')
+                    ? { in: role.split(',') }
+                    : role
+            : null;
 
         // Special case: when excludeRoles is provided without role filter, allow global search
         // This enables any authenticated user to search all users except excluded roles
@@ -1522,6 +1529,45 @@ const searchUsers = async (req, res) => {
     }
 };
 
+/**
+ * Get users by IDs (for caching related users to avoid "Cargando..." issue)
+ */
+const getUsersByIds = async (req, res) => {
+    try {
+        const { ids } = req.query;
+        
+        if (!ids) {
+            return res.status(400).json({ error: 'IDs parameter is required' });
+        }
+
+        const idArray = ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+        
+        if (idArray.length === 0) {
+            return res.json({ users: [] });
+        }
+
+        const users = await prisma.user.findMany({
+            where: {
+                id: { in: idArray }
+            },
+            include: {
+                profile: true,
+                spouse: {
+                    include: {
+                        profile: true
+                    }
+                }
+            }
+        });
+
+        const formattedUsers = users.map(formatUser);
+        res.json({ users: formattedUsers });
+    } catch (error) {
+        console.error('Error fetching users by IDs:', error);
+        res.status(500).json({ error: 'Error fetching users' });
+    }
+};
+
 module.exports = {
     getProfile,
     updateProfile,
@@ -1534,5 +1580,6 @@ module.exports = {
     assignLeader,
     getMyNetwork,
     searchPublicUsers,
-    searchUsers
+    searchUsers,
+    getUsersByIds
 };

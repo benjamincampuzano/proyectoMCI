@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, Trash, X, Copy, CheckCircle, MagnifyingGlass, Lightbulb } from '@phosphor-icons/react';
+import { Plus, Users, Trash, X, Copy, CheckCircle, MagnifyingGlass, Lightbulb, Shield, Lock } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
@@ -7,11 +7,14 @@ import { Button, AsyncSearchSelect } from './ui';
 import ConfirmationModal from './ConfirmationModal';
 
 const ServerManager = () => {
-    const { user, hasAnyRole } = useAuth();
+    const { user, hasAnyRole, isCoordinator } = useAuth();
+
+    // Verificar acceso: Solo ADMIN, PASTOR o Coordinador del módulo Ganar
+    const hasAccess = hasAnyRole(['ADMIN', 'PASTOR']) || isCoordinator('ganar');
 
     // Debug: Verificar roles del usuario
     useEffect(() => {
-        
+
     }, [user, hasAnyRole]);
 
     const [servidores, setServidores] = useState([]);
@@ -115,7 +118,43 @@ const ServerManager = () => {
         );
     });
 
-    const canManage = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
+    const canManage = hasAccess;
+
+    // Pantalla de acceso denegado
+    if (!hasAccess) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 max-w-md w-full text-center">
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Lock size={32} className="text-red-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                        Acceso Restringido
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        Esta sección solo está disponible para:
+                    </p>
+                    <ul className="text-left text-sm text-gray-700 dark:text-gray-300 space-y-2 mb-6 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
+                        <li className="flex items-center gap-2">
+                            <Shield size={16} className="text-blue-500" />
+                            <span>Administradores del sistema</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <Shield size={16} className="text-purple-500" />
+                            <span>Pastores</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <Shield size={16} className="text-green-500" />
+                            <span>Coordinador del módulo Ganar</span>
+                        </li>
+                    </ul>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Si necesitas acceso, contacta al administrador del sistema.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     if (loading && servidores.length === 0) {
         return (

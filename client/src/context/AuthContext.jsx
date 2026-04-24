@@ -248,17 +248,27 @@ export const AuthProvider = ({ children }) => {
         return user.moduleCoordinations?.some(m => m.toLowerCase() === normalizedModule);
     };
 
+    const isSubCoordinator = (moduleName) => {
+        if (!user) return false;
+        if (!moduleName) return user.isModuleSubCoordinator;
+        return user.moduleSubCoordinations?.some(m => m.toLowerCase() === moduleName.toLowerCase());
+    };
+
     const isTreasurer = (moduleName) => {
         if (!user) return false;
         if (!moduleName) return user.isModuleTreasurer;
         return user.moduleTreasurers?.some(m => m.toLowerCase() === moduleName.toLowerCase());
     };
 
+    const isDoceLeader = () => {
+        return hasRole('LIDER_DOCE');
+    };
+
     return (
         <AuthContext.Provider value={{
             user, login, register, setup, logout, updateProfile,
             loading, isInitialized,
-            hasRole, hasAnyRole, isAdmin, isCoordinator, isTreasurer, hasModuleAdminAccess,
+            hasRole, hasAnyRole, isAdmin, isCoordinator, isSubCoordinator, isTreasurer, hasModuleAdminAccess, isDoceLeader,
             changePassword, getSessions, logoutAll
         }}>
             {children}

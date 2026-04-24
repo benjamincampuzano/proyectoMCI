@@ -10,9 +10,7 @@ import MultiUserSelect from '../components/MultiUserSelect';
 import { AsyncSearchSelect, PageHeader, Button } from '../components/ui';
 import ActionModal from '../components/ActionModal';
 import ConfirmationModal from '../components/ConfirmationModal';
-import CoordinatorSelector from '../components/CoordinatorSelector';
-import TreasurerSelector from '../components/TreasurerSelector';
-import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
+import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ROLES } from '../constants/roles';
 
 const EscuelaDeArtes = () => {
@@ -31,21 +29,6 @@ const EscuelaDeArtes = () => {
     const isModuleSubCoordinator = user?.isModuleSubCoordinator || 
                                    (user?.moduleSubCoordinations && user.moduleSubCoordinations.includes('escuela-de-artes'));
     const hasFullEditAccess = hasAdminOrPastor || isModuleCoordinator || isModuleSubCoordinator;
-
-    // Handler for coordinator changes
-    const handleCoordinatorChange = (newCoordinator) => {
-        setModuleCoordinator(newCoordinator);
-    };
-
-    // Handler for treasurer changes
-    const handleTreasurerChange = (newTreasurer) => {
-        setModuleTreasurer(newTreasurer);
-    };
-
-    // Handler for sub-coordinator changes
-    const handleSubCoordinatorChange = (newSubCoordinator) => {
-        setModuleSubCoordinator(newSubCoordinator);
-    };
 
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -455,27 +438,11 @@ const EscuelaDeArtes = () => {
                 description="Gestión de clases de arte, inscripciones, asistencias y abonos."
                 action={
                     <div className="flex items-center gap-4">
-                        <CoordinatorSelector 
-                            moduleCoordinator={moduleCoordinator}
+                        <CoordinatorDisplay
+                            coordinator={moduleCoordinator}
+                            subCoordinator={moduleSubCoordinator}
+                            treasurer={moduleTreasurer}
                             moduleName="Escuela de Artes"
-                            onCoordinatorChange={handleCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                        />
-                        <SubCoordinatorSelector 
-                            moduleSubCoordinator={moduleSubCoordinator}
-                            moduleName="Escuela de Artes"
-                            onSubCoordinatorChange={handleSubCoordinatorChange}
-                            disabled={!hasAdminOrPastor && !isModuleCoordinator}
-                            currentUserId={user?.id}
-                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
-                        />
-                        <TreasurerSelector 
-                            moduleTreasurer={moduleTreasurer}
-                            moduleName="Escuela de Artes"
-                            onTreasurerChange={handleTreasurerChange}
-                            disabled={!hasAdminOrPastor && !isModuleCoordinator}
-                            currentUserId={user?.id}
-                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
                         />
                     </div>
                 }

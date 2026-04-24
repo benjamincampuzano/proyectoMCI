@@ -179,16 +179,31 @@ const getCells = async (req, res) => {
         const isEnviarCoordinator = req.user.moduleCoordinations?.includes('enviar') ||
                                    req.user.moduleSubCoordinations?.includes('enviar');
 
+        // Get user's spouse if exists
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { spouseId: true }
+        });
+        const spouseId = user?.spouseId;
+
         if (userRoles.includes('ADMIN') || userRoles.includes('ADMIN') || isEnviarCoordinator) {
             // ADMIN and enviar module coordinators see all cells (no filter)
             where = {};
         } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
             // LIDER_DOCE y PASTOR pueden ver todas las células de su red
             // O aquellas donde son explícitamente el lider doce asignado
+            // También incluyen células donde su pareja es el lider doce asignado
             const networkUserIds = await getUserNetwork(userId);
+            
+            // Build liderDoceId conditions to include both user and spouse
+            const liderDoceConditions = [{ liderDoceId: userId }];
+            if (spouseId) {
+                liderDoceConditions.push({ liderDoceId: spouseId });
+            }
+
             where.OR = [
                 { leaderId: { in: networkUserIds } },
-                { liderDoceId: userId }
+                ...liderDoceConditions
             ];
         } else if (userRoles.includes('LIDER_CELULA')) {
             // LIDER_CELULA can only see their own cells

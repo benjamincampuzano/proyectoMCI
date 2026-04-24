@@ -10,7 +10,8 @@ const {
     deleteUser,
     assignLeader,
     getMyNetwork,
-    searchUsers // Added
+    searchUsers, // Added
+    getUsersByIds
 } = require('../controllers/userController');
 const { authenticate, isAdmin, authorize, checkCoordinatorStatus } = require('../middleware/auth');
 
@@ -26,6 +27,9 @@ router.put('/password', changePassword);
 
 // Dedicated search endpoint for internal leaders
 router.get('/search', searchUsers);
+
+// Get users by IDs (for caching related users)
+router.get('/by-ids', getUsersByIds);
 
 // Role-based routes
 router.get('/', getAllUsers);

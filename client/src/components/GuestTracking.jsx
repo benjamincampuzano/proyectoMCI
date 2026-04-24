@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Phone, House, User, WhatsappLogoIcon,ChatCircle, ChatCircleDots, WarningCircleIcon, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon, Plus, Trash } from '@phosphor-icons/react';
+import { Phone, House, User, WhatsappLogoIcon, ChatCircle, ChatCircleDots, WarningCircleIcon, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon, Plus, Trash, Calendar, Funnel, MagnifyingGlass } from '@phosphor-icons/react';
+import AsyncSearchSelect from './ui/AsyncSearchSelect';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
@@ -8,7 +9,8 @@ import { es } from 'date-fns/locale';
 import ConfirmationModal from './ConfirmationModal';
 
 const GuestTracking = () => {
-    const { user, hasRole, isAdmin, isCoordinator } = useAuth();
+    const { user, hasRole, isAdmin, isCoordinator, isDoceLeader } = useAuth();
+    const isModuleCoordinator = isCoordinator('ganar');
     const [guests, setGuests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedGuest, setSelectedGuest] = useState(null);
@@ -27,22 +29,52 @@ const GuestTracking = () => {
     const [totalGuests, setTotalGuests] = useState(0);
     const [pageSize] = useState(10);
 
+    // Filter states
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [liderDoceFilter, setLiderDoceFilter] = useState(null);
+    const [pendingCalls, setPendingCalls] = useState(false);
+    const [pendingVisits, setPendingVisits] = useState(false);
+    const [showFilters, setShowFilters] = useState(false);
+
+    // Auto-apply filter for LIDER_DOCE who are not coordinators
+    useEffect(() => {
+        if (isDoceLeader() && !isModuleCoordinator && user) {
+            // Automatically set filter to current user
+            setLiderDoceFilter({
+                id: user.id,
+                fullName: user.profile?.fullName || user.email
+            });
+        }
+    }, [isDoceLeader, isModuleCoordinator, user]);
+
     useEffect(() => {
         fetchGuests();
-    }, [currentPage]);
+    }, [currentPage, startDate, endDate, liderDoceFilter, pendingCalls, pendingVisits]);
 
     const fetchGuests = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/guests', {
-                params: {
-                    page: currentPage,
-                    limit: pageSize
-                }
-            });
-            setGuests(response.data.guests || []);
-            setTotalPages(response.data.totalPages || 1);
-            setTotalGuests(response.data.pagination?.total || response.data.guests?.length || 0);
+            const params = {
+                page: currentPage,
+                limit: pageSize
+            };
+            
+            // Add filters to params
+            if (startDate) params.startDate = startDate;
+            if (endDate) params.endDate = endDate;
+            if (liderDoceFilter) params.liderDoceId = liderDoceFilter.id;
+            if (pendingCalls) params.pendingCalls = 'true';
+            if (pendingVisits) params.pendingVisits = 'true';
+            
+            const response = await api.get('/guests', { params });
+            
+            // Filter guests client-side for pending calls/visits if needed
+            let filteredGuests = response.data.guests || [];
+            
+            setGuests(filteredGuests);
+            setTotalPages(response.data.pagination?.totalPages || 1);
+            setTotalGuests(response.data.pagination?.total || filteredGuests.length || 0);
         } catch (error) {
             console.error('Error fetching guests:', error);
             toast.error('Error al cargar invitados. Por favor intenta nuevamente.');
@@ -50,6 +82,23 @@ const GuestTracking = () => {
             setLoading(false);
         }
     };
+
+    // Check if liderDoceFilter is auto-applied (for non-coordinator LIDER_DOCE)
+    const isLiderDoceFilterAutoApplied = isDoceLeader() && !isModuleCoordinator && liderDoceFilter?.id === user?.id;
+
+    const clearFilters = () => {
+        setStartDate('');
+        setEndDate('');
+        // Don't clear liderDoceFilter if it's auto-applied
+        if (!isLiderDoceFilterAutoApplied) {
+            setLiderDoceFilter(null);
+        }
+        setPendingCalls(false);
+        setPendingVisits(false);
+        setCurrentPage(1);
+    };
+
+    const hasActiveFilters = startDate || endDate || (liderDoceFilter && !isLiderDoceFilterAutoApplied) || pendingCalls || pendingVisits;
 
     const handleOpenModal = (guest, type) => {
         setSelectedGuest(guest);
@@ -125,7 +174,7 @@ const GuestTracking = () => {
 
     const canDeleteRecords = () => {
         if (!user) return false;
-        return isAdmin() || isCoordinator();
+        return isAdmin() || isModuleCoordinator;
     };
 
 
@@ -180,8 +229,213 @@ const GuestTracking = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Seguimiento de Invitados</h2>
+                <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        hasActiveFilters
+                            ? 'bg-blue-500 text-white shadow-md'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                >
+                    <Funnel size={18} weight={showFilters ? "fill" : "bold"} />
+                    Filtros
+                    {hasActiveFilters && (
+                        <span className="ml-1 px-2 py-0.5 rounded-full bg-white/20 text-xs">
+                            {[startDate, endDate, (liderDoceFilter && !isLiderDoceFilterAutoApplied), pendingCalls, pendingVisits].filter(Boolean).length}
+                        </span>
+                    )}
+                </button>
             </div>
+
+            {/* Panel de Filtros */}
+            {showFilters && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+                    <div className="flex flex-wrap items-end gap-4">
+                        {/* Filtro por Fecha - Desde */}
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                                Fecha Desde
+                            </label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => {
+                                        setStartDate(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Filtro por Fecha - Hasta */}
+                        <div className="flex-1 min-w-[200px]">
+                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                                Fecha Hasta
+                            </label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => {
+                                        setEndDate(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Filtro por Líder de 12 - solo visible para admin/coordinadores/pastores */}
+                        {(!isDoceLeader() || isModuleCoordinator) && (
+                            <div className="flex-[2] min-w-[250px]">
+                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                                    Líder de 12
+                                </label>
+                                <AsyncSearchSelect
+                                    fetchItems={(term) => {
+                                        const roleFilter = user?.roles?.includes('PASTOR') ? "LIDER_DOCE,PASTOR" : "LIDER_DOCE";
+                                        return api.get('/users/search', {
+                                            params: { search: term, role: roleFilter }
+                                        }).then(res => res.data);
+                                    }}
+                                    selectedValue={liderDoceFilter}
+                                    onSelect={(user) => {
+                                        setLiderDoceFilter(user || null);
+                                        setCurrentPage(1);
+                                    }}
+                                    placeholder="Buscar líder de 12..."
+                                    labelKey="fullName"
+                                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        {/* Checkbox - Pendientes por llamadas */}
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
+                                pendingCalls
+                                    ? 'bg-green-500 border-green-500'
+                                    : 'border-gray-300 dark:border-gray-600 group-hover:border-green-400'
+                            }`}>
+                                <input
+                                    type="checkbox"
+                                    checked={pendingCalls}
+                                    onChange={(e) => {
+                                        setPendingCalls(e.target.checked);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="absolute opacity-0 w-full h-full cursor-pointer"
+                                />
+                                {pendingCalls && <CheckCircle size={14} className="text-white" weight="fill" />}
+                            </div>
+                            <span className={`text-sm font-medium ${pendingCalls ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                Pendientes por llamadas
+                            </span>
+                        </label>
+
+                        {/* Checkbox - Pendientes por visitas */}
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
+                                pendingVisits
+                                    ? 'bg-blue-500 border-blue-500'
+                                    : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
+                            }`}>
+                                <input
+                                    type="checkbox"
+                                    checked={pendingVisits}
+                                    onChange={(e) => {
+                                        setPendingVisits(e.target.checked);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="absolute opacity-0 w-full h-full cursor-pointer"
+                                />
+                                {pendingVisits && <CheckCircle size={14} className="text-white" weight="fill" />}
+                            </div>
+                            <span className={`text-sm font-medium ${pendingVisits ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                Pendientes por visitas
+                            </span>
+                        </label>
+
+                        <div className="flex-1"></div>
+
+                        {/* Botón Limpiar Filtros */}
+                        {hasActiveFilters && (
+                            <button
+                                onClick={clearFilters}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                            >
+                                <X size={16} weight="bold" />
+                                Limpiar filtros
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
+                {/* Pagination Controls - Top */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-between bg-white dark:bg-gray-800 px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                            Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalGuests)} de {totalGuests} invitados
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1 || loading}
+                                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Anterior
+                            </button>
+
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    let pageNum;
+                                    if (totalPages <= 5) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage <= 3) {
+                                        pageNum = i + 1;
+                                    } else if (currentPage >= totalPages - 2) {
+                                        pageNum = totalPages - 4 + i;
+                                    } else {
+                                        pageNum = currentPage - 2 + i;
+                                    }
+
+                                    const isActive = currentPage === pageNum;
+
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            disabled={loading}
+                                            className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
+                                                isActive
+                                                    ? 'bg-blue-600 text-white shadow-md'
+                                                    : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages || loading}
+                                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-900/50">

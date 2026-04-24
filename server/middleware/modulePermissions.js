@@ -233,6 +233,29 @@ const attachModulePermission = (moduleName) => {
   };
 };
 
+/**
+ * Check if user has ADMIN-level access for a specific module
+ * (global ADMIN/PASTOR OR coordinator of that module)
+ *
+ * @param {Object} user - User object with roles and moduleCoordinations
+ * @param {string} moduleName - Module name to check
+ * @returns {boolean} - True if user has ADMIN access for the module
+ */
+const hasAdminAccessOnModule = (user, moduleName) => {
+  if (!user || !moduleName) return false;
+
+  const normalizedModule = normalizeModuleName(moduleName);
+
+  // Global ADMIN/PASTOR has access to all modules
+  if (user.roles.includes('ADMIN') || user.roles.includes('PASTOR')) {
+    return true;
+  }
+
+  // Coordinator has ADMIN access only for their assigned module
+  return user.moduleCoordinations?.includes(normalizedModule) ||
+         user.moduleSubCoordinations?.includes(normalizedModule);
+};
+
 module.exports = {
   hasModuleAdminAccess,
   requireModuleAdmin,
@@ -241,4 +264,5 @@ module.exports = {
   getUserCoordinatedModules,
   checkModulePermission,
   attachModulePermission,
+  hasAdminAccessOnModule,
 };

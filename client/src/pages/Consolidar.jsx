@@ -7,35 +7,15 @@ import GuestTrackingStats from '../components/GuestTrackingStats';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import { PageHeader, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
-import CoordinatorSelector from '../components/CoordinatorSelector';
-import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
+import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const Consolidar = () => {
-    const { user, hasAnyRole, isCoordinator } = useAuth();
+    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
-
-    // Handler for coordinator changes
-    const handleCoordinatorChange = (newCoordinator) => {
-        setModuleCoordinator(newCoordinator);
-        
-        // After a short delay, refresh the coordinator data from server
-        setTimeout(() => {
-            fetchCoordinator();
-        }, 500);
-    };
-
-    // Handler for sub-coordinator changes
-    const handleSubCoordinatorChange = (newSubCoordinator) => {
-        setModuleSubCoordinator(newSubCoordinator);
-        
-        setTimeout(() => {
-            fetchSubCoordinator();
-        }, 500);
-    };
 
     const fetchCoordinator = async () => {
         try {
@@ -79,7 +59,18 @@ const Consolidar = () => {
     }, []);
     const tabs = [
         { id: 'attendance', label: 'Asistencia a la Iglesia', component: ChurchAttendance },
-        { id: 'stats', label: 'Estadísticas de Asistencia', component: ChurchAttendanceChart, roles: ROLE_GROUPS.ALL_LEADERS }
+        { 
+            id: 'stats', 
+            label: 'Estadísticas de Asistencia', 
+            component: ChurchAttendanceChart,
+            customCheck: () => {
+                const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
+                const isModuleCoord = isCoordinator('consolidar');
+                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('consolidar');
+                const isModuleTreasurer = isTreasurer('consolidar');
+                return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
+            }
+        }
     ];
 
         return (
@@ -89,19 +80,10 @@ const Consolidar = () => {
                 description="Gestión de seguimiento, asistencia y estadísticas"
                 action={
                     <div className="flex items-center gap-4">
-                        <CoordinatorSelector 
-                            moduleCoordinator={moduleCoordinator}
+                        <CoordinatorDisplay
+                            coordinator={moduleCoordinator}
+                            subCoordinator={moduleSubCoordinator}
                             moduleName="Consolidar"
-                            onCoordinatorChange={handleCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                        />
-                        <SubCoordinatorSelector 
-                            moduleSubCoordinator={moduleSubCoordinator}
-                            moduleName="Consolidar"
-                            onSubCoordinatorChange={handleSubCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                            currentUserId={user?.id}
-                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
                         />
                     </div>
                 }
@@ -118,7 +100,7 @@ const Consolidar = () => {
                 </button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="attendance" />
+            <TabNavigator tabs={tabs} initialTabId="attendance" moduleName="consolidar" />
         </div>
     );
 };

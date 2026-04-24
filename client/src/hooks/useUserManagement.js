@@ -64,6 +64,40 @@ const useUserManagement = () => {
         minorConsentAuthorized: false
     });
 
+    // Cache for related users (spouse, pastors, leaders) to avoid "Cargando..." issue
+    const [relatedUsersCache, setRelatedUsersCache] = useState({});
+
+    // Function to fetch related users by IDs to avoid "Cargando..." issue
+    const fetchRelatedUsers = useCallback(async (userIds) => {
+        if (!userIds || userIds.length === 0) return {};
+        
+        try {
+            const ids = userIds.filter(id => id && !relatedUsersCache[id]);
+            if (ids.length === 0) return relatedUsersCache;
+            
+            const response = await api.get('/users/by-ids', { 
+                params: { ids: ids.join(',') },
+                paramsSerializer: params => {
+                    return Object.keys(params)
+                        .map(key => `${key}=${encodeURIComponent(params[key])}`)
+                        .join('&');
+                }
+            });
+            
+            const usersData = response.data.users || response.data || [];
+            const newCache = { ...relatedUsersCache };
+            usersData.forEach(user => {
+                if (user.id) newCache[user.id] = user;
+            });
+            
+            setRelatedUsersCache(newCache);
+            return newCache;
+        } catch (err) {
+            console.error('Error fetching related users:', err);
+            return relatedUsersCache;
+        }
+    }, [relatedUsersCache]);
+
     // Function to categorize and handle errors
     const handleError = (error, operation = 'general') => {
         const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
@@ -558,7 +592,10 @@ const useUserManagement = () => {
         pagination: paginationInfo,
         exportToExcel,
         validatePasswordRealTime,
-        calculateAge
+        calculateAge,
+        // Related users cache for "Cargando..." fix
+        relatedUsersCache,
+        fetchRelatedUsers
     };
 };
 

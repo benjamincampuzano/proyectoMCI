@@ -6,15 +6,14 @@ import StudentMatrix from '../components/School/StudentMatrix';
 import { PageHeader, Button } from '../components/ui';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import { useAuth } from '../context/AuthContext';
-import CoordinatorSelector from '../components/CoordinatorSelector';
-import TreasurerSelector from '../components/TreasurerSelector';
-import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
+import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const Discipular = () => {
     const { user, hasAnyRole, isCoordinator } = useAuth();
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
+    const isModuleCoordinator = isCoordinator('discipular');
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
@@ -23,34 +22,6 @@ const Discipular = () => {
         fetchCoordinator();
         fetchSubCoordinator();
         fetchTreasurer();
-    };
-
-    // Handler for coordinator changes
-    const handleCoordinatorChange = (newCoordinator) => {
-        setModuleCoordinator(newCoordinator);
-        
-        // After a short delay, refresh the coordinator data from server
-        setTimeout(() => {
-            fetchCoordinator();
-        }, 500);
-    };
-
-    // Handler for treasurer changes
-    const handleTreasurerChange = (newTreasurer) => {
-        setModuleTreasurer(newTreasurer);
-        
-        setTimeout(() => {
-            fetchTreasurer();
-        }, 500);
-    };
-
-    // Handler for sub-coordinator changes
-    const handleSubCoordinatorChange = (newSubCoordinator) => {
-        setModuleSubCoordinator(newSubCoordinator);
-        
-        setTimeout(() => {
-            fetchSubCoordinator();
-        }, 500);
     };
 
     const fetchCoordinator = async () => {
@@ -107,11 +78,11 @@ const Discipular = () => {
     }, []);
 
     const tabs = [
-        { 
-            id: 'management', 
-            label: 'Clases y Notas', 
+        {
+            id: 'management',
+            label: 'Clases y Notas',
             component: CourseManagement,
-            roles: ROLE_GROUPS.CAN_MANAGE_CLASSES
+            customCheck: () => hasAdminOrPastor || isModuleCoordinator
         },
         {
             id: 'matrix',
@@ -134,27 +105,11 @@ const Discipular = () => {
                 description="Escuela de Liderazgo"
                 action={
                     <div className="flex flex-col sm:flex-row items-center gap-3">
-                        <CoordinatorSelector 
-                            moduleCoordinator={moduleCoordinator}
+                        <CoordinatorDisplay
+                            coordinator={moduleCoordinator}
+                            subCoordinator={moduleSubCoordinator}
+                            treasurer={moduleTreasurer}
                             moduleName="Discipular"
-                            onCoordinatorChange={handleCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                        />
-                        <SubCoordinatorSelector 
-                            moduleSubCoordinator={moduleSubCoordinator}
-                            moduleName="Discipular"
-                            onSubCoordinatorChange={handleSubCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                            currentUserId={user?.id}
-                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
-                        />
-                        <TreasurerSelector 
-                            moduleTreasurer={moduleTreasurer}
-                            moduleName="Discipular"
-                            onTreasurerChange={handleTreasurerChange}
-                            disabled={!hasAdminOrPastor}
-                            currentUserId={user?.id}
-                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
                         />
                     </div>
                 }
@@ -173,7 +128,7 @@ const Discipular = () => {
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="management" />
+            <TabNavigator tabs={tabs} initialTabId="management" moduleName="discipular" />
         </div>
     );
 };

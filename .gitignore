@@ -153,3 +153,4 @@ client/tests/run-all-tests.*
 server/nul
 DESIGN.md
 .gitignore
+.opencode/plans/agregar-customcheck-coordinadores.md

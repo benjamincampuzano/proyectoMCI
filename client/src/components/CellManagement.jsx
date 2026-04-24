@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Users, MapPin, Clock, Calendar, DotIcon, Trash, Pen, X, List, SquaresFour, MapTrifold, Tag, Image, UserIcon } from '@phosphor-icons/react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -944,7 +945,15 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 Líder 12
                                             </label>
                                             <AsyncSearchSelect
-                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => res.data)}
+                                                fetchItems={async (term) => {
+                                                    const response = await api.get('/enviar/eligible-doce-leaders');
+                                                    const leaders = response.data || [];
+                                                    if (!term) return leaders;
+                                                    return leaders.filter(l => 
+                                                        l.fullName.toLowerCase().includes(term.toLowerCase()) ||
+                                                        (l.spouseName && l.spouseName.toLowerCase().includes(term.toLowerCase()))
+                                                    );
+                                                }}
                                                 selectedValue={selectedLiderDoce}
                                                 onSelect={(user) => {
                                                     setFormData({ ...formData, liderDoceId: user?.id || '' });
@@ -953,6 +962,18 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 placeholder="Seleccionar Líder 12"
                                                 labelKey="fullName"
                                                 disabled={currentUser?.roles?.includes('LIDER_DOCE')}
+                                                renderItem={(leader) => (
+                                                    <div>
+                                                        <div className="font-medium text-gray-900 dark:text-white">
+                                                            {leader.fullName}
+                                                        </div>
+                                                        {leader.spouseName && (
+                                                            <div className="text-xs text-[#86868b] dark:text-[#98989d]">
+                                                                Pareja: {leader.spouseName}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             />
                                         </div>
 
@@ -961,7 +982,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 Líder de la Célula <span className="text-red-400">*</span>
                                             </label>
                                             <AsyncSearchSelect
-                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' || 'LIDER_CELULA' } }).then(res => res.data)}
+                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: ['LIDER_DOCE', 'LIDER_CELULA'] } }).then(res => res.data)}
                                                 selectedValue={selectedLeader}
                                                 onSelect={(user) => {
                                                     setFormData({ ...formData, leaderId: user?.id || '' });
@@ -1022,7 +1043,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             />
                                         </div>
 
-                                        <div>
+                                        <div className="sm:col-span-2">
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Ciudad <span className="text-red-400">*</span>
                                             </label>
@@ -1032,57 +1053,11 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 value={formData.city}
                                                 onChange={e => setFormData({ ...formData, city: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
+                                                placeholder="Ej: Manizales"
                                             />
                                         </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                {formData.cellType === 'VIRTUAL' ? 'URL de la Reunión Virtual' : 'Dirección'} <span className="text-red-400">*</span>
-                                            </label>
-                                            {formData.cellType === 'VIRTUAL' ? (
-                                                <input
-                                                    type="url"
-                                                    required
-                                                    value={formData.address}
-                                                    onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                                    className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                                                    placeholder="https://zoom.us/j/... o https://meet.google.com/..."
-                                                />
-                                            ) : (
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="text"
-                                                        required
-                                                        value={formData.address}
-                                                        onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                                        className="flex-1 px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setMapAddress(formData.address || formData.city || 'Manizales');
-                                                            setShowMapModal(true);
-                                                        }}
-                                                        className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 transition-colors"
-                                                        title="Seleccionar en mapa"
-                                                    >
-                                                        <MapTrifold size={20} />
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {formData.cellType === 'VIRTUAL' && formData.address && (
-                                                <p className="text-xs text-blue-600 mt-1">
-                                                    ✓ URL configurada: <a href={formData.address} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">Abrir reunión</a>
-                                                </p>
-                                            )}
-                                            {(formData.latitude && formData.longitude) && formData.cellType !== 'VIRTUAL' && (
-                                                <p className="text-xs text-green-600 mt-1">
-                                                    ✓ Coordenadas: {formData.latitude.toFixed(5)}, {formData.longitude.toFixed(5)}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div>
+                                        <div className="sm:col-span-2">
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Barrio
                                             </label>
@@ -1091,38 +1066,79 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 value={formData.barrio}
                                                 onChange={e => setFormData({ ...formData, barrio: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                                                placeholder="Ej: Centro"
+                                                placeholder="Ej: La Estrella"
                                             />
                                         </div>
 
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
+                                                {formData.cellType === 'VIRTUAL' ? 'URL de Reunión' : 'Dirección'} <span className="text-red-400">*</span>
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type={formData.cellType === 'VIRTUAL' ? 'url' : 'text'}
+                                                    required
+                                                    value={formData.address}
+                                                    onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                                    className="flex-1 px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
+                                                />
+                                                {formData.cellType !== 'VIRTUAL' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            console.log('Botón mapa presionado, formData:', formData);
+                                                            setMapAddress(formData.address || formData.city || 'Manizales');
+                                                            setShowMapModal(true);
+                                                            console.log('showMapModal establecido a true');
+                                                        }}
+                                                        className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 transition-colors"
+                                                        title="Seleccionar en mapa"
+                                                    >
+                                                        <MapTrifold size={20} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {formData.cellType === 'VIRTUAL' && formData.address && (
+                                            <p className="text-xs text-blue-600 mt-1">
+                                                ✓ URL configurada: <a href={formData.address} target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">Abrir reunión</a>
+                                            </p>
+                                        )}
+                                        {(formData.latitude && formData.longitude) && formData.cellType !== 'VIRTUAL' && (
+                                            <p className="text-xs text-green-600 mt-1">
+                                                ✓ Coordenadas: {formData.latitude.toFixed(5)}, {formData.longitude.toFixed(5)}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Red de la Célula
+                                                Red
                                             </label>
                                             <select
                                                 value={formData.network}
                                                 onChange={e => setFormData({ ...formData, network: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
                                             >
-                                                <option value="">Seleccionar Red</option>
-                                                <option value="MUJERES">Célula de Mujeres</option>
-                                                <option value="HOMBRES">Célula de Hombres</option>
-                                                <option value="MIXTA">Célula Mixta</option>
-                                                <option value="JOVENES">Célula de Jóvenes</option>
-                                                <option value="TEENS">Célula Kids</option>
+                                                <option value="MIXTA">Mixta</option>
+                                                <option value="HOMBRES">Hombres</option>
+                                                <option value="MUJERES">Mujeres</option>
+                                                <option value="JOVENES">Jóvenes</option>
+                                                <option value="NIÑOS">Niños</option>
                                             </select>
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Cartografía Espiritual (URL de imagen en Google Drive)
+                                                Mapeo Espiritual (URL)
                                             </label>
                                             <input
                                                 type="url"
                                                 value={formData.spiritualMappingUrl}
                                                 onChange={e => setFormData({ ...formData, spiritualMappingUrl: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                                                placeholder="https://drive.google.com/..."
+                                                placeholder="https://..."
                                             />
                                         </div>
 
@@ -1142,81 +1158,85 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Palabra Rhema
                                             </label>
-                                            <input
-                                                type="text"
+                                            <textarea
                                                 value={formData.rhemaWord}
                                                 onChange={e => setFormData({ ...formData, rhemaWord: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                                                placeholder="Palabra para la célula"
+                                                placeholder="Palabra de Dios para la célula..."
+                                                rows={2}
                                             />
                                         </div>
 
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                id="pastorsMeeting"
-                                                checked={formData.pastorsMeeting}
-                                                onChange={e => setFormData({ ...formData, pastorsMeeting: e.target.checked })}
-                                                className="w-4 h-4 text-blue-600 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded focus:outline-none focus:border-[#0071e3]"
-                                            />
-                                            <label htmlFor="pastorsMeeting" className="text-sm text-[#1d1d1f] dark:text-white/80">
-                                                Reunión Pastores
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
+                                                Reunión de Pastores
                                             </label>
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <input
+                                                    type="checkbox"
+                                                    id="pastorsMeeting"
+                                                    checked={formData.pastorsMeeting}
+                                                    onChange={e => setFormData({ ...formData, pastorsMeeting: e.target.checked })}
+                                                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                                                />
+                                                <label htmlFor="pastorsMeeting" className="text-sm text-[#1d1d1f] dark:text-white/80">
+                                                    Esta célula asiste a reunión de pastores
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Footer - Fixed at bottom outside scroll area */}
-                            <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-gray-900 flex-shrink-0">
-                                <div className="p-4 flex justify-end gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setShowCreateForm(false);
-                                            setIsEditing(false);
-                                            setEditingCellId(null);
-                                            setSelectedLeaderRole('');
-                                            setSelectedLeader(null);
-                                            setSelectedHost(null);
-                                            setSelectedLiderDoce(null);
-                                            setFormData({
-                                                name: '',
-                                                leaderId: '',
-                                                hostId: '',
-                                                liderDoceId: '',
-                                                address: '',
-                                                city: '',
-                                                barrio: '',
-                                                network: '',
-                                                spiritualMappingUrl: '',
-                                                fastingDate: '',
-                                                rhemaWord: '',
-                                                pastorsMeeting: false,
-                                                dayOfWeek: 'Viernes',
-                                                time: '19:00',
-                                                cellType: 'ABIERTA'
-                                            });
-                                        }}
-                                        className="px-3 py-2 text-sm text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#272729] border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-[#f5f5f7] dark:hover:bg-gray-700 transition-colors"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
-                                    >
-                                        {loading ? (
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        ) : (
-                                            <>
-                                                <Plus size={18} />
-                                                <span>{isEditing ? 'Actualizar' : 'Guardar'}</span>
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
+                            {/* Footer */}
+                            <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-gray-900 p-4 flex justify-end gap-2 flex-shrink-0">
+                                <Button
+                                    onClick={() => {
+                                        setShowCreateForm(false);
+                                        setIsEditing(false);
+                                        setEditingCellId(null);
+                                        setSelectedLeaderRole('');
+                                        setSelectedLeader(null);
+                                        setSelectedHost(null);
+                                        setSelectedLiderDoce(null);
+                                        setFormData({
+                                            name: '',
+                                            leaderId: '',
+                                            hostId: '',
+                                            liderDoceId: '',
+                                            address: '',
+                                            city: '',
+                                            barrio: '',
+                                            network: '',
+                                            spiritualMappingUrl: '',
+                                            fastingDate: '',
+                                            rhemaWord: '',
+                                            pastorsMeeting: false,
+                                            dayOfWeek: 'Viernes',
+                                            time: '19:00',
+                                            cellType: 'ABIERTA'
+                                        });
+                                    }}
+                                    variant="outline"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={loading}
+                                    variant="primary"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                            <span>Guardando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>{isEditing ? 'Actualizar' : 'Guardar'}</span>
+                                        </>
+                                    )}
+                                </Button>
                             </div>
                         </form>
                     </div>
@@ -1224,8 +1244,8 @@ const CellManagement = ({ moduleCoordinator }) => {
             )}
 
             {/* Map Selection Modal */}
-            {showMapModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center sm:p-4">
+            {showMapModal && createPortal(
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center sm:p-4">
                     <div className="bg-white dark:bg-[#272729] sm:rounded-2xl shadow-xl w-full max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden">
                         <div className="p-3 sm:p-4 border-b border-[#d1d1d6] dark:border-[#3a3a3c] flex justify-between items-center flex-shrink-0">
                             <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -1295,11 +1315,11 @@ const CellManagement = ({ moduleCoordinator }) => {
                             )}
 
                             {/* Map */}
-                            <div className="flex-1 relative">
+                            <div className="flex-1 relative min-h-[400px]">
                                 <MapContainer
                                     center={mapCenter}
                                     zoom={13}
-                                    style={{ height: '100%', width: '100%' }}
+                                    style={{ height: '100%', width: '100%', minHeight: '400px' }}
                                     scrollWheelZoom={true}
                                 >
                                     <TileLayer
@@ -1359,7 +1379,8 @@ const CellManagement = ({ moduleCoordinator }) => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

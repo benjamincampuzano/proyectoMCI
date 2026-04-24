@@ -10,43 +10,21 @@ import OracionDeTresManagement from '../components/OracionDeTresManagement';
 import ServerManager from '../components/ServerManager';
 import { PageHeader, Button } from '../components/ui';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
-import CoordinatorSelector from '../components/CoordinatorSelector';
-import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
+import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import api from '../utils/api';
 
 const Ganar = () => {
-    const { user, hasRole, hasAnyRole } = useAuth();
+    const { user, hasRole, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
 
     // Debug: Verificar roles del usuario
     useEffect(() => {
-        
+
     }, [user, hasAnyRole]);
 
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showRegistration, setShowRegistration] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
-    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
-
-    // Handler for coordinator changes
-    const handleCoordinatorChange = (newCoordinator) => {
-        setModuleCoordinator(newCoordinator);
-        setRefreshTrigger(prev => prev + 1); // Trigger refresh of components
-        
-        // After a short delay, refresh the coordinator data from server
-        setTimeout(() => {
-            fetchCoordinator();
-        }, 500);
-    };
-
-    // Handler for sub-coordinator changes
-    const handleSubCoordinatorChange = (newSubCoordinator) => {
-        setModuleSubCoordinator(newSubCoordinator);
-        
-        setTimeout(() => {
-            fetchSubCoordinator();
-        }, 500);
-    };
 
     const fetchCoordinator = async () => {
         try {
@@ -99,19 +77,35 @@ const Ganar = () => {
             id: 'stats',
             label: 'Estadísticas',
             component: GuestStats,
-            roles: ROLE_GROUPS.ALL_LEADERS
+            customCheck: () => {
+                const hasRoleAccess = hasAnyRole(ROLE_GROUPS.ALL_LEADERS);
+                const isModuleCoord = isCoordinator('ganar');
+                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('ganar');
+                const isModuleTreasurer = isTreasurer('ganar');
+                return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
+            }
         },
         {
             id: 'oracion',
             label: 'Oración de Tres',
             component: OracionDeTresManagement,
-            roles: [ROLES.ADMIN, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA, ROLES.DISCIPULO]
+            customCheck: () => {
+                const hasRoleAccess = hasAnyRole([ROLES.ADMIN, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA, ROLES.DISCIPULO]);
+                const isModuleCoord = isCoordinator('ganar');
+                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('ganar');
+                return hasRoleAccess || isModuleCoord || isModuleSubCoord;
+            }
         },
         {
             id: 'servidores',
             label: 'Servidores',
             component: ServerManager,
-            roles: [ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA]
+            customCheck: () => {
+                const hasRoleAccess = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA]);
+                const isModuleCoord = moduleCoordinator && moduleCoordinator.id === user?.id;
+                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('ganar');
+                return hasRoleAccess || isModuleCoord || isModuleSubCoord;
+            }
         }
     ];
 
@@ -124,22 +118,11 @@ const Ganar = () => {
                 description="Registro y seguimiento de invitados"
                 action={
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <CoordinatorSelector
-                                moduleCoordinator={moduleCoordinator}
-                                moduleName="Ganar"
-                                onCoordinatorChange={handleCoordinatorChange}
-                                disabled={!hasAdminOrPastor}
-                            />
-                            <SubCoordinatorSelector
-                                moduleSubCoordinator={moduleSubCoordinator}
-                                moduleName="Ganar"
-                                onSubCoordinatorChange={handleSubCoordinatorChange}
-                                disabled={!hasAdminOrPastor}
-                                currentUserId={user?.id}
-                                isModuleCoordinator={user?.isCoordinator || hasRole('LIDER_DOCE')}
-                            />
-                        </div>
+                        <CoordinatorDisplay
+                            coordinator={moduleCoordinator}
+                            subCoordinator={moduleSubCoordinator}
+                            moduleName="Ganar"
+                        />
                         {activeTab === 'list' && (
                             <Button
                                 variant={isPastor ? 'outline' : (showRegistration ? 'error' : 'primary')}
@@ -166,7 +149,7 @@ const Ganar = () => {
                 </button>
             </div>
 
-            <TabNavigator
+            <TabNavigator moduleName="ganar"
                 tabs={tabs}
                 initialTabId="list"
                 onTabChange={(tabId) => {

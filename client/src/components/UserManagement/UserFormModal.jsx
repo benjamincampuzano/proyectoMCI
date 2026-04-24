@@ -21,7 +21,9 @@ const UserFormModal = ({
     isAdmin,
     validatePasswordRealTime,
     calculateAge,
-    getAssignableRoles
+    getAssignableRoles,
+    relatedUsersCache,
+    fetchRelatedUsers
 }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [passwordErrors, setPasswordErrors] = useState([]);
@@ -65,6 +67,8 @@ const UserFormModal = ({
                         validatePasswordRealTime={validatePasswordRealTime}
                         calculateAge={calculateAge}
                         getAssignableRoles={getAssignableRoles}
+                        relatedUsersCache={relatedUsersCache}
+                        fetchRelatedUsers={fetchRelatedUsers}
                     />
                 </div>
 
@@ -114,6 +118,8 @@ UserFormModal.propTypes = {
     validatePasswordRealTime: PropTypes.func.isRequired,
     calculateAge: PropTypes.func.isRequired,
     getAssignableRoles: PropTypes.func,
+    relatedUsersCache: PropTypes.object,
+    fetchRelatedUsers: PropTypes.func,
 };
 
 export default UserFormModal;

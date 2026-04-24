@@ -1,4 +1,5 @@
 import { Eye, EyeClosed, MapPin } from '@phosphor-icons/react';
+import { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { AsyncSearchSelect } from '../ui';
 import api from '../../utils/api';
@@ -19,8 +20,46 @@ const UserFormFields = ({
     setPasswordErrors,
     validatePasswordRealTime,
     calculateAge,
-    getAssignableRoles
+    getAssignableRoles,
+    relatedUsersCache = {},
+    fetchRelatedUsers
 }) => {
+    // Fetch related users when editing to avoid "Cargando..." issue
+    useEffect(() => {
+        if (mode === 'edit' && fetchRelatedUsers) {
+            const relatedIds = [];
+            
+            // Add spouse ID
+            if (formData.spouseId) {
+                relatedIds.push(formData.spouseId);
+            }
+            
+            // Add pastor IDs
+            if (formData.pastorIds) {
+                formData.pastorIds.forEach(id => {
+                    if (id) relatedIds.push(id);
+                });
+            }
+            
+            // Add lider doce IDs
+            if (formData.liderDoceIds) {
+                formData.liderDoceIds.forEach(id => {
+                    if (id) relatedIds.push(id);
+                });
+            }
+            
+            // Add lider celula IDs
+            if (formData.liderCelulaIds) {
+                formData.liderCelulaIds.forEach(id => {
+                    if (id) relatedIds.push(id);
+                });
+            }
+            
+            if (relatedIds.length > 0) {
+                fetchRelatedUsers(relatedIds);
+            }
+        }
+    }, [mode, formData.spouseId, formData.pastorIds, formData.liderDoceIds, formData.liderCelulaIds, fetchRelatedUsers]);
     const inputGroup = (label, children, required = false) => (
         <div className="space-y-1.5 group">
             <label className="text-[11px] weight-700 text-[var(--ln-text-secondary)] uppercase tracking-wider flex items-center gap-1.5 px-1 group-focus-within:text-[var(--ln-brand-indigo)] transition-all">
@@ -187,7 +226,11 @@ const UserFormFields = ({
                         return api.get('/users/search', { params })
                             .then(res => (res.data || []).filter(u => u.id !== formData.id));
                     }}
-                    selectedValue={users.find(u => u.id === parseInt(formData.spouseId)) || (formData.spouseId ? { id: formData.spouseId, fullName: 'Cargando...' } : null)}
+                    selectedValue={
+                        users.find(u => u.id === parseInt(formData.spouseId)) || 
+                        relatedUsersCache[formData.spouseId] || 
+                        (formData.spouseId ? { id: formData.spouseId, fullName: 'Cargando...' } : null)
+                    }
                     onSelect={(user) => setFormData({ ...formData, spouseId: user?.id || '' })}
                     placeholder="Buscar por nombre..."
                     labelKey="fullName"
@@ -279,7 +322,11 @@ const UserFormFields = ({
                                         {inputGroup(`Pastor Liderazgo (${index + 1})`, 
                                             <AsyncSearchSelect
                                                 fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'PASTOR' } }).then(res => res.data)}
-                                                selectedValue={pastores.find(p => p.id === parseInt((formData.pastorIds || [])[index])) || ((formData.pastorIds || [])[index] ? { id: formData.pastorIds[index], fullName: 'Cargando...' } : null)}
+                                                selectedValue={
+                                                    pastores.find(p => p.id === parseInt((formData.pastorIds || [])[index])) ||
+                                                    relatedUsersCache[(formData.pastorIds || [])[index]] ||
+                                                    ((formData.pastorIds || [])[index] ? { id: formData.pastorIds[index], fullName: 'Cargando...' } : null)
+                                                }
                                                 onSelect={(user) => {
                                                     const newPastorIds = [...(formData.pastorIds || [])];
                                                     newPastorIds[index] = user?.id || '';
@@ -304,7 +351,11 @@ const UserFormFields = ({
                                         {inputGroup(`Líder 12 (${index + 1})`, 
                                             <AsyncSearchSelect
                                                 fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => res.data)}
-                                                selectedValue={lideresDoce.find(l => l.id === parseInt((formData.liderDoceIds || [])[index])) || ((formData.liderDoceIds || [])[index] ? { id: formData.liderDoceIds[index], fullName: 'Cargando...' } : null)}
+                                                selectedValue={
+                                                    lideresDoce.find(l => l.id === parseInt((formData.liderDoceIds || [])[index])) ||
+                                                    relatedUsersCache[(formData.liderDoceIds || [])[index]] ||
+                                                    ((formData.liderDoceIds || [])[index] ? { id: formData.liderDoceIds[index], fullName: 'Cargando...' } : null)
+                                                }
                                                 onSelect={(user) => {
                                                     const newLiderDoceIds = [...(formData.liderDoceIds || [])];
                                                     newLiderDoceIds[index] = user?.id || '';
@@ -334,7 +385,11 @@ const UserFormFields = ({
                                                     if (parentId) params.liderDoceId = parentId;
                                                     return api.get('/users/search', { params }).then(res => res.data);
                                                 }}
-                                                selectedValue={lideresCelula.find(lc => lc.id === parseInt((formData.liderCelulaIds || [])[index])) || ((formData.liderCelulaIds || [])[index] ? { id: formData.liderCelulaIds[index], fullName: 'Cargando...' } : null)}
+                                                selectedValue={
+                                                    lideresCelula.find(lc => lc.id === parseInt((formData.liderCelulaIds || [])[index])) ||
+                                                    relatedUsersCache[(formData.liderCelulaIds || [])[index]] ||
+                                                    ((formData.liderCelulaIds || [])[index] ? { id: formData.liderCelulaIds[index], fullName: 'Cargando...' } : null)
+                                                }
                                                 onSelect={(user) => {
                                                     const newLiderCelulaIds = [...(formData.liderCelulaIds || [])];
                                                     newLiderCelulaIds[index] = user?.id || '';
@@ -441,6 +496,8 @@ UserFormFields.propTypes = {
     validatePasswordRealTime: PropTypes.func.isRequired,
     calculateAge: PropTypes.func.isRequired,
     getAssignableRoles: PropTypes.func,
+    relatedUsersCache: PropTypes.object,
+    fetchRelatedUsers: PropTypes.func,
 };
 
 export default UserFormFields;

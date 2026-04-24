@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
  * TabNavigator - Unified tab system for module pages
  * Replaces manual tab logic in Ganar, Consolidar, Discipular, Enviar
  */
-const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange = null }) => {
+const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange = null, moduleName = null }) => {
   const { hasAnyRole, isCoordinator } = useAuth();
   const [activeTabId, setActiveTabId] = useState(initialTabId);
 
@@ -20,7 +20,7 @@ const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange =
     if (!tab.roles || tab.roles.length === 0) return true;
     // Check if user has required roles OR if tab allows coordinators
     const hasRoleAccess = hasAnyRole(tab.roles);
-    const hasCoordinatorAccess = tab.requiresCoordinator && isCoordinator();
+    const hasCoordinatorAccess = tab.requiresCoordinator && (moduleName ? isCoordinator(moduleName) : isCoordinator());
 
     // Debug: Log tab filtering
     

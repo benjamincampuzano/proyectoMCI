@@ -532,6 +532,7 @@ model EncuentroRegistration {
   updatedAt          DateTime                   @updatedAt @db.Timestamptz(6)
   needsAccommodation Boolean                    @default(false)
   needsTransport     Boolean                    @default(false)
+  isBaptized         Boolean                    @default(false)
   classAttendances   EncuentroClassAttendance[]
   payments           EncuentroPayment[]
   encuentro          Encuentro                  @relation(fields: [encuentroId], references: [id], onDelete: Cascade)

@@ -70,7 +70,7 @@ const createCell = async (req, res) => {
         const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType, latitude, longitude, barrio, network, spiritualMappingUrl, fastingDate, rhemaWord, pastorsMeeting } = req.body;
         const requestedLeaderId = parseInt(leaderId);
         const requestedHostId = hostId ? parseInt(hostId) : null;
-        const requestedLiderDoceId = liderDoceId ? parseInt(liderDoceId) : null;
+        let requestedLiderDoceId = liderDoceId ? parseInt(liderDoceId) : null;
 
         if (!name || !leaderId || !address || !city || !dayOfWeek || !time) {
             return res.status(400).json({ error: 'Missing defined fields' });
@@ -101,6 +101,26 @@ const createCell = async (req, res) => {
         }
         if (cellType === 'ABIERTA' && !leaderRoles.some(r => ['LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'].includes(r))) {
             return res.status(400).json({ error: 'Rol de líder no apto para célula ABIERTA' });
+        }
+
+        // If a LIDER_DOCE is selected, prioritize their spouse if the spouse is also a LIDER_DOCE
+        // This ensures the cell is visible to both spouses
+        if (requestedLiderDoceId) {
+            const liderDoceUser = await prisma.user.findUnique({
+                where: { id: requestedLiderDoceId },
+                select: { spouseId: true, spouse: { select: { roles: { include: { role: true } } } } }
+            });
+
+            // If the selected LIDER_DOCE has a spouse who is also a LIDER_DOCE, use the spouse's ID
+            // This is a heuristic to ensure the cell is associated with the "primary" leader in the couple
+            if (liderDoceUser?.spouseId && liderDoceUser.spouse) {
+                const spouseRoles = liderDoceUser.spouse.roles.map(r => r.role.name);
+                if (spouseRoles.includes('LIDER_DOCE')) {
+                    // Use the spouse's ID if they are also a LIDER_DOCE (arbitrary but consistent)
+                    // The backend filtering will handle visibility for both spouses anyway
+                    requestedLiderDoceId = liderDoceUser.spouseId;
+                }
+            }
         }
 
         // Use provided coordinates if available, otherwise geocode
@@ -638,6 +658,13 @@ const getEligibleDoceLeaders = async (req, res) => {
         const userId = parseInt(id);
         let where = {};
 
+        // Get user's spouse if exists
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { spouseId: true }
+        });
+        const spouseId = user?.spouseId;
+
         // If user is ADMIN, show all LIDER_DOCE, otherwise filter by network
         if (roles.includes('ADMIN')) {
             where = {
@@ -650,8 +677,10 @@ const getEligibleDoceLeaders = async (req, res) => {
         } else {
             // Apply network filtering for non-admin users
             const networkIds = await getUserNetwork(userId);
+            // Include spouse in the network if they exist
+            const allIds = spouseId ? [...networkIds, userId, spouseId] : [...networkIds, userId];
             where = {
-                id: { in: [...networkIds, userId] },
+                id: { in: allIds },
                 roles: {
                     some: {
                         role: { name: 'LIDER_DOCE' }
@@ -664,14 +693,22 @@ const getEligibleDoceLeaders = async (req, res) => {
             where,
             include: {
                 profile: true,
-                roles: { include: { role: true } }
+                roles: { include: { role: true } },
+                spouse: {
+                    select: {
+                        id: true,
+                        profile: { select: { fullName: true } }
+                    }
+                }
             }
         });
 
         const formatted = leaders.map(l => ({
             id: l.id,
             fullName: l.profile.fullName,
-            roles: l.roles.map(r => r.role.name)
+            roles: l.roles.map(r => r.role.name),
+            spouseId: l.spouseId,
+            spouseName: l.spouse?.profile?.fullName
         }));
 
         res.json(formatted);

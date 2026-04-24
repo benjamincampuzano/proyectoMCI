@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SpinnerIcon, MagnifyingGlass, Funnel, PencilIcon, Trash, UserPlus, X, FloppyDiskIcon, UserCheckIcon, Users, CheckCircle, Crown, CaretCircleDownIcon, SlidersHorizontal, FileXls } from '@phosphor-icons/react';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -21,6 +21,8 @@ const FILTER_COLORS = {
 };
 
 const GuestList = ({ refreshTrigger }) => {
+    const { isCoordinator, isDoceLeader, user } = useAuth();
+    const isModuleCoordinator = isCoordinator('ganar');
     const {
         guests,
         loading,
@@ -61,6 +63,17 @@ const GuestList = ({ refreshTrigger }) => {
         minorConsentAuthorized: false
     });
     const [exporting, setExporting] = useState(false);
+
+    // Auto-apply filter for LIDER_DOCE who are not coordinators
+    useEffect(() => {
+        if (isDoceLeader() && !isModuleCoordinator && user) {
+            // Automatically set filter to current user
+            setLiderDoceFilter({
+                id: user.id,
+                fullName: user.profile?.fullName || user.email
+            });
+        }
+    }, [isDoceLeader, isModuleCoordinator, user, setLiderDoceFilter]);
 
     const handleSearch = () => {
         fetchGuests(1);
@@ -206,8 +219,11 @@ const GuestList = ({ refreshTrigger }) => {
         </span>
     );
 
-    const hasAdvancedFilters = searchTerm || statusFilter || invitedByFilter || liderDoceFilter;
-    const activeAdvancedCount = [searchTerm, statusFilter, invitedByFilter, liderDoceFilter].filter(Boolean).length;
+    // Check if liderDoceFilter is auto-applied (for non-coordinator LIDER_DOCE)
+    const isLiderDoceFilterAutoApplied = isDoceLeader() && !isModuleCoordinator && liderDoceFilter?.id === user?.id;
+    
+    const hasAdvancedFilters = searchTerm || statusFilter || invitedByFilter || (liderDoceFilter && !isLiderDoceFilterAutoApplied);
+    const activeAdvancedCount = [searchTerm, statusFilter, invitedByFilter, (liderDoceFilter && !isLiderDoceFilterAutoApplied)].filter(Boolean).length;
 
     const clearAdvancedFilters = () => {
         setSearchTerm('');
@@ -411,32 +427,34 @@ const GuestList = ({ refreshTrigger }) => {
                                 )}
                             </div>
 
-                            {/* Filtro de Ministerio/Líder Doce - Ámbar */}
-                            <div className="relative flex-[1.5] min-w-[240px] group">
-                                <label className={getLabelClass('liderDoce')}>
-                                    <div className="w-4 h-4 rounded-full bg-amber-500 shadow-md shadow-amber-500/30" />
-                                    {currentUser?.roles?.includes('PASTOR') ? 'Líder de Célula' : 'Ministerio'}
-                                </label>
-                                <div className="relative">
-                                    <Crown className={getIconClass('liderDoce')} size={18} weight="bold" />
-                                    <AsyncSearchSelect
-                                        fetchItems={(term) => {
-                                            const roleFilter = currentUser?.roles?.includes('PASTOR') ? "LIDER_DOCE,PASTOR" : "LIDER_DOCE";
-                                            return api.get('/users/search', {
-                                                params: { search: term, role: roleFilter }
-                                            }).then(res => res.data);
-                                        }}
-                                        selectedValue={liderDoceFilter}
-                                        onSelect={(user) => setLiderDoceFilter(user || null)}
-                                        placeholder={currentUser?.roles?.includes('PASTOR') ? "Buscar líder..." : "Buscar ministerio..."}
-                                        labelKey="fullName"
-                                        className="bg-white dark:bg-gray-800 border-2 border-amber-200 focus:border-amber-500 rounded-xl"
-                                    />
+                            {/* Filtro de Ministerio/Líder Doce - Ámbar - solo visible para admin/coordinadores/pastores */}
+                            {(!isDoceLeader() || isModuleCoordinator) && (
+                                <div className="relative flex-[1.5] min-w-[240px] group">
+                                    <label className={getLabelClass('liderDoce')}>
+                                        <div className="w-4 h-4 rounded-full bg-amber-500 shadow-md shadow-amber-500/30" />
+                                        {currentUser?.roles?.includes('PASTOR') ? 'Líder de Célula' : 'Ministerio'}
+                                    </label>
+                                    <div className="relative">
+                                        <Crown className={getIconClass('liderDoce')} size={18} weight="bold" />
+                                        <AsyncSearchSelect
+                                            fetchItems={(term) => {
+                                                const roleFilter = currentUser?.roles?.includes('PASTOR') ? "LIDER_DOCE,PASTOR" : "LIDER_DOCE";
+                                                return api.get('/users/search', {
+                                                    params: { search: term, role: roleFilter }
+                                                }).then(res => res.data);
+                                            }}
+                                            selectedValue={liderDoceFilter}
+                                            onSelect={(user) => setLiderDoceFilter(user || null)}
+                                            placeholder={currentUser?.roles?.includes('PASTOR') ? "Buscar líder..." : "Buscar ministerio..."}
+                                            labelKey="fullName"
+                                            className="bg-white dark:bg-gray-800 border-2 border-amber-200 focus:border-amber-500 rounded-xl"
+                                        />
+                                    </div>
+                                    {liderDoceFilter && (
+                                        <FilterBadge color="bg-amber-500">{currentUser?.roles?.includes('PASTOR') ? 'Líder seleccionado' : 'Ministerio seleccionado'}</FilterBadge>
+                                    )}
                                 </div>
-                                {liderDoceFilter && (
-                                    <FilterBadge color="bg-amber-500">{currentUser?.roles?.includes('PASTOR') ? 'Líder seleccionado' : 'Ministerio seleccionado'}</FilterBadge>
-                                )}
-                            </div>
+                            )}
                         </div>
 
                         {/* Botón Aplicar Filtros */}
@@ -467,7 +485,7 @@ const GuestList = ({ refreshTrigger }) => {
                                 <div className="flex items-center gap-2.5 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
                                     <Users size={16} className="text-blue-500" />
                                     <span className="text-[13px] font-semibold text-gray-700 dark:text-gray-300">
-                                        {guests.length} invitados
+                                        {pagination?.total || guests.length} invitados
                                     </span>
                                 </div>
                                 {canExport() && (
@@ -491,7 +509,7 @@ const GuestList = ({ refreshTrigger }) => {
                                         {searchTerm && <FilterBadge color="bg-blue-500">Nombre</FilterBadge>}
                                         {statusFilter && <FilterBadge color="bg-purple-500">Estado</FilterBadge>}
                                         {invitedByFilter && <FilterBadge color="bg-emerald-500">Invitado por</FilterBadge>}
-                                        {liderDoceFilter && <FilterBadge color="bg-amber-500">{currentUser?.roles?.includes('PASTOR') ? 'Líder' : 'Ministerio'}</FilterBadge>}
+                                        {liderDoceFilter && (!isDoceLeader() || isModuleCoordinator) && <FilterBadge color="bg-amber-500">{currentUser?.roles?.includes('PASTOR') ? 'Líder' : 'Ministerio'}</FilterBadge>}
                                     </div>
                                 )}
                             </div>
@@ -506,6 +524,63 @@ const GuestList = ({ refreshTrigger }) => {
             </div>
 
             {/* Tabla de Invitados */}
+            {/* Paginación numérica - Superior */}
+            {pagination.pages > 1 && (
+                <div className="mb-4 flex items-center justify-between bg-white dark:bg-gray-800 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                        Mostrando {(pagination.page - 1) * guestsPerPage + 1} - {Math.min(pagination.page * guestsPerPage, pagination.total)} de {pagination.total} invitados
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={pagination.onPrev}
+                            disabled={!pagination.hasPrev || loading}
+                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Anterior
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                                let pageNum;
+                                if (pagination.pages <= 5) {
+                                    pageNum = i + 1;
+                                } else if (pagination.page <= 3) {
+                                    pageNum = i + 1;
+                                } else if (pagination.page >= pagination.pages - 2) {
+                                    pageNum = pagination.pages - 4 + i;
+                                } else {
+                                    pageNum = pagination.page - 2 + i;
+                                }
+
+                                const isActive = pagination.page === pageNum;
+
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        disabled={loading}
+                                        className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-md'
+                                                : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            onClick={pagination.onNext}
+                            disabled={!pagination.hasNext || loading}
+                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+            )}
             <div className="overflow-x-auto">
                 <table className="w-full">
                     <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">

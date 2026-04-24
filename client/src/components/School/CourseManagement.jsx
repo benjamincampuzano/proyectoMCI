@@ -20,6 +20,7 @@ const SCHOOL_LEVELS = [
 
 const CourseManagement = () => {
     const { user, hasAnyRole, isCoordinator } = useAuth();
+    const isModuleCoordinator = isCoordinator('discipular');
     const [courses, setCourses] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -200,7 +201,7 @@ const CourseManagement = () => {
                             Tabla
                         </button>
                     </div>
-                    {(hasAnyRole([ROLES.ADMIN]) || isCoordinator()) && (
+                    {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
                         <Button
                             onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
                             variant="primary"
@@ -226,18 +227,18 @@ const CourseManagement = () => {
                         >
                              <div className="flex justify-between items-start mb-4">
                                 <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                                {(hasAnyRole([ROLES.ADMIN]) || isCoordinator() || hasRole('DISCIPULO') || isAuxiliarAssignedToCourse(course)) && (
+                                {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator || hasRole('DISCIPULO') || isAuxiliarAssignedToCourse(course)) && (
                                     <div className="flex space-x-2">
                                         <Button
                                             onClick={(e) => { e.stopPropagation(); setSelectedMaterialModuleId(course.id); setShowMaterialModal(true); }}
                                             variant="ghost"
                                             size="icon"
-                                            className={`${hasAnyRole([ROLES.ADMIN]) || isCoordinator() || isAuxiliarAssignedToCourse(course) ? 'text-purple-500 hover:text-purple-700 hover:bg-purple-50' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'}`}
-                                            title={hasAnyRole([ROLES.ADMIN]) || isCoordinator() || isAuxiliarAssignedToCourse(course) ? "Gestionar Material" : "Ver Material"}
+                                            className={`${hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator || isAuxiliarAssignedToCourse(course) ? 'text-purple-500 hover:text-purple-700 hover:bg-purple-50' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'}`}
+                                            title={hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator || isAuxiliarAssignedToCourse(course) ? "Gestionar Material" : "Ver Material"}
                                         >
                                             <BookOpen size={18} />
                                         </Button>
-                                        {(hasAnyRole([ROLES.ADMIN]) || isCoordinator()) && (
+                                        {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
                                             <Button
                                                 onClick={(e) => openEditModal(e, course)}
                                                 variant="ghost"
@@ -248,7 +249,7 @@ const CourseManagement = () => {
                                                 <Pencil size={18} />
                                             </Button>
                                         )}
-                                        {(hasAnyRole([ROLES.ADMIN]) || isCoordinator()) && (
+                                        {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
                                             <Button
                                                 onClick={(e) => handleDelete(e, course.id)}
                                                 variant="ghost"
@@ -337,7 +338,7 @@ const CourseManagement = () => {
                                             >
                                                 Ver
                                             </Button>
-                                            {(hasAnyRole([ROLES.ADMIN]) || isCoordinator()) && (
+                                            {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
                                                 <>
                                                     <Button
                                                         onClick={(e) => openEditModal(e, course)}
@@ -535,7 +536,7 @@ const CourseManagement = () => {
                 <ClassMaterialManager
                     moduleId={selectedMaterialModuleId}
                     classNumber={1} // Defaulting to class 1 when opened from the main course list
-                    readOnly={!(hasAnyRole([ROLES.ADMIN]) || isCoordinator() || isAuxiliarAssignedToCourse(courses.find(c => c.id === selectedMaterialModuleId)))}
+                    readOnly={!(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator || isAuxiliarAssignedToCourse(courses.find(c => c.id === selectedMaterialModuleId)))}
                     onClose={() => setShowMaterialModal(false)}
                 />
             )}

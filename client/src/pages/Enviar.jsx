@@ -6,13 +6,12 @@ import AttendanceChart from '../components/AttendanceChart';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import { PageHeader, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
-import CoordinatorSelector from '../components/CoordinatorSelector';
-import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
+import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const Enviar = () => {
-    const { user, hasAnyRole, isCoordinator } = useAuth();
+    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
@@ -22,26 +21,8 @@ const Enviar = () => {
         const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_CELLS);
         const isModuleCoord = moduleCoordinator && 
             moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
-        return hasRoleAccess || isModuleCoord;
-    };
-
-    // Handler for coordinator changes
-    const handleCoordinatorChange = (newCoordinator) => {
-        setModuleCoordinator(newCoordinator);
-        
-        // After a short delay, refresh the coordinator data from server
-        setTimeout(() => {
-            fetchCoordinator();
-        }, 500);
-    };
-
-    // Handler for sub-coordinator changes
-    const handleSubCoordinatorChange = (newSubCoordinator) => {
-        setModuleSubCoordinator(newSubCoordinator);
-        
-        setTimeout(() => {
-            fetchSubCoordinator();
-        }, 500);
+        const isModuleSubCoord = user?.moduleSubCoordinations?.includes('enviar');
+        return hasRoleAccess || isModuleCoord || isModuleSubCoord;
     };
 
     const fetchCoordinator = async () => {
@@ -86,8 +67,28 @@ const Enviar = () => {
     }, []);
     const tabs = [
         { id: 'cells', label: 'Células', component: (props) => <CellManagement {...props} moduleCoordinator={moduleCoordinator} />, customCheck: hasCellsTabAccess },
-        { id: 'attendance', label: 'Asistencia', component: CellAttendance },
-        { id: 'stats', label: 'Estadísticas', component: AttendanceChart, roles: ROLE_GROUPS.CAN_VIEW_STATS },
+        { 
+            id: 'attendance', 
+            label: 'Asistencia', 
+            component: CellAttendance,
+            customCheck: () => {
+                const isModuleCoord = isCoordinator('enviar');
+                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('enviar');
+                return isModuleCoord || isModuleSubCoord;
+            }
+        },
+        { 
+            id: 'stats', 
+            label: 'Estadísticas', 
+            component: AttendanceChart, 
+            customCheck: () => {
+                const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
+                const isModuleCoord = isCoordinator('enviar');
+                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('enviar');
+                const isModuleTreasurer = isTreasurer('enviar');
+                return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
+            }
+        },
     ];
 
     return (
@@ -97,19 +98,10 @@ const Enviar = () => {
                 description="Gestión de asistencia a células y estadísticas"
                 action={
                     <div className="flex items-center gap-4">
-                        <CoordinatorSelector 
-                            moduleCoordinator={moduleCoordinator}
+                        <CoordinatorDisplay
+                            coordinator={moduleCoordinator}
+                            subCoordinator={moduleSubCoordinator}
                             moduleName="Enviar"
-                            onCoordinatorChange={handleCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                        />
-                        <SubCoordinatorSelector 
-                            moduleSubCoordinator={moduleSubCoordinator}
-                            moduleName="Enviar"
-                            onSubCoordinatorChange={handleSubCoordinatorChange}
-                            disabled={!hasAdminOrPastor && !(moduleCoordinator && moduleCoordinator.id === user?.id)}
-                            currentUserId={user?.id}
-                            isModuleCoordinator={moduleCoordinator && moduleCoordinator.id === user?.id}
                         />
                     </div>
                 }
@@ -128,7 +120,7 @@ const Enviar = () => {
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="cells" />
+            <TabNavigator tabs={tabs} initialTabId="cells" moduleName="enviar" />
         </div>
     );
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, MoneyIcon, CheckCircle, XCircle, Trash, Calendar, BookOpen, Pen, FileTextIcon  } from '@phosphor-icons/react';
+import { ArrowLeft, UserPlus, MoneyIcon, CheckCircle, X, XCircle, Trash, Calendar, BookOpen, Eye, FileTextIcon, PencilSimple  } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +21,9 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedRegistration, setSelectedRegistration] = useState(null);
+    const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentType, setPaymentType] = useState('ENCUENTRO');
+    const [paymentNotes, setPaymentNotes] = useState('');
     const [loading, setLoading] = useState(false);
 
     const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -38,6 +41,10 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [registrationToDelete, setRegistrationToDelete] = useState(null);
 
+    // Payment Delete Confirmation State
+    const [showPaymentDeleteConfirm, setShowPaymentDeleteConfirm] = useState(false);
+    const [paymentToDelete, setPaymentToDelete] = useState(null);
+
     // Edit Modal State
     const [showEditModal, setShowEditModal] = useState(false);
     const [editData, setEditData] = useState({
@@ -53,8 +60,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
 
     // Registration Form State
     const [registrationType, setRegistrationType] = useState('GUEST'); // GUEST or USER
-    const [selectedGuestId, setSelectedGuestId] = useState(null);
-    const [selectedUserId, setSelectedUserId] = useState(null);
+    const [selectedGuest, setSelectedGuest] = useState(null);
+    const [selectedUser, setSelectedUser] = useState(null);
     const [discount, setDiscount] = useState(0);
     const [needsTransport, setNeedsTransport] = useState(false);
     const [needsAccommodation, setNeedsAccommodation] = useState(false);
@@ -99,8 +106,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         
         // Log registration data for debugging
         const registrationData = {
-            guestId: registrationType === 'GUEST' ? selectedGuestId : null,
-            userId: registrationType === 'USER' ? selectedUserId : null,
+            guestId: registrationType === 'GUEST' ? selectedGuest?.id : null,
+            userId: registrationType === 'USER' ? selectedUser?.id : null,
             discountPercentage: parseFloat(discount),
             needsTransport,
             needsAccommodation
@@ -109,8 +116,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         try {
             await api.post(`/encuentros/${encuentro.id}/register`, registrationData);
             setShowRegisterModal(false);
-            setSelectedGuestId(null);
-            setSelectedUserId(null);
+            setSelectedGuest(null);
+            setSelectedUser(null);
             setDiscount(0);
             setNeedsTransport(false);
             setNeedsAccommodation(false);
@@ -125,7 +132,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             
             const errorData = error.response?.data;
             let errorMessage = errorData?.error || errorData?.message || error.message;
-            
+
             // If the error indicates guest needs update, show a more helpful message
             if (errorData?.requiresGuestUpdate) {
                 if (errorData?.missingField === 'sex') {
@@ -134,7 +141,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                     errorMessage = 'Este invitado necesita tener especificado la fecha de nacimiento para inscribirse en el encuentro de jóvenes. Por favor, edite el invitado y agregue esta información.';
                 }
             }
-            
+
             toast.error(errorMessage);
         } finally {
             setLoading(false);
@@ -177,11 +184,40 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
 
         try {
             await api.delete(`/encuentros/registrations/${registrationToDelete.id}`);
+            toast.success('Registro eliminado exitosamente');
             onRefresh();
             if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error deleting registration:', error);
             toast.error('Error al eliminar');
+        } finally {
+            setShowDeleteConfirm(false);
+            setRegistrationToDelete(null);
+        }
+    };
+
+    const handleDeletePayment = (payment) => {
+        setPaymentToDelete(payment);
+        setShowPaymentDeleteConfirm(true);
+    };
+
+    const performDeletePayment = async () => {
+        if (!paymentToDelete) return;
+
+        try {
+            await api.delete(`/encuentros/payments/${paymentToDelete.id}`);
+            toast.success('Abono eliminado exitosamente');
+            onRefresh();
+            if (activeTab === 'report') fetchReport();
+            // Close history modal to force refresh when reopened
+            setShowHistoryModal(false);
+            setSelectedHistoryRegistration(null);
+        } catch (error) {
+            console.error('Error deleting payment:', error);
+            toast.error('Error al eliminar abono');
+        } finally {
+            setShowPaymentDeleteConfirm(false);
+            setPaymentToDelete(null);
         }
     };
 
@@ -222,6 +258,16 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         }
     };
 
+    // Fix timezone offset - formats date as YYYY-MM-DD without timezone shift
+    const formatDateLocal = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     const openEditModal = () => {
         setEditData({
             name: encuentro.name,
@@ -229,19 +275,30 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             cost: encuentro.cost,
             transportCost: encuentro.transportCost || 0,
             accommodationCost: encuentro.accommodationCost || 0,
-            startDate: new Date(encuentro.startDate).toISOString().split('T')[0],
-            endDate: new Date(encuentro.endDate).toISOString().split('T')[0],
+            startDate: formatDateLocal(encuentro.startDate),
+            endDate: formatDateLocal(encuentro.endDate),
             type: encuentro.type,
-            coordinatorId: encuentro.coordinatorId || null
+            coordinatorId: encuentro.coordinator || null
         });
         setShowEditModal(true);
     };
+
+    // Auto-open edit modal if requested from parent
+    useEffect(() => {
+        if (encuentro?.openEditModal && canModify) {
+            openEditModal();
+        }
+    }, [encuentro?.openEditModal]);
 
     const handleUpdateEncuentro = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
-            await api.put(`/encuentros/${encuentro.id}`, editData);
+            const dataToSend = {
+                ...editData,
+                coordinatorId: editData.coordinatorId?.id || null
+            };
+            await api.put(`/encuentros/${encuentro.id}`, dataToSend);
             setShowEditModal(false);
             toast.success('Encuentro actualizado exitosamente!');
             onRefresh();
@@ -294,24 +351,14 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             {encuentro.name}
                         </h2>
                         <p className="text-gray-500 dark:text-gray-400">
-                            {new Date(encuentro.startDate).toLocaleDateString()} - {new Date(encuentro.endDate).toLocaleDateString()}
+                            {formatDateLocal(encuentro.startDate)} - {formatDateLocal(encuentro.endDate)}
                         </p>
                         <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mt-1">
                             Coordinador: {encuentro.coordinator?.fullName || 'Sin Asignar'}
                         </p>
                     </div>
                 </div>
-                {canModify && (
-                    <button
-                        onClick={openEditModal}
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                    >
-                        <Pen  size={20} />
-                        <span>Editar Encuentro</span>
-                    </button>
-                )}
             </div>
-
             {/* Stats Dashboard */}
                         		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
@@ -459,13 +506,13 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                             )}
                                                             {(reg.transportCost - (reg.paymentsByType?.TRANSPORT || 0)) > 0 && (
                                                                 <div className="flex justify-between w-32">
-                                                                    <span>Transp:</span>
+                                                                    <span>Libro:</span>
                                                                     <span>{formatCurrency(reg.transportCost - (reg.paymentsByType?.TRANSPORT || 0))}</span>
                                                                 </div>
                                                             )}
                                                             {(reg.accommodationCost - (reg.paymentsByType?.ACCOMMODATION || 0)) > 0 && (
                                                                 <div className="flex justify-between w-32">
-                                                                    <span>Hosped:</span>
+                                                                    <span>Otros:</span>
                                                                     <span>{formatCurrency(reg.accommodationCost - (reg.paymentsByType?.ACCOMMODATION || 0))}</span>
                                                                 </div>
                                                             )}
@@ -596,8 +643,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                             return api.get('/guests', { params })
                                                 .then(res => res.data.guests || []);
                                         }}
-                                        selectedValue={selectedGuestId}
-                                        onSelect={(guest) => setSelectedGuestId(guest?.id || null)}
+                                        selectedValue={selectedGuest}
+                                        onSelect={(guest) => setSelectedGuest(guest)}
                                         placeholder="Nombre del invitado..."
                                         labelKey="name"
                                         renderItem={(guest) => (
@@ -626,8 +673,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                             return api.get('/users/search', { params })
                                                 .then(res => res.data);
                                         }}
-                                        selectedValue={selectedUserId}
-                                        onSelect={(user) => setSelectedUserId(user?.id || null)}
+                                        selectedValue={selectedUser}
+                                        onSelect={(user) => setSelectedUser(user)}
                                         placeholder="Nombre del discípulo..."
                                         labelKey="fullName"
                                         renderItem={(user) => (
@@ -660,7 +707,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                         onChange={(e) => setNeedsTransport(e.target.checked)}
                                         className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                     />
-                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Transporte</span>
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Libro</span>
                                 </label>
                                 <label className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
                                     <input
@@ -675,7 +722,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             <div className="pt-4">
                                 <button
                                     type="submit"
-                                    disabled={loading || (registrationType === 'GUEST' ? !selectedGuestId : !selectedUserId)}
+                                    disabled={loading || (registrationType === 'GUEST' ? !selectedGuest : !selectedUser)}
                                     className="w-full py-2 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
                                 >
                                     {loading ? 'Procesando...' : 'Confirmar Inscripción'}
@@ -731,8 +778,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="ENCUENTRO">Encuentro</option>
-                                    <option value="TRANSPORT">Transporte</option>
-                                    <option value="ACCOMMODATION">Hospedaje</option>
+                                    <option value="TRANSPORT">Libro</option>
+                                    <option value="ACCOMMODATION">Otros Gastos</option>
                                 </select>
                             </div>
                             <div>
@@ -743,7 +790,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     type="text"
                                     value={paymentNotes}
                                     onChange={(e) => setPaymentNotes(e.target.value)}
-                                    placeholder="Ej: Pago en efectivo, transferencia, etc."
+                                    placeholder="A quien se realiza el pago."
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
@@ -784,12 +831,23 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                         {formatCurrency(payment.amount)}
                                                     </span>
                                                     <span className="text-[10px] text-gray-500 uppercase tracking-wider">
-                                                        {payment.paymentType === 'TRANSPORT' ? 'Transporte' : payment.paymentType === 'ACCOMMODATION' ? 'Hospedaje' : 'Encuentro'}
+                                                        {payment.paymentType === 'TRANSPORT' ? 'Libro' : payment.paymentType === 'ACCOMMODATION' ? 'Otros' : 'Encuentro'}
                                                     </span>
                                                 </div>
-                                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                    {new Date(payment.date).toLocaleDateString()}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {new Date(payment.date).toLocaleDateString()}
+                                                    </span>
+                                                    {isAdmin() && (
+                                                        <button
+                                                            onClick={() => handleDeletePayment(payment)}
+                                                            className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                            title="Eliminar abono"
+                                                        >
+                                                            <Trash size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                             {payment.notes && (
                                                 <p className="text-sm text-gray-600 dark:text-gray-300 italic">
@@ -900,144 +958,167 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
 
             {/* Edit Encuentro Modal */}
             {showEditModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Editar Encuentro</h3>
-                            <button onClick={() => setShowEditModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-                                <XCircle size={24} />
+                <div className="fixed inset-0 bg-[rgba(0,0,0,0.85)] backdrop-blur-[2px] z-[100] flex items-center justify-center sm:p-4 animate-in fade-in duration-200">
+                    <div className="bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] sm:rounded-xl w-full h-full sm:h-auto sm:max-h-[90vh] max-w-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 shadow-[rgba(0,0,0,0)_0px_8px_2px,rgba(0,0,0,0.01)_0px_5px_2px,rgba(0,0,0,0.04)_0px_3px_2px,rgba(0,0,0,0.07)_0px_1px_1px,rgba(0,0,0,0.08)_0px_0px_1px]">
+                        {/* Header */}
+                        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-[rgba(255,255,255,0.08)] flex justify-between items-center flex-shrink-0">
+                            <h3 className="text-lg sm:text-[20px] font-[590] text-[var(--ln-text-primary)] tracking-[-0.24px] leading-[1.33]">
+                                Editar Encuentro
+                            </h3>
+                            <button
+                                onClick={() => setShowEditModal(false)}
+                                className="text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] transition-colors p-2 rounded-lg bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.05)]"
+                                aria-label="Cerrar modal"
+                            >
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <form onSubmit={handleUpdateEncuentro} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Nombre
-                                </label>
-                                <input
-                                    type="text"
-                                    value={editData.name}
-                                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Descripción
-                                </label>
-                                <textarea
-                                    value={editData.description}
-                                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                                    rows={3}
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
+                            <form onSubmit={handleUpdateEncuentro} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Donación Encuentro ($)
+                                    <label className="block text-[13px] font-medium text-[var(--ln-text-secondary)] mb-1.5">
+                                        Palabra Rhema
                                     </label>
                                     <input
-                                        type="number"
-                                        step="0.01"
-                                        value={editData.cost}
-                                        onChange={(e) => setEditData({ ...editData, cost: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                        type="text"
+                                        value={editData.name}
+                                        onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                                        className="w-full px-3 py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-lg text-[13.5px] text-[var(--ln-text-primary)] placeholder:text-[var(--ln-text-tertiary)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] hover:border-[var(--ln-border-primary)] transition-all"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Tipo
+                                    <label className="block text-[13px] font-medium text-[var(--ln-text-secondary)] mb-1.5">
+                                        Descripción
                                     </label>
-                                    <select
-                                        value={editData.type}
-                                        onChange={(e) => setEditData({ ...editData, type: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    >
-                                        <option value="MUJERES">Mujeres</option>
-                                        <option value="JOVENES">Jóvenes</option>
-                                        <option value="HOMBRES">Hombres</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Costo Transporte ($)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={editData.transportCost}
-                                        onChange={(e) => setEditData({ ...editData, transportCost: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    <textarea
+                                        value={editData.description}
+                                        onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                                        rows={3}
+                                        className="w-full px-3 py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-lg text-[13.5px] text-[var(--ln-text-primary)] placeholder:text-[var(--ln-text-tertiary)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] hover:border-[var(--ln-border-primary)] transition-all resize-none"
                                     />
                                 </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[13px] font-medium text-[var(--ln-text-secondary)] mb-1.5">
+                                            Donación Encuentro ($)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={editData.cost}
+                                            onChange={(e) => setEditData({ ...editData, cost: e.target.value })}
+                                            className="w-full px-3 py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-lg text-[13.5px] text-[var(--ln-text-primary)] placeholder:text-[var(--ln-text-tertiary)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] hover:border-[var(--ln-border-primary)] transition-all"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[13px] font-medium text-[var(--ln-text-secondary)] mb-1.5">
+                                            Tipo
+                                        </label>
+                                        <select
+                                            value={editData.type}
+                                            onChange={(e) => setEditData({ ...editData, type: e.target.value })}
+                                            className="w-full px-3 py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-lg text-[13.5px] text-[var(--ln-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] hover:border-[var(--ln-border-primary)] transition-all"
+                                            required
+                                        >
+                                            <option value="MUJERES">Mujeres</option>
+                                            <option value="JOVENES">Jóvenes</option>
+                                            <option value="HOMBRES">Hombres</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[13px] font-medium text-[var(--ln-text-secondary)] mb-1.5">
+                                            Costo Libro ($)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={editData.transportCost}
+                                            onChange={(e) => setEditData({ ...editData, transportCost: e.target.value })}
+                                            className="w-full px-3 py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-lg text-[13.5px] text-[var(--ln-text-primary)] placeholder:text-[var(--ln-text-tertiary)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] hover:border-[var(--ln-border-primary)] transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[13px] font-medium text-[var(--ln-text-secondary)] mb-1.5">
+                                            Costo Hospedaje ($)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={editData.accommodationCost}
+                                            onChange={(e) => setEditData({ ...editData, accommodationCost: e.target.value })}
+                                            className="w-full px-3 py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-lg text-[13.5px] text-[var(--ln-text-primary)] placeholder:text-[var(--ln-text-tertiary)]/40 focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] hover:border-[var(--ln-border-primary)] transition-all"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[13px] font-medium text-[var(--ln-text-secondary)] mb-1.5">
+                                            Fecha Inicio
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={editData.startDate}
+                                            onChange={(e) => setEditData({ ...editData, startDate: e.target.value })}
+                                            className="w-full px-3 py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-lg text-[13.5px] text-[var(--ln-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] hover:border-[var(--ln-border-primary)] transition-all"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[13px] font-medium text-[var(--ln-text-secondary)] mb-1.5">
+                                            Fecha Fin
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={editData.endDate}
+                                            onChange={(e) => setEditData({ ...editData, endDate: e.target.value })}
+                                            className="w-full px-3 py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-lg text-[13.5px] text-[var(--ln-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] hover:border-[var(--ln-border-primary)] transition-all"
+                                            required
+                                        />
+                                    </div>
+                                </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Costo Hospedaje ($)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={editData.accommodationCost}
-                                        onChange={(e) => setEditData({ ...editData, accommodationCost: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    <label className="block text-[13px] font-medium text-[var(--ln-text-secondary)] mb-1.5">Coordinador del Encuentro</label>
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) => {
+                                            const params = { search: term, role: 'LIDER_DOCE' };
+                                            return api.get('/users/search', { params })
+                                                .then(res => res.data);
+                                        }}
+                                        selectedValue={editData.coordinatorId}
+                                        onSelect={(user) => setEditData({ ...editData, coordinatorId: user })}
+                                        placeholder="Seleccionar coordinador..."
+                                        labelKey="fullName"
                                     />
                                 </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Fecha Inicio
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={editData.startDate}
-                                        onChange={(e) => setEditData({ ...editData, startDate: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                        Fecha Fin
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={editData.endDate}
-                                        onChange={(e) => setEditData({ ...editData, endDate: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Coordinador del Encuentro</label>
-                                <AsyncSearchSelect
-                                    fetchItems={(term) => {
-                                        const params = { search: term, role: 'LIDER_DOCE' };
-                                        return api.get('/users/search', { params })
-                                            .then(res => res.data);
-                                    }}
-                                    selectedValue={editData.coordinatorId}
-                                    onSelect={(user) => setEditData({ ...editData, coordinatorId: user?.id || null })}
-                                    placeholder="Seleccionar coordinador..."
-                                    labelKey="fullName"
-                                />
-                            </div>
-                            <div className="pt-4">
+                            </form>
+                        </div>
+
+                        {/* Footer with Cancel and Save buttons */}
+                        <div className="px-4 sm:px-6 py-4 sm:py-5 bg-[rgba(255,255,255,0.02)] border-t border-[rgba(255,255,255,0.08)] flex-shrink-0">
+                            <div className="flex gap-3">
                                 <button
-                                    type="submit"
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
+                                    className="flex-1 px-4 py-2.5 bg-[var(--ln-bg-panel)] hover:bg-[rgba(255,255,255,0.06)] text-[var(--ln-text-secondary)] border border-[var(--ln-border-standard)] rounded-lg text-[13.5px] font-medium transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleUpdateEncuentro}
                                     disabled={loading}
-                                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium shadow-lg hover:shadow-xl disabled:opacity-50"
+                                    className="flex-1 px-4 py-2.5 bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-brand-violet)] text-white rounded-lg text-[13.5px] font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[var(--ln-brand-indigo)]/20"
                                 >
                                     {loading ? 'Guardando...' : 'Guardar Cambios'}
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1092,6 +1173,67 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
                                 <li>• Se eliminará el registro del encuentro</li>
                                 <li>• Se perderán todos los abonos asociados</li>
+                                <li>• No se puede deshacer esta acción</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </ConfirmationModal>
+
+            {/* Payment Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showPaymentDeleteConfirm}
+                onClose={() => {
+                    setShowPaymentDeleteConfirm(false);
+                    setPaymentToDelete(null);
+                }}
+                onConfirm={performDeletePayment}
+                title="Eliminar Abono"
+                message="¿Estás seguro de que deseas eliminar este abono?"
+                confirmText="Eliminar Abono"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {paymentToDelete && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Monto:</span>
+                                <span className="font-medium text-green-600 dark:text-green-400">{formatCurrency(paymentToDelete.amount)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Tipo:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {paymentToDelete.paymentType === 'TRANSPORT' ? 'Libro' : paymentToDelete.paymentType === 'ACCOMMODATION' ? 'Otros' : 'Encuentro'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Fecha:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{new Date(paymentToDelete.date).toLocaleDateString()}</span>
+                            </div>
+                            {paymentToDelete.notes && (
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600 dark:text-gray-400">Notas:</span>
+                                    <span className="font-medium text-gray-900 dark:text-white italic">"{paymentToDelete.notes}"</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                    <div className="flex items-start gap-3">
+                        <div className="text-red-600 dark:text-red-400 mt-0.5">
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                                ⚠️ Acción Irreversible
+                            </h4>
+                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                                <li>• Se eliminará el abono permanentemente</li>
+                                <li>• El saldo del participante se actualizará</li>
                                 <li>• No se puede deshacer esta acción</li>
                             </ul>
                         </div>

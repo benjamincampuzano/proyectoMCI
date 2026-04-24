@@ -10,51 +10,18 @@ import MultiUserSelect from '../components/MultiUserSelect';
 import { AsyncSearchSelect, PageHeader, Button } from '../components/ui';
 import ActionModal from '../components/ActionModal';
 import ConfirmationModal from '../components/ConfirmationModal';
-import CoordinatorSelector from '../components/CoordinatorSelector';
-import TreasurerSelector from '../components/TreasurerSelector';
-import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
 import { ROLES } from '../constants/roles';
 
 const Encuentros = () => {
     const { user, hasAnyRole, isCoordinator } = useAuth();
+    const isModuleCoordinator = isCoordinator('encuentro');
     const [encuentros, setEncuentros] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedEncuentro, setSelectedEncuentro] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
-    const [moduleCoordinator, setModuleCoordinator] = useState(null);
-    const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
-    const [moduleTreasurer, setModuleTreasurer] = useState(null);
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
-
-    // Handler for coordinator changes
-    const handleCoordinatorChange = (newCoordinator) => {
-        setModuleCoordinator(newCoordinator);
-        
-        // After a short delay, refresh the coordinator data from server
-        setTimeout(() => {
-            fetchModuleCoordinator();
-        }, 500);
-    };
-
-    // Handler for treasurer changes
-    const handleTreasurerChange = (newTreasurer) => {
-        setModuleTreasurer(newTreasurer);
-        
-        setTimeout(() => {
-            fetchModuleTreasurer();
-        }, 500);
-    };
-
-    // Handler for sub-coordinator changes
-    const handleSubCoordinatorChange = (newSubCoordinator) => {
-        setModuleSubCoordinator(newSubCoordinator);
-        
-        setTimeout(() => {
-            fetchModuleSubCoordinator();
-        }, 500);
-    };
 
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -73,44 +40,11 @@ const Encuentros = () => {
         coordinatorId: null
     });
 
-    const hasAdminOrCoordinator = hasAnyRole(['ADMIN']) || isCoordinator();
+    const hasAdminOrCoordinator = hasAnyRole(['ADMIN']) || isModuleCoordinator;
 
     useEffect(() => {
         fetchEncuentros();
-        fetchModuleCoordinator();
-        fetchModuleSubCoordinator();
-        fetchModuleTreasurer();
     }, []);
-
-    const fetchModuleCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/encuentros');
-            setModuleCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching coordinator:', error);
-            setModuleCoordinator(null);
-        }
-    };
-
-    const fetchModuleSubCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/encuentros/subcoordinator');
-            setModuleSubCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching subcoordinator:', error);
-            setModuleSubCoordinator(null);
-        }
-    };
-
-    const fetchModuleTreasurer = async () => {
-        try {
-            const res = await api.get('/coordinators/module/encuentros/treasurer');
-            setModuleTreasurer(res.data);
-        } catch (error) {
-            console.error('Error fetching treasurer:', error);
-            setModuleTreasurer(null);
-        }
-    };
 
     const fetchEncuentros = async () => {
         setLoading(true);
@@ -124,10 +58,10 @@ const Encuentros = () => {
         }
     };
 
-    const fetchEncuentroDetails = async (id) => {
+    const fetchEncuentroDetails = async (id, openEdit = false) => {
         try {
             const res = await api.get(`/encuentros/${id}`);
-            setSelectedEncuentro(res.data);
+            setSelectedEncuentro({ ...res.data, openEditModal: openEdit });
         } catch (error) {
             console.error('Error fetching details:', error);
             toast.error('Error loading details');
@@ -139,6 +73,7 @@ const Encuentros = () => {
         try {
             await api.post('/encuentros', {
                 ...formData,
+                coordinatorId: formData.coordinatorId?.id || null,
                 cost: parseFloat(formData.cost),
                 transportCost: parseFloat(formData.transportCost || 0),
                 accommodationCost: parseFloat(formData.accommodationCost || 0)
@@ -187,29 +122,34 @@ const Encuentros = () => {
         if (!encuentros || encuentros.length === 0) {
             return {
                 total: 0,
-                recaudado: 0,
-                pendiente: 0,
-                inscritos: 0
+                inscritos: 0,
+                promedioInscritos: 0,
+                conversos: 0
             };
         }
 
-        let totalRecaudado = 0;
-        let totalPendiente = 0;
         let totalInscritos = 0;
+        let totalConversos = 0;
 
         encuentros.forEach(enc => {
             totalInscritos += enc.registrations?.length || 0;
+            // Count registrations with isConvert or converted flag
             enc.registrations?.forEach(reg => {
-                totalRecaudado += reg.totalPaid || 0;
-                totalPendiente += reg.balance || 0;
+                if (reg.isConvert || reg.converted || reg.userId) {
+                    totalConversos++;
+                }
             });
         });
 
+        const promedioInscritos = encuentros.length > 0
+            ? Math.round(totalInscritos / encuentros.length)
+            : 0;
+
         return {
             total: encuentros.length,
-            recaudado: totalRecaudado,
-            pendiente: totalPendiente,
-            inscritos: totalInscritos
+            inscritos: totalInscritos,
+            promedioInscritos,
+            conversos: totalConversos
         };
     }, [encuentros]);
 
@@ -296,7 +236,14 @@ const Encuentros = () => {
                                             </div>
                                             <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                                                 <UserCheck size={16} className="mr-2 text-green-500" />
-                                                Coord: {enc.coordinator?.fullName || 'Sin Asignar'}
+                                                Coord: {(() => {
+                                                    if (enc.coordinator?.fullName) return enc.coordinator.fullName;
+                                                    if (enc.coordinator?.name) return enc.coordinator.name;
+                                                    if (enc.coordinatorId?.fullName) return enc.coordinatorId.fullName;
+                                                    if (enc.coordinatorId?.name) return enc.coordinatorId.name;
+                                                    if (enc.coordinatorId) return 'Asignado';
+                                                    return 'Sin Asignar';
+                                                })()}
                                             </div>
                                         </div>
                                     </div>
@@ -322,6 +269,10 @@ const Encuentros = () => {
                     onSelect={fetchEncuentroDetails}
                     canModify={canCreateOrDelete}
                     onDelete={handleDelete}
+                    onEdit={(e, enc) => {
+                        e.stopPropagation();
+                        fetchEncuentroDetails(enc.id, true); // true = open edit modal
+                    }}
                 />
             </div>
         );
@@ -345,30 +296,6 @@ const Encuentros = () => {
                 description="Gestión de Encuentros (Pre y Pos encuentros)"
                 action={
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <CoordinatorSelector
-                                moduleCoordinator={moduleCoordinator}
-                                moduleName="Encuentros"
-                                onCoordinatorChange={handleCoordinatorChange}
-                                disabled={!hasAdminOrPastor}
-                            />
-                            <SubCoordinatorSelector
-                                moduleSubCoordinator={moduleSubCoordinator}
-                                moduleName="Encuentros"
-                                onSubCoordinatorChange={handleSubCoordinatorChange}
-                                disabled={!hasAdminOrPastor}
-                                currentUserId={user?.id}
-                                isModuleCoordinator={user?.isCoordinator || isCoordinator()}
-                            />
-                            <TreasurerSelector
-                                moduleTreasurer={moduleTreasurer}
-                                moduleName="Encuentros"
-                                onTreasurerChange={handleTreasurerChange}
-                                disabled={!hasAdminOrPastor}
-                                currentUserId={user?.id}
-                                isModuleCoordinator={user?.isCoordinator || isCoordinator()}
-                            />
-                        </div>
                         {canCreateOrDelete && (
                             <Button
                                 variant="primary"
@@ -431,26 +358,26 @@ const Encuentros = () => {
                     <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                                <MoneyIcon size={20} />
+                                <Users size={20} />
                             </div>
-                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
+                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Promedio Inscritos</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">${stats.recaudado.toLocaleString()}</span>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Dinero Recaudado</span>
+                            <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">{stats.promedioInscritos}</span>
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Promedio de Inscritos por Encuentro</span>
                         </div>
                     </div>
 
-                    <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                    <div className="bg-orange-50 dark:bg-orange-900/20 p-5 rounded-xl border border-orange-100 dark:border-orange-800 shadow-sm">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                                <MoneyIcon size={20} />
+                            <div className="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg text-orange-600 dark:text-orange-300">
+                                <UserIcon size={20} />
                             </div>
-                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente</span>
+                            <span className="text-sm font-bold text-orange-800 dark:text-orange-200 uppercase tracking-tight">Conversos</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">${stats.pendiente.toLocaleString()}</span>
-                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Pendiente por Recaudar</span>
+                            <span className="text-3xl font-extrabold text-orange-900 dark:text-white">{stats.conversos}</span>
+                            <span className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">Cantidad de Conversos</span>
                         </div>
                     </div>
                 </div>
@@ -514,6 +441,7 @@ const Encuentros = () => {
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                            placeholder="Proverbios 27:23"
                             required
                         />
                     </div>
@@ -537,22 +465,24 @@ const Encuentros = () => {
                                 value={formData.cost}
                                 onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
                                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                Placeholder="Valor Encuentro"
                                 required
                             />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Transporte ($)</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Libro U. de la V. ($)</label>
                             <input
                                 type="number"
                                 value={formData.transportCost}
                                 onChange={(e) => setFormData({ ...formData, transportCost: e.target.value })}
                                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                Placeholder="Valor Libro"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Hospedaje ($)</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Otros Gastos ($)</label>
                             <input
                                 type="number"
                                 value={formData.accommodationCost}
@@ -592,7 +522,7 @@ const Encuentros = () => {
                                     .then(res => res.data);
                             }}
                             selectedValue={formData.coordinatorId}
-                            onSelect={(user) => setFormData({ ...formData, coordinatorId: user?.id || null })}
+                            onSelect={(user) => setFormData({ ...formData, coordinatorId: user })}
                             placeholder="Seleccionar coordinador..."
                             labelKey="fullName"
                         />

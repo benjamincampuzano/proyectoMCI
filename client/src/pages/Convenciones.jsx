@@ -9,13 +9,11 @@ import ConvencionesReport from '../components/ConvencionesReport';
 import ActionModal from '../components/ActionModal';
 import { Button, Modal, Skeleton, PageHeader, AsyncSearchSelect } from '../components/ui';
 import ConfirmationModal from '../components/ConfirmationModal';
-import CoordinatorSelector from '../components/CoordinatorSelector';
-import TreasurerSelector from '../components/TreasurerSelector';
-import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
+import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ROLES } from '../constants/roles';
 
 const Convenciones = () => {
-    const { user, hasAnyRole } = useAuth();
+    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const [conventions, setConventions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedConvention, setSelectedConvention] = useState(null);
@@ -26,7 +24,6 @@ const Convenciones = () => {
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
-    const { isCoordinator } = useAuth();
 
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -44,30 +41,6 @@ const Convenciones = () => {
         endDate: '',
         coordinatorId: null
     });
-
-    // Handler for coordinator changes
-    const handleCoordinatorChange = (newCoordinator) => {
-        setModuleCoordinator(newCoordinator);
-        setTimeout(() => {
-            fetchModuleCoordinator();
-        }, 500);
-    };
-
-    // Handler for treasurer changes
-    const handleTreasurerChange = (newTreasurer) => {
-        setModuleTreasurer(newTreasurer);
-        setTimeout(() => {
-            fetchModuleTreasurer();
-        }, 500);
-    };
-
-    // Handler for sub-coordinator changes
-    const handleSubCoordinatorChange = (newSubCoordinator) => {
-        setModuleSubCoordinator(newSubCoordinator);
-        setTimeout(() => {
-            fetchModuleSubCoordinator();
-        }, 500);
-    };
 
     useEffect(() => {
         fetchConventions();
@@ -176,8 +149,14 @@ const Convenciones = () => {
         }
     };
 
-    const canModify = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
-    const canViewReport = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
+    const canModify = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE]) 
+        || isCoordinator('convenciones') 
+        || isSubCoordinator('convenciones');
+
+    const canViewReport = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE]) 
+        || isCoordinator('convenciones') 
+        || isSubCoordinator('convenciones')
+        || isTreasurer('convenciones');
 
     // Calculo de estadísticas para reporte
     const stats = useMemo(() => {
@@ -339,30 +318,12 @@ const Convenciones = () => {
                 description="Seguimiento de Convenciones anuales"
                 action={
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <CoordinatorSelector
-                                moduleCoordinator={moduleCoordinator}
-                                moduleName="Convenciones"
-                                onCoordinatorChange={handleCoordinatorChange}
-                                disabled={!hasAdminOrPastor}
-                            />
-                            <SubCoordinatorSelector
-                                moduleSubCoordinator={moduleSubCoordinator}
-                                moduleName="Convenciones"
-                                onSubCoordinatorChange={handleSubCoordinatorChange}
-                                disabled={!hasAdminOrPastor}
-                                currentUserId={user?.id}
-                                isModuleCoordinator={user?.isCoordinator || isCoordinator()}
-                            />
-                            <TreasurerSelector
-                                moduleTreasurer={moduleTreasurer}
-                                moduleName="Convenciones"
-                                onTreasurerChange={handleTreasurerChange}
-                                disabled={!hasAdminOrPastor}
-                                currentUserId={user?.id}
-                                isModuleCoordinator={user?.isCoordinator || isCoordinator()}
-                            />
-                        </div>
+                        <CoordinatorDisplay
+                            coordinator={moduleCoordinator}
+                            subCoordinator={moduleSubCoordinator}
+                            treasurer={moduleTreasurer}
+                            moduleName="Convenciones"
+                        />
                         {canModify && (
                             <Button
                                 onClick={() => setShowCreateModal(true)}

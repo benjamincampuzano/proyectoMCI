@@ -28,6 +28,7 @@ const calculateAge = (birthDate) => {
 
 const KidsClassMatrix = ({ courseId }) => {
     const { hasAnyRole, isCoordinator } = useAuth();
+    const isModuleCoordinator = isCoordinator('kids');
     const [matrix, setMatrix] = useState([]);
     const [courseInfo, setCourseInfo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -63,8 +64,8 @@ const KidsClassMatrix = ({ courseId }) => {
     }, [courseInfo, currentUserId]);
 
     const canUploadEvidence = useMemo(() => 
-        hasAnyRole(['ADMIN', 'PASTOR']) || isCoordinator() || isModuleProfessor || isModuleAuxiliary, // ADMIN, PASTOR, coordinadores, profesores y auxiliares del módulo pueden subir evidencias
-        [hasAnyRole, isCoordinator, isModuleProfessor, isModuleAuxiliary]
+        hasAnyRole(['ADMIN', 'PASTOR']) || isModuleCoordinator || isModuleProfessor || isModuleAuxiliary, // ADMIN, PASTOR, coordinadores, profesores y auxiliares del módulo pueden subir evidencias
+        [hasAnyRole, isModuleCoordinator, isModuleProfessor, isModuleAuxiliary]
     );
 
     const canEditAttendance = useMemo(() => 
@@ -73,8 +74,8 @@ const KidsClassMatrix = ({ courseId }) => {
     );
 
     const canEnrollStudents = useMemo(() => 
-        hasAnyRole(['ADMIN', 'PASTOR']) || isCoordinator() || isModuleProfessor || isModuleAuxiliary, // ADMIN, PASTOR, coordinadores, profesores y auxiliares del módulo pueden inscribir estudiantes
-        [hasAnyRole, isCoordinator, isModuleProfessor, isModuleAuxiliary]
+        hasAnyRole(['ADMIN', 'PASTOR']) || isModuleCoordinator || isModuleProfessor || isModuleAuxiliary, // ADMIN, PASTOR, coordinadores, profesores y auxiliares del módulo pueden inscribir estudiantes
+        [hasAnyRole, isModuleCoordinator, isModuleProfessor, isModuleAuxiliary]
     );
 
     const canDeleteStudents = useMemo(() => 

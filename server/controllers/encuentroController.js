@@ -563,6 +563,40 @@ const updateClassAttendance = async (req, res) => {
     }
 };
 
+const updateRegistration = async (req, res) => {
+    try {
+        const { registrationId } = req.params;
+        const { isBaptized } = req.body;
+        const { id: userId } = req.user;
+
+        const registration = await prisma.encuentroRegistration.findUnique({
+            where: { id: parseInt(registrationId) },
+            select: { encuentroId: true }
+        });
+
+        if (!registration) {
+            return res.status(404).json({ error: 'Registration not found' });
+        }
+
+        const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para actualizar el registro.' });
+        }
+
+        const updated = await prisma.encuentroRegistration.update({
+            where: { id: parseInt(registrationId) },
+            data: { isBaptized }
+        });
+
+        await logActivity(userId, 'UPDATE', 'ENCUENTRO_REGISTRATION', updated.id, { isBaptized }, req.ip, req.headers['user-agent']);
+
+        res.json(updated);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Registration update failed' });
+    }
+};
+
 const getEncuentroBalanceReport = async (req, res) => {
     try {
         const { id } = req.params;
@@ -681,15 +715,57 @@ const getEncuentroBalanceReport = async (req, res) => {
     }
 };
 
+const deletePayment = async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        const { id: userId, roles } = req.user;
+
+        // Only ADMIN can delete payments
+        if (!roles.includes('ADMIN')) {
+            return res.status(403).json({ error: 'Solo ADMIN puede eliminar abonos.' });
+        }
+
+        const payment = await prisma.encuentroPayment.findUnique({
+            where: { id: parseInt(paymentId) },
+            include: {
+                registration: {
+                    select: { encuentroId: true }
+                }
+            }
+        });
+
+        if (!payment) {
+            return res.status(404).json({ error: 'Payment not found' });
+        }
+
+        const deletedPayment = await prisma.encuentroPayment.delete({
+            where: { id: parseInt(paymentId) }
+        });
+
+        await logActivity(userId, 'DELETE', 'ENCUENTRO_PAYMENT', paymentId, {
+            registrationId: payment.registrationId,
+            amount: payment.amount,
+            paymentType: payment.paymentType
+        }, req.ip, req.headers['user-agent']);
+
+        res.json({ message: 'Abono eliminado exitosamente', payment: deletedPayment });
+    } catch (error) {
+        console.error('Error deleting payment:', error);
+        res.status(500).json({ error: 'Error deleting payment' });
+    }
+};
+
 module.exports = {
     getEncuentros,
     getEncuentroById,
     createEncuentro,
     updateEncuentro,
     deleteEncuentro,
+    updateRegistration,
     registerParticipant,
     deleteRegistration,
     addPayment,
+    deletePayment,
     updateClassAttendance,
     getEncuentroBalanceReport
 };

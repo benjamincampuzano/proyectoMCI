@@ -111,7 +111,7 @@ const createGuest = async (req, res) => {
 // Obtener todos los invitados con filtros opcionales
 const getAllGuests = async (req, res) => {
     try {
-        const { status, invitedById, assignedToId, search, liderDoceId, sex, minBirthDate } = req.query;
+        const { status, invitedById, assignedToId, search, liderDoceId, sex, minBirthDate, startDate, endDate, pendingCalls, pendingVisits } = req.query;
         const { roles, id: currentUserId } = req.user;
 
         let securityFilter = {};
@@ -203,6 +203,34 @@ const getAllGuests = async (req, res) => {
             }
         } else if (invitedById) {
             queryFilters.invitedById = parseInt(invitedById);
+        }
+
+        // Filtro por rango de fechas de creación
+        if (startDate || endDate) {
+            queryFilters.createdAt = {};
+            if (startDate) {
+                queryFilters.createdAt.gte = new Date(startDate);
+            }
+            if (endDate) {
+                // Ajustar endDate para incluir todo el día
+                const endOfDay = new Date(endDate);
+                endOfDay.setHours(23, 59, 59, 999);
+                queryFilters.createdAt.lte = endOfDay;
+            }
+        }
+
+        // Filtro por pendientes de llamadas (sin llamadas registradas)
+        if (pendingCalls === 'true') {
+            queryFilters.calls = {
+                none: {}
+            };
+        }
+
+        // Filtro por pendientes de visitas (sin visitas registradas)
+        if (pendingVisits === 'true') {
+            queryFilters.visits = {
+                none: {}
+            };
         }
 
         // Combinar filtros de seguridad y consulta

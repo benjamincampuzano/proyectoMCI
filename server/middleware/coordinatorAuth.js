@@ -194,6 +194,39 @@ const getUserNetworkId = async (userId) => {
 };
 
 /**
+ * Roles que un coordinador de módulo PUEDE gestionar
+ * (incluye LIDER_DOCE y roles menores - permisos de ADMIN a nivel de módulo)
+ */
+const COORDINATOR_MANAGABLE_ROLES = ['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'];
+
+/**
+ * Roles que un coordinador de módulo NO puede gestionar (solo ADMIN global)
+ */
+const COORDINATOR_PROTECTED_ROLES = ['ADMIN', 'PASTOR'];
+
+/**
+ * Verifica si el usuario tiene acceso de ADMIN en un módulo específico
+ * (ya sea por rol global o por ser coordinador de ese módulo)
+ *
+ * @param {Object} user - Usuario
+ * @param {string} moduleName - Nombre del módulo
+ * @returns {boolean}
+ */
+const hasAdminAccessOnModule = (user, moduleName) => {
+    if (!user || !moduleName) return false;
+
+    // ADMIN y PASTOR tienen acceso global
+    if (user.roles.includes('ADMIN') || user.roles.includes('PASTOR')) {
+        return true;
+    }
+
+    // Coordinador tiene acceso de ADMIN solo en su módulo asignado
+    const normalizedModule = normalizeModuleName(moduleName);
+    return user.moduleCoordinations?.includes(normalizedModule) ||
+           user.moduleSubCoordinations?.includes(normalizedModule);
+};
+
+/**
  * Verifica si el solicitante puede gestionar al usuario destino
  * basado en la jerarquía de roles y permisos por módulo
  *
@@ -215,28 +248,23 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId, mod
     }
 
     const currentModule = moduleName || requester.currentModule;
-    const isCoordinatorOfModule = currentModule && (
-        requester.moduleCoordinations?.includes(currentModule) ||
-        requester.moduleSubCoordinations?.includes(currentModule)
-    );
-    const hasFullAccessOnModule = requester.hasFullAccessOnCurrentModule || isCoordinatorOfModule;
 
-    // ═══════════════════════════════════════════════════
-    // COORDINADOR DEL MÓDULO ESPECÍFICO
-    // ═══════════════════════════════════════════
-    if (hasFullAccessOnModule) {
-        // No puede gestionar roles protegidos
-        if (PROTECTED_ROLES.includes(targetUserRole)) {
+    // ═══════════════════════════════════════════════════════════════
+    // COORDINADOR DEL MÓDULO ESPECÍFICO - permisos de ADMIN a nivel de módulo
+    // ═══════════════════════════════════════════════════════════════
+    if (currentModule && hasAdminAccessOnModule(requester, currentModule)) {
+        // No puede gestionar roles globales protegidos (solo ADMIN global puede)
+        if (COORDINATOR_PROTECTED_ROLES.includes(targetUserRole)) {
             return { canManage: false, reason: `Cannot manage ${targetUserRole} users` };
         }
-        // Solo puede gestionar roles estrictamente menores
-        if (!MANAGABLE_ROLES.includes(targetUserRole)) {
+        // Puede gestionar su rol base y roles menores dentro del módulo
+        if (!COORDINATOR_MANAGABLE_ROLES.includes(targetUserRole)) {
             return { canManage: false, reason: `Cannot manage users with role: ${targetUserRole}` };
         }
-        return { canManage: true, level: 'module_coordinator' };
+return { canManage: true, level: 'module_admin', module: currentModule };
     }
 
-    // ═══════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     // LIDER_DOCE (sin permisos de coordinator)
     // ═══════════════════════════════════════════
     if (requester.roles.includes('LIDER_DOCE')) {
@@ -355,8 +383,11 @@ module.exports = {
     canManageTreasurerActions,
     normalizeModuleName,
     getCurrentModule,
+    hasAdminAccessOnModule,
     AVAILABLE_MODULES,
     MANAGABLE_ROLES,
     PROTECTED_ROLES,
-    LEADERSHIP_ROLES
+    LEADERSHIP_ROLES,
+    COORDINATOR_MANAGABLE_ROLES,
+    COORDINATOR_PROTECTED_ROLES
 };

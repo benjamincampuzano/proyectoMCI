@@ -7,72 +7,14 @@ import KidsStats from '../components/Kids/KidsStats';
 import { PageHeader, Button } from '../components/ui';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import { useAuth } from '../context/AuthContext';
-import CoordinatorSelector from '../components/CoordinatorSelector';
-import SubCoordinatorSelector from '../components/SubCoordinatorSelector';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const KidsModule = () => {
     const { user, hasAnyRole, isCoordinator } = useAuth();
-    const [moduleCoordinator, setModuleCoordinator] = useState(null);
-    const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [isKidsTeacherOrAuxiliary, setIsKidsTeacherOrAuxiliary] = useState(null);
+    const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
-
-    // Handler for coordinator changes
-    const handleCoordinatorChange = (newCoordinator) => {
-        setModuleCoordinator(newCoordinator);
-        
-        // After a short delay, refresh coordinator data from server
-        setTimeout(() => {
-            fetchCoordinator();
-        }, 500);
-    };
-
-    // Handler for sub-coordinator changes
-    const handleSubCoordinatorChange = (newSubCoordinator) => {
-        setModuleSubCoordinator(newSubCoordinator);
-        
-        setTimeout(() => {
-            fetchSubCoordinator();
-        }, 500);
-    };
-
-    const fetchCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/kids');
-            setModuleCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching coordinator:', error);
-            // If endpoint doesn't exist, try to find a coordinator by isCoordinator flag
-            try {
-                const coordinatorsRes = await api.get('/coordinators', {
-                    params: { module: 'kids' }
-                });
-                const coordinators = coordinatorsRes.data;
-                if (coordinators && coordinators.length > 0) {
-                    // Find first coordinator with ADMIN role or first one
-                    const adminCoordinator = coordinators.find(c => c.role === 'ADMIN') || coordinators[0];
-                    setModuleCoordinator(adminCoordinator);
-                } else {
-                    setModuleCoordinator(null);
-                }
-            } catch (fallbackError) {
-                console.error('Fallback coordinator fetch failed:', fallbackError);
-                setModuleCoordinator(null);
-            }
-        }
-    };
-
-    const fetchSubCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/kids/subcoordinator');
-            setModuleSubCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching subcoordinator:', error);
-            setModuleSubCoordinator(null);
-        }
-    };
 
     const checkIfKidsTeacherOrAuxiliary = async () => {
         try {
@@ -84,10 +26,27 @@ const KidsModule = () => {
         }
     };
 
+    const fetchCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/kids');
+            setModuleCoordinator(res.data);
+        } catch (error) {
+            console.error('Error fetching coordinator:', error);
+            setModuleCoordinator(null);
+        }
+    };
+
+    const fetchSubCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/kids/subcoordinator');
+        } catch (error) {
+            console.error('Error fetching subcoordinator:', error);
+        }
+    };
+
     useEffect(() => {
-        fetchCoordinator();
-        fetchSubCoordinator();
         checkIfKidsTeacherOrAuxiliary();
+        fetchCoordinator();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -137,20 +96,6 @@ const KidsModule = () => {
                 description="Escuela infantil: Kids 1 (5-7), Kids 2 (8 a 10), Teens (11-13) y Jóvenes (14+)"
                 action={
                     <div className="flex items-center gap-4">
-                        <CoordinatorSelector 
-                            moduleCoordinator={moduleCoordinator}
-                            moduleName="Kids"
-                            onCoordinatorChange={handleCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                        />
-                        <SubCoordinatorSelector 
-                            moduleSubCoordinator={moduleSubCoordinator}
-                            moduleName="Kids"
-                            onSubCoordinatorChange={handleSubCoordinatorChange}
-                            disabled={!hasAdminOrPastor}
-                            currentUserId={user?.id}
-                            isModuleCoordinator={user?.isCoordinator || isCoordinator()}
-                        />
                     </div>
                 }
             />
@@ -171,7 +116,7 @@ const KidsModule = () => {
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="schedule" />
+            <TabNavigator tabs={tabs} initialTabId="schedule" moduleName="kids" />
         </div>
     );
 };
