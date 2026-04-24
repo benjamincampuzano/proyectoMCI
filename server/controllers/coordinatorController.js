@@ -76,7 +76,7 @@ const getModuleCoordinators = async (req, res) => {
             ...(canSeeSensitiveData && {
                 email: c.email,
                 network: c.profile?.network || 'Sin Red',
-                coordinatedModules: c.moduleCoordinations.map(mc => mc.moduleName)
+                coordinatedModules: [...new Set(c.moduleCoordinations.map(mc => mc.moduleName))]
             })
         }));
 
