@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
+const { isModuleCoordinator } = require('../middleware/coordinatorAuth');
 const {
     createModule,
     getModules,
@@ -18,10 +19,10 @@ const {
 
 router.use(authenticate);
 
-router.post('/modules', createModule);
+router.post('/modules', authenticate, isModuleCoordinator, createModule);
 router.get('/modules', getModules);
-router.put('/modules/:id', updateModule);
-router.delete('/modules/:id', deleteModule);
+router.put('/modules/:id', authenticate, isModuleCoordinator, updateModule);
+router.delete('/modules/:id', authenticate, isModuleCoordinator, deleteModule);
 router.get('/modules/:id/matrix', getModuleMatrix);
 
 router.post('/enroll', enrollStudent);

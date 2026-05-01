@@ -206,8 +206,19 @@ const COORDINATOR_MANAGABLE_ROLES = ['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 
 const COORDINATOR_PROTECTED_ROLES = ['ADMIN', 'PASTOR'];
 
 /**
+ * Roles que Subcoordinadores y Tesoreros elevados pueden gestionar
+ * (roles menores - permisos de ADMIN restringidos a nivel de módulo)
+ */
+const ELEVATED_MODULE_ROLES = ['LIDER_CELULA', 'DISCIPULO', 'INVITADO'];
+
+/**
+ * Roles que solo ADMIN global puede gestionar (protegidos para todos los demás)
+ */
+const GLOBAL_PROTECTED_ROLES = ['ADMIN', 'PASTOR', 'LIDER_DOCE'];
+
+/**
  * Verifica si el usuario tiene acceso de ADMIN en un módulo específico
- * (ya sea por rol global o por ser coordinador de ese módulo)
+ * (ya sea por rol global o por ser coordinador/subcoordinador/tesorero de ese módulo)
  *
  * @param {Object} user - Usuario
  * @param {string} moduleName - Nombre del módulo
@@ -221,10 +232,11 @@ const hasAdminAccessOnModule = (user, moduleName) => {
         return true;
     }
 
-    // Coordinador tiene acceso de ADMIN solo en su módulo asignado
+    // Coordinador, Subcoordinador y Tesorero tienen acceso de ADMIN en su módulo asignado
     const normalizedModule = normalizeModuleName(moduleName);
     return user.moduleCoordinations?.includes(normalizedModule) ||
-           user.moduleSubCoordinations?.includes(normalizedModule);
+           user.moduleSubCoordinations?.includes(normalizedModule) ||
+           user.moduleTreasurers?.includes(normalizedModule);
 };
 
 /**
@@ -255,14 +267,30 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId, mod
     // ═══════════════════════════════════════════════════════════════
     if (currentModule && hasAdminAccessOnModule(requester, currentModule)) {
         // No puede gestionar roles globales protegidos (solo ADMIN global puede)
-        if (COORDINATOR_PROTECTED_ROLES.includes(targetUserRole)) {
+        if (GLOBAL_PROTECTED_ROLES.includes(targetUserRole)) {
             return { canManage: false, reason: `Cannot manage ${targetUserRole} users` };
         }
-        // Puede gestionar su rol base y roles menores dentro del módulo
-        if (!COORDINATOR_MANAGABLE_ROLES.includes(targetUserRole)) {
-            return { canManage: false, reason: `Cannot manage users with role: ${targetUserRole}` };
+
+        const normalizedModule = normalizeModuleName(currentModule);
+        const isMainCoordinator = requester.moduleCoordinations?.includes(normalizedModule);
+        const isElevatedRole = requester.moduleSubCoordinations?.includes(normalizedModule) ||
+                              requester.moduleTreasurers?.includes(normalizedModule);
+
+        // Coordinador principal puede gestionar LIDER_DOCE y roles menores
+        if (isMainCoordinator) {
+            if (!COORDINATOR_MANAGABLE_ROLES.includes(targetUserRole)) {
+                return { canManage: false, reason: `Cannot manage users with role: ${targetUserRole}` };
+            }
+            return { canManage: true, level: 'module_admin', module: currentModule };
         }
-return { canManage: true, level: 'module_admin', module: currentModule };
+
+        // Subcoordinador/Tesorero elevado solo puede gestionar roles menores
+        if (isElevatedRole) {
+            if (!ELEVATED_MODULE_ROLES.includes(targetUserRole)) {
+                return { canManage: false, reason: `Cannot manage users with role: ${targetUserRole}` };
+            }
+            return { canManage: true, level: 'elevated_module_admin', module: currentModule };
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -331,8 +359,14 @@ const getVisibleRoles = (user) => {
         return ['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'];
     }
 
-    if (user.isModuleCoordinator) {
-        return MANAGABLE_ROLES;
+    // Coordinadores, Subcoordinadores y Tesoreros con permisos de admin
+    if (user.isModuleCoordinator || user.isModuleTreasurer) {
+        // Coordinadores principales pueden ver LIDER_DOCE y roles menores
+        if (user.moduleCoordinations && user.moduleCoordinations.length > 0) {
+            return COORDINATOR_MANAGABLE_ROLES;
+        }
+        // Subcoordinadores y Tesoreros solo pueden ver roles menores
+        return ELEVATED_MODULE_ROLES;
     }
 
     if (user.roles.includes('LIDER_DOCE')) {
@@ -348,17 +382,37 @@ const getVisibleRoles = (user) => {
 const canManageTreasurerActions = (moduleName) => {
     return async (req, res, next) => {
         try {
-            // Asegurarnos de que isModuleCoordinator se haya ejecutado
-            if (req.user.isModuleTreasurer === undefined) {
-                await isModuleCoordinator(req, res, () => {});
+            // Si los datos de módulo no están en el token, cargarlos de la base de datos
+            if (!req.user.moduleCoordinations || !req.user.moduleSubCoordinations || !req.user.moduleTreasurers) {
+                const userId = req.user.id;
+                const [coordinations, subCoordinations, treasurers] = await Promise.all([
+                    prisma.moduleCoordinator.findMany({
+                        where: { userId, isDeleted: false },
+                        select: { moduleName: true }
+                    }),
+                    prisma.moduleSubCoordinator.findMany({
+                        where: { userId, isDeleted: false },
+                        select: { moduleName: true }
+                    }),
+                    prisma.moduleTreasurer.findMany({
+                        where: { userId, isDeleted: false },
+                        select: { moduleName: true }
+                    })
+                ]);
+
+                // Actualizar el objeto user con los datos de módulo
+                req.user.moduleCoordinations = coordinations.map(c => c.moduleName);
+                req.user.moduleSubCoordinations = subCoordinations.map(sc => sc.moduleName);
+                req.user.moduleTreasurers = treasurers.map(t => t.moduleName);
             }
 
             const isAdminOrPastor = req.user.roles.some(role => ['ADMIN', 'PASTOR'].includes(role));
             if (isAdminOrPastor) return next();
 
-            const isTreasurer = req.user.moduleTreasurers?.includes(moduleName.toLowerCase());
-            const isCoordinator = req.user.moduleCoordinations?.includes(moduleName.toLowerCase()) || 
-                                 req.user.moduleSubCoordinations?.includes(moduleName.toLowerCase());
+            const normalizedModuleName = normalizeModuleName(moduleName);
+            const isTreasurer = req.user.moduleTreasurers?.includes(normalizedModuleName);
+            const isCoordinator = req.user.moduleCoordinations?.includes(normalizedModuleName) || 
+                                 req.user.moduleSubCoordinations?.includes(normalizedModuleName);
 
             if (isTreasurer || isCoordinator) {
                 return next();
@@ -377,18 +431,20 @@ const canManageTreasurerActions = (moduleName) => {
 module.exports = {
     isModuleCoordinator,
     requireModuleCoordinator,
+    getUserNetworkId,
     canManageUser,
     canManageTargetUser,
     getVisibleRoles,
-    getUserNetworkId,
-    canManageTreasurerActions,
-    normalizeModuleName,
     getCurrentModule,
     hasAdminAccessOnModule,
+    canManageTreasurerActions,
+    normalizeModuleName,
     AVAILABLE_MODULES,
     MANAGABLE_ROLES,
     PROTECTED_ROLES,
     LEADERSHIP_ROLES,
     COORDINATOR_MANAGABLE_ROLES,
-    COORDINATOR_PROTECTED_ROLES
+    COORDINATOR_PROTECTED_ROLES,
+    ELEVATED_MODULE_ROLES,
+    GLOBAL_PROTECTED_ROLES
 };

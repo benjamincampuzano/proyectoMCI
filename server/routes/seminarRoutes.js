@@ -3,12 +3,13 @@ const router = express.Router();
 const seminarController = require('../controllers/seminarController');
 const classAttendanceController = require('../controllers/classAttendanceController');
 const { authenticate, isAdmin } = require('../middleware/auth');
+const { isModuleCoordinator } = require('../middleware/coordinatorAuth');
 
 router.get('/', authenticate, seminarController.getAllModules);
 router.get('/:id', authenticate, seminarController.getModuleDetails); // New
-router.post('/', authenticate, seminarController.createModule);
-router.put('/:id', authenticate, seminarController.updateModule);
-router.delete('/:id', authenticate, seminarController.deleteModule);
+router.post('/', authenticate, isModuleCoordinator, seminarController.createModule);
+router.put('/:id', authenticate, isModuleCoordinator, seminarController.updateModule);
+router.delete('/:id', authenticate, isModuleCoordinator, seminarController.deleteModule);
 
 // Enrollment routes
 router.post('/:moduleId/enroll', authenticate, seminarController.enrollStudent);

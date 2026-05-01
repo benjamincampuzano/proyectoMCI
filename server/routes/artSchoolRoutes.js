@@ -74,11 +74,11 @@ router.delete('/enrollments/:id', isAdmin, artSchoolController.deleteEnrollment)
 // Asistencias — cualquier autenticado puede registrar asistencia
 router.post('/attendances', artSchoolController.registerAttendance);
 
-// Sesiones
+// Sesiones — lectura para todos autenticados, creación/edición solo para Coordinadores/Subcoordinadores/Tesoreros del módulo
 router.get('/classes/:id/sessions', artSchoolController.getSessions);
-router.post('/classes/:id/sessions', artSchoolController.createSession);
-router.put('/sessions/:id', artSchoolController.updateSession);
-router.delete('/sessions/:id', artSchoolController.deleteSession);
+router.post('/classes/:id/sessions', isModuleCoordinator, canManageArtsClasses, artSchoolController.createSession);
+router.put('/sessions/:id', isModuleCoordinator, canManageArtsClasses, artSchoolController.updateSession);
+router.delete('/sessions/:id', isModuleCoordinator, canManageArtsClasses, artSchoolController.deleteSession);
 router.post('/sessions/:id/attendance', artSchoolController.registerSessionAttendance);
 
 // Reportes

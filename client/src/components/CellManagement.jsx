@@ -1086,10 +1086,8 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                     <button
                                                         type="button"
                                                         onClick={() => {
-                                                            console.log('Botón mapa presionado, formData:', formData);
                                                             setMapAddress(formData.address || formData.city || 'Manizales');
                                                             setShowMapModal(true);
-                                                            console.log('showMapModal establecido a true');
                                                         }}
                                                         className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 transition-colors"
                                                         title="Seleccionar en mapa"

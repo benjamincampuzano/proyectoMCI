@@ -160,14 +160,39 @@ exports.getClasses = async (req, res) => {
     const userRoles = user.roles || [];
     const userId = user.id;
 
+    // Si los datos de módulo no están en el token, cargarlos de la base de datos
+    if (!user.moduleCoordinations || !user.moduleSubCoordinations || !user.moduleTreasurers) {
+      const [coordinations, subCoordinations, treasurers] = await Promise.all([
+        prisma.moduleCoordinator.findMany({
+          where: { userId, isDeleted: false },
+          select: { moduleName: true }
+        }),
+        prisma.moduleSubCoordinator.findMany({
+          where: { userId, isDeleted: false },
+          select: { moduleName: true }
+        }),
+        prisma.moduleTreasurer.findMany({
+          where: { userId, isDeleted: false },
+          select: { moduleName: true }
+        })
+      ]);
+
+      // Actualizar el objeto user con los datos de módulo
+      user.moduleCoordinations = coordinations.map(c => c.moduleName);
+      user.moduleSubCoordinations = subCoordinations.map(sc => sc.moduleName);
+      user.moduleTreasurers = treasurers.map(t => t.moduleName);
+    }
+
     // Determine if user has full access (ADMIN, PASTOR, LIDER_DOCE, Coordinator, Subcoordinator, Treasurer)
     const hasFullAccess = userRoles.includes('ADMIN') || 
                          userRoles.includes('PASTOR') ||
                          userRoles.includes('LIDER_DOCE') ||
-                         (user.moduleCoordinations && user.moduleCoordinations.length > 0) ||
-                         (user.moduleSubCoordinations && user.moduleSubCoordinations.length > 0) ||
-                         (user.moduleTreasurers && user.moduleTreasurers.length > 0);
+                         // Verificar si tiene roles de Escuela de Artes específicamente
+                         (user.moduleCoordinations && user.moduleCoordinations.some(module => ['escuela-de-artes', 'arts'].includes(module))) ||
+                         (user.moduleSubCoordinations && user.moduleSubCoordinations.some(module => ['escuela-de-artes', 'arts'].includes(module))) ||
+                         (user.moduleTreasurers && user.moduleTreasurers.some(module => ['escuela-de-artes', 'arts'].includes(module)));
 
+    
     let classes = await prisma.artClass.findMany({
       where: { isDeleted: false },
       include: {
@@ -230,7 +255,7 @@ exports.getClasses = async (req, res) => {
           }
           return false;
         })
-      })).filter(cls => cls.enrollments.length > 0); // Only show classes that have visible enrollments
+      })).filter(cls => cls.enrollments.length > 0); // Only show classes that have visible enrollments for non-admin users
     }
 
     // Add totals to enrollments in each class
@@ -246,6 +271,7 @@ exports.getClasses = async (req, res) => {
       })
     }));
 
+    
     res.status(200).json(classesWithTotals);
   } catch (error) {
     console.error('Error in getClasses:', error);
@@ -260,13 +286,37 @@ exports.getClassById = async (req, res) => {
     const userRoles = user.roles || [];
     const userId = user.id;
 
+    // Si los datos de módulo no están en el token, cargarlos de la base de datos
+    if (!user.moduleCoordinations || !user.moduleSubCoordinations || !user.moduleTreasurers) {
+      const [coordinations, subCoordinations, treasurers] = await Promise.all([
+        prisma.moduleCoordinator.findMany({
+          where: { userId, isDeleted: false },
+          select: { moduleName: true }
+        }),
+        prisma.moduleSubCoordinator.findMany({
+          where: { userId, isDeleted: false },
+          select: { moduleName: true }
+        }),
+        prisma.moduleTreasurer.findMany({
+          where: { userId, isDeleted: false },
+          select: { moduleName: true }
+        })
+      ]);
+
+      // Actualizar el objeto user con los datos de módulo
+      user.moduleCoordinations = coordinations.map(c => c.moduleName);
+      user.moduleSubCoordinations = subCoordinations.map(sc => sc.moduleName);
+      user.moduleTreasurers = treasurers.map(t => t.moduleName);
+    }
+
     // Determine if user has full access (ADMIN, PASTOR, LIDER_DOCE, Coordinator, Subcoordinator, Treasurer)
     const hasFullAccess = userRoles.includes('ADMIN') || 
                          userRoles.includes('PASTOR') ||
                          userRoles.includes('LIDER_DOCE') ||
-                         (user.moduleCoordinations && user.moduleCoordinations.length > 0) ||
-                         (user.moduleSubCoordinations && user.moduleSubCoordinations.length > 0) ||
-                         (user.moduleTreasurers && user.moduleTreasurers.length > 0);
+                         // Verificar si tiene roles de Escuela de Artes específicamente
+                         (user.moduleCoordinations && user.moduleCoordinations.some(module => ['escuela-de-artes', 'arts'].includes(module))) ||
+                         (user.moduleSubCoordinations && user.moduleSubCoordinations.some(module => ['escuela-de-artes', 'arts'].includes(module))) ||
+                         (user.moduleTreasurers && user.moduleTreasurers.some(module => ['escuela-de-artes', 'arts'].includes(module)));
 
     const artClass = await prisma.artClass.findUnique({
       where: { id: Number(id) },

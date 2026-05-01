@@ -28,7 +28,9 @@ const EscuelaDeArtes = () => {
     const isModuleCoordinator = isCoordinator('escuela-de-artes');
     const isModuleSubCoordinator = user?.isModuleSubCoordinator || 
                                    (user?.moduleSubCoordinations && user.moduleSubCoordinations.includes('escuela-de-artes'));
-    const hasFullEditAccess = hasAdminOrPastor || isModuleCoordinator || isModuleSubCoordinator;
+    const isModuleTreasurer = user?.isModuleTreasurer || 
+                               (user?.moduleTreasurers && user.moduleTreasurers.includes('escuela-de-artes'));
+    const hasFullEditAccess = hasAdminOrPastor || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
 
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -363,7 +365,14 @@ const EscuelaDeArtes = () => {
                                             </div>
                                         </div>
 
-                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-purple-600 transition-colors">
+                                        <h3 
+                                            className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-purple-600 transition-colors cursor-pointer hover:underline"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                fetchClassDetails(cls.id);
+                                            }}
+                                            title="Ver detalles y estudiantes inscritos"
+                                        >
                                             {cls.name}
                                         </h3>
 
@@ -376,7 +385,7 @@ const EscuelaDeArtes = () => {
                                         <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                                             <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                                                 <GuitarIcon size={16} className="mr-2 text-purple-500" />
-                                                {cls.duration} semanas
+                                                {cls.duration} Minutos //Revisa
                                             </div>
                                             <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                                                 <Users size={16} className="mr-2 text-purple-500" />
@@ -619,15 +628,15 @@ const EscuelaDeArtes = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Donación</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Donación $</label>
                             <input
                                 type="number"
                                 value={formData.cost}
                                 onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
                                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 placeholder="0"
-                                min="0"
-                                step="10000"
+                                min="15000"
+                                step="1000"
                                 required
                             />
                         </div>
@@ -640,7 +649,7 @@ const EscuelaDeArtes = () => {
                                     onChange={(e) => setDurationHours(e.target.value)}
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                     placeholder="1"
-                                    min="0.5"
+                                    min="1"
                                     step="0.5"
                                     required
                                 />
@@ -660,7 +669,7 @@ const EscuelaDeArtes = () => {
                                     onChange={(e) => setScheduleDay(e.target.value)}
                                     className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
                                 >
-                                    {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(day => (
+                                    {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes','Sábado', 'Domingo'].map(day => (
                                         <option key={day} value={day}>{day}</option>
                                     ))}
                                 </select>
@@ -720,7 +729,7 @@ const EscuelaDeArtes = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auxiliar</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Coordinador Auxiliar</label>
                             <AsyncSearchSelect
                                 fetchItems={(term) => {
                                     if (!term || term.length < 2) return Promise.resolve([]);
@@ -829,11 +838,11 @@ const EscuelaDeArtes = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duración (semanas)</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duración (Horas por clase)</label>
                             <input
                                 type="number"
-                                value={formData.duration}
-                                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                value={durationHours}
+                                onChange={(e) => setDurationHours(e.target.value)}
                                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 required
                             />
@@ -885,7 +894,7 @@ const EscuelaDeArtes = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auxiliar</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Coordinador Auxiliar</label>
                             <AsyncSearchSelect
                                 fetchItems={(term) => {
                                     if (!term || term.length < 2) return Promise.resolve([]);

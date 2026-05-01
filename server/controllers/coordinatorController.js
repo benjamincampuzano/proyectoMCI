@@ -397,14 +397,15 @@ const assignModuleSubCoordinator = async (req, res) => {
 
         const normalizedModule = normalizeModuleName(module);
 
-        // Hallazgo #3: Validación de permisos antes de asignar subcoordinador
-        const assignerIsAdmin = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
-        const assignerIsCoordinator = await prisma.moduleCoordinator.findFirst({
-            where: { userId: req.user.id, moduleName: normalizedModule }
-        });
-
-        if (!assignerIsAdmin && !assignerIsCoordinator) {
-            return res.status(403).json({ message: 'Not authorized to assign subcoordinators' });
+        // Check if user has admin access on this module (coordinator, subcoordinator, or treasurer)
+        const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+        const isMainCoordinator = req.user.moduleCoordinations?.includes(normalizedModule);
+        const isElevatedRole = req.user.moduleSubCoordinations?.includes(normalizedModule) ||
+                              req.user.moduleTreasurers?.includes(normalizedModule);
+        
+        // Solo coordinadores principales pueden asignar subcoordinadores
+        if (!isMainCoordinator && !isAdminOrPastor) {
+            return res.status(403).json({ message: 'Only main coordinators or admin can assign a subcoordinator' });
         }
 
         // Hallazgo #11: Validar red en asignaciones
@@ -422,7 +423,7 @@ const assignModuleSubCoordinator = async (req, res) => {
         };
         const moduleNetwork = moduleNetworkMap[normalizedModule];
         
-        if (moduleNetwork && requesterNetwork !== moduleNetwork && !assignerIsAdmin) {
+        if (moduleNetwork && requesterNetwork !== moduleNetwork && !isAdminOrPastor) {
             return res.status(403).json({ message: 'Cannot assign subcoordinators outside your network' });
         }
 
@@ -528,12 +529,15 @@ const removeModuleSubCoordinator = async (req, res) => {
         const { module } = req.params;
         const normalizedModule = normalizeModuleName(module);
         
-        // Check if user is a module coordinator (not sub-coordinator) of this module
-        const isCoordinatorOfThisModule = req.user.moduleCoordinations?.includes(normalizedModule);
+        // Check if user has admin access on this module (coordinator, subcoordinator, or treasurer)
         const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+        const isMainCoordinator = req.user.moduleCoordinations?.includes(normalizedModule);
+        const isElevatedRole = req.user.moduleSubCoordinations?.includes(normalizedModule) ||
+                              req.user.moduleTreasurers?.includes(normalizedModule);
         
-        if (!isCoordinatorOfThisModule && !isAdminOrPastor) {
-            return res.status(403).json({ message: 'Only the module coordinator or admin can remove a subcoordinator' });
+        // Solo coordinadores principales pueden eliminar subcoordinadores
+        if (!isMainCoordinator && !isAdminOrPastor) {
+            return res.status(403).json({ message: 'Only main coordinators or admin can remove a subcoordinator' });
         }
 
         const oldSubCoordinators = await prisma.moduleSubCoordinator.findMany({
@@ -727,14 +731,14 @@ const assignModuleTreasurer = async (req, res) => {
         const { userId } = req.body;
         const normalizedModule = normalizeModuleName(module);
 
-        // Hallazgo #3: Validación de permisos antes de asignar tesorero
-        const assignerIsAdmin = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
-        const assignerIsCoordinator = await prisma.moduleCoordinator.findFirst({
-            where: { userId: req.user.id, moduleName: normalizedModule }
-        });
-
-        if (!assignerIsAdmin && !assignerIsCoordinator) {
-            return res.status(403).json({ message: 'Only the module coordinator or admin can assign a treasurer' });
+        // Check if user has admin access on this module (coordinator, subcoordinator, or treasurer)
+        const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+        const hasModuleAdmin = req.user.moduleCoordinations?.includes(normalizedModule) ||
+                             req.user.moduleSubCoordinations?.includes(normalizedModule) ||
+                             req.user.moduleTreasurers?.includes(normalizedModule);
+        
+        if (!hasModuleAdmin && !isAdminOrPastor) {
+            return res.status(403).json({ message: 'Only module coordinators, subcoordinators, treasurers or admin can assign a treasurer' });
         }
 
         // Hallazgo #11: Validar red en asignaciones
@@ -752,7 +756,7 @@ const assignModuleTreasurer = async (req, res) => {
         };
         const moduleNetwork = moduleNetworkMap[normalizedModule];
         
-        if (moduleNetwork && requesterNetwork !== moduleNetwork && !assignerIsAdmin) {
+        if (moduleNetwork && requesterNetwork !== moduleNetwork && !isAdminOrPastor) {
             return res.status(403).json({ message: 'Cannot assign treasurers outside your network' });
         }
 
@@ -870,11 +874,14 @@ const removeModuleTreasurer = async (req, res) => {
         const { module } = req.params;
         const normalizedModule = normalizeModuleName(module);
 
-        const isCoordinatorOfThisModule = req.user.isModuleCoordinatorOfCurrent && !req.user.isSubCoordinator && !req.user.isModuleTreasurer;
+        // Check if user has admin access on this module (coordinator, subcoordinator, or treasurer)
         const isAdminOrPastor = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+        const hasModuleAdmin = req.user.moduleCoordinations?.includes(normalizedModule) ||
+                             req.user.moduleSubCoordinations?.includes(normalizedModule) ||
+                             req.user.moduleTreasurers?.includes(normalizedModule);
         
-        if (!isCoordinatorOfThisModule && !isAdminOrPastor) {
-            return res.status(403).json({ message: 'Only the module coordinator or admin can remove a treasurer' });
+        if (!hasModuleAdmin && !isAdminOrPastor) {
+            return res.status(403).json({ message: 'Only module coordinators, subcoordinators, treasurers or admin can remove a treasurer' });
         }
 
         const oldTreasurers = await prisma.moduleTreasurer.findMany({

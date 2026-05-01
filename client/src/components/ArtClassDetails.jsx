@@ -64,7 +64,9 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
     const isModuleCoordinator = isCoordinator('escuela-de-artes');
     const isModuleSubCoordinator = user?.isModuleSubCoordinator || 
                                    (user?.moduleSubCoordinations && user.moduleSubCoordinations.includes('escuela-de-artes'));
-    const hasFullEditAccess = hasAdminOrPastor || isModuleCoordinator || isModuleSubCoordinator;
+    const isModuleTreasurer = user?.isModuleTreasurer || 
+                               (user?.moduleTreasurers && user.moduleTreasurers.includes('escuela-de-artes'));
+    const hasFullEditAccess = hasAdminOrPastor || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
     const canModify = hasFullEditAccess || parseInt(user?.id) === parseInt(artClass?.professorId);
 
     useEffect(() => {
@@ -440,7 +442,7 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
                                                                         <UserPlus size={16} />
                                                                     </button>
                                                                 )}
-                                                                {isAdmin() && (
+                                                                {canModify && (
                                                                     <button
                                                                         onClick={() => handleDelete(enr.id)}
                                                                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
@@ -749,11 +751,11 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duración (semanas)</label>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duración (Horas por clase)</label>
                                                 <input
                                                     type="number"
-                                                    value={editData.duration}
-                                                    onChange={(e) => setEditData({ ...editData, duration: e.target.value })}
+                                                    value={durationHours}
+                                                    onChange={(e) => setDurationHours(e.target.value)}
                                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                                     required
                                                 />

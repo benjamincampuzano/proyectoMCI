@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
+const { isModuleCoordinator } = require('../middleware/coordinatorAuth');
 
 // Import controllers
 const churchAttendanceController = require('../controllers/churchAttendanceController');
@@ -28,9 +29,9 @@ router.get('/stats/guest-tracking', guestTrackingController.getGuestTrackingStat
 
 // Seminar Module Routes
 router.get('/seminar/modules', seminarController.getAllModules);
-router.post('/seminar/modules', seminarController.createModule);
-router.put('/seminar/modules/:id', seminarController.updateModule);
-router.delete('/seminar/modules/:id', seminarController.deleteModule);
+router.post('/seminar/modules', authenticate, isModuleCoordinator, seminarController.createModule);
+router.put('/seminar/modules/:id', authenticate, isModuleCoordinator, seminarController.updateModule);
+router.delete('/seminar/modules/:id', authenticate, isModuleCoordinator, seminarController.deleteModule);
 
 // Enrollment Routes
 // NOTE: These seem to duplicate/overlap with seminarRoutes.js but keeping existing structure
