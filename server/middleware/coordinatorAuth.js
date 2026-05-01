@@ -26,6 +26,7 @@ const AVAILABLE_MODULES = [
     'discipular',
     'kids',
     'escuela-de-artes',
+    'arts',
     'encuentro',
     'convencion'
 ];

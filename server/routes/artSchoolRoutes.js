@@ -25,11 +25,13 @@ const canManageArtsClasses = (req, res, next) => {
         }
 
         // Verificar si es coordinador, sub-coordinador o tesorero de escuela-de-artes
-        const moduleName = 'escuela-de-artes';
-        const isCoordinator = user.moduleCoordinations?.includes(moduleName);
-        const isSubCoordinator = user.moduleSubCoordinations?.includes(moduleName);
-        const isTreasurer = user.moduleTreasurers?.includes(moduleName);
+        // El módulo puede estar registrado como 'escuela-de-artes' o 'arts'
+        const moduleNames = ['escuela-de-artes', 'arts'];
+        const isCoordinator = moduleNames.some(name => user.moduleCoordinations?.includes(name));
+        const isSubCoordinator = moduleNames.some(name => user.moduleSubCoordinations?.includes(name));
+        const isTreasurer = moduleNames.some(name => user.moduleTreasurers?.includes(name));
 
+        console.log('[canManageArtsClasses] Checking module names:', moduleNames);
         console.log('[canManageArtsClasses] isCoordinator:', isCoordinator, 'isSubCoordinator:', isSubCoordinator, 'isTreasurer:', isTreasurer);
 
         if (isCoordinator || isSubCoordinator || isTreasurer) {
