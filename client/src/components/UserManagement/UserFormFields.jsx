@@ -28,33 +28,33 @@ const UserFormFields = ({
     useEffect(() => {
         if (mode === 'edit' && fetchRelatedUsers) {
             const relatedIds = [];
-            
+
             // Add spouse ID
             if (formData.spouseId) {
                 relatedIds.push(formData.spouseId);
             }
-            
+
             // Add pastor IDs
             if (formData.pastorIds) {
                 formData.pastorIds.forEach(id => {
                     if (id) relatedIds.push(id);
                 });
             }
-            
+
             // Add lider doce IDs
             if (formData.liderDoceIds) {
                 formData.liderDoceIds.forEach(id => {
                     if (id) relatedIds.push(id);
                 });
             }
-            
+
             // Add lider celula IDs
             if (formData.liderCelulaIds) {
                 formData.liderCelulaIds.forEach(id => {
                     if (id) relatedIds.push(id);
                 });
             }
-            
+
             if (relatedIds.length > 0) {
                 fetchRelatedUsers(relatedIds);
             }
@@ -314,8 +314,8 @@ const UserFormFields = ({
 
                 {(formData.role === 'LIDER_DOCE' || formData.role === 'LIDER_CELULA' || formData.role === 'DISCIPULO') && (
                     <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
-                        {/* PASTORES (for LIDER_DOCE) */}
-                        {formData.role === 'LIDER_DOCE' && (
+                        {/* PASTORES (for LIDER_DOCE and LIDER_CELULA) */}
+                        {(formData.role === 'LIDER_DOCE' || formData.role === 'LIDER_CELULA') && (
                             <>
                                 {[0, 1].map(index => (
                                     <div key={`pastor-${index}`}>

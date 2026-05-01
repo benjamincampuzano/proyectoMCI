@@ -243,7 +243,9 @@ const addMeeting = async (req, res) => {
             return res.status(403).json({ error: 'Solo los miembros del grupo o administradores pueden registrar reuniones.' });
         }
 
-        const meetingDate = new Date(fecha);
+        // Fix timezone issue: parse YYYY-MM-DD as local date to avoid UTC offset
+        const [year, month, day] = fecha.split('-').map(Number);
+        const meetingDate = new Date(year, month - 1, day);
         if (isNaN(meetingDate.getTime())) return res.status(400).json({ error: 'Fecha inválida.' });
 
         // 1. Validate date is within group period

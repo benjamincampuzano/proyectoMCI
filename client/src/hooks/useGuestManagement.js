@@ -10,6 +10,10 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
     const [statusFilter, setStatusFilter] = useState('');
     const [invitedByFilter, setInvitedByFilter] = useState(null);
     const [liderDoceFilter, setLiderDoceFilter] = useState(null);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [pendingCalls, setPendingCalls] = useState(false);
+    const [pendingVisits, setPendingVisits] = useState(false);
 
     // Paginación numérica (10 registros por página)
     const [currentPage, setCurrentPage] = useState(1);
@@ -38,6 +42,10 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
             if (invitedByFilter && invitedByFilter.id !== undefined) params.append('invitedById', invitedByFilter.id);
             if (liderDoceFilter && liderDoceFilter.id !== undefined) params.append('liderDoceId', liderDoceFilter.id);
             if (searchTerm) params.append('search', searchTerm);
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
+            if (pendingCalls) params.append('pendingCalls', 'true');
+            if (pendingVisits) params.append('pendingVisits', 'true');
 
             const res = await api.get('/guests', {
                 params: Object.fromEntries(params)
@@ -54,7 +62,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         } finally {
             setLoading(false);
         }
-    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, guestsPerPage]);
+    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits, guestsPerPage]);
 
     // Obtener todos los invitados filtrados (sin paginación) para exportar
     const fetchAllGuests = useCallback(async () => {
@@ -67,6 +75,10 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
             if (invitedByFilter && invitedByFilter.id !== undefined) params.append('invitedById', invitedByFilter.id);
             if (liderDoceFilter && liderDoceFilter.id !== undefined) params.append('liderDoceId', liderDoceFilter.id);
             if (searchTerm) params.append('search', searchTerm);
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
+            if (pendingCalls) params.append('pendingCalls', 'true');
+            if (pendingVisits) params.append('pendingVisits', 'true');
 
             const res = await api.get('/guests', {
                 params: Object.fromEntries(params)
@@ -76,7 +88,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         } catch (err) {
             throw new Error(err.userMessage || err.response?.data?.message || 'Error al cargar invitados');
         }
-    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter]);
+    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits]);
 
     // Funciones de paginación
     const handlePageChange = useCallback((newPage) => {
@@ -93,7 +105,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
 
     useEffect(() => {
         fetchGuests(currentPage);
-    }, [fetchGuests, refreshTrigger, currentPage, statusFilter, invitedByFilter, liderDoceFilter]);
+    }, [fetchGuests, refreshTrigger, currentPage, statusFilter, invitedByFilter, liderDoceFilter, startDate, endDate, pendingCalls, pendingVisits]);
 
     useEffect(() => {
         if (searchDebounceTimeoutRef.current) {
@@ -115,7 +127,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
     // Resetear página cuando cambian los filtros
     useEffect(() => {
         setCurrentPage(1);
-    }, [statusFilter, invitedByFilter, liderDoceFilter]);
+    }, [statusFilter, invitedByFilter, liderDoceFilter, startDate, endDate, pendingCalls, pendingVisits]);
 
     const updateGuest = useCallback(async (guestId, updates) => {
         try {
@@ -178,6 +190,14 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         setInvitedByFilter,
         liderDoceFilter,
         setLiderDoceFilter,
+        startDate,
+        setStartDate,
+        endDate,
+        setEndDate,
+        pendingCalls,
+        setPendingCalls,
+        pendingVisits,
+        setPendingVisits,
         currentUser,
         fetchGuests,
         fetchAllGuests, // Exportar función para obtener todos los datos filtrados

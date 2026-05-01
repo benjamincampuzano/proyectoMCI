@@ -52,7 +52,7 @@ const formatDeadlineText = (goal) => {
     return 'N/A';
 };
 
-const GoalRow = ({ goal, isEditor, onEdit, onDelete, onRequestDelete }) => {
+const GoalRow = ({ goal, onEdit, onDelete, onRequestDelete }) => {
     const percent = Math.min(Math.round((goal.currentValue / goal.targetValue) * 100), 100);
     const status = calculateGoalStatus(goal, percent);
     const StatusIcon = status.icon;
@@ -124,33 +124,30 @@ const GoalRow = ({ goal, isEditor, onEdit, onDelete, onRequestDelete }) => {
                         {status.label}
                     </div>
                 </td>
-                {isEditor && (
-                    <td className="py-5 px-10 text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                            <button
-                                onClick={() => onEdit(goal)}
-                                className="p-2 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-brand-indigo)] hover:bg-[var(--ln-brand-indigo)]/5 rounded-xl transition-all border border-transparent hover:border-[var(--ln-brand-indigo)]/10"
-                                title="Editar"
-                            >
-                                <Pen size={16} weight="bold" />
-                            </button>
-                            <button
-                                onClick={() => onRequestDelete?.(goal)}
-                                className="p-2 text-[var(--ln-text-tertiary)] hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all border border-transparent hover:border-red-500/10"
-                                title="Eliminar"
-                            >
-                                <Trash size={16} weight="bold" />
-                            </button>
-                        </div>
-                    </td>
-                )}
+                <td className="py-5 px-10 text-right">
+                    <div className="flex items-center justify-end gap-1 transition-all duration-300">
+                        <button
+                            onClick={() => onEdit(goal)}
+                            className="p-2 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-brand-indigo)] hover:bg-[var(--ln-brand-indigo)]/5 rounded-xl transition-all border border-transparent hover:border-[var(--ln-brand-indigo)]/10"
+                            title="Editar"
+                        >
+                            <Pen size={16} weight="bold" />
+                        </button>
+                        <button
+                            onClick={() => onRequestDelete?.(goal)}
+                            className="p-2 text-[var(--ln-text-tertiary)] hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all border border-transparent hover:border-red-500/10"
+                            title="Eliminar"
+                        >
+                            <Trash size={16} weight="bold" />
+                        </button>
+                    </div>
+                </td>
             </tr>
     );
 };
 
 GoalRow.propTypes = {
     goal: PropTypes.object.isRequired,
-    isEditor: PropTypes.bool,
     onEdit: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
     onRequestDelete: PropTypes.func,

@@ -8,6 +8,35 @@ import { ROLES } from '../../constants/roles';
 import ConfirmationModal from '../ConfirmationModal';
 import PropTypes from 'prop-types';
 
+// Helper function to truncate text with tooltip
+const truncateText = (text, maxLength = 50) => {
+  if (!text || text.length <= maxLength) return text;
+  return text.substring(0, maxLength).trim() + '...';
+};
+
+// Component for truncated text with hover tooltip
+const TruncatedCell = ({ text, maxLength = 50, className = '' }) => {
+  if (!text) return <span className={className}>-</span>;
+  
+  const shouldTruncate = text.length > maxLength;
+  const displayText = shouldTruncate ? truncateText(text, maxLength) : text;
+  
+  return (
+    <span 
+      className={`${className} ${shouldTruncate ? 'cursor-help border-b border-dotted border-gray-400' : ''}`}
+      title={shouldTruncate ? text : undefined}
+    >
+      {displayText}
+    </span>
+  );
+};
+
+TruncatedCell.propTypes = {
+  text: PropTypes.string,
+  maxLength: PropTypes.number,
+  className: PropTypes.string
+};
+
 const CATEGORY_INFO = {
     'KIDS1': { label: 'Kids 1 (5-7 años)', minAge: 5, maxAge: 7, color: 'pink' },
     'KIDS2': { label: 'Kids 2 (8-10 años)', minAge: 8, maxAge: 10, color: 'purple' },
@@ -419,10 +448,18 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                                                 <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-medium">
                                                                     {schedule.date ? new Date(schedule.date).toLocaleDateString() : '-'}
                                                                 </td>
-                                                                <td className="px-4 py-3 text-gray-700 dark:text-white/80 whitespace-normal min-w-[200px]">{schedule.lesson}</td>
-                                                                <td className="px-4 py-3 text-[#86868b] dark:text-[#98989d] whitespace-normal min-w-[200px]">{schedule.bibleReading}</td>
-                                                                <td className="px-4 py-3 text-[#86868b] dark:text-[#98989d] whitespace-normal min-w-[200px] italic">"{schedule.memoryVerse}"</td>
-                                                                <td className="px-4 py-3 text-[#86868b] dark:text-[#98989d] whitespace-normal min-w-[200px]">{schedule.activity}</td>
+                                                                <td className="px-4 py-3 text-gray-700 dark:text-white/80 whitespace-normal min-w-[200px]">
+                                                                    <TruncatedCell text={schedule.lesson} maxLength={60} />
+                                                                </td>
+                                                                <td className="px-4 py-3 text-[#86868b] dark:text-[#98989d] whitespace-normal min-w-[200px]">
+                                                                    <TruncatedCell text={schedule.bibleReading} maxLength={60} />
+                                                                </td>
+                                                                <td className="px-4 py-3 text-[#86868b] dark:text-[#98989d] whitespace-normal min-w-[200px] italic">
+                                                                    "<TruncatedCell text={schedule.memoryVerse} maxLength={60} />"
+                                                                </td>
+                                                                <td className="px-4 py-3 text-[#86868b] dark:text-[#98989d] whitespace-normal min-w-[200px]">
+                                                                    <TruncatedCell text={schedule.activity} maxLength={60} />
+                                                                </td>
                                                                 <td className="px-4 py-3 text-[#1d1d1f] dark:text-white/80 font-medium">
                                                                     {schedule.teacher?.profile?.fullName || '-'}
                                                                 </td>
@@ -430,7 +467,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                                                     {schedule.auxiliary?.profile?.fullName || '-'}
                                                                 </td>
                                                                 <td className="px-4 py-3 text-[#86868b] dark:text-[#98989d] whitespace-normal min-w-[200px] text-xs">
-                                                                    {schedule.observations}
+                                                                    <TruncatedCell text={schedule.observations} maxLength={80} />
                                                                 </td>
                                                                 {isKidsCoordinatorOrAdmin && (
                                                                     <td className="px-4 py-3 text-right">

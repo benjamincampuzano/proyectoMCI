@@ -399,15 +399,20 @@ const Metas = () => {
                             <span>Límite: <span className="text-[var(--ln-text-primary)]">{getDeadlineText(firstGoal)}</span></span>
                         </div>
                         <div className="flex gap-1.5">
-                            {isEditor && (
-                                <button
-                                    onClick={() => { setEditingGoal(firstGoal); setShowGoalForm(true); }}
-                                    className="p-2.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-brand-indigo)] hover:bg-[var(--ln-brand-indigo)]/5 rounded-xl transition-all border border-transparent hover:border-[var(--ln-brand-indigo)]/20"
-                                    title="Gestionar este grupo"
-                                >
-                                    <Pen size={16} weight="bold" />
-                                </button>
-                            )}
+                            <button
+                                onClick={() => { setEditingGoal(firstGoal); setShowGoalForm(true); }}
+                                className="p-2.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-brand-indigo)] hover:bg-[var(--ln-brand-indigo)]/5 rounded-xl transition-all border border-transparent hover:border-[var(--ln-brand-indigo)]/20"
+                                title="Gestionar este grupo"
+                            >
+                                <Pen size={16} weight="bold" />
+                            </button>
+                            <button
+                                onClick={() => setDeleteConfirm({ isOpen: true, goal: firstGoal })}
+                                className="p-2.5 text-[var(--ln-text-tertiary)] hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all border border-transparent hover:border-red-500/20"
+                                title="Eliminar este grupo"
+                            >
+                                <Trash size={16} weight="bold" />
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -591,13 +596,13 @@ const Metas = () => {
                                     <th className="py-6 px-4 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center w-52">Cumplimiento</th>
                                     <th className="py-6 px-4 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center">Fecha Límite</th>
                                     <th className="py-6 px-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center">Estado</th>
-                                    {isEditor && <th className="py-6 px-10 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-right">Acciones</th>}
+                                    <th className="py-6 px-10 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[var(--ln-border-standard)]/50">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={isEditor ? 8 : 7} className="p-32 text-center">
+                                        <td colSpan={8} className="p-32 text-center">
                                             <div className="flex flex-col items-center gap-5">
                                                 <div className="w-12 h-12 border-[3px] border-[var(--ln-brand-indigo)]/20 border-t-[var(--ln-brand-indigo)] rounded-full animate-spin"></div>
                                                 <p className="text-[13px] weight-510 text-[var(--ln-text-tertiary)]">Cargando datos de rendimiento...</p>
@@ -606,7 +611,7 @@ const Metas = () => {
                                     </tr>
                                 ) : goals.length === 0 ? (
                                     <tr>
-                                        <td colSpan={isEditor ? 8 : 7} className="p-40 text-center">
+                                        <td colSpan={8} className="p-40 text-center">
                                             <div className="w-20 h-20 bg-[var(--ln-bg-panel)] rounded-3xl flex items-center justify-center mx-auto mb-6 border border-[var(--ln-border-standard)] shadow-sm">
                                                 <FileText size={32} className="text-[var(--ln-text-quaternary)]" weight="bold" />
                                             </div>
@@ -619,7 +624,6 @@ const Metas = () => {
                                         <GoalRow
                                             key={goal.id}
                                             goal={goal}
-                                            isEditor={isEditor}
                                             onEdit={(g) => { setEditingGoal(g); setShowGoalForm(true); }}
                                             onDelete={handleDelete}
                                             onRequestDelete={(g) => setDeleteConfirm({ isOpen: true, goal: g })}

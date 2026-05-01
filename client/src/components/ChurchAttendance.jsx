@@ -1,7 +1,26 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Check, X, Trash, Desktop, Users, MagnifyingGlass, UserMinus } from '@phosphor-icons/react';
+import { Calendar, Check, X, Trash, Desktop, Users, MagnifyingGlass, UserMinus, Funnel } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import AsyncSearchSelect from './ui/AsyncSearchSelect';
+import { useAuth } from '../hooks/useAuth';
+import { ROLES } from '../constants/roles';
+
+// Valores del enum Network de Prisma
+const NETWORK_OPTIONS = [
+    { value: 'MUJERES', label: 'Mujeres' },
+    { value: 'HOMBRES', label: 'Hombres' },
+    { value: 'JOVENES', label: 'Jóvenes' },
+    { value: 'KIDS', label: 'Kids' },
+    { value: 'ROCAS', label: 'Rocas' },
+    { value: 'TEENS', label: 'Teens' }
+];
+
+// Helper para obtener label de red
+const getNetworkLabel = (redValue) => {
+    const network = NETWORK_OPTIONS.find(n => n.value === redValue);
+    return network?.label || redValue;
+};
 
 const ChurchAttendance = () => {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -12,6 +31,14 @@ const ChurchAttendance = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // Estados para filtros
+    const { user } = useAuth();
+    const [showFilters, setShowFilters] = useState(false);
+    const [liderDoceFilter, setLiderDoceFilter] = useState(null);
+    const [liderCelulaFilter, setLiderCelulaFilter] = useState(null);
+    const [rolFilter, setRolFilter] = useState('');
+    const [redFilter, setRedFilter] = useState('');
 
     useEffect(() => {
         fetchMembers();
@@ -22,7 +49,8 @@ const ChurchAttendance = () => {
         try {
             setLoading(true);
             const response = await api.get('/consolidar/church-attendance/members/all');
-            setMembers(response.data);
+            const membersData = response.data;
+            setMembers(membersData);
         } catch (error) {
             toast.error('Error al cargar miembros. Por favor intenta nuevamente.');
         } finally {
@@ -101,31 +129,74 @@ const ChurchAttendance = () => {
         }
     };
 
+    // Verificar si hay filtros activos
+    const hasActiveFilters = liderDoceFilter || liderCelulaFilter || rolFilter || redFilter || searchTerm;
+
+    // Función para limpiar todos los filtros
+    const clearFilters = () => {
+        setLiderDoceFilter(null);
+        setLiderCelulaFilter(null);
+        setRolFilter('');
+        setRedFilter('');
+        setSearchTerm('');
+    };
+
     const filteredMembers = useMemo(() => {
-        if (!searchTerm) return members;
-        const lower = searchTerm.toLowerCase();
-        return members.filter(m =>
-            m.fullName?.toLowerCase().includes(lower) ||
-            m.email?.toLowerCase().includes(lower)
-        );
-    }, [members, searchTerm]);
+        let filtered = members;
+        
+        // Filtro por término de búsqueda (nombre/email)
+        if (searchTerm) {
+            const lower = searchTerm.toLowerCase();
+            filtered = filtered.filter(m =>
+                m.fullName?.toLowerCase().includes(lower) ||
+                m.email?.toLowerCase().includes(lower)
+            );
+        }
+        
+        // Filtro por Líder de 12
+        if (liderDoceFilter) {
+            filtered = filtered.filter(m => m.liderDoceId === liderDoceFilter.id);
+        }
+        
+        // Filtro por Líder de Célula
+        if (liderCelulaFilter) {
+            filtered = filtered.filter(m => m.liderCelulaId === liderCelulaFilter.id);
+        }
+        
+        // Filtro por Rol
+        if (rolFilter) {
+            filtered = filtered.filter(m => m.roles?.includes(rolFilter));
+        }
+        
+        // Filtro por Red
+        if (redFilter) {
+            filtered = filtered.filter(m => m.red === redFilter);
+        }
+        
+        return filtered;
+    }, [members, searchTerm, liderDoceFilter, liderCelulaFilter, rolFilter, redFilter]);
 
     const stats = useMemo(() => {
-        let totales = members.length;
+        // Usar filteredMembers para las estadísticas
+        const filteredIds = new Set(filteredMembers.map(m => m.id));
+        let totales = filteredMembers.length;
         let presentes = 0;
         let ausentes = 0;
         let virtuales = 0;
 
-        Object.values(attendances).forEach(status => {
-            if (status === 'PRESENTE') presentes++;
-            else if (status === 'AUSENTE') ausentes++;
-            else if (status === 'VIRTUAL') virtuales++;
+        // Solo contar asistencias de miembros filtrados
+        Object.entries(attendances).forEach(([userId, status]) => {
+            if (filteredIds.has(parseInt(userId))) {
+                if (status === 'PRESENTE') presentes++;
+                else if (status === 'AUSENTE') ausentes++;
+                else if (status === 'VIRTUAL') virtuales++;
+            }
         });
 
         let sinRegistro = totales - (presentes + ausentes + virtuales);
 
-        return { totales, presentes, ausentes, virtuales, sinRegistro };
-    }, [members, attendances]);
+        return { totales, presentes, ausentes, virtuales, sinRegistro, totalMembers: members.length };
+    }, [members, filteredMembers, attendances]);
 
     if (loading) {
         return (
@@ -231,7 +302,9 @@ const ChurchAttendance = () => {
                         <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300">
                             <Users size={18} weight="bold" />
                         </div>
-                        <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-tight">Total</span>
+                        <span className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-tight">
+                            {stats.totalMembers !== stats.totales ? `Mostrando ${stats.totales} de ${stats.totalMembers}` : 'Total'}
+                        </span>
                     </div>
                     <span className="text-2xl font-extrabold text-gray-900 dark:text-white">{stats.totales}</span>
                 </div>
@@ -279,39 +352,176 @@ const ChurchAttendance = () => {
 
             {/* List and Search Container */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                {/* Search Bar */}
+                {/* Search Bar with Filters Button */}
                 <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <MagnifyingGlass className="h-5 w-5 text-gray-400" />
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="relative flex-1">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <MagnifyingGlass className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre o correo..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                            />
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Buscar por nombre o correo..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-                        />
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                                hasActiveFilters
+                                    ? 'bg-blue-500 text-white shadow-md'
+                                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                            }`}
+                        >
+                            <Funnel size={18} weight={showFilters ? "fill" : "bold"} />
+                            Filtros
+                            {hasActiveFilters && (
+                                <span className="ml-1 px-2 py-0.5 rounded-full bg-white/20 text-xs">
+                                    {[liderDoceFilter, liderCelulaFilter, rolFilter, redFilter, searchTerm].filter(Boolean).length}
+                                </span>
+                            )}
+                        </button>
                     </div>
                 </div>
+
+                {/* Filters Panel */}
+                {showFilters && (
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40">
+                        <div className="flex flex-wrap items-end gap-4">
+                            {/* Filtro por Líder de 12 */}
+                            <div className="flex-[2] min-w-[250px]">
+                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                                    Líder de 12
+                                </label>
+                                <AsyncSearchSelect
+                                    fetchItems={(term) => {
+                                        const roleFilter = user?.roles?.includes('PASTOR') ? "LIDER_DOCE,PASTOR" : "LIDER_DOCE";
+                                        return api.get('/users/search', {
+                                            params: { search: term, role: roleFilter }
+                                        }).then(res => res.data);
+                                    }}
+                                    selectedValue={liderDoceFilter}
+                                    onSelect={(user) => setLiderDoceFilter(user || null)}
+                                    placeholder="Buscar líder de 12..."
+                                    labelKey="fullName"
+                                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg"
+                                />
+                            </div>
+
+                            {/* Filtro por Líder de Célula */}
+                            <div className="flex-[2] min-w-[250px]">
+                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                                    Líder de Célula
+                                </label>
+                                <AsyncSearchSelect
+                                    fetchItems={(term) => api.get('/users/search', {
+                                        params: { search: term, role: "LIDER_CELULA" }
+                                    }).then(res => res.data)}
+                                    selectedValue={liderCelulaFilter}
+                                    onSelect={(user) => setLiderCelulaFilter(user || null)}
+                                    placeholder="Buscar líder de célula..."
+                                    labelKey="fullName"
+                                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg"
+                                />
+                            </div>
+
+                            {/* Filtro por Rol */}
+                            <div className="flex-1 min-w-[180px]">
+                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                                    Rol
+                                </label>
+                                <select
+                                    value={rolFilter}
+                                    onChange={(e) => setRolFilter(e.target.value)}
+                                    className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+                                >
+                                    <option value="">Todos los roles</option>
+                                    <option value={ROLES.LIDER_DOCE}>Líder de 12</option>
+                                    <option value={ROLES.LIDER_CELULA}>Líder de Célula</option>
+                                    <option value={ROLES.DISCIPULO}>Discípulo</option>
+                                    <option value={ROLES.PASTOR}>Pastor</option>
+                                </select>
+                            </div>
+
+                            {/* Filtro por Red */}
+                            <div className="flex-1 min-w-[180px]">
+                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                                    Red
+                                </label>
+                                <select
+                                    value={redFilter}
+                                    onChange={(e) => setRedFilter(e.target.value)}
+                                    className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+                                >
+                                    <option value="">Todas las redes</option>
+                                    {NETWORK_OPTIONS.map(network => (
+                                        <option key={network.value} value={network.value}>{network.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Botón Limpiar Filtros */}
+                        {hasActiveFilters && (
+                            <div className="flex justify-end mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <button
+                                    onClick={clearFilters}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                                >
+                                    <X size={16} weight="bold" />
+                                    Limpiar filtros
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Mobile View (Cards) */}
                 <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
                     {filteredMembers.map(member => (
                         <div key={member.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                            <div className="flex items-center gap-3 mb-4">
+                            <div className="flex items-center gap-3 mb-3">
                                 <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm shrink-0 border border-blue-200 dark:border-blue-800">
                                     {member.fullName.charAt(0).toUpperCase()}
                                 </div>
-                                <div className="overflow-hidden">
+                                <div className="overflow-hidden flex-1">
                                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                                         {member.fullName}
                                     </h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                        {member.roles?.join(', ') || member.role}
-                                    </p>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                            {member.roles?.join(', ') || member.role || 'NA'}
+                                        </span>
+                                        {member.red && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                                                {getNetworkLabel(member.red)}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+                            
+                            {/* Info jerárquica en móvil */}
+                            <div className="mb-3 space-y-1">
+                                {member.liderDoceName && (
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <span className="font-medium">Líder 12:</span> {member.liderDoceName}
+                                    </div>
+                                )}
+                                {member.liderCelulaName && (
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <span className="font-medium">Líder Célula:</span> {member.liderCelulaName}
+                                    </div>
+                                )}
+                                {member.cellName && (
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        <span className="font-medium">Célula:</span> {member.cellName}
+                                    </div>
+                                )}
+                            </div>
+                            
                             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
                                 {renderActionButtons(member.id, attendances[member.id])}
                             </div>
@@ -333,7 +543,7 @@ const ChurchAttendance = () => {
                                     Miembro
                                 </th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Rol / Network
+                                    Rol / Jerarquía
                                 </th>
                                 <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Registro de Asistencia
@@ -359,9 +569,40 @@ const ChurchAttendance = () => {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                            {member.roles?.join(', ') || member.role || 'NA'}
-                                        </span>
+                                        <div className="space-y-1.5">
+                                            {/* Rol del miembro */}
+                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                                {member.roles?.join(', ') || member.role || 'NA'}
+                                            </span>
+                                            
+                                            {/* Red */}
+                                            {member.red && (
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                    <span className="font-medium text-gray-600 dark:text-gray-400">Red:</span> {getNetworkLabel(member.red)}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Líder de 12 */}
+                                            {member.liderDoceName && (
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                    <span className="font-medium text-gray-600 dark:text-gray-400">L12:</span> {member.liderDoceName}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Líder de Célula */}
+                                            {member.liderCelulaName && (
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                    <span className="font-medium text-gray-600 dark:text-gray-400">LC:</span> {member.liderCelulaName}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Celula */}
+                                            {member.cellName && (
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                    <span className="font-medium text-gray-600 dark:text-gray-400">Célula:</span> {member.cellName}
+                                                </div>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
                                         {renderActionButtons(member.id, attendances[member.id])}

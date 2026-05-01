@@ -619,7 +619,7 @@ const EscuelaDeArtes = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Donación</label>
                             <input
                                 type="number"
                                 value={formData.cost}
@@ -627,7 +627,7 @@ const EscuelaDeArtes = () => {
                                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 placeholder="0"
                                 min="0"
-                                step="10000"
+                                step="100000"
                                 required
                             />
                         </div>
@@ -639,7 +639,7 @@ const EscuelaDeArtes = () => {
                                     value={durationHours}
                                     onChange={(e) => setDurationHours(e.target.value)}
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                    placeholder="2"
+                                    placeholder="1"
                                     min="0.5"
                                     step="0.5"
                                     required
@@ -693,7 +693,7 @@ const EscuelaDeArtes = () => {
                                     if (!term || term.length < 2) return Promise.resolve([]);
                                     const params = { 
                                         search: term,
-                                        allowAllRoles: 'true' // Allow any registered user as professor
+                                        allowAllRoles: 'true'
                                     };
                                     return api.get('/users/search', { params })
                                         .then(res => res.data);

@@ -132,10 +132,43 @@ const getAllMembers = async (req, res) => {
             where,
             select: {
                 id: true,
-                profile: { select: { fullName: true } },
+                profile: { select: { fullName: true, network: true } },
                 email: true,
                 roles: {
                     include: { role: true }
+                },
+                // Get cell info for leader data
+                cell: {
+                    select: {
+                        id: true,
+                        name: true,
+                        leader: {
+                            select: {
+                                id: true,
+                                profile: { select: { fullName: true } }
+                            }
+                        },
+                        liderDoce: {
+                            select: {
+                                id: true,
+                                profile: { select: { fullName: true } }
+                            }
+                        }
+                    }
+                },
+                // Get hierarchy parents (liderDoce from hierarchy)
+                parents: {
+                    where: {
+                        role: 'LIDER_DOCE'
+                    },
+                    select: {
+                        parent: {
+                            select: {
+                                id: true,
+                                profile: { select: { fullName: true } }
+                            }
+                        }
+                    }
                 }
             },
             orderBy: {
@@ -143,13 +176,32 @@ const getAllMembers = async (req, res) => {
             }
         });
 
-        // Format for frontend
-        const formattedMembers = members.map(m => ({
-            id: m.id,
-            fullName: m.profile?.fullName || 'Sin Nombre',
-            email: m.email,
-            role: m.roles.map(r => r.role.name).join(', ')
-        }));
+        // Format for frontend with hierarchy info
+        const formattedMembers = members.map(m => {
+            // Get liderDoce from cell or from hierarchy
+            const liderDoceFromCell = m.cell?.liderDoce;
+            const liderDoceFromHierarchy = m.parents?.[0]?.parent;
+            const liderDoce = liderDoceFromCell || liderDoceFromHierarchy;
+
+            return {
+                id: m.id,
+                fullName: m.profile?.fullName || 'Sin Nombre',
+                email: m.email,
+                role: m.roles.map(r => r.role.name).join(', '),
+                roles: m.roles.map(r => r.role.name),
+                // Lider de 12 info
+                liderDoceId: liderDoce?.id || null,
+                liderDoceName: liderDoce?.profile?.fullName || null,
+                // Lider de celula info
+                liderCelulaId: m.cell?.leader?.id || null,
+                liderCelulaName: m.cell?.leader?.profile?.fullName || null,
+                // Red info (from UserProfile)
+                red: m.profile?.network || null,
+                // Cell info
+                cellId: m.cell?.id || null,
+                cellName: m.cell?.name || null
+            };
+        });
 
         res.json(formattedMembers);
     } catch (error) {

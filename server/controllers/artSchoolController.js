@@ -160,12 +160,13 @@ exports.getClasses = async (req, res) => {
     const userRoles = user.roles || [];
     const userId = user.id;
 
-    // Determine if user has full access (ADMIN, PASTOR, Coordinator, Subcoordinator)
+    // Determine if user has full access (ADMIN, PASTOR, LIDER_DOCE, Coordinator, Subcoordinator, Treasurer)
     const hasFullAccess = userRoles.includes('ADMIN') || 
                          userRoles.includes('PASTOR') ||
-                         user.isCoordinator ||
+                         userRoles.includes('LIDER_DOCE') ||
                          (user.moduleCoordinations && user.moduleCoordinations.length > 0) ||
-                         user.isModuleSubCoordinator;
+                         (user.moduleSubCoordinations && user.moduleSubCoordinations.length > 0) ||
+                         (user.moduleTreasurers && user.moduleTreasurers.length > 0);
 
     let classes = await prisma.artClass.findMany({
       where: { isDeleted: false },
@@ -259,12 +260,13 @@ exports.getClassById = async (req, res) => {
     const userRoles = user.roles || [];
     const userId = user.id;
 
-    // Determine if user has full access (ADMIN, PASTOR, Coordinator, Subcoordinator)
+    // Determine if user has full access (ADMIN, PASTOR, LIDER_DOCE, Coordinator, Subcoordinator, Treasurer)
     const hasFullAccess = userRoles.includes('ADMIN') || 
                          userRoles.includes('PASTOR') ||
-                         user.isCoordinator ||
+                         userRoles.includes('LIDER_DOCE') ||
                          (user.moduleCoordinations && user.moduleCoordinations.length > 0) ||
-                         user.isModuleSubCoordinator;
+                         (user.moduleSubCoordinations && user.moduleSubCoordinations.length > 0) ||
+                         (user.moduleTreasurers && user.moduleTreasurers.length > 0);
 
     const artClass = await prisma.artClass.findUnique({
       where: { id: Number(id) },

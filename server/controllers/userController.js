@@ -1552,6 +1552,8 @@ const getUsersByIds = async (req, res) => {
             },
             include: {
                 profile: true,
+                roles: { include: { role: true } },
+                parents: { include: { parent: { include: { profile: true } } } },
                 spouse: {
                     include: {
                         profile: true

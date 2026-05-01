@@ -210,6 +210,7 @@ const getNetwork = async (req, res) => {
         }
 
         const processedIds = new Set();
+        const processedSpouseIds = new Set(); // Track spouses that are already included in a couple node
 
         // Function to build node
         const buildNode = (currentUserId) => {
@@ -257,6 +258,9 @@ const getNetwork = async (req, res) => {
             // Filter children so they only appear under their MOST SPECIFIC leader
             const discipleNodes = directChildrenEdges
                 .filter(edge => {
+                    // Skip if this child was already processed as part of a couple
+                    if (processedSpouseIds.has(edge.childId)) return false;
+
                     const child = userMap.get(edge.childId);
                     if (!child) return false;
 
@@ -268,8 +272,18 @@ const getNetwork = async (req, res) => {
                     const maxRank = Math.max(...childParents.map(p => ROLE_RANK[p.role] || 0));
                     return ROLE_RANK[edge.role] === maxRank;
                 })
-                .map(edge => buildNode(edge.childId))
-                .filter(n => n !== null);
+                .map(edge => {
+                    const childNode = buildNode(edge.childId);
+                    // If this node has a spouse, mark all partners as processed (except the current edge)
+                    if (childNode && childNode.partners && childNode.partners.length > 1) {
+                        childNode.partners.forEach(p => {
+                            if (p.id !== edge.childId) {
+                                processedSpouseIds.add(p.id);
+                            }
+                        });
+                    }
+                    return childNode;
+                });
 
             // Combine guests
             const assignedGuests = [...(currentUser.assignedGuests || []), ...(spouseNode?.assignedGuests || [])];

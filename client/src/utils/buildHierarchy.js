@@ -14,28 +14,29 @@ export function buildCustomHierarchy(network, currentUser) {
 
   function findNodeById(node, targetId) {
     if (!node) return null;
-    
-    
+
+    // Node is a couple (has partners array)
     if (node.partners) {
-     if (node.partners.some(p => p.id === targetId)) {
-       return node;
-     }
-     
-     for (const disciple of node.disciples || []) {
-       const found = findNodeById(disciple, targetId);
-       if (found) return found;
-     }
+      if (node.partners.some(p => p.id === targetId)) {
+        return node;
+      }
+
+      for (const disciple of node.disciples || []) {
+        const found = findNodeById(disciple, targetId);
+        if (found) return found;
+      }
     } else {
+      // Single person node (legacy)
       if (node.id === targetId) {
         return node;
       }
-      
+
       for (const disciple of node.disciples || []) {
         const found = findNodeById(disciple, targetId);
         if (found) return found;
       }
     }
-    
+
     return null;
   }
 

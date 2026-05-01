@@ -24,6 +24,12 @@ export default memo(function CoupleNodeTree({
   const canRemove = canRemoveFromNode({ node, ancestors, currentUser, level });
   const canManage = canManageAssignments(currentUser);
 
+  // For PASTOR users, filter to show couples and single individuals (nodes with at least one partner)
+  const isPastor = currentUser?.roles?.includes('PASTOR');
+  const disciplesToShow = isPastor
+    ? (node.disciples || []).filter(child => child.partners && child.partners.length >= 1)
+    : (node.disciples || []);
+
   const handleToggle = () => {
     if (onToggleNode) {
       onToggleNode(node.id);
@@ -62,15 +68,15 @@ export default memo(function CoupleNodeTree({
       </div>
 
       {/* Children section */}
-      {isExpanded && (node.disciples?.length > 0 || (node.guests?.assigned?.length > 0 || node.guests?.invited?.length > 0)) && (
+      {isExpanded && (disciplesToShow.length > 0 || (node.guests?.assigned?.length > 0 || node.guests?.invited?.length > 0)) && (
         <div className="relative mt-2 pl-3">
           {/* Vertical line for children */}
           <div className="absolute left-1.5 top-0 bottom-0 w-0.5 bg-gray-400 dark:bg-gray-600" />
-          
+
           <div className="flex flex-col gap-3">
             {/* Disciples */}
-            {node.disciples?.map((child) => (
-              <div key={child.id} className="relative">
+            {disciplesToShow.map((child, index) => (
+              <div key={`${node.id}-${child.id}-${index}`} className="relative">
                 <div className="absolute left-0 top-6 w-1.5 h-0.5 bg-gray-400 dark:bg-gray-600" />
                 <div className="ml-1 min-w-[280px] flex-1">
                   <CoupleNodeTree 
