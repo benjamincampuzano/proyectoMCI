@@ -10,8 +10,10 @@ import api from '../utils/api';
 import { Card, DataTable, Badge, Input, Button, AsyncSearchSelect } from './ui';
 import { ROLE_DISPLAY_NAMES } from '../constants/roles';
 import toast from 'react-hot-toast';
+import { useAuth } from '../hooks/useAuth';
 
 const UnassignedPeople = () => {
+    const { hasAnyRole } = useAuth();
     const [people, setPeople] = useState([]);
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
@@ -263,10 +265,11 @@ const UnassignedPeople = () => {
                                 Líder de 12
                             </label>
                             <AsyncSearchSelect
-                                fetchItems={(term) =>
-                                    api.get('/users/search', { params: { search: term, role: "LIDER_DOCE,PASTOR" } })
-                                        .then(res => res.data)
-                                }
+                                fetchItems={(term) => {
+                                    const searchRoles = hasAnyRole(['ADMIN', 'PASTOR']) ? "LIDER_DOCE,PASTOR" : "LIDER_DOCE";
+                                    return api.get('/users/search', { params: { search: term, role: searchRoles } })
+                                        .then(res => res.data);
+                                }}
                                 selectedValue={liderDoceFilter}
                                 onSelect={(u) => setLiderDoceFilter(u)}
                                 placeholder="Buscar líder..."

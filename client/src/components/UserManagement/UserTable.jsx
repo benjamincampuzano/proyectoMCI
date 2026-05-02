@@ -144,10 +144,9 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
             title: 'Rol / Perfil',
             render: (_, user) => {
                 const primaryRole = user.roles?.find(r => PRIMARY_ROLES.includes(r));
-                const needsLiderDoce = !user.liderDoceId &&
+                const isUnassigned = !user.liderDoceId && !user.pastorId && !user.liderCelulaId &&
                     !user.roles?.includes('ADMIN') &&
-                    !user.roles?.includes('PASTOR') &&
-                    !user.roles?.includes('LIDER_DOCE');
+                    !user.roles?.includes('PASTOR');
 
                 return (
                     <div className="flex flex-col gap-2 items-start">
@@ -158,8 +157,8 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
                         ) : (
                             <span className="text-[11px] weight-510 text-[var(--ln-text-quaternary)] italic opacity-60">—</span>
                         )}
-                        {needsLiderDoce && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[9px] weight-700 uppercase tracking-widest" title="Requiere asignación de Líder de 12">
+                        {isUnassigned && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[9px] weight-700 uppercase tracking-widest" title="Requiere asignación de un líder en la jerarquía">
                                 <Warning size={10} weight="bold" /> Sin Líder
                             </div>
                         )}

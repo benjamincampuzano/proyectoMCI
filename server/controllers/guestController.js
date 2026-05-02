@@ -117,24 +117,32 @@ const getAllGuests = async (req, res) => {
         let securityFilter = {};
 
         // Aplicar visibilidad basada en roles
-        // Allow ADMIN, PASTOR, COORDINADOR, and Module Coordinators to see all guests
+        // Allow ADMIN to see all guests
         const isModuleCoordinator = req.user.isModuleCoordinator || false;
+        const coordinatedModules = req.user.moduleCoordinations || [];
+        const isGuestModuleCoordinator = coordinatedModules.some(m => 
+            ['ganar', 'consolidar'].includes(m.toLowerCase())
+        );
         
         if (roles.includes('ADMIN')) {
             securityFilter = {};
         } else if (roles.includes('PASTOR')) {
             // PASTOR can see all guests (like ADMIN)
             securityFilter = {};
-        } else if (roles.includes('COORDINADOR') || isModuleCoordinator) {
-            // COORDINADOR and Module Coordinators can see all guests
+        } else if (isGuestModuleCoordinator) {
+            // Coordinators of "Ganar" or "Consolidar" can see all guests
             securityFilter = {};
-        } else if (roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
-            // Regular leaders can only see guests from their network hierarchy
+        } else if (roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA', 'COORDINADOR'].includes(r)) || isModuleCoordinator) {
+            // Regular leaders and other coordinators can only see guests from their network hierarchy or assigned cells
             const networkUserIds = await getUserNetwork(currentUserId);
+            const ids = [...networkUserIds, currentUserId];
+            
             securityFilter = {
                 OR: [
-                    { invitedById: { in: [...networkUserIds, currentUserId] } },
-                    { assignedToId: { in: [...networkUserIds, currentUserId] } }
+                    { invitedById: { in: ids } },
+                    { assignedToId: { in: ids } },
+                    { cell: { liderDoceId: { in: ids } } },
+                    { cell: { leaderId: { in: ids } } }
                 ]
             };
         } else {
@@ -152,7 +160,8 @@ const getAllGuests = async (req, res) => {
                             }
                         ]
                     },
-                    { assignedToId: currentUserId }
+                    { assignedToId: currentUserId },
+                    { cell: { leaderId: currentUserId } }
                 ]
             };
         }
@@ -431,10 +440,19 @@ const updateGuest = async (req, res) => {
         } else if (isNetworkLeader) {
             // Regular leaders can only edit guests in their network
             const networkUserIds = await getUserNetwork(currentUserId);
-            const isInNetwork = networkUserIds.includes(existingGuest.invitedById) ||
-                (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
-                existingGuest.invitedById === currentUserId ||
-                existingGuest.assignedToId === currentUserId;
+            const ids = [...networkUserIds, currentUserId];
+            
+            const isInNetwork = ids.includes(existingGuest.invitedById) ||
+                (existingGuest.assignedToId && ids.includes(existingGuest.assignedToId)) ||
+                (existingGuest.cellId && await prisma.cell.findFirst({
+                    where: {
+                        id: existingGuest.cellId,
+                        OR: [
+                            { liderDoceId: { in: ids } },
+                            { leaderId: { in: ids } }
+                        ]
+                    }
+                }));
 
             if (!isInNetwork) {
                 return res.status(403).json({ message: 'You can only update guests in your network' });
@@ -528,10 +546,19 @@ const deleteGuest = async (req, res) => {
         } else if (isNetworkLeader) {
             // Regular leaders can only delete guests in their network
             const networkUserIds = await getUserNetwork(currentUserId);
-            const canDelete = networkUserIds.includes(existingGuest.invitedById) ||
-                (existingGuest.assignedToId && networkUserIds.includes(existingGuest.assignedToId)) ||
-                existingGuest.invitedById === currentUserId ||
-                existingGuest.assignedToId === currentUserId;
+            const ids = [...networkUserIds, currentUserId];
+            
+            const canDelete = ids.includes(existingGuest.invitedById) ||
+                (existingGuest.assignedToId && ids.includes(existingGuest.assignedToId)) ||
+                (existingGuest.cellId && await prisma.cell.findFirst({
+                    where: {
+                        id: existingGuest.cellId,
+                        OR: [
+                            { liderDoceId: { in: ids } },
+                            { leaderId: { in: ids } }
+                        ]
+                    }
+                }));
 
             if (!canDelete) {
                 return res.status(403).json({ message: 'You can only delete guests in your network or that you invited' });
@@ -796,10 +823,19 @@ const deleteCall = async (req, res) => {
         // If coordinator, check if the guest is in their network
         if (!isAdmin && isCoordinator) {
             const networkUserIds = await getUserNetwork(currentUserId);
-            const isInNetwork = networkUserIds.includes(guest.invitedById) ||
-                (guest.assignedToId && networkUserIds.includes(guest.assignedToId)) ||
-                guest.invitedById === currentUserId ||
-                guest.assignedToId === currentUserId;
+            const ids = [...networkUserIds, currentUserId];
+            
+            const isInNetwork = ids.includes(guest.invitedById) ||
+                (guest.assignedToId && ids.includes(guest.assignedToId)) ||
+                (guest.cellId && await prisma.cell.findFirst({
+                    where: {
+                        id: guest.cellId,
+                        OR: [
+                            { liderDoceId: { in: ids } },
+                            { leaderId: { in: ids } }
+                        ]
+                    }
+                }));
 
             if (!isInNetwork) {
                 return res.status(403).json({ message: 'You can only delete calls from guests in your network' });
@@ -864,10 +900,19 @@ const deleteVisit = async (req, res) => {
         // If coordinator, check if the guest is in their network
         if (!isAdmin && isCoordinator) {
             const networkUserIds = await getUserNetwork(currentUserId);
-            const isInNetwork = networkUserIds.includes(guest.invitedById) ||
-                (guest.assignedToId && networkUserIds.includes(guest.assignedToId)) ||
-                guest.invitedById === currentUserId ||
-                guest.assignedToId === currentUserId;
+            const ids = [...networkUserIds, currentUserId];
+            
+            const isInNetwork = ids.includes(guest.invitedById) ||
+                (guest.assignedToId && ids.includes(guest.assignedToId)) ||
+                (guest.cellId && await prisma.cell.findFirst({
+                    where: {
+                        id: guest.cellId,
+                        OR: [
+                            { liderDoceId: { in: ids } },
+                            { leaderId: { in: ids } }
+                        ]
+                    }
+                }));
 
             if (!isInNetwork) {
                 return res.status(403).json({ message: 'You can only delete visits from guests in your network' });

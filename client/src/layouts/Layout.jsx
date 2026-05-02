@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { House, Users, CrossIcon, UserPlus, Heart, PaperPlaneTilt, Calendar, BookOpen, SignOut, TreeStructure, Target, ShieldCheck, Baby, CaretLeft, CaretRight, GuitarIcon } from '@phosphor-icons/react';
 import UserMenu from '../components/UserMenu';
+import PendingTasksPanel from '../components/PendingTasksPanel';
 import UserProfileModal from '../components/UserProfileModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import logo from '../assets/logo.jpg';
@@ -59,11 +60,11 @@ const Layout = () => {
         { to: '/consolidar', icon: Heart, label: 'Consolidar' },
         { to: '/discipular', icon: BookOpen, label: 'Discipular' },
         { to: '/enviar', icon: PaperPlaneTilt, label: 'Enviar' },
-        ...(!hasAnyRole(['DISCIPULOS']) ? [{ to: '/kids', icon: Baby, label: 'Kids' }] : []),
+        ...(!hasAnyRole(['DISCIPULO']) ? [{ to: '/kids', icon: Baby, label: 'Kids' }] : []),
         { to: '/escuela-de-artes', icon: GuitarIcon, label: 'Artes' },
         { to: '/encuentros', icon: CrossIcon, label: 'Encuentros' },
         { to: '/convenciones', icon: Calendar, label: 'Convenciones' },
-        ...(!hasAnyRole(['DISCIPULOS']) ? [{ to: '/documentos-legales', icon: BookOpen, label: 'Documentos' }] : []),
+        ...(!hasAnyRole(['DISCIPULO']) ? [{ to: '/documentos-legales', icon: BookOpen, label: 'Documentos' }] : []),
         ...(hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) ? [{ to: '/usuarios', icon: Users, label: 'Gestion de Usuarios' }] : []),
         ...(hasAnyRole(['ADMIN']) ? [{ to: '/auditoria', icon: TreeStructure, label: 'Auditoria' } ] : [])
     ];
@@ -139,6 +140,7 @@ const Layout = () => {
                         {navItems.find(item => location.pathname === item.to)?.label || 'Dashboard'}
                     </h2>
                     <div className="flex items-center gap-4">
+                        <PendingTasksPanel />
                         <UserMenu
                             onOpenProfile={() => setShowProfileModal(true)}
                         />

@@ -23,6 +23,11 @@ const GuestTracking = () => {
     const [showDeleteVisitConfirm, setShowDeleteVisitConfirm] = useState(false);
     const [callToDelete, setCallToDelete] = useState(null);
     const [visitToDelete, setVisitToDelete] = useState(null);
+    const [whatsappData, setWhatsappData] = useState({
+        stage: '',
+        templateKey: '',
+        previewText: ''
+    });
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -59,19 +64,19 @@ const GuestTracking = () => {
                 page: currentPage,
                 limit: pageSize
             };
-            
+
             // Add filters to params
             if (startDate) params.startDate = startDate;
             if (endDate) params.endDate = endDate;
             if (liderDoceFilter) params.liderDoceId = liderDoceFilter.id;
             if (pendingCalls) params.pendingCalls = 'true';
             if (pendingVisits) params.pendingVisits = 'true';
-            
+
             const response = await api.get('/guests', { params });
-            
+
             // Filter guests client-side for pending calls/visits if needed
             let filteredGuests = response.data.guests || [];
-            
+
             setGuests(filteredGuests);
             setTotalPages(response.data.pagination?.totalPages || 1);
             setTotalGuests(response.data.pagination?.total || filteredGuests.length || 0);
@@ -107,6 +112,13 @@ const GuestTracking = () => {
             date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
             observation: ''
         });
+        if (type === 'whatsapp') {
+            setWhatsappData({
+                stage: '',
+                templateKey: '',
+                previewText: ''
+            });
+        }
     };
 
     const handleAction = async () => {
@@ -197,6 +209,96 @@ const GuestTracking = () => {
         return alerts;
     };
 
+    const WHATSAPP_TEMPLATES = {
+        Bienvenida: {
+            A: "¡Hola [Nombre]! 👋 Qué alegría que nos acompañaras hoy en [Nombre de la Iglesia]. Esperamos que te hayas sentido como en casa. ¡Bendiciones!",
+            B: "Hola [Nombre], soy [Nombre del Líder] de la iglesia. Me dio mucho gusto conocerte hoy. Si tienes alguna duda o necesitas algo, aquí estoy para servirte. 😊",
+            C: "¡Hola [Nombre]! Gracias por venir hoy con [Nombre de la persona que lo invitó]. Fue un gusto tenerte con nosotros. ¡Te esperamos el próximo domingo!"
+        },
+        Consolidacion: {
+            A: "Hola [Nombre], espero que estés teniendo una excelente semana. ✨ Me quedé pensando en ti y quería saludarte. ¿Cómo va todo?",
+            B: "¡Hola [Nombre]! En la iglesia tenemos grupos pequeños llamados 'Células' donde nos conorcemos mejor y estudiamos la Biblia. Tenemos una muy cerca de tu casa, ¿te gustaría visitarla esta semana?",
+            C: "Hola [Nombre], te saludo con mucho cariño. Queríamos saber si hay algo por lo que podamos estar orando por ti o tu familia esta semana. 🙏"
+        },
+        Integracion: {
+            A: "¡Hola [Nombre]! Estamos iniciando un curso básico para conocer más sobre la fe y la Biblia. Creo que te gustaría mucho. ¿Te gustaría que te enviara la información? 📖",
+            B: "¡Hola [Nombre]! Se acerca nuestra [Nombre de la Convención/Evento] y me encantaría que fueras mi invitado especial. Será un tiempo increíble. ¿Cuento contigo? 🎫"
+        },
+        Recuperacion: {
+            A: "¡Hola [Nombre]! Te hemos extrañado los últimos domingos. Espero que todo esté bien. ¡Te enviamos un abrazo fuerte! 🤗",
+            B: "Hola [Nombre], pasaba por aquí para decirte que te recordamos con cariño en la iglesia. Ojalá podamos vernos pronto. ¡Dios te bendiga!"
+        }
+    };
+
+    const getCleanName = (name) => {
+        if (!name) return '';
+        const firstName = name.trim().split(' ')[0].toLowerCase();
+        return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+    };
+
+    const generateWhatsappMessage = (stage, templateKey, guest) => {
+        if (!stage || !templateKey || !guest) return '';
+        let msg = WHATSAPP_TEMPLATES[stage][templateKey];
+
+        const guestName = getCleanName(guest.name);
+        msg = msg.replace(/\[Nombre\]/g, guestName);
+
+        if (user) {
+            const leaderName = getCleanName(user.profile?.fullName || user.email);
+            msg = msg.replace(/\[Nombre del Líder\]/g, leaderName);
+        }
+
+        if (guest.invitedBy && guest.invitedBy.fullName) {
+            const inviterName = getCleanName(guest.invitedBy.fullName);
+            msg = msg.replace(/\[Nombre de la persona que lo invitó\]/g, inviterName);
+        } else {
+            msg = msg.replace(/ con \[Nombre de la persona que lo invitó\]/g, '');
+            msg = msg.replace(/\[Nombre de la persona que lo invitó\]/g, 'nosotros');
+        }
+
+        // Generic replacements
+        msg = msg.replace(/\[Nombre de la Iglesia\]/g, 'la iglesia');
+        msg = msg.replace(/\[Nombre de la Convención\/Evento\]/g, 'próxima reunión');
+
+        return msg;
+    };
+
+    const handleWhatsappStageChange = (stage) => {
+        setWhatsappData(prev => ({ ...prev, stage, templateKey: '', previewText: '' }));
+    };
+
+    const handleWhatsappTemplateChange = (templateKey) => {
+        const text = generateWhatsappMessage(whatsappData.stage, templateKey, selectedGuest);
+        setWhatsappData(prev => ({ ...prev, templateKey, previewText: text }));
+    };
+
+    const handleSendWhatsapp = async () => {
+        if (!whatsappData.previewText.trim()) {
+            toast.error('El mensaje no puede estar vacío');
+            return;
+        }
+
+        // 1. Log in the backend
+        try {
+            await api.post(`/guests/${selectedGuest.id}/calls`, {
+                date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+                observation: `[WhatsApp - ${whatsappData.stage || 'Personalizado'}] ${whatsappData.previewText}`
+            });
+            toast.success('Mensaje registrado exitosamente');
+            fetchGuests(); // Refresh list to show "CONTACTADO" status
+        } catch (error) {
+            console.error('Error saving whatsapp log:', error);
+            toast.error('El mensaje se abrirá, pero hubo un error al registrarlo en el sistema.');
+        }
+
+        // 2. Open WhatsApp
+        const phone = selectedGuest.phone.replace(/\D/g, '');
+        const text = encodeURIComponent(whatsappData.previewText);
+        window.open(`https://wa.me/57${phone}?text=${text}`, '_blank');
+
+        setModalType(null);
+    };
+
     if (loading) {
         return (
             <div className="space-y-6">
@@ -231,11 +333,10 @@ const GuestTracking = () => {
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Seguimiento de Invitados</h2>
                 <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                        hasActiveFilters
-                            ? 'bg-blue-500 text-white shadow-md'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${hasActiveFilters
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
                 >
                     <Funnel size={18} weight={showFilters ? "fill" : "bold"} />
                     Filtros
@@ -318,11 +419,10 @@ const GuestTracking = () => {
                     <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
                         {/* Checkbox - Pendientes por llamadas */}
                         <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
-                                pendingCalls
-                                    ? 'bg-green-500 border-green-500'
-                                    : 'border-gray-300 dark:border-gray-600 group-hover:border-green-400'
-                            }`}>
+                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${pendingCalls
+                                ? 'bg-green-500 border-green-500'
+                                : 'border-gray-300 dark:border-gray-600 group-hover:border-green-400'
+                                }`}>
                                 <input
                                     type="checkbox"
                                     checked={pendingCalls}
@@ -341,11 +441,10 @@ const GuestTracking = () => {
 
                         {/* Checkbox - Pendientes por visitas */}
                         <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
-                                pendingVisits
-                                    ? 'bg-blue-500 border-blue-500'
-                                    : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
-                            }`}>
+                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${pendingVisits
+                                ? 'bg-blue-500 border-blue-500'
+                                : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
+                                }`}>
                                 <input
                                     type="checkbox"
                                     checked={pendingVisits}
@@ -414,11 +513,10 @@ const GuestTracking = () => {
                                             key={pageNum}
                                             onClick={() => setCurrentPage(pageNum)}
                                             disabled={loading}
-                                            className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
-                                                isActive
-                                                    ? 'bg-blue-600 text-white shadow-md'
-                                                    : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${isActive
+                                                ? 'bg-blue-600 text-white shadow-md'
+                                                : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
                                         >
                                             {pageNum}
                                         </button>
@@ -489,15 +587,13 @@ const GuestTracking = () => {
                                                     {guest.phone}
                                                 </div>
                                                 {guest.phone && (
-                                                    <a
-                                                        href={`https://wa.me/57${guest.phone.replace(/\D/g, '')}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
+                                                    <button
+                                                        onClick={() => handleOpenModal(guest, 'whatsapp')}
                                                         className="ml-2 p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                                                         title="Enviar WhatsApp"
                                                     >
                                                         <WhatsappLogoIcon className="w-4 h-4" />
-                                                    </a>
+                                                    </button>
                                                 )}
                                             </div>
                                             <div className="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-300">
@@ -647,11 +743,10 @@ const GuestTracking = () => {
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
                                         disabled={loading}
-                                        className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
-                                            isActive
-                                                ? 'bg-blue-600 text-white shadow-md'
-                                                : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${isActive
+                                            ? 'bg-blue-600 text-white shadow-md'
+                                            : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
                                     >
                                         {pageNum}
                                     </button>
@@ -717,6 +812,91 @@ const GuestTracking = () => {
                             <button onClick={handleAction} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm flex items-center gap-2">
                                 <CheckCircle className="w-4 h-4" />
                                 Crear contacto
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* WhatsApp Modal */}
+            {modalType === 'whatsapp' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
+                            <div className="flex items-center gap-2">
+                                <WhatsappLogoIcon className="w-5 h-5 text-green-500" />
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                    Enviar Mensaje
+                                </h3>
+                            </div>
+                            <button onClick={() => setModalType(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Elige el tipo de mensaje</label>
+                                <select
+                                    value={whatsappData.stage}
+                                    onChange={(e) => handleWhatsappStageChange(e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
+                                >
+                                    <option value="">Seleccione una etapa...</option>
+                                    <option value="Bienvenida">Bienvenida (Inmediato)</option>
+                                    <option value="Consolidacion">Consolidación (Seguimiento)</option>
+                                    <option value="Integracion">Integración (Llamado a la acción)</option>
+                                    <option value="Recuperacion">Recuperación (Cuando deja de asistir)</option>
+                                </select>
+                            </div>
+
+                            {whatsappData.stage && (
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Plantilla</label>
+                                    <div className="flex gap-2">
+                                        {Object.keys(WHATSAPP_TEMPLATES[whatsappData.stage]).map((key) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => handleWhatsappTemplateChange(key)}
+                                                className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${whatsappData.templateKey === key
+                                                    ? 'bg-green-50 border-green-500 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                                                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
+                                                    }`}
+                                            >
+                                                Opción {key}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {whatsappData.templateKey && (
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex justify-between">
+                                        <span>Previsualización (Puedes editarlo)</span>
+                                    </label>
+                                    <textarea
+                                        value={whatsappData.previewText}
+                                        onChange={(e) => setWhatsappData({ ...whatsappData, previewText: e.target.value })}
+                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 bg-transparent dark:text-white resize-none"
+                                        rows="6"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+                            <button
+                                onClick={() => setModalType(null)}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSendWhatsapp}
+                                disabled={!whatsappData.previewText.trim()}
+                                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                            >
+                                <WhatsappLogoIcon className="w-4 h-4" />
+                                Enviar
                             </button>
                         </div>
                     </div>

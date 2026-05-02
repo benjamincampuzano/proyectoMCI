@@ -39,6 +39,22 @@ const { getUserNetwork } = require('../utils/networkUtils');
 const { getUserNetworkId } = require('../middleware/coordinatorAuth');
 
 /**
+ * Common include configuration for Prisma user queries to ensure all necessary
+ * relations are loaded for formatUser and frontend display.
+ */
+const USER_FULL_INCLUDE = {
+    roles: { include: { role: true } },
+    profile: true,
+    artRoles: true,
+    moduleCoordinations: true,
+    moduleTreasurers: true,
+    professorModules: { select: { id: true, name: true } },
+    auxiliaryModules: { select: { id: true, name: true } },
+    parents: { include: { parent: { include: { profile: true } } } },
+    spouse: true
+};
+
+/**
  * Auxiliar para formatear un objeto de usuario de Prisma a un formato aplanado para el frontend.
  */
 const formatUser = (user) => {
@@ -161,12 +177,7 @@ const getProfile = async (req, res) => {
         const userId = parseInt(req.user.id);
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            include: {
-                profile: true,
-                roles: { include: { role: true } },
-                moduleCoordinations: true,
-                moduleTreasurers: true
-            }
+            include: USER_FULL_INCLUDE
         });
 
         if (!user) {
@@ -400,13 +411,13 @@ const getAllUsers = async (req, res) => {
             // Filtro de líder de 12
             let liderDoceFilterObj = {};
             if (liderDoceFilter) {
-                liderDoceFilterObj = { 
-                    parents: { 
-                        some: { 
+                liderDoceFilterObj = {
+                    parents: {
+                        some: {
                             parentId: parseInt(liderDoceFilter),
                             role: 'LIDER_DOCE'
-                        } 
-                    } 
+                        }
+                    }
                 };
             }
 
@@ -426,17 +437,7 @@ const getAllUsers = async (req, res) => {
 
             const queryOptions = {
                 where: whereClause,
-                include: {
-                    roles: { include: { role: true } },
-                    profile: true,
-                    artRoles: true,
-                    moduleCoordinations: true,
-                    moduleTreasurers: true,
-                    professorModules: { select: { id: true, name: true } },
-                    auxiliaryModules: { select: { id: true, name: true } },
-                    parents: { include: { parent: { include: { profile: true } } } },
-                    spouse: true
-                },
+                include: USER_FULL_INCLUDE,
                 orderBy: { id: 'desc' }
             };
 
@@ -475,7 +476,7 @@ const getAllUsers = async (req, res) => {
             }
 
             const isLiderCelula = req.user.roles.includes('LIDER_CELULA');
-            
+
             let searchFilter = {};
             if (search) {
                 searchFilter = {
@@ -493,13 +494,13 @@ const getAllUsers = async (req, res) => {
 
             let liderDoceFilterObj = {};
             if (liderDoceFilter) {
-                liderDoceFilterObj = { 
-                    parents: { 
-                        some: { 
+                liderDoceFilterObj = {
+                    parents: {
+                        some: {
                             parentId: parseInt(liderDoceFilter),
                             role: 'LIDER_DOCE'
-                        } 
-                    } 
+                        }
+                    }
                 };
             }
 
@@ -537,10 +538,7 @@ const getAllUsers = async (req, res) => {
 
             const queryOptions = {
                 where: whereClause,
-                include: {
-                    roles: { include: { role: true } },
-                    profile: true
-                },
+                include: USER_FULL_INCLUDE,
                 orderBy: { id: 'desc' }
             };
 
@@ -583,13 +581,13 @@ const getAllUsers = async (req, res) => {
             // Filtro de líder de 12
             let liderDoceFilterObj = {};
             if (liderDoceFilter) {
-                liderDoceFilterObj = { 
-                    parents: { 
-                        some: { 
+                liderDoceFilterObj = {
+                    parents: {
+                        some: {
                             parentId: parseInt(liderDoceFilter),
                             role: 'LIDER_DOCE'
-                        } 
-                    } 
+                        }
+                    }
                 };
             }
 
@@ -598,7 +596,7 @@ const getAllUsers = async (req, res) => {
                 isDeleted: false,
                 roles: {
                     some: {
-                        role: { 
+                        role: {
                             name: role || { in: MANAGABLE_ROLES }
                         }
                     }
@@ -615,10 +613,7 @@ const getAllUsers = async (req, res) => {
 
             const queryOptions = {
                 where: whereClause,
-                include: {
-                    roles: { include: { role: true } },
-                    profile: true
-                },
+                include: USER_FULL_INCLUDE,
                 orderBy: { id: 'desc' }
             };
 
@@ -652,7 +647,7 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
-        
+
         if (isNaN(userId)) {
             return res.status(400).json({ message: 'ID de usuario inválido' });
         }
@@ -664,10 +659,7 @@ const getUserById = async (req, res) => {
 
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            include: {
-                roles: { include: { role: true } },
-                profile: true
-            }
+            include: USER_FULL_INCLUDE
         });
 
         if (!user) {
@@ -756,8 +748,8 @@ const updateUser = async (req, res) => {
                     ...(email !== undefined && { email }),
                     ...(cleanPhone !== undefined && { phone: cleanPhone }),
                     ...(isCoordinator !== undefined && { isCoordinator }),
-                    ...(spouseId !== undefined && { 
-                        spouseId: spouseId ? parseInt(spouseId) : null 
+                    ...(spouseId !== undefined && {
+                        spouseId: spouseId ? parseInt(spouseId) : null
                     }),
                     profile: {
                         update: {
@@ -788,16 +780,16 @@ const updateUser = async (req, res) => {
                     where: { userId },
                     include: { role: true }
                 });
-                
+
                 const PRIMARY_ROLES = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'];
                 const secondaryRoles = existingRoles
                     .map(ur => ur.role.name)
                     .filter(name => !PRIMARY_ROLES.includes(name));
-                
+
                 const newRolesToAssign = [...new Set([role, ...secondaryRoles])];
-                
+
                 await tx.userRole.deleteMany({ where: { userId } });
-                
+
                 for (const roleName of newRolesToAssign) {
                     const r = await tx.role.upsert({
                         where: { name: roleName },
@@ -1151,7 +1143,7 @@ const createUser = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
-        
+
         if (isNaN(userId)) {
             return res.status(400).json({ message: 'ID de usuario inválido' });
         }
@@ -1280,7 +1272,7 @@ const getMyNetwork = async (req, res) => {
     try {
         const userId = req.user.id;
         const userRoles = req.user.roles || [];
-        
+
         // Si es ADMIN, devolver todos los usuarios (excepto otros admins y el mismo usuario)
         if (userRoles.includes('ADMIN')) {
             const users = await prisma.user.findMany({
@@ -1309,7 +1301,7 @@ const getMyNetwork = async (req, res) => {
 
             return res.json(formatted);
         }
-        
+
         // Para otros roles, usar la lógica normal de red
         const networkIds = await getUserNetwork(userId);
 
@@ -1407,7 +1399,7 @@ const searchPublicUsers = async (req, res) => {
 const searchUsers = async (req, res) => {
     try {
         const { q, search, role, page = 1, limit = 20, allowAllRoles = false, excludeRoles } = req.query;
-        
+
         // Accept both 'q' and 'search' parameters for compatibility
         const searchQuery = q || search;
         const allowAllRolesBool = allowAllRoles === 'true';
@@ -1464,35 +1456,33 @@ const searchUsers = async (req, res) => {
         // Special case for Art School enrollment - allow all roles
         else if (allowAllRolesBool && (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR') || req.user.isModuleCoordinator)) {
             if (roleFilter) {
-                where['roles'] = { 
+                where['roles'] = {
                     ...(where['roles'] || {}),
-                    some: { role: { name: roleFilter } } 
+                    some: { role: { name: roleFilter } }
                 };
             }
         }
         else if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
             if (roleFilter) {
-                where['roles'] = { 
+                where['roles'] = {
                     ...(where['roles'] || {}),
-                    some: { role: { name: roleFilter } } 
+                    some: { role: { name: roleFilter } }
                 };
             }
         }
         else if (req.user.isModuleCoordinator) {
-            const allowedRoles = role === 'LIDER_DOCE' 
-                ? [...MANAGABLE_ROLES, 'LIDER_DOCE'] 
-                : MANAGABLE_ROLES;
-            
-            if (role && !allowedRoles.includes(role)) {
+            const allowedRoles = [...MANAGABLE_ROLES, 'LIDER_DOCE'];
+
+            if (role) {
                 const requestedRoles = role.split(',');
                 if (requestedRoles.some(r => !allowedRoles.includes(r))) {
                     return res.status(403).json({ message: `You cannot search for one or more requested roles: ${role}` });
                 }
             }
-            
-            where['roles'] = { 
+
+            where['roles'] = {
                 ...(where['roles'] || {}),
-                some: { role: { name: roleFilter ? roleFilter : { in: allowedRoles } } } 
+                some: { role: { name: roleFilter ? roleFilter : { in: allowedRoles } } }
             };
         }
         else if (req.user.roles.includes('LIDER_DOCE')) {
@@ -1501,21 +1491,19 @@ const searchUsers = async (req, res) => {
                 return res.json([]);
             }
             where['id'] = { in: requesterNetwork };
-            
-            const allowedRoles = role === 'LIDER_DOCE' 
-                ? [...MANAGABLE_ROLES, 'LIDER_DOCE'] 
-                : MANAGABLE_ROLES;
-            
-            if (role && !allowedRoles.includes(role)) {
+
+            const allowedRoles = [...MANAGABLE_ROLES, 'LIDER_DOCE'];
+
+            if (role) {
                 const requestedRoles = role.split(',');
                 if (requestedRoles.some(r => !allowedRoles.includes(r))) {
                     return res.status(403).json({ message: `You cannot search for one or more requested roles: ${role}` });
                 }
             }
-            
-            where['roles'] = { 
+
+            where['roles'] = {
                 ...(where['roles'] || {}),
-                some: { role: { name: roleFilter ? roleFilter : { in: allowedRoles } } } 
+                some: { role: { name: roleFilter ? roleFilter : { in: allowedRoles } } }
             };
         }
         else {
@@ -1547,13 +1535,13 @@ const searchUsers = async (req, res) => {
 const getUsersByIds = async (req, res) => {
     try {
         const { ids } = req.query;
-        
+
         if (!ids) {
             return res.status(400).json({ error: 'IDs parameter is required' });
         }
 
         const idArray = ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-        
+
         if (idArray.length === 0) {
             return res.json({ users: [] });
         }
@@ -1652,9 +1640,6 @@ const getUsersWithoutCell = async (req, res) => {
         }
 
         const whereClause = { AND: andFilters };
-
-        console.log('Unassigned users filters applied:', { roleParam, networkParam, liderDoceId, search });
-        console.log('Final Prisma whereClause:', JSON.stringify(whereClause, null, 2));
 
         const totalCount = await prisma.user.count({ where: whereClause });
 
