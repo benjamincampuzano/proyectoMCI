@@ -1129,7 +1129,7 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Mapeo Espiritual (URL)
+                                                Cartografía Espiritual (URL)
                                             </label>
                                             <input
                                                 type="url"
@@ -1163,24 +1163,6 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 placeholder="Palabra de Dios para la célula..."
                                                 rows={2}
                                             />
-                                        </div>
-
-                                        <div className="sm:col-span-2">
-                                            <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Reunión de Pastores
-                                            </label>
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <input
-                                                    type="checkbox"
-                                                    id="pastorsMeeting"
-                                                    checked={formData.pastorsMeeting}
-                                                    onChange={e => setFormData({ ...formData, pastorsMeeting: e.target.checked })}
-                                                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                                                />
-                                                <label htmlFor="pastorsMeeting" className="text-sm text-[#1d1d1f] dark:text-white/80">
-                                                    Esta célula asiste a reunión de pastores
-                                                </label>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1325,8 +1307,8 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                     />
                                     <MapClickHandler onMapClick={handleMapClick} />
-                                    <MapUpdater center={selectedCoords ? [selectedCoords.lat, selectedCoords.lon] : mapCenter} />
-                                    {selectedCoords && (
+                                    <MapUpdater center={selectedCoords && selectedCoords.lat && selectedCoords.lon ? [selectedCoords.lat, selectedCoords.lon] : mapCenter} />
+                                    {selectedCoords && selectedCoords.lat && selectedCoords.lon && (
                                         <Marker position={[selectedCoords.lat, selectedCoords.lon]} />
                                     )}
                                 </MapContainer>
@@ -1344,7 +1326,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                     {selectedCoords.displayName}
                                                 </p>
                                                 <p className="text-xs text-gray-400 mt-1">
-                                                    {selectedCoords.lat.toFixed(6)}, {selectedCoords.lon.toFixed(6)}
+                                                    {selectedCoords.lat?.toFixed(6)}, {selectedCoords.lon?.toFixed(6)}
                                                 </p>
                                             </div>
                                         </div>

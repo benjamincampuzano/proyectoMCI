@@ -1,6 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { register, login, getPublicLeaders, checkInitStatus, registerSetup, changePassword, forcePasswordChange, refreshToken, logout, getSessions, logoutAll } = require('../controllers/authController');
+const { register, login, getPublicLeaders, checkInitStatus, registerSetup, changePassword, forcePasswordChange, refreshToken, logout, getSessions, logoutAll, getMe } = require('../controllers/authController');
 const { searchPublicUsers } = require('../controllers/userController');
 const { createPublicGuest } = require('../controllers/guestController');
 const { authenticate, isAdmin, authorize } = require('../middleware/auth');
@@ -35,6 +35,7 @@ router.post('/refresh-token', refreshLimiter, refreshToken);
 router.post('/logout', logout);
 
 // Protected routes
+router.get('/me', authenticate, getMe);
 router.post('/change-password', authenticate, changePassword);
 router.post('/force-password-change/:userId', authenticate, authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), forcePasswordChange);
 

@@ -67,6 +67,7 @@ const Enviar = () => {
     }, []);
     const tabs = [
         { id: 'cells', label: 'Células', component: (props) => <CellManagement {...props} moduleCoordinator={moduleCoordinator} />, customCheck: hasCellsTabAccess },
+        { id: 'cell-management', label: 'Gestión de Células', component: (props) => <CellAttendance {...props} moduleCoordinator={moduleCoordinator} />, customCheck: () => true },
         { 
             id: 'attendance', 
             label: 'Asistencia', 

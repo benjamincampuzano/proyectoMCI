@@ -764,6 +764,47 @@ const getSessions = async (req, res) => {
     }
 };
 
+// Get current user information
+const getMe = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                profile: true,
+                roles: {
+                    include: {
+                        role: {
+                            select: { name: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        const moduleCoordinations = await getUserModuleCoordinations(user.id);
+
+        res.json({
+            id: user.id,
+            email: user.email,
+            fullName: user.profile?.fullName,
+            roles: user.roles.map(r => r.role.name),
+            mustChangePassword: user.mustChangePassword,
+            phone: user.phone,
+            moduleCoordinations,
+            profile: user.profile
+        });
+    } catch (error) {
+        console.error('Get me error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // Logout from all devices
 const logoutAll = async (req, res) => {
     try {
@@ -793,6 +834,7 @@ module.exports = {
     forcePasswordChange,
     refreshToken,
     logout,
+    getMe,
     getSessions,
     logoutAll
 };
