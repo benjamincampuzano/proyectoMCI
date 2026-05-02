@@ -3,6 +3,7 @@ import TabNavigator from '../components/TabNavigator';
 import CellManagement from '../components/CellManagement';
 import CellAttendance from '../components/CellAttendance';
 import AttendanceChart from '../components/AttendanceChart';
+import UnassignedPeople from '../components/UnassignedPeople';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import { PageHeader, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -19,7 +20,7 @@ const Enviar = () => {
     // Custom role checker for cells tab - allows coordinators to manage cells
     const hasCellsTabAccess = () => {
         const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_CELLS);
-        const isModuleCoord = moduleCoordinator && 
+        const isModuleCoord = moduleCoordinator &&
             moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
         const isModuleSubCoord = user?.moduleSubCoordinations?.includes('enviar');
         return hasRoleAccess || isModuleCoord || isModuleSubCoord;
@@ -67,25 +68,36 @@ const Enviar = () => {
     }, []);
     const tabs = [
         { id: 'cells', label: 'Células', component: (props) => <CellManagement {...props} moduleCoordinator={moduleCoordinator} />, customCheck: hasCellsTabAccess },
-        { id: 'cell-management', label: 'Gestión de Células', component: (props) => <CellAttendance {...props} moduleCoordinator={moduleCoordinator} />, customCheck: () => true },
-        { 
-            id: 'attendance', 
-            label: 'Asistencia', 
+        {
+            id: 'attendance',
+            label: 'Reporte de Asistencia',
             component: CellAttendance,
             customCheck: () => {
                 const isModuleCoord = isCoordinator('enviar');
-                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('enviar');
+                const isModuleSubCoord = isSubCoordinator('enviar');
                 return isModuleCoord || isModuleSubCoord;
             }
         },
-        { 
-            id: 'stats', 
-            label: 'Estadísticas', 
-            component: AttendanceChart, 
+        {
+            id: 'stats',
+            label: 'Estadísticas',
+            component: AttendanceChart,
             customCheck: () => {
                 const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
                 const isModuleCoord = isCoordinator('enviar');
-                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('enviar');
+                const isModuleSubCoord = isSubCoordinator('enviar');
+                const isModuleTreasurer = isTreasurer('enviar');
+                return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
+            }
+        },
+        {
+            id: 'unassigned',
+            label: 'Personas sin Célula',
+            component: UnassignedPeople,
+            customCheck: () => {
+                const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
+                const isModuleCoord = isCoordinator('enviar');
+                const isModuleSubCoord = isSubCoordinator('enviar');
                 const isModuleTreasurer = isTreasurer('enviar');
                 return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
             }

@@ -3,7 +3,8 @@ import { ArrowLeft, UserPlus, MoneyIcon, XCircle, Trash, FileTextIcon, Users, Pe
 import { ROLES } from '../constants/roles';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { useAuth } from '../context/AuthContext';
 import { AsyncSearchSelect } from './ui';
 import MultiUserSelect from './MultiUserSelect';
@@ -144,42 +145,76 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         }
     };
 
-    const handleExportToExcel = () => {
+    const handleExportToExcel = async () => {
         if (!convention.registrations || convention.registrations.length === 0) {
             toast.error('No hay registros para exportar');
             return;
         }
 
-        // Create workbook
-        const wb = XLSX.utils.book_new();
+        try {
+            // Create workbook
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Registros');
 
-        // Prepare data
-        const exportData = convention.registrations.map((reg, index) => ({
-            '#': index + 1,
-            'Nombre': reg.user.fullName,
-            'Email': reg.user.email,
-            'Rol': reg.user.roles?.join(', '),
-            'Costo Base': convention.cost,
-            'Descuento %': reg.discountPercentage,
-            'Total a Pagar': reg.finalCost,
-            'Abonado': reg.totalPaid,
-            'Saldo': reg.balance,
-            'Transporte': reg.needsTransport ? 'Sí' : 'No',
-            'Alojamiento': reg.needsAccommodation ? 'Sí' : 'No',
-            'Estado': reg.status
-        }));
+            // Define columns
+            worksheet.columns = [
+                { header: '#', key: 'index', width: 5 },
+                { header: 'Nombre', key: 'fullName', width: 30 },
+                { header: 'Email', key: 'email', width: 25 },
+                { header: 'Rol', key: 'roles', width: 20 },
+                { header: 'Costo Base', key: 'cost', width: 15 },
+                { header: 'Descuento %', key: 'discount', width: 12 },
+                { header: 'Total a Pagar', key: 'finalCost', width: 15 },
+                { header: 'Abonado', key: 'totalPaid', width: 15 },
+                { header: 'Saldo', key: 'balance', width: 15 },
+                { header: 'Transporte', key: 'transport', width: 12 },
+                { header: 'Alojamiento', key: 'accommodation', width: 12 },
+                { header: 'Estado', key: 'status', width: 12 }
+            ];
 
-        // Create worksheet
-        const ws = XLSX.utils.json_to_sheet(exportData);
+            // Add rows
+            convention.registrations.forEach((reg, index) => {
+                worksheet.addRow({
+                    index: index + 1,
+                    fullName: reg.user.fullName,
+                    email: reg.user.email,
+                    roles: reg.user.roles?.join(', '),
+                    cost: convention.cost,
+                    discount: reg.discountPercentage,
+                    finalCost: reg.finalCost,
+                    totalPaid: reg.totalPaid,
+                    balance: reg.balance,
+                    transport: reg.needsTransport ? 'Sí' : 'No',
+                    accommodation: reg.needsAccommodation ? 'Sí' : 'No',
+                    status: reg.status
+                });
+            });
 
-        // Add worksheet to workbook
-        XLSX.utils.book_append_sheet(wb, ws, 'Registros');
+            // Style header
+            const headerRow = worksheet.getRow(1);
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF1E40AF' } // Blue-800
+                };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
 
-        // Generate filename
-        const fileName = `${convention.type}_${convention.year}_registros.xlsx`;
+            // Generate filename
+            const fileName = `${convention.type}_${convention.year}_registros.xlsx`;
 
-        // Save file
-        XLSX.writeFile(wb, fileName);
+            // Save file
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(blob, fileName);
+            
+            toast.success('Excel exportado correctamente');
+        } catch (error) {
+            console.error('Error exporting convention to Excel:', error);
+            toast.error('Error al exportar a Excel');
+        }
     };
 
     const handlePayment = async (e) => {

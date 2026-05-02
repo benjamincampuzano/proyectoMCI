@@ -3,7 +3,8 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { MagnifyingGlass, Camera, X, Upload, Link, Download } from '@phosphor-icons/react';
 import { Button, Input, AsyncSearchSelect } from '../ui';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 const KIDS_LEVELS = [
     { nivel: 'KIDS1', seccion: '1A', name: 'Kids 1 (5-7 años)', moduleNumber: 101, minAge: 5, maxAge: 7 },
@@ -209,38 +210,74 @@ const KidsStudentMatrix = () => {
         setPhotoDescription('');
     };
 
-    const downloadExcel = () => {
-        const excelData = filteredStudents.map(student => {
-            const birthDate = student.profile?.birthDate;
-            const age = calculateAge(birthDate);
-            const formattedDate = formatDate(birthDate);
-            
-            return {
-                'Nombre': student.fullName,
-                'Edad': age || '-',
-                'Teléfono': student.phone || '-',
-                'Correo': student.email || '-',
-                'Fecha de Nacimiento': formattedDate,
-                'Acudiente': student.responsible?.fullName || '-',
-                'Líder': student.leaderDoce ? 
-                    `${student.leaderDoce.fullName} (${student.leaderDoce.role === 'LIDER_DOCE' ? 'Líder 12' : 
-                        student.leaderDoce.role === 'LIDER_CELULA' ? 'Líder Célula' : 
-                        student.leaderDoce.role})` : '-',
-                'En Célula': student.cell?.hasCell ? 'SÍ' : 'NO',
-                'Nombre Célula': student.cell?.name || '-',
-                'Última Asistencia Célula': student.lastCellAttendance ? 
-                    `${formatCellAttendanceDate(student.lastCellAttendance.date)} - ${student.lastCellAttendance.status === 'PRESENTE' ? 'Asistió' : 
-                        student.lastCellAttendance.status === 'AUSENTE' ? 'No asistió' :
-                        student.lastCellAttendance.status === 'JUSTIFICADO' ? 'Justificado' :
-                        student.lastCellAttendance.status}` : '-',
-                'Asistencia General': getAttendanceRate(student.enrollments)
-            };
-        });
+    const downloadExcel = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Matriz Estudiantes Kids');
 
-        const ws = XLSX.utils.json_to_sheet(excelData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Matriz Estudiantes Kids");
-        XLSX.writeFile(wb, `Matriz_Estudiantes_Kids_${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.xlsx`);
+            // Define columns
+            worksheet.columns = [
+                { header: 'Nombre', key: 'name', width: 30 },
+                { header: 'Edad', key: 'age', width: 8 },
+                { header: 'Teléfono', key: 'phone', width: 15 },
+                { header: 'Correo', key: 'email', width: 25 },
+                { header: 'Fecha de Nacimiento', key: 'birthDate', width: 20 },
+                { header: 'Acudiente', key: 'responsible', width: 25 },
+                { header: 'Líder', key: 'leader', width: 30 },
+                { header: 'En Célula', key: 'inCell', width: 10 },
+                { header: 'Nombre Célula', key: 'cellName', width: 25 },
+                { header: 'Última Asistencia Célula', key: 'lastAttendance', width: 30 },
+                { header: 'Asistencia General', key: 'attendanceRate', width: 15 }
+            ];
+
+            // Add rows
+            filteredStudents.forEach(student => {
+                const birthDate = student.profile?.birthDate;
+                const age = calculateAge(birthDate);
+                const formattedDate = formatDate(birthDate);
+
+                worksheet.addRow({
+                    name: student.fullName,
+                    age: age || '-',
+                    phone: student.phone || '-',
+                    email: student.email || '-',
+                    birthDate: formattedDate,
+                    responsible: student.responsible?.fullName || '-',
+                    leader: student.leaderDoce ? 
+                        `${student.leaderDoce.fullName} (${student.leaderDoce.role === 'LIDER_DOCE' ? 'Líder 12' : 
+                            student.leaderDoce.role === 'LIDER_CELULA' ? 'Líder Célula' : 
+                            student.leaderDoce.role})` : '-',
+                    inCell: student.cell?.hasCell ? 'SÍ' : 'NO',
+                    cellName: student.cell?.name || '-',
+                    lastAttendance: student.lastCellAttendance ? 
+                        `${formatCellAttendanceDate(student.lastCellAttendance.date)} - ${student.lastCellAttendance.status === 'PRESENTE' ? 'Asistió' : 
+                            student.lastCellAttendance.status === 'AUSENTE' ? 'No asistió' :
+                            student.lastCellAttendance.status === 'JUSTIFICADO' ? 'Justificado' :
+                            student.lastCellAttendance.status}` : '-',
+                    attendanceRate: getAttendanceRate(student.enrollments)
+                });
+            });
+
+            // Style headers
+            const headerRow = worksheet.getRow(1);
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFDB2777' } // Pink-600
+                };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+
+            // Save file
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(blob, `Matriz_Estudiantes_Kids_${new Date().toLocaleDateString('es-ES').replace(/\//g, '-')}.xlsx`);
+            
+        } catch (error) {
+            console.error('Error downloading Excel:', error);
+        }
     };
 
     const filteredStudents = students.filter(student => {

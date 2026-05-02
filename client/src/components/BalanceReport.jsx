@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { MicrosoftExcelLogoIcon, FunnelIcon, Users, HandCoinsIcon, MoneyIcon, CreditCardIcon } from '@phosphor-icons/react';
 import { useAuth } from '../hooks/useAuth';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 const BalanceReport = ({ data, title }) => {
     const { user } = useAuth();
@@ -47,35 +49,73 @@ const BalanceReport = ({ data, title }) => {
     const baseType = isEncuentro ? 'ENCUENTRO' : 'CONVENTION';
     const baseLabel = isEncuentro ? 'Encuentro' : 'Conv.';
 
-    // Export to CSV
-    const handleExport = () => {
-        const headers = ['Nombre', 'Rol', 'Pastor', 'Líder 12', 'Líder Célula', 'Costo Final', 'Pagado', `Saldo ${baseLabel}`, 'Saldo Trans.', 'Saldo Hosp.', 'Saldo Total'];
+    // Export to Excel
+    const handleExport = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Reporte Financiero');
 
-        const csvContent = [
-            headers.join(','),
-            ...filteredData.map(row => [
-                `"${row.userName || row.guestName || ''}"`,
-                `"${row.userRole || row.status || ''}"`,
-                `"${row.pastorName}"`,
-                `"${row.liderDoceName}"`,
-                `"${row.liderCelulaName}"`,
-                row.cost.toFixed(2),
-                row.paid.toFixed(2),
-                (row.baseCost - (row.paymentsByType?.[baseType] || 0)).toFixed(2),
-                (row.transportCost - (row.paymentsByType?.TRANSPORT || 0)).toFixed(2),
-                (row.accommodationCost - (row.paymentsByType?.ACCOMMODATION || 0)).toFixed(2),
-                row.balance.toFixed(2)
-            ].join(','))
-        ].join('\n');
+            // Define columns
+            worksheet.columns = [
+                { header: 'Nombre', key: 'userName', width: 30 },
+                { header: 'Rol', key: 'userRole', width: 20 },
+                { header: 'Pastor', key: 'pastorName', width: 25 },
+                { header: 'Líder 12', key: 'liderDoceName', width: 25 },
+                { header: 'Líder Célula', key: 'liderCelulaName', width: 25 },
+                { header: 'Costo Final', key: 'cost', width: 15 },
+                { header: 'Pagado', key: 'paid', width: 15 },
+                { header: `Saldo ${baseLabel}`, key: 'baseBalance', width: 15 },
+                { header: 'Saldo Trans.', key: 'transportBalance', width: 15 },
+                { header: 'Saldo Hosp.', key: 'accommodationBalance', width: 15 },
+                { header: 'Saldo Total', key: 'totalBalance', width: 15 }
+            ];
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `${title.replace(/\s+/g, '_')}_Reporte_Financiero.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+            // Add rows
+            filteredData.forEach(row => {
+                worksheet.addRow({
+                    userName: row.userName || row.guestName || '',
+                    userRole: row.userRole || row.status || '',
+                    pastorName: row.pastorName || 'N/A',
+                    liderDoceName: row.liderDoceName || row.liderDoce || row.doceName || 'N/A',
+                    liderCelulaName: row.liderCelulaName || row.liderCelula || row.celulaName || 'N/A',
+                    cost: row.cost,
+                    paid: row.paid,
+                    baseBalance: row.baseCost - (row.paymentsByType?.[baseType] || 0),
+                    transportBalance: row.transportCost - (row.paymentsByType?.TRANSPORT || 0),
+                    accommodationBalance: row.accommodationCost - (row.paymentsByType?.ACCOMMODATION || 0),
+                    totalBalance: row.balance
+                });
+            });
+
+            // Style headers
+            const headerRow = worksheet.getRow(1);
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF059669' } // Emerald-600
+                };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+
+            // Format numbers
+            worksheet.eachRow((row, rowNumber) => {
+                if (rowNumber > 1) {
+                    ['F', 'G', 'H', 'I', 'J', 'K'].forEach(col => {
+                        row.getCell(col).numFmt = '"$"#,##0.00';
+                    });
+                }
+            });
+
+            // Save file
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(blob, `${title.replace(/\s+/g, '_')}_Reporte_Financiero.xlsx`);
+            
+        } catch (error) {
+            console.error('Error exporting BalanceReport to Excel:', error);
+        }
     };
 
     return (

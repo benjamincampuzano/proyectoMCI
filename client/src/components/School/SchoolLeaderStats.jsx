@@ -3,7 +3,8 @@ import api from '../../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useAuth } from "../../context/AuthContext";
 import { ROLES, ROLE_GROUPS } from '../../constants/roles';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { Download, Users, BookOpenIcon, UserCheckIcon, TrendUpIcon, MedalIcon } from '@phosphor-icons/react';
 import { Button } from '../ui';
 
@@ -29,17 +30,51 @@ const SchoolLeaderStats = () => {
         }
     };
 
-    const downloadExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(data.map(item => ({
-            'Líder 12': item.leaderName,
-            'Total Estudiantes': item.students,
-            'Promedio Notas': item.avgGrade,
-            'Asistencia Promedio (%)': item.avgAttendance,
-            'Aprobados': item.passed
-        })));
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Estadísticas Escuela");
-        XLSX.writeFile(wb, "Reporte_Escuela_Lideres.xlsx");
+    const downloadExcel = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Estadísticas Escuela');
+
+            // Define columns
+            worksheet.columns = [
+                { header: 'Líder 12', key: 'leaderName', width: 30 },
+                { header: 'Total Estudiantes', key: 'students', width: 20 },
+                { header: 'Promedio Notas', key: 'avgGrade', width: 15 },
+                { header: 'Asistencia Promedio (%)', key: 'avgAttendance', width: 25 },
+                { header: 'Aprobados', key: 'passed', width: 15 }
+            ];
+
+            // Add rows
+            data.forEach(item => {
+                worksheet.addRow({
+                    leaderName: item.leaderName,
+                    students: item.students,
+                    avgGrade: item.avgGrade,
+                    avgAttendance: item.avgAttendance,
+                    passed: item.passed
+                });
+            });
+
+            // Style headers
+            const headerRow = worksheet.getRow(1);
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF10B981' } // Green-500
+                };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+
+            // Save file
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(blob, "Reporte_Escuela_Lideres.xlsx");
+            
+        } catch (error) {
+            console.error('Error downloading school stats Excel:', error);
+        }
     };
 
     if (loading) return <div className="text-center py-10">Cargando reporte...</div>;

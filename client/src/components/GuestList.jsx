@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { SpinnerIcon, Funnel, PencilIcon, Trash, X, FloppyDiskIcon, UserCheckIcon, Users, CheckCircle, FileXls } from '@phosphor-icons/react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
@@ -228,56 +228,66 @@ const GuestList = ({ refreshTrigger }) => {
                 return;
             }
 
-            // Preparar datos para Excel
-            const data = allGuests.map(guest => ({
-            'Fecha Creación': guest.createdAt ? new Date(guest.createdAt).toLocaleDateString('es-ES') : 'N/A',
-            'Registrado Por': guest.registeredBy?.fullName || 'N/A',
-            'Nombre': guest.name || 'N/A',
-            'Edad': calculateAge(guest.birthDate) || 'N/A',
-            'Teléfono': guest.phone || 'N/A',
-            'Dirección': guest.address || 'N/A',
-            'Petición de Oración': guest.prayerRequest || 'N/A',
-            'Estado': getStatusLabel(guest.status) || 'N/A',
-            'Invitado Por': guest.invitedBy?.fullName || 'N/A',
-            'Asignado a': guest.assignedTo?.fullName || 'Pendiente',
-            'Célula': guest.cell?.name || 'No asignado',
-            'Líder de Célula': guest.cell?.leader?.fullName || 'N/A',
-            'Encuentro': guest.encuentroRegistrations?.map(r => r.encuentro?.name || r.encuentro?.type).join(', ') || 'No registrado'
-        }));
+            // Crear libro de trabajo
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Invitados');
 
-        // Crear hoja de trabajo
-        const worksheet = XLSX.utils.json_to_sheet(data);
+            // Definir columnas
+            worksheet.columns = [
+                { header: 'Fecha Creación', key: 'createdAt', width: 15 },
+                { header: 'Registrado Por', key: 'registeredBy', width: 20 },
+                { header: 'Nombre', key: 'name', width: 25 },
+                { header: 'Edad', key: 'age', width: 8 },
+                { header: 'Teléfono', key: 'phone', width: 15 },
+                { header: 'Dirección', key: 'address', width: 30 },
+                { header: 'Petición de Oración', key: 'prayerRequest', width: 40 },
+                { header: 'Estado', key: 'status', width: 12 },
+                { header: 'Invitado Por', key: 'invitedBy', width: 20 },
+                { header: 'Asignado a', key: 'assignedTo', width: 20 },
+                { header: 'Célula', key: 'cell', width: 20 },
+                { header: 'Líder de Célula', key: 'cellLeader', width: 20 },
+                { header: 'Encuentro', key: 'encuentro', width: 30 }
+            ];
 
-        // Ajustar anchos de columna
-        const colWidths = [
-            { wch: 15 }, // Fecha Creación
-            { wch: 20 }, // Registrado Por
-            { wch: 25 }, // Nombre
-            { wch: 8 },  // Edad
-            { wch: 15 }, // Teléfono
-            { wch: 30 }, // Dirección
-            { wch: 40 }, // Petición de Oración
-            { wch: 12 }, // Estado
-            { wch: 20 }, // Invitado Por
-            { wch: 20 }, // Asignado a
-            { wch: 20 }, // Célula
-            { wch: 20 }, // Líder de Célula
-            { wch: 30 }, // Encuentro
-        ];
-        worksheet['!cols'] = colWidths;
+            // Añadir datos
+            allGuests.forEach(guest => {
+                worksheet.addRow({
+                    createdAt: guest.createdAt ? new Date(guest.createdAt).toLocaleDateString('es-ES') : 'N/A',
+                    registeredBy: guest.registeredBy?.fullName || 'N/A',
+                    name: guest.name || 'N/A',
+                    age: calculateAge(guest.birthDate) || 'N/A',
+                    phone: guest.phone || 'N/A',
+                    address: guest.address || 'N/A',
+                    prayerRequest: guest.prayerRequest || 'N/A',
+                    status: getStatusLabel(guest.status) || 'N/A',
+                    invitedBy: guest.invitedBy?.fullName || 'N/A',
+                    assignedTo: guest.assignedTo?.fullName || 'Pendiente',
+                    cell: guest.cell?.name || 'No asignado',
+                    cellLeader: guest.cell?.leader?.fullName || 'N/A',
+                    encuentro: guest.encuentroRegistrations?.map(r => r.encuentro?.name || r.encuentro?.type).join(', ') || 'No registrado'
+                });
+            });
 
-        // Crear libro de trabajo
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Invitados');
+            // Estilar encabezados
+            const headerRow = worksheet.getRow(1);
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF10B981' } // Green-500
+                };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
 
-        // Generar archivo Excel
-        const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            // Generar archivo Excel
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            
+            // Descargar archivo
+            saveAs(blob, `invitados_${new Date().toISOString().split('T')[0]}.xlsx`);
 
-        // Descargar archivo
-        saveAs(blob, `invitados_${new Date().toISOString().split('T')[0]}.xlsx`);
-
-        toast.success(`Exportados ${allGuests.length} invitados a Excel`);
+            toast.success(`Exportados ${allGuests.length} invitados a Excel`);
         } catch (err) {
             toast.error(err.message || 'Error al exportar invitados');
         } finally {

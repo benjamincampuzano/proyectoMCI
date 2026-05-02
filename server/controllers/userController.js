@@ -4,7 +4,7 @@ const axios = require('axios');
 const { randomInt } = require('crypto');
 const { logActivity } = require('../utils/auditLogger');
 const { validatePassword } = require('../utils/passwordValidator');
-const { canManageUser, getVisibleRoles, MANAGABLE_ROLES, PROTECTED_ROLES } = require('../middleware/coordinatorAuth');
+const { canManageUser, getVisibleRoles, MANAGABLE_ROLES, PROTECTED_ROLES, hasAdminAccessOnModule } = require('../middleware/coordinatorAuth');
 
 const prisma = require('../utils/database');
 
@@ -652,6 +652,10 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
+        
+        if (isNaN(userId)) {
+            return res.status(400).json({ message: 'ID de usuario inválido' });
+        }
 
         // Permitir que los ADMIN accedan a su propia cuenta, otros roles no pueden
         if (req.user.id === userId && !req.user.roles.includes('ADMIN')) {
@@ -689,6 +693,10 @@ const updateUser = async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
         const currentUserId = req.user.id;
+
+        if (isNaN(userId)) {
+            return res.status(400).json({ message: 'ID de usuario inválido' });
+        }
 
         // Permitir que los ADMIN se modifiquen a sí mismos, otros roles no pueden
         if (userId === currentUserId && !req.user.roles.includes('ADMIN')) {
@@ -1143,6 +1151,10 @@ const createUser = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         const userId = parseInt(req.params.id);
+        
+        if (isNaN(userId)) {
+            return res.status(400).json({ message: 'ID de usuario inválido' });
+        }
 
         if (!req.user.roles.includes('ADMIN')) {
             return res.status(403).json({ message: 'Only administrators can delete users' });
@@ -1570,6 +1582,111 @@ const getUsersByIds = async (req, res) => {
     }
 };
 
+const getUsersWithoutCell = async (req, res) => {
+    try {
+        const { search, page = 1, limit = 50, liderDoceId, role: roleParam, network: networkParam, all } = req.query;
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+
+        // Access check: ADMIN, PASTOR or Coordinator of 'enviar'
+        const isAdminOrPastor = req.user.roles.some(r => ['ADMIN', 'PASTOR'].includes(r));
+        const isEnviarCoordinator = hasAdminAccessOnModule(req.user, 'enviar');
+
+        if (!isAdminOrPastor && !isEnviarCoordinator) {
+            return res.status(403).json({ message: 'No tiene permisos para ver este listado.' });
+        }
+
+        // Build explicit AND filters array for reliability
+        const andFilters = [
+            { isDeleted: false },
+            { cellId: null }
+        ];
+
+        // Role filter
+        if (roleParam) {
+            andFilters.push({
+                roles: {
+                    some: {
+                        role: { name: roleParam }
+                    }
+                }
+            });
+        } else {
+            // Default roles
+            andFilters.push({
+                roles: {
+                    some: {
+                        role: { name: { in: ['DISCIPULO', 'LIDER_CELULA'] } }
+                    }
+                }
+            });
+        }
+
+        // Search filter
+        if (search && search.trim()) {
+            andFilters.push({
+                OR: [
+                    { profile: { fullName: { contains: search, mode: 'insensitive' } } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } }
+                ]
+            });
+        }
+
+        // Parent leader filter
+        if (liderDoceId) {
+            andFilters.push({
+                parents: {
+                    some: { parentId: parseInt(liderDoceId) }
+                }
+            });
+        }
+
+        // Network filter
+        if (networkParam) {
+            andFilters.push({
+                profile: {
+                    network: networkParam
+                }
+            });
+        }
+
+        const whereClause = { AND: andFilters };
+
+        console.log('Unassigned users filters applied:', { roleParam, networkParam, liderDoceId, search });
+        console.log('Final Prisma whereClause:', JSON.stringify(whereClause, null, 2));
+
+        const totalCount = await prisma.user.count({ where: whereClause });
+
+        const users = await prisma.user.findMany({
+            where: whereClause,
+            include: {
+                profile: true,
+                roles: { include: { role: true } },
+                parents: { include: { parent: { include: { profile: true } } } }
+            },
+            orderBy: { profile: { fullName: 'asc' } },
+            ...(all !== 'true' && {
+                skip: (pageNum - 1) * limitNum,
+                take: limitNum
+            })
+        });
+
+        res.json({
+            users: users.map(formatUser),
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total: totalCount,
+                pages: Math.ceil(totalCount / limitNum)
+            }
+        });
+    } catch (error) {
+        console.error('Error in getUsersWithoutCell:', error);
+        res.status(500).json({ message: 'Error al obtener personas sin célula' });
+    }
+};
+
 module.exports = {
     getProfile,
     updateProfile,
@@ -1583,5 +1700,6 @@ module.exports = {
     getMyNetwork,
     searchPublicUsers,
     searchUsers,
-    getUsersByIds
+    getUsersByIds,
+    getUsersWithoutCell
 };

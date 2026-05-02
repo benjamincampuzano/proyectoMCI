@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { validatePassword } from '../utils/passwordValidator';
 
 const useUserManagement = () => {
@@ -442,6 +443,7 @@ const useUserManagement = () => {
         }
 
         try {
+            setLoading(true);
             // Obtener todos los usuarios (sin paginación para ADMIN)
             const params = new URLSearchParams();
             params.append('export', 'true');
@@ -455,87 +457,87 @@ const useUserManagement = () => {
             const response = await api.get(`/users?${params.toString()}`);
             const usersData = response.data.users || response.data || [];
 
-            // Preparar datos para Excel
-            const excelData = usersData.map(user => {
+            // Crear libro de trabajo
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Usuarios');
+
+            // Definir columnas
+            worksheet.columns = [
+                { header: 'ID', key: 'id', width: 10 },
+                { header: 'Documento', key: 'documentNumber', width: 15 },
+                { header: 'Nombre Completo', key: 'fullName', width: 30 },
+                { header: 'Email', key: 'email', width: 25 },
+                { header: 'Teléfono', key: 'phone', width: 15 },
+                { header: 'Sexo', key: 'sex', width: 10 },
+                { header: 'Fecha de Nacimiento', key: 'birthDate', width: 15 },
+                { header: 'Edad', key: 'age', width: 8 },
+                { header: 'Ciudad', key: 'city', width: 20 },
+                { header: 'Dirección', key: 'address', width: 30 },
+                { header: 'Barrio', key: 'neighborhood', width: 20 },
+                { header: 'Estado Civil', key: 'maritalStatus', width: 15 },
+                { header: 'Rol Principal', key: 'primaryRole', width: 15 },
+                { header: 'Roles Secundarios', key: 'secondaryRoles', width: 25 },
+                { header: 'Es Coordinador', key: 'isCoordinator', width: 12 },
+                { header: 'Política de Datos', key: 'dataPolicy', width: 12 },
+                { header: 'Tratamiento de Datos', key: 'dataTreatment', width: 15 },
+                { header: 'Consentimiento Menor', key: 'minorConsent', width: 15 },
+                { header: 'Fecha Registro', key: 'createdAt', width: 15 }
+            ];
+
+            // Preparar y añadir datos
+            usersData.forEach(user => {
                 const age = calculateAge(user.birthDate);
                 const primaryRole = user.roles?.find(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'].includes(r)) || 'SIN_ROL';
 
-                return {
-                    'ID': user.id,
-                    'Documento': user.documentNumber || '',
-                    'Nombre Completo': user.fullName,
-                    'Email': user.email,
-                    'Teléfono': user.phone || '',
-                    'Sexo': user.sex === 'HOMBRE' ? 'Hombre' : user.sex === 'MUJER' ? 'Mujer' : '',
-                    'Fecha de Nacimiento': user.birthDate ? new Date(user.birthDate).toLocaleDateString('es-ES') : '',
-                    'Edad': age || '',
-                    'Ciudad': user.city || '',
-                    'Dirección': user.address || '',
-                    'Barrio': user.neighborhood || '',
-                    'Estado Civil': user.maritalStatus ? user.maritalStatus.replace(/_/g, ' ') : '',
-                    'Rol Principal': primaryRole.replace(/_/g, ' '),
-                    'Roles Secundarios': (user.secondaryRoles || []).map(r => r.replace(/_/g, ' ')).join(', ') || '',
-                    'Es Coordinador': user.isCoordinator ? 'Sí' : 'No',
-                    'Política de Datos': user.dataPolicyAccepted ? 'Sí' : 'No',
-                    'Tratamiento de Datos': user.dataTreatmentAuthorized ? 'Sí' : 'No',
-                    'Consentimiento Menor': user.minorConsentAuthorized ? 'Sí' : user.sex === 'MENOR' ? 'No' : 'N/A',
-                    'Fecha Registro': user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : ''
-                };
+                worksheet.addRow({
+                    id: user.id,
+                    documentNumber: user.documentNumber || '',
+                    fullName: user.fullName,
+                    email: user.email,
+                    phone: user.phone || '',
+                    sex: user.sex === 'HOMBRE' ? 'Hombre' : user.sex === 'MUJER' ? 'Mujer' : '',
+                    birthDate: user.birthDate ? new Date(user.birthDate).toLocaleDateString('es-ES') : '',
+                    age: age || '',
+                    city: user.city || '',
+                    address: user.address || '',
+                    neighborhood: user.neighborhood || '',
+                    maritalStatus: user.maritalStatus ? user.maritalStatus.replace(/_/g, ' ') : '',
+                    primaryRole: primaryRole.replace(/_/g, ' '),
+                    secondaryRoles: (user.secondaryRoles || []).map(r => r.replace(/_/g, ' ')).join(', ') || '',
+                    isCoordinator: user.isCoordinator ? 'Sí' : 'No',
+                    dataPolicy: user.dataPolicyAccepted ? 'Sí' : 'No',
+                    dataTreatment: user.dataTreatmentAuthorized ? 'Sí' : 'No',
+                    minorConsent: user.minorConsentAuthorized ? 'Sí' : user.sex === 'MENOR' ? 'No' : 'N/A',
+                    createdAt: user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : ''
+                });
             });
 
-            // Crear hoja de trabajo
-            const worksheet = XLSX.utils.json_to_sheet(excelData);
-
-            // Ajustar ancho de columnas
-            const colWidths = [
-                { wch: 10 }, // ID
-                { wch: 15 }, // Documento
-                { wch: 30 }, // Nombre Completo
-                { wch: 25 }, // Email
-                { wch: 15 }, // Teléfono
-                { wch: 10 }, // Sexo
-                { wch: 15 }, // Fecha Nacimiento
-                { wch: 8 },  // Edad
-                { wch: 20 }, // Ciudad
-                { wch: 30 }, // Dirección
-                { wch: 20 }, // Barrio
-                { wch: 15 }, // Estado Civil
-                { wch: 15 }, // Rol Principal
-                { wch: 25 }, // Roles Secundarios
-                { wch: 12 }, // Es Coordinador
-                { wch: 12 }, // Política de Datos
-                { wch: 15 }, // Tratamiento de Datos
-                { wch: 15 }, // Consentimiento Menor
-                { wch: 15 }  // Fecha Registro
-            ];
-            worksheet['!cols'] = colWidths;
-
             // Estilar encabezados
-            const range = XLSX.utils.decode_range(worksheet['!ref']);
-            for (let C = range.s.c; C <= range.e.c; ++C) {
-                const addr = XLSX.utils.encode_col(C) + "1";
-                if (!worksheet[addr]) continue;
-                worksheet[addr].s = {
-                    font: { bold: true, color: { rgb: "FFFFFF" } },
-                    fill: { fgColor: { rgb: "2563EB" } },
-                    alignment: { horizontal: "center", vertical: "center" }
+            const headerRow = worksheet.getRow(1);
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF2563EB' }
                 };
-            }
-
-            // Crear libro de trabajo
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Usuarios");
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
 
             // Generar nombre de archivo con fecha
             const date = new Date().toISOString().split('T')[0];
             const filename = `Usuarios_Iglesia_${date}.xlsx`;
 
-            // Descargar archivo
-            XLSX.writeFile(workbook, filename);
+            // Escribir el buffer y descargar
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(blob, filename);
 
             setSuccess(`Exportados ${usersData.length} usuarios exitosamente`);
         } catch (err) {
             handleError(err, 'export');
+        } finally {
+            setLoading(false);
         }
     }, [isUserAdmin, nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, handleError]);
 

@@ -6,8 +6,8 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
-import { AsyncSearchSelect, Button, Icon } from './ui';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
+import { AsyncSearchSelect, Button } from './ui';
 import ConfirmationModal from './ConfirmationModal';
 
 // Fix for default marker icon
@@ -30,7 +30,7 @@ const CellManagement = ({ moduleCoordinator }) => {
     // Check if user can manage cells
     const canManageCells = () => {
         const hasRoleAccess = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
-        const isModuleCoordinator = moduleCoordinator && 
+        const isModuleCoordinator = moduleCoordinator &&
             moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
         return hasRoleAccess || isModuleCoordinator;
     };
@@ -114,7 +114,6 @@ const CellManagement = ({ moduleCoordinator }) => {
         }, [center, map]);
         return null;
     };
-
     useEffect(() => {
         fetchCells();
         fetchEligibleLeaders();
@@ -266,23 +265,23 @@ const CellManagement = ({ moduleCoordinator }) => {
         try {
             // Add delay to respect rate limiting
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             const response = await fetch(
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
-                { 
-                    headers: { 
+                {
+                    headers: {
                         'User-Agent': 'ProyectoIglesia/1.0',
                         'Accept': 'application/json'
-                    } 
+                    }
                 }
             );
-            
+
             // Handle rate limiting
             if (response.status === 429) {
                 setMapError('Demasiadas solicitudes. Por favor espera unos segundos y vuelve a intentar.');
                 return;
             }
-            
+
             const data = await response.json();
             setMapResults(data);
             if (data.length === 0) {
@@ -306,28 +305,28 @@ const CellManagement = ({ moduleCoordinator }) => {
             lon: latlng.lng,
             displayName: 'Ubicación seleccionada'
         });
-        
+
         // Reverse geocode to get address
         try {
             // Add delay to respect rate limiting
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             const response = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`,
-                { 
-                    headers: { 
+                {
+                    headers: {
                         'User-Agent': 'ProyectoIglesia/1.0',
                         'Accept': 'application/json'
-                    } 
+                    }
                 }
             );
-            
+
             // Handle rate limiting
             if (response.status === 429) {
                 console.warn('Rate limit hit on reverse geocoding');
                 return;
             }
-            
+
             const data = await response.json();
             if (data.display_name) {
                 setSelectedCoords(prev => ({
@@ -472,10 +471,10 @@ const CellManagement = ({ moduleCoordinator }) => {
         if (!selectedMember && !selectedGuestId) return;
         try {
             setLoading(true);
-            const data = memberType === 'GUEST' 
+            const data = memberType === 'GUEST'
                 ? { guestId: selectedGuestId }
                 : { memberId: selectedMember?.id };
-            
+
             await api.post(`/enviar/cells/${selectedCell.id}/members`, data);
             toast.success(memberType === 'GUEST' ? 'Invitado asignado exitosamente' : 'Discípulo asignado exitosamente');
             setSelectedMember(null);
@@ -530,7 +529,7 @@ const CellManagement = ({ moduleCoordinator }) => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-[#1d1d1f] dark:text-white">Gestión de Células</h2>
+                    <h2 className="text-2xl font-bold text-[#1d1d1f] dark:text-white">Reporte de Asistencia</h2>
                     <p className="text-[#1d1d1f] dark:text-[#98989d] text-sm mt-1">
                         Administra las células de tu red
                     </p>
@@ -606,7 +605,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                     <Clock size={16} className="text-[#1d1d1f] dark:text-[#98989d]" />
                                     <span className="text-sm text-[#1d1d1f] dark:text-white/80"><strong>Horario:</strong> {selectedCell.dayOfWeek} {selectedCell.time}</span>
                                 </div>
-                                                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2">
                                     <MapPin size={16} className="text-[#1d1d1f] dark:text-[#98989d]" />
                                     <span className="text-sm text-[#1d1d1f] dark:text-white/80"><strong>Barrio:</strong> {selectedCell.barrio}</span>
                                 </div>
@@ -699,10 +698,10 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                     // If no network users, provide helpful feedback
                                                     if (!networkUsers || networkUsers.length === 0) {
                                                         // Return a special indicator to show a message
-                                                        return [{ 
+                                                        return [{
                                                             _specialMessage: true,
-                                                            message: isAdmin 
-                                                                ? 'No hay usuarios disponibles en el sistema.' 
+                                                            message: isAdmin
+                                                                ? 'No hay usuarios disponibles en el sistema.'
                                                                 : 'No tienes usuarios en tu red de discipulado. Solo los líderes (Líder de 12, Pastor) pueden asignar discípulos a células.',
                                                             fullName: 'Sin usuarios disponibles',
                                                             disabled: true,
@@ -713,16 +712,16 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                     // Filter to include only LIDER_DOCE, LIDER_CELULA, and DISCIPULO roles
                                                     const filteredUsers = networkUsers.filter(user => {
                                                         const userRoles = user.roles || [];
-                                                        return userRoles.includes('LIDER_DOCE') || 
-                                                               userRoles.includes('LIDER_CELULA') || 
-                                                               userRoles.includes('DISCIPULO');
+                                                        return userRoles.includes('LIDER_DOCE') ||
+                                                            userRoles.includes('LIDER_CELULA') ||
+                                                            userRoles.includes('DISCIPULO');
                                                     });
 
                                                     // If no users after filtering, show appropriate message
                                                     if (filteredUsers.length === 0) {
-                                                        return [{ 
+                                                        return [{
                                                             _specialMessage: true,
-                                                            message: isAdmin 
+                                                            message: isAdmin
                                                                 ? 'No hay usuarios con roles compatibles para asignar a células (se necesitan roles: Líder de 12, Líder de Célula, Discípulo).'
                                                                 : 'Los usuarios en tu red no tienen roles compatibles para asignar a células (se necesitan roles: Líder de 12, Líder de Célula, Discípulo).',
                                                             fullName: 'Sin usuarios compatibles',
@@ -738,9 +737,9 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                             user.fullName.toLowerCase().includes(searchTerm) ||
                                                             user.email.toLowerCase().includes(searchTerm)
                                                         );
-                                                        
+
                                                         if (searchFiltered.length === 0) {
-                                                            return [{ 
+                                                            return [{
                                                                 _specialMessage: true,
                                                                 message: `No se encontraron usuarios que coincidan con "${term}" ${isAdmin ? 'en el sistema' : 'en tu red'}.`,
                                                                 fullName: 'Sin resultados',
@@ -748,7 +747,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                                 id: 'special-no-search'
                                                             }];
                                                         }
-                                                        
+
                                                         return searchFiltered;
                                                     }
 
@@ -776,7 +775,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                         </div>
                                                     );
                                                 }
-                                                
+
                                                 // Regular user display
                                                 return (
                                                     <div>
@@ -788,18 +787,17 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                         </div>
                                                         <div className="flex gap-1 mt-1">
                                                             {item.roles.map(role => (
-                                                                <span 
+                                                                <span
                                                                     key={role}
-                                                                    className={`px-2 py-1 text-xs rounded-full ${
-                                                                        role === 'LIDER_DOCE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                                                                        role === 'LIDER_CELULA' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                                                                        role === 'DISCIPULO' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                                                                        'bg-[#f5f5f7] text-[#1d1d1f] dark:bg-gray-900 dark:text-gray-200'
-                                                                    }`}
+                                                                    className={`px-2 py-1 text-xs rounded-full ${role === 'LIDER_DOCE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                                                                            role === 'LIDER_CELULA' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                                                                role === 'DISCIPULO' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                                                                    'bg-[#f5f5f7] text-[#1d1d1f] dark:bg-gray-900 dark:text-gray-200'
+                                                                        }`}
                                                                 >
                                                                     {role === 'LIDER_DOCE' ? 'Líder 12' :
-                                                                     role === 'LIDER_CELULA' ? 'Líder Célula' :
-                                                                     role === 'DISCIPULO' ? 'Discípulo' : role}
+                                                                        role === 'LIDER_CELULA' ? 'Líder Célula' :
+                                                                            role === 'DISCIPULO' ? 'Discípulo' : role}
                                                                 </span>
                                                             ))}
                                                         </div>
@@ -949,7 +947,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                     const response = await api.get('/enviar/eligible-doce-leaders');
                                                     const leaders = response.data || [];
                                                     if (!term) return leaders;
-                                                    return leaders.filter(l => 
+                                                    return leaders.filter(l =>
                                                         l.fullName.toLowerCase().includes(term.toLowerCase()) ||
                                                         (l.spouseName && l.spouseName.toLowerCase().includes(term.toLowerCase()))
                                                     );
@@ -1420,31 +1418,31 @@ const CellManagement = ({ moduleCoordinator }) => {
                         ))}
                     </select>
                 </div>
-                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
-                        <button
-                            onClick={() => setViewMode('cards')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'cards' 
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
+                    <button
+                        onClick={() => setViewMode('cards')}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'cards'
+                            ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
+                            : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
                             }`}
-                        >
-                            <SquaresFour size={18} weight="bold" />
-                            Tarjetas
-                        </button>
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'table' 
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                    >
+                        <SquaresFour size={18} weight="bold" />
+                        Tarjetas
+                    </button>
+                    <button
+                        onClick={() => setViewMode('table')}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'table'
+                            ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
+                            : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
                             }`}
-                        >
-                            <List size={18} weight="bold" />
-                            Tabla
-                        </button>
-                    </div>
-                        <p className="text-xs text-[#86868b] whitespace-nowrap">
-                            Mostrando {filteredCells.length} células
-                        </p>
+                    >
+                        <List size={18} weight="bold" />
+                        Tabla
+                    </button>
+                </div>
+                <p className="text-xs text-[#86868b] whitespace-nowrap">
+                    Mostrando {filteredCells.length} células
+                </p>
             </div>
 
             {/* List of Cells */}
@@ -1455,11 +1453,10 @@ const CellManagement = ({ moduleCoordinator }) => {
                             <div className="flex justify-between items-start mb-4">
                                 <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white">{cell.name}</h3>
                                 <div className="flex gap-2">
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                        cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 
-                                        cell.cellType === 'VIRTUAL' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                    }`}>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
+                                            cell.cellType === 'VIRTUAL' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                        }`}>
                                         {cell.cellType}
                                     </span>
                                     <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
@@ -1573,111 +1570,110 @@ const CellManagement = ({ moduleCoordinator }) => {
                 <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                    Nombre
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                    Líder
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                    Barrio / URL
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                    Horario
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                    Discípulos
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                    Acciones
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-[#272729] divide-y divide-gray-200 dark:divide-gray-700">
-                            {filteredCells.map(cell => (
-                                <tr key={cell.id} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700/50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div>
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{cell.name}</div>
-                                            <div className="flex gap-2 mt-1">
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                    cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 
-                                                    cell.cellType === 'VIRTUAL' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                                }`}>
-                                                    {cell.cellType}
-                                                </span>
-                                                {cell.liderDoce && (
-                                                    <span className="text-xs text-blue-600 dark:text-blue-400">
-                                                        L12: {cell.liderDoce.fullName}
+                            <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                        Nombre
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                        Líder
+                                    </th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                        Barrio / URL
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                        Horario
+                                    </th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                        Discípulos
+                                    </th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                        Acciones
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-[#272729] divide-y divide-gray-200 dark:divide-gray-700">
+                                {filteredCells.map(cell => (
+                                    <tr key={cell.id} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700/50">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{cell.name}</div>
+                                                <div className="flex gap-2 mt-1">
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
+                                                            cell.cellType === 'VIRTUAL' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                                                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                                        }`}>
+                                                        {cell.cellType}
                                                     </span>
+                                                    {cell.liderDoce && (
+                                                        <span className="text-xs text-blue-600 dark:text-blue-400">
+                                                            L12: {cell.liderDoce.fullName}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
+                                            {cell.leader?.fullName || 'N/A'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
+                                            {cell.cellType === 'VIRTUAL' ? (
+                                                cell.address ? (
+                                                    <a href={cell.address} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline">
+                                                        Url de la reunión
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-gray-400">Sin URL</span>
+                                                )
+                                            ) : (
+                                                cell.barrio
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
+                                            {cell.dayOfWeek} {cell.time}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                {(cell._count?.members ?? 0) + (cell._count?.guests ?? 0)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    onClick={() => setSelectedCell(cell)}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-blue-600 hover:text-blue-800"
+                                                >
+                                                    Agregar Usuarios
+                                                </Button>
+                                                {canManageCells() && (
+                                                    <Button
+                                                        onClick={() => handleEditClick(cell)}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-amber-600 hover:text-amber-800"
+                                                    >
+                                                        Editar
+                                                    </Button>
+                                                )}
+                                                {canManageCells() && (
+                                                    <Button
+                                                        onClick={() => handleDeleteCell(cell.id)}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-red-500 hover:text-red-700"
+                                                        icon={Trash}
+                                                    >
+                                                        Eliminar
+                                                    </Button>
                                                 )}
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
-                                        {cell.leader?.fullName || 'N/A'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
-                                        {cell.cellType === 'VIRTUAL' ? (
-                                            cell.address ? (
-                                                <a href={cell.address} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline">
-                                                    Url de la reunión
-                                                </a>
-                                            ) : (
-                                                <span className="text-gray-400">Sin URL</span>
-                                            )
-                                        ) : (
-                                            cell.barrio
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
-                                        {cell.dayOfWeek} {cell.time}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                                            {(cell._count?.members ?? 0) + (cell._count?.guests ?? 0)}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex justify-end gap-2">
-                                            <Button
-                                                onClick={() => setSelectedCell(cell)}
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-blue-600 hover:text-blue-800"
-                                            >
-                                                Agregar Usuarios
-                                            </Button>
-                                            {canManageCells() && (
-                                                <Button
-                                                    onClick={() => handleEditClick(cell)}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-amber-600 hover:text-amber-800"
-                                                >
-                                                    Editar
-                                                </Button>
-                                            )}
-                                            {canManageCells() && (
-                                                <Button
-                                                    onClick={() => handleDeleteCell(cell.id)}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-red-500 hover:text-red-700"
-                                                    icon={Trash}
-                                                >
-                                                    Eliminar
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             )}
@@ -1706,7 +1702,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                 }}
                 onConfirm={confirmRemoveMember}
                 title="Desvincular Persona"
-                message={memberTypeToRemove === 'GUEST' 
+                message={memberTypeToRemove === 'GUEST'
                     ? '¿Estás seguro de que deseas desvincular a este Invitado de la célula?'
                     : '¿Estás seguro de que deseas desvincular a este Discípulo de la célula?'
                 }

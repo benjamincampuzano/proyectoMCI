@@ -25,6 +25,11 @@ const DataTable = ({
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [filters, setFilters] = useState({});
   const [selectedRows, setSelectedRows] = useState(new Set());
+  
+  // Reset page when data changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [data]);
 
   // Memoized filtered and sorted data
   const processedData = useMemo(() => {

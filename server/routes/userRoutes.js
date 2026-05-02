@@ -10,8 +10,9 @@ const {
     deleteUser,
     assignLeader,
     getMyNetwork,
-    searchUsers, // Added
-    getUsersByIds
+    searchUsers,
+    getUsersByIds,
+    getUsersWithoutCell
 } = require('../controllers/userController');
 const { authenticate, isAdmin, authorize, checkCoordinatorStatus } = require('../middleware/auth');
 
@@ -30,6 +31,9 @@ router.get('/search', searchUsers);
 
 // Get users by IDs (for caching related users)
 router.get('/by-ids', getUsersByIds);
+
+// Get users without an assigned cell
+router.get('/without-cell', getUsersWithoutCell);
 
 // Role-based routes
 router.get('/', getAllUsers);

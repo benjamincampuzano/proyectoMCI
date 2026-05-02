@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { MicrosoftExcelLogoIcon, SpinnerIcon,Users, PhoneOutgoingIcon, UserCheck, HouseLineIcon, UserPlusIcon } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import api from '../utils/api';
 
 const GuestStats = () => {
@@ -72,41 +73,55 @@ const GuestStats = () => {
         return Math.round(stats.totalGuests / months * 10) / 10; // Round to 1 decimal place
     };
 
-    const exportToExcel = () => {
+    const exportToExcel = async () => {
+        try {
+            // Create workbook
+            const workbook = new ExcelJS.Workbook();
+            
+            // Summary sheet
+            const summarySheet = workbook.addWorksheet('Resumen');
+            summarySheet.addRow(['Estadísticas de Invitados']);
+            summarySheet.addRow(['Período', `${startDate} a ${endDate}`]);
+            summarySheet.addRow([]);
+            summarySheet.addRow(['Total de Invitados', stats.totalGuests]);
+            summarySheet.addRow(['Nuevos', stats.byStatus.NUEVO || 0]);
+            summarySheet.addRow(['Llamados', stats.byStatus.CONTACTADO || 0]);
+            summarySheet.addRow(['Visitados', stats.byStatus.CONSOLIDADO || 0]);
+            summarySheet.addRow(['Consolidados', stats.byStatus.GANADO || 0]);
+            summarySheet.addRow([]);
+            summarySheet.addRow(['Tasa de Conversión', `${stats.conversionRate}%`]);
 
-        // Create workbook
-        const wb = XLSX.utils.book_new();
+            // Style summary sheet
+            summarySheet.getRow(1).font = { bold: true, size: 14 };
+            summarySheet.getColumn(1).width = 20;
+            summarySheet.getColumn(2).width = 30;
 
-        // Summary sheet
-        const summaryData = [
-            ['Estadísticas de Invitados'],
-            ['Período', `${startDate} a ${endDate}`],
-            [''],
-            ['Total de Invitados', stats.totalGuests],
-            ['Nuevos', stats.byStatus.NUEVO || 0],
-            ['Llamados', stats.byStatus.CONTACTADO || 0],
-            ['Visitados', stats.byStatus.CONSOLIDADO || 0],
-            ['Consolidados', stats.byStatus.GANADO || 0],
-            [''],
-            ['Tasa de Conversión', `${stats.conversionRate}%`],
-        ];
-        const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-        XLSX.utils.book_append_sheet(wb, summarySheet, 'Resumen');
+            // Top inviters sheet
+            if (stats.topInviters && stats.topInviters.length > 0) {
+                const invitersSheet = workbook.addWorksheet('Invitadores');
+                invitersSheet.addRow(['Top Invitadores']);
+                invitersSheet.addRow(['Nombre', 'Total Invitados']);
+                
+                stats.topInviters.forEach(inv => {
+                    invitersSheet.addRow([inv.name, inv.count]);
+                });
 
-        // Top inviters sheet
-        if (stats.topInviters && stats.topInviters.length > 0) {
-            const invitersData = [
-                ['Top Invitadores'],
-                ['Nombre', 'Total Invitados'],
-                ...stats.topInviters.map(inv => [inv.name, inv.count])
-            ];
-            const invitersSheet = XLSX.utils.aoa_to_sheet(invitersData);
-            XLSX.utils.book_append_sheet(wb, invitersSheet, 'Invitadores');
+                // Style inviters sheet
+                invitersSheet.getRow(1).font = { bold: true, size: 14 };
+                invitersSheet.getRow(2).font = { bold: true };
+                invitersSheet.getColumn(1).width = 30;
+                invitersSheet.getColumn(2).width = 20;
+            }
+
+            // Generate and save file
+            const fileName = `estadisticas_invitados_${startDate}_${endDate}.xlsx`;
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(blob, fileName);
+
+        } catch (err) {
+            console.error('Error exporting to Excel:', err);
         }
-
-        // Save file
-        const fileName = `estadisticas_invitados_${startDate}_${endDate}.xlsx`;
-        XLSX.writeFile(wb, fileName);
     };
 
     const statusColors = {
