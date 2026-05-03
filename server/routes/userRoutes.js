@@ -12,7 +12,8 @@ const {
     getMyNetwork,
     searchUsers,
     getUsersByIds,
-    getUsersWithoutCell
+    getUsersWithoutCell,
+    checkUserHierarchyAssignment
 } = require('../controllers/userController');
 const { authenticate, isAdmin, authorize, checkCoordinatorStatus } = require('../middleware/auth');
 
@@ -34,6 +35,9 @@ router.get('/by-ids', getUsersByIds);
 
 // Get users without an assigned cell
 router.get('/without-cell', getUsersWithoutCell);
+
+// Check if users are assigned in UserHierarchy
+router.post('/check-hierarchy-assignment', checkUserHierarchyAssignment);
 
 // Role-based routes
 router.get('/', getAllUsers);

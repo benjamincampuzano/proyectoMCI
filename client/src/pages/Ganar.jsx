@@ -101,10 +101,10 @@ const Ganar = () => {
             label: 'Servidores',
             component: ServerManager,
             customCheck: () => {
-                const hasRoleAccess = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA]);
+                // Solo ADMIN, PASTOR y el coordinador del módulo Ganar tienen acceso
+                const hasRoleAccess = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
                 const isModuleCoord = moduleCoordinator && moduleCoordinator.id === user?.id;
-                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('ganar');
-                return hasRoleAccess || isModuleCoord || isModuleSubCoord;
+                return hasRoleAccess || isModuleCoord;
             }
         }
     ];

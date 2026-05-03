@@ -30,10 +30,12 @@ const createServidor = async (req, res) => {
         const { userId, description } = req.body;
         const { id: currentUserId, roles } = req.user;
 
-        // Solo ADMIN, PASTOR, LIDER_DOCE pueden crear servidores
-        if (!roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
+        // Solo ADMIN, PASTOR o el coordinador del módulo Ganar pueden crear servidores
+        const isAdminOrPastor = roles.some(r => ['ADMIN', 'PASTOR'].includes(r));
+        const isGanarCoordinator = req.user.moduleCoordinations?.includes('ganar');
+        if (!isAdminOrPastor && !isGanarCoordinator) {
             return res.status(403).json({
-                message: 'No tiene permisos para crear servidores. Solo ADMIN, PASTOR o LIDER_DOCE pueden realizar esta acción.'
+                message: 'No tiene permisos para crear servidores. Solo ADMIN, PASTOR o el coordinador del módulo Ganar pueden realizar esta acción.'
             });
         }
 
@@ -120,8 +122,10 @@ const getAllServidores = async (req, res) => {
         const { roles, id: currentUserId } = req.user;
         const { search, isActive } = req.query;
 
-        // Solo ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA pueden ver servidores
-        if (!roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
+        // Solo ADMIN, PASTOR o el coordinador del módulo Ganar pueden ver servidores
+        const isAdminOrPastor = roles.some(r => ['ADMIN', 'PASTOR'].includes(r));
+        const isGanarCoordinator = req.user.moduleCoordinations?.includes('ganar');
+        if (!isAdminOrPastor && !isGanarCoordinator) {
             return res.status(403).json({
                 message: 'No tiene permisos para ver la lista de servidores'
             });
@@ -229,8 +233,10 @@ const updateServidorStatus = async (req, res) => {
         const { isActive } = req.body;
         const { id: currentUserId, roles } = req.user;
 
-        // Solo ADMIN, PASTOR, LIDER_DOCE pueden modificar servidores
-        if (!roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
+        // Solo ADMIN, PASTOR o el coordinador del módulo Ganar pueden modificar servidores
+        const isAdminOrPastor = roles.some(r => ['ADMIN', 'PASTOR'].includes(r));
+        const isGanarCoordinator = req.user.moduleCoordinations?.includes('ganar');
+        if (!isAdminOrPastor && !isGanarCoordinator) {
             return res.status(403).json({
                 message: 'No tiene permisos para modificar servidores'
             });
@@ -292,10 +298,12 @@ const deleteServidor = async (req, res) => {
         const { id } = req.params;
         const { id: currentUserId, roles } = req.user;
 
-        // Solo ADMIN, PASTOR pueden eliminar servidores
-        if (!roles.some(r => ['ADMIN', 'PASTOR'].includes(r))) {
+        // Solo ADMIN, PASTOR o el coordinador del módulo Ganar pueden eliminar servidores
+        const isAdminOrPastor = roles.some(r => ['ADMIN', 'PASTOR'].includes(r));
+        const isGanarCoordinator = req.user.moduleCoordinations?.includes('ganar');
+        if (!isAdminOrPastor && !isGanarCoordinator) {
             return res.status(403).json({
-                message: 'No tiene permisos para eliminar servidores. Solo ADMIN o PASTOR pueden realizar esta acción.'
+                message: 'No tiene permisos para eliminar servidores. Solo ADMIN, PASTOR o el coordinador del módulo Ganar pueden realizar esta acción.'
             });
         }
 
@@ -334,8 +342,10 @@ const getAvailableUsers = async (req, res) => {
         const { roles, id: currentUserId } = req.user;
         const { search } = req.query;
 
-        // Solo ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA pueden ver usuarios disponibles
-        if (!roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
+        // Solo ADMIN, PASTOR o el coordinador del módulo Ganar pueden ver usuarios disponibles
+        const isAdminOrPastor = roles.some(r => ['ADMIN', 'PASTOR'].includes(r));
+        const isGanarCoordinator = req.user.moduleCoordinations?.includes('ganar');
+        if (!isAdminOrPastor && !isGanarCoordinator) {
             return res.status(403).json({
                 message: 'No tiene permisos para ver usuarios disponibles'
             });

@@ -154,6 +154,7 @@ const useUserManagement = () => {
         }
     }, []);
 
+    // Fetch users with hierarchy assignment status
     const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
@@ -184,7 +185,32 @@ const useUserManagement = () => {
             // El backend ahora devuelve { users: [...], pagination: {...} }
             const { users: usersData, pagination } = response.data;
 
-            setUsers(usersData || []);
+            // Check hierarchy assignment for all users
+            if (usersData && usersData.length > 0) {
+                const userIds = usersData.map(u => u.id);
+                try {
+                    const hierarchyResponse = await api.post('/users/check-hierarchy-assignment', { userIds });
+                    const assignmentStatus = hierarchyResponse.data.assignmentStatus;
+                    
+                    // Add isUnassignedInHierarchy flag to each user
+                    const usersWithStatus = usersData.map(user => {
+                        const status = assignmentStatus.find(s => s.userId === user.id);
+                        return {
+                            ...user,
+                            isUnassignedInHierarchy: status ? !status.isAssigned : true
+                        };
+                    });
+
+                    setUsers(usersWithStatus || []);
+                } catch (hierarchyError) {
+                    console.error('Error checking hierarchy assignment:', hierarchyError);
+                    // Fallback: mark all as unassigned if hierarchy check fails
+                    setUsers(usersData.map(user => ({ ...user, isUnassignedInHierarchy: true })) || []);
+                }
+            } else {
+                setUsers([]);
+            }
+
             setTotalUsers(pagination?.total || 0);
         } catch (err) {
             setError('Error al cargar usuarios');

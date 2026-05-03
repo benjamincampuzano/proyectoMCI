@@ -1672,6 +1672,42 @@ const getUsersWithoutCell = async (req, res) => {
     }
 };
 
+/**
+ * Check if users are assigned in UserHierarchy (same logic as Home.jsx)
+ */
+const checkUserHierarchyAssignment = async (req, res) => {
+    try {
+        const { userIds } = req.body;
+        
+        if (!userIds || !Array.isArray(userIds)) {
+            return res.status(400).json({ message: 'Se requiere un array de userIds' });
+        }
+
+        // Get all users that have parent relationships in UserHierarchy
+        const assignedUsers = await prisma.userHierarchy.findMany({
+            where: {
+                childId: { in: userIds.map(id => parseInt(id)) }
+            },
+            select: {
+                childId: true
+            }
+        });
+
+        const assignedUserIds = new Set(assignedUsers.map(u => u.childId));
+        
+        // Return assignment status for each user
+        const assignmentStatus = userIds.map(userId => ({
+            userId,
+            isAssigned: assignedUserIds.has(parseInt(userId))
+        }));
+
+        res.json({ assignmentStatus });
+    } catch (error) {
+        console.error('Error checking hierarchy assignment:', error);
+        res.status(500).json({ message: 'Error al verificar asignación jerárquica' });
+    }
+};
+
 module.exports = {
     getProfile,
     updateProfile,
@@ -1686,5 +1722,6 @@ module.exports = {
     searchPublicUsers,
     searchUsers,
     getUsersByIds,
-    getUsersWithoutCell
+    getUsersWithoutCell,
+    checkUserHierarchyAssignment
 };

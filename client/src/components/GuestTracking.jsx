@@ -545,6 +545,7 @@ const GuestTracking = () => {
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Llamada</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Visita</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Observaciones</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -586,7 +587,7 @@ const GuestTracking = () => {
                                                     <Phone className="w-4 h-4 mr-2 text-gray-400" />
                                                     {guest.phone}
                                                 </div>
-                                                {guest.phone && (
+                                                {(isAdmin() || hasRole('PASTOR') || isModuleCoordinator) && guest.phone && (
                                                     <button
                                                         onClick={() => handleOpenModal(guest, 'whatsapp')}
                                                         className="ml-2 p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
@@ -699,6 +700,11 @@ const GuestTracking = () => {
                                             >
                                                 <ClockCounterClockwiseIcon className="w-5 h-5" />
                                             </button>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-600 dark:text-gray-300 max-w-[200px] truncate" title={guest.observations}>
+                                                {guest.observations || <span className="text-gray-400 italic text-xs">Sin observaciones</span>}
+                                            </div>
                                         </td>
                                     </tr>
                                 );

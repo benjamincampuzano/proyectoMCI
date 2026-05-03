@@ -144,7 +144,7 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
             title: 'Rol / Perfil',
             render: (_, user) => {
                 const primaryRole = user.roles?.find(r => PRIMARY_ROLES.includes(r));
-                const isUnassigned = !user.liderDoceId && !user.pastorId && !user.liderCelulaId &&
+                const isUnassigned = user.isUnassignedInHierarchy &&
                     !user.roles?.includes('ADMIN') &&
                     !user.roles?.includes('PASTOR');
 

@@ -230,6 +230,7 @@ model Guest {
   dataTreatmentAuthorized Boolean                 @default(false)
   minorConsentAuthorized  Boolean                 @default(false)
   cellId                  Int?
+  observations            String?
   artEnrollments          ArtEnrollment[]
   encuentroRegistrations  EncuentroRegistration[]
   assignedTo              User?                   @relation("AssignedTo", fields: [assignedToId], references: [id])

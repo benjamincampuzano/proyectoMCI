@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import useUserManagement from '../hooks/useUserManagement';
+import { useAuth } from '../context/AuthContext';
 import { Users, UserPlus, Download, Shield, UserList } from '@phosphor-icons/react';
 import { PageHeader, Button } from '../components/ui';
 import UserFilters from '../components/UserManagement/UserFilters';
@@ -11,6 +12,7 @@ import CoordinatorManagement from '../components/UserManagement/CoordinatorManag
 
 const UserManagement = () => {
     const [activeTab, setActiveTab] = useState('users');
+    const { user: currentUser } = useAuth();
     const {
         users,
         loading,
@@ -151,6 +153,7 @@ const UserManagement = () => {
                         lideresDoce={lideresDoce}
                         totalCount={totalUsers}
                         filteredCount={users.length}
+                        currentUser={currentUser}
                     />
 
                     <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[32px] border border-[var(--ln-border-standard)] overflow-hidden shadow-2xl relative">

@@ -6,7 +6,7 @@ const { getUserNetwork } = require('../utils/networkUtils');
 // Crear nuevo invitado
 const createGuest = async (req, res) => {
     try {
-        let { name, phone, address, city, prayerRequest, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized, servidorCode } = req.body;
+        let { name, phone, address, city, prayerRequest, observations, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized, servidorCode } = req.body;
         const { roles, id: currentUserId } = req.user;
 
         if (!name || !phone) {
@@ -67,6 +67,7 @@ const createGuest = async (req, res) => {
                 address,
                 city,
                 prayerRequest,
+                observations,
                 invitedById: parseInt(invitedById),
                 assignedToId: assignedToId ? parseInt(assignedToId) : null,
                 registeredById: registrarCode.userId, // Servidor que proporcionó el código de registro
@@ -395,7 +396,7 @@ const getGuestById = async (req, res) => {
 const updateGuest = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, phone, address, city, prayerRequest, status, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
+        const { name, phone, address, city, prayerRequest, observations, status, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
         const { roles, id: currentUserId } = req.user;
 
         const existingGuest = await prisma.guest.findUnique({
@@ -421,6 +422,7 @@ const updateGuest = async (req, res) => {
                 ...(phone && { phone }),
                 ...(address !== undefined && { address }),
                 ...(prayerRequest !== undefined && { prayerRequest }),
+                ...(observations !== undefined && { observations }),
                 ...(status && { status }),
                 ...(invitedById && { invitedById: parseInt(invitedById) }),
                 ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
@@ -463,6 +465,7 @@ const updateGuest = async (req, res) => {
                 ...(phone && { phone }),
                 ...(address !== undefined && { address }),
                 ...(prayerRequest !== undefined && { prayerRequest }),
+                ...(observations !== undefined && { observations }),
                 ...(status && { status }),
                 ...(invitedById && { invitedById: parseInt(invitedById) }),
                 ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),

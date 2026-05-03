@@ -20,8 +20,10 @@ const LosDoceGrid = React.memo(({ losDoce, onSelectLeader }) => {
         );
     }
 
+    const isSingleItem = losDoce.length === 1;
+
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className={`grid gap-4 ${isSingleItem ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'}`}>
             {losDoce.map((leader) => (
                 <div
                     key={leader.id}
@@ -42,9 +44,19 @@ const LosDoceGrid = React.memo(({ losDoce, onSelectLeader }) => {
                             <h3 className="text-[14px] weight-590 text-[var(--ln-text-primary)] tracking-tight truncate mb-0.5" title={leader.fullName}>
                                 {leader.fullName}
                             </h3>
-                            <p className="text-[11px] text-[var(--ln-text-tertiary)] truncate opacity-60 font-mono">
-                                {leader.email}
-                            </p>
+                            {leader.isCouple && leader.partners ? (
+                                <div className="flex flex-col gap-0.5">
+                                    {leader.partners.map((partner, idx) => (
+                                        <p key={partner.id} className="text-[11px] text-[var(--ln-text-tertiary)] truncate opacity-60 font-mono">
+                                            {partner.fullName?.split(' ')[0]}: {partner.phone || 'Sin teléfono'}
+                                        </p>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-[11px] text-[var(--ln-text-tertiary)] truncate opacity-60 font-mono">
+                                    {leader.phone || 'Sin teléfono'}
+                                </p>
+                            )}
                         </div>
 
                         <div className="flex items-center justify-between mt-1">

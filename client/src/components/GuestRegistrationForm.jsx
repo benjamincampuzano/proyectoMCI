@@ -15,6 +15,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
         neighborhood: '',
         city: '',
         prayerRequest: '',
+        observations: '',
         invitedById: null,
         assignedToId: null,
         dataPolicyAccepted: false,
@@ -90,6 +91,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                 neighborhood: '',
                 city: '',
                 prayerRequest: '',
+                observations: '',
                 invitedById: null,
                 assignedToId: null,
                 dataPolicyAccepted: false,
@@ -119,6 +121,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
             neighborhood: '',
             city: '',
             prayerRequest: '',
+            observations: '',
             invitedById: null,
             assignedToId: null,
             dataPolicyAccepted: false,
@@ -343,6 +346,20 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                                     rows="4"
                                     className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 resize-none"
                                     placeholder="Escriba la petición de oración del invitado..."
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Observaciones Generales
+                                </label>
+                                <textarea
+                                    name="observations"
+                                    value={formData.observations}
+                                    onChange={handleChange}
+                                    rows="4"
+                                    className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 resize-none"
+                                    placeholder="Notas adicionales sobre el invitado..."
                                 />
                             </div>
 

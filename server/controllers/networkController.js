@@ -510,11 +510,13 @@ const getPastores = async (req, res) => {
             select: {
                 id: true,
                 email: true,
+                phone: true,
                 profile: { select: { fullName: true } },
                 roles: { include: { role: true } },
                 spouse: {
                     select: {
                         id: true,
+                        phone: true,
                         profile: { select: { fullName: true } },
                         roles: { include: { role: true } }
                     }
@@ -522,6 +524,7 @@ const getPastores = async (req, res) => {
                 spouseOf: {
                     select: {
                         id: true,
+                        phone: true,
                         profile: { select: { fullName: true } },
                         roles: { include: { role: true } }
                     }
@@ -554,8 +557,8 @@ const getPastores = async (req, res) => {
                         isCouple: true,
                         spouseId: pastor.spouseId || spouse.id,
                         partners: [
-                            { id: pastor.id, fullName: pastor.profile?.fullName },
-                            { id: spouse.id, fullName: spouse.profile?.fullName }
+                            { id: pastor.id, fullName: pastor.profile?.fullName, phone: pastor.phone },
+                            { id: spouse.id, fullName: spouse.profile?.fullName, phone: spouse.phone }
                         ]
                     });
                     processedIds.add(pastor.id);
@@ -570,9 +573,10 @@ const getPastores = async (req, res) => {
                     id: pastor.id,
                     fullName: pastor.profile?.fullName || 'Sin Nombre',
                     email: pastor.email,
+                    phone: pastor.phone,
                     roles: pastor.roles.map(r => r.role.name),
                     isCouple: false,
-                    partners: [{ id: pastor.id, fullName: pastor.profile?.fullName }]
+                    partners: [{ id: pastor.id, fullName: pastor.profile?.fullName, phone: pastor.phone }]
                 });
                 processedIds.add(pastor.id);
             }

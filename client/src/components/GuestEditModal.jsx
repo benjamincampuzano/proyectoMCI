@@ -15,6 +15,7 @@ const GuestEditModal = ({ isOpen, onClose, guest, onGuestUpdated }) => {
         sex: '',
         status: 'NUEVO',
         prayerRequest: '',
+        observations: '',
         invitedById: null,
         assignedToId: null,
         invitedBy: null,
@@ -40,6 +41,7 @@ const GuestEditModal = ({ isOpen, onClose, guest, onGuestUpdated }) => {
                 sex: guest.sex || '',
                 status: guest.status || 'NUEVO',
                 prayerRequest: guest.prayerRequest || '',
+                observations: guest.observations || '',
                 invitedById: guest.invitedBy?.id || null,
                 assignedToId: guest.assignedTo?.id || null,
                 invitedBy: guest.invitedBy || null,
@@ -74,6 +76,7 @@ const GuestEditModal = ({ isOpen, onClose, guest, onGuestUpdated }) => {
                 sex: formData.sex || null,
                 status: formData.status,
                 prayerRequest: formData.prayerRequest,
+                observations: formData.observations,
                 invitedById: formData.invitedById,
                 assignedToId: formData.assignedToId,
             });
@@ -277,6 +280,22 @@ const GuestEditModal = ({ isOpen, onClose, guest, onGuestUpdated }) => {
                                 rows="3"
                                 className="w-full px-4 py-2.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-lg text-[var(--ln-text-primary)] focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-colors resize-none"
                                 placeholder="Escriba la petición de oración del invitado..."
+                                disabled={!canEditAllFields()}
+                            />
+                        </div>
+                        
+                        {/* Observations */}
+                        <div>
+                            <label className="block text-sm font-medium text-[var(--ln-text-secondary)] mb-2">
+                                Observaciones Generales
+                            </label>
+                            <textarea
+                                name="observations"
+                                value={formData.observations}
+                                onChange={handleChange}
+                                rows="3"
+                                className="w-full px-4 py-2.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-lg text-[var(--ln-text-primary)] focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-colors resize-none"
+                                placeholder="Notas adicionales sobre el invitado..."
                                 disabled={!canEditAllFields()}
                             />
                         </div>
