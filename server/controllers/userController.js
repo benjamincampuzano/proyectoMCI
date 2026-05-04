@@ -877,24 +877,43 @@ const updateUser = async (req, res) => {
                 }
             }
 
-            // 4. Ensure spouse symmetry
+            // 4. Ensure bidirectional spouse symmetry
             if (spouseId !== undefined) {
                 const sId = spouseId ? parseInt(spouseId) : null;
+                // Prevent self-spouse assignment
+                if (sId === userId) {
+                    throw new Error('Un usuario no puede ser cónyuge de sí mismo');
+                }
                 if (sId) {
-                    // Break any old spouse relationship for both
+                    // Break any old spouse relationship for both users (and their previous spouses)
                     await tx.user.updateMany({
-                        where: { OR: [{ spouseId: userId }, { spouseId: sId }] },
+                        where: { OR: [{ spouseId: userId }, { spouseId: sId }, { id: userId }, { id: sId }] },
                         data: { spouseId: null }
                     });
-                    // Set new
+                    // Set bidirectional relationship: A <-> B
                     await tx.user.update({
                         where: { id: userId },
                         data: { spouseId: sId }
                     });
+                    await tx.user.update({
+                        where: { id: sId },
+                        data: { spouseId: userId }
+                    });
                 } else {
-                    // Removing spouse: find whoever points to me or whoever I point to
-                    await tx.user.updateMany({
-                        where: { spouseId: userId },
+                    // Removing spouse: break bidirectional relationship
+                    const currentSpouse = await tx.user.findUnique({
+                        where: { id: userId },
+                        select: { spouseId: true }
+                    });
+                    if (currentSpouse?.spouseId) {
+                        // Remove spouse from the other person too
+                        await tx.user.update({
+                            where: { id: currentSpouse.spouseId },
+                            data: { spouseId: null }
+                        });
+                    }
+                    await tx.user.update({
+                        where: { id: userId },
                         data: { spouseId: null }
                     });
                 }
