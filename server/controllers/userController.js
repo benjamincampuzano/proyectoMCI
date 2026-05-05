@@ -884,39 +884,58 @@ const updateUser = async (req, res) => {
                 if (sId === userId) {
                     throw new Error('Un usuario no puede ser cónyuge de sí mismo');
                 }
+
+                // First, get current state to handle cleanup properly
+                const currentUser = await tx.user.findUnique({
+                    where: { id: userId },
+                    select: { spouseId: true }
+                });
+                const currentSpouseId = currentUser?.spouseId;
+
                 if (sId) {
-                    // Break any old spouse relationship for both users (and their previous spouses)
-                    await tx.user.updateMany({
-                        where: { OR: [{ spouseId: userId }, { spouseId: sId }, { id: userId }, { id: sId }] },
-                        data: { spouseId: null }
-                    });
-                    // Set bidirectional relationship: A <-> B
-                    await tx.user.update({
-                        where: { id: userId },
-                        data: { spouseId: sId }
-                    });
-                    await tx.user.update({
-                        where: { id: sId },
-                        data: { spouseId: userId }
-                    });
-                } else {
-                    // Removing spouse: break bidirectional relationship
-                    const currentSpouse = await tx.user.findUnique({
-                        where: { id: userId },
-                        select: { spouseId: true }
-                    });
-                    if (currentSpouse?.spouseId) {
-                        // Remove spouse from the other person too
+                    // Case: Setting a new spouse
+
+                    // Step 1: Break relationship between userId and their OLD spouse (if different from new)
+                    if (currentSpouseId && currentSpouseId !== sId) {
+                        // User had a different spouse before - clean that relationship
                         await tx.user.update({
-                            where: { id: currentSpouse.spouseId },
+                            where: { id: currentSpouseId },
                             data: { spouseId: null }
                         });
                     }
+
+                    // Step 2: Break relationship between sId (new spouse) and THEIR old spouse
+                    const newSpouseUser = await tx.user.findUnique({
+                        where: { id: sId },
+                        select: { spouseId: true }
+                    });
+                    if (newSpouseUser?.spouseId && newSpouseUser.spouseId !== userId) {
+                        await tx.user.update({
+                            where: { id: newSpouseUser.spouseId },
+                            data: { spouseId: null }
+                        });
+                    }
+
+                    // Step 3: Clear spouseId for userId and sId themselves
+                    await tx.user.update({ where: { id: userId }, data: { spouseId: null } });
+                    await tx.user.update({ where: { id: sId }, data: { spouseId: null } });
+
+                    // Step 4: Set the new bidirectional relationship
+                    await tx.user.update({ where: { id: userId }, data: { spouseId: sId } });
+                    await tx.user.update({ where: { id: sId }, data: { spouseId: userId } });
+
+                } else if (currentSpouseId) {
+                    // Case: Removing spouse - break bidirectional relationship
+                    await tx.user.update({
+                        where: { id: currentSpouseId },
+                        data: { spouseId: null }
+                    });
                     await tx.user.update({
                         where: { id: userId },
                         data: { spouseId: null }
                     });
                 }
+                // If sId is null and currentSpouseId is null, nothing to do
             }
 
             return newUser;
@@ -924,7 +943,7 @@ const updateUser = async (req, res) => {
 
         const finalUpdated = await prisma.user.findUnique({
             where: { id: userId },
-            include: { profile: true, roles: { include: { role: true } } }
+            include: { profile: true, roles: { include: { role: true } }, spouse: true }
         });
 
         await logActivity(req.user.id, 'UPDATE', 'USER', userId, { targetUser: finalUpdated.profile?.fullName }, req.ip, req.headers['user-agent']);
@@ -1126,7 +1145,7 @@ const createUser = async (req, res) => {
 
         const createdUser = await prisma.user.findUnique({
             where: { id: user.id },
-            include: { profile: true, roles: { include: { role: true } } }
+            include: { profile: true, roles: { include: { role: true } }, spouse: true }
         });
 
         await logActivity(req.user.id, 'CREATE', 'USER', createdUser.id, { targetUser: createdUser.profile?.fullName }, req.ip, req.headers['user-agent']);
