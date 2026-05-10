@@ -7,13 +7,16 @@ import KidsStats from '../components/Kids/KidsStats';
 import { PageHeader, Button } from '../components/ui';
 import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import { useAuth } from '../context/AuthContext';
+import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const KidsModule = () => {
-    const { user, hasAnyRole, isCoordinator } = useAuth();
+    const { user, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
     const [isKidsTeacherOrAuxiliary, setIsKidsTeacherOrAuxiliary] = useState(null);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
+    const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
+    const [moduleTreasurer, setModuleTreasurer] = useState(null);
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
 
     const checkIfKidsTeacherOrAuxiliary = async () => {
@@ -39,27 +42,43 @@ const KidsModule = () => {
     const fetchSubCoordinator = async () => {
         try {
             const res = await api.get('/coordinators/module/kids/subcoordinator');
+            setModuleSubCoordinator(res.data);
         } catch (error) {
             console.error('Error fetching subcoordinator:', error);
+            setModuleSubCoordinator(null);
+        }
+    };
+
+    const fetchTreasurer = async () => {
+        try {
+            const res = await api.get('/coordinators/module/kids/treasurer');
+            setModuleTreasurer(res.data);
+        } catch (error) {
+            console.error('Error fetching treasurer:', error);
+            setModuleTreasurer(null);
         }
     };
 
     useEffect(() => {
         checkIfKidsTeacherOrAuxiliary();
         fetchCoordinator();
+        fetchSubCoordinator();
+        fetchTreasurer();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Define roles for specific tabs
     const SCHEDULE_AND_MATRIX_ROLES = [ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA];
-    
+
     // Custom role checker for schedule and matrix tabs
     const hasScheduleOrMatrixAccess = () => {
         const userRoles = hasAnyRole(SCHEDULE_AND_MATRIX_ROLES);
-        const isCoord = moduleCoordinator && moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
+        const isModuleCoord = isCoordinator('kids');
+        const isModuleSubCoord = user?.moduleSubCoordinations?.includes('kids');
+        const isModuleTreasurer = isTreasurer('kids');
         const isTeacherOrAuxiliary = isKidsTeacherOrAuxiliary === true;
-        
-        return userRoles || isCoord || isTeacherOrAuxiliary;
+
+        return userRoles || isModuleCoord || isModuleSubCoord || isModuleTreasurer || isTeacherOrAuxiliary;
     };
     
     const tabs = [
@@ -96,6 +115,12 @@ const KidsModule = () => {
                 description="Escuela infantil: Kids 1 (5-7), Kids 2 (8 a 10), Teens (11-13) y Jóvenes (14+)"
                 action={
                     <div className="flex items-center gap-4">
+                        <CoordinatorDisplay
+                            coordinator={moduleCoordinator}
+                            subCoordinator={moduleSubCoordinator}
+                            treasurer={moduleTreasurer}
+                            moduleName="Kids"
+                        />
                     </div>
                 }
             />
@@ -109,6 +134,7 @@ const KidsModule = () => {
                     onClick={() => {
                         fetchCoordinator();
                         fetchSubCoordinator();
+                        fetchTreasurer();
                     }}
                     className="shadow-xl"
                 >

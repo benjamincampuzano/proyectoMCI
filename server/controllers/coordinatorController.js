@@ -60,6 +60,7 @@ const getModuleCoordinators = async (req, res) => {
                 },
                 roles: { include: { role: { select: { name: true } } } },
                 moduleCoordinations: {
+                    where: { isDeleted: false },
                     select: { moduleName: true, createdAt: true }
                 }
             },
@@ -485,7 +486,7 @@ const assignModuleSubCoordinator = async (req, res) => {
             data: {
                 userId,
                 moduleName: normalizedModule,
-                coordinatorId: assignerIsCoordinator ? req.user.id : null // or keep req.user.id
+                coordinatorId: isMainCoordinator ? req.user.id : null
             },
             include: {
                 user: { select: { id: true, email: true, profile: { select: { fullName: true } } } }
@@ -921,6 +922,128 @@ const removeModuleTreasurer = async (req, res) => {
     }
 };
 
+/**
+ * Get all sub-coordinators (similar to getModuleCoordinators)
+ */
+const getAllSubCoordinators = async (req, res) => {
+    try {
+        const where = {
+            isDeleted: false,
+            moduleSubCoordinations: {
+                some: { isDeleted: false }
+            }
+        };
+
+        if (!req.user.roles.includes('ADMIN') && !req.user.roles.includes('PASTOR')) {
+            const userWithProfile = await prisma.user.findUnique({
+                where: { id: req.user.id },
+                include: { profile: { select: { network: true } } }
+            });
+            const userNetwork = userWithProfile?.profile?.network;
+            if (userNetwork) {
+                where.profile = { network: userNetwork };
+            }
+        }
+
+        const subCoordinators = await prisma.user.findMany({
+            where,
+            select: {
+                id: true,
+                email: true,
+                profile: {
+                    select: { fullName: true, network: true }
+                },
+                roles: { include: { role: { select: { name: true } } } },
+                moduleSubCoordinations: {
+                    where: { isDeleted: false },
+                    select: { moduleName: true, createdAt: true }
+                }
+            },
+            orderBy: { profile: { fullName: 'asc' } }
+        });
+
+        const canSeeSensitiveData = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+
+        const formatted = subCoordinators.map(sc => ({
+            id: sc.id,
+            fullName: sc.profile?.fullName || 'Sin Nombre',
+            role: sc.roles?.[0]?.role?.name || 'LIDER_DOCE',
+            isCurrentlySubCoordinating: sc.moduleSubCoordinations.length > 0,
+            ...(canSeeSensitiveData && {
+                email: sc.email,
+                network: sc.profile?.network || 'Sin Red',
+                coordinatedModules: [...new Set(sc.moduleSubCoordinations.map(msc => msc.moduleName))]
+            })
+        }));
+
+        res.json(formatted);
+    } catch (error) {
+        console.error('Error fetching sub-coordinators:', error);
+        res.status(500).json({ message: 'Server error fetching sub-coordinators' });
+    }
+};
+
+/**
+ * Get all treasurers (similar to getModuleCoordinators)
+ */
+const getAllTreasurers = async (req, res) => {
+    try {
+        const where = {
+            isDeleted: false,
+            moduleTreasurers: {
+                some: { isDeleted: false }
+            }
+        };
+
+        if (!req.user.roles.includes('ADMIN') && !req.user.roles.includes('PASTOR')) {
+            const userWithProfile = await prisma.user.findUnique({
+                where: { id: req.user.id },
+                include: { profile: { select: { network: true } } }
+            });
+            const userNetwork = userWithProfile?.profile?.network;
+            if (userNetwork) {
+                where.profile = { network: userNetwork };
+            }
+        }
+
+        const treasurers = await prisma.user.findMany({
+            where,
+            select: {
+                id: true,
+                email: true,
+                profile: {
+                    select: { fullName: true, network: true }
+                },
+                roles: { include: { role: { select: { name: true } } } },
+                moduleTreasurers: {
+                    where: { isDeleted: false },
+                    select: { moduleName: true, createdAt: true }
+                }
+            },
+            orderBy: { profile: { fullName: 'asc' } }
+        });
+
+        const canSeeSensitiveData = req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR');
+
+        const formatted = treasurers.map(t => ({
+            id: t.id,
+            fullName: t.profile?.fullName || 'Sin Nombre',
+            role: t.roles?.[0]?.role?.name || 'LIDER_DOCE',
+            isCurrentlyTreasurer: t.moduleTreasurers.length > 0,
+            ...(canSeeSensitiveData && {
+                email: t.email,
+                network: t.profile?.network || 'Sin Red',
+                coordinatedModules: [...new Set(t.moduleTreasurers.map(mt => mt.moduleName))]
+            })
+        }));
+
+        res.json(formatted);
+    } catch (error) {
+        console.error('Error fetching treasurers:', error);
+        res.status(500).json({ message: 'Server error fetching treasurers' });
+    }
+};
+
 module.exports = {
     getModuleCoordinators,
     getDefaultModuleCoordinator,
@@ -932,5 +1055,7 @@ module.exports = {
     getModuleCandidates,
     getModuleTreasurer,
     assignModuleTreasurer,
-    removeModuleTreasurer
+    removeModuleTreasurer,
+    getAllSubCoordinators,
+    getAllTreasurers
 };

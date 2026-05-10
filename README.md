@@ -225,14 +225,14 @@ npm run test:run     # Ejecutar tests
 
 Para información detallada de cada módulo, consulte los documentos de anexo:
 
-- [Anexo 1: Módulo Ganar](./Informe_Modulo_Ganar.md)
-- [Anexo 2: Módulo Discipular](./Informe_Modulo_Discipular.md)
-- [Anexo 3: Módulo Enviar](./Informe_Modulo_Enviar.md)
-- [Anexo 4: Módulo Consolidar](./Informe_Modulo_Consolidar.md)
-- [Anexo 5: Módulo Kids](./Informe_Modulo_Kids.md)
-- [Anexo 6: Módulo Escuela de Artes](./Informe_Modulo_EscuelaDeArtes.md)
-- [Anexo 7: Módulo Convenciones](./Informe_Modulo_Convenciones.md)
-- [Anexo 8: Módulo Encuentros](./Informe_Modulo_Encuentros.md)
+- [Anexo 1: Módulo Ganar](./Documents/Informe_Modulo_Ganar.md)
+- [Anexo 2: Módulo Discipular](./Documents/Informe_Modulo_Discipular.md)
+- [Anexo 3: Módulo Enviar](./Documents/Informe_Modulo_Enviar.md)
+- [Anexo 4: Módulo Consolidar](./Documents/Informe_Modulo_Consolidar.md)
+- [Anexo 5: Módulo Kids](./Documents/Informe_Modulo_Kids.md)
+- [Anexo 6: Módulo Escuela de Artes](./Documents/Informe_Modulo_EscuelaDeArtes.md)
+- [Anexo 7: Módulo Convenciones](./Documents/Informe_Modulo_Convenciones.md)
+- [Anexo 8: Módulo Encuentros](./Documents/Informe_Modulo_Encuentros.md)
 
 ---
 

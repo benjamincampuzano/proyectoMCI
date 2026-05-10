@@ -6,7 +6,10 @@ const getAuditLogs = async (req, res) => {
         const { page = 1, limit = 50, action, entityType, startDate, endDate } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        const where = {};
+        const where = {
+            // Excluir acciones de token y login fallido del dashboard
+            action: { notIn: ['TOKEN_REFRESH', 'LOGIN_FAILED'] }
+        };
         if (action) where.action = action;
         if (entityType) where.entityType = entityType;
         if (startDate || endDate) {
@@ -74,10 +77,10 @@ const getAuditStats = async (req, res) => {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - parseInt(days));
 
-        // Group logins by day
+        // Group logins by day (excluyendo TOKEN_REFRESH y LOGIN_FAILED)
         const logins = await prisma.auditLog.findMany({
             where: {
-                action: 'LOGIN',
+                action: { in: ['LOGIN'] },
                 createdAt: { gte: startDate }
             },
             select: { createdAt: true }
@@ -90,9 +93,12 @@ const getAuditStats = async (req, res) => {
             loginsByDate[date] = (loginsByDate[date] || 0) + 1;
         });
 
-        // Action distribution
+        // Action distribution (excluyendo TOKEN_REFRESH y LOGIN_FAILED)
         const actions = await prisma.auditLog.groupBy({
             by: ['action'],
+            where: {
+                action: { notIn: ['TOKEN_REFRESH', 'LOGIN_FAILED'] }
+            },
             _count: true
         });
 

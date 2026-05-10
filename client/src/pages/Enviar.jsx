@@ -73,9 +73,10 @@ const Enviar = () => {
             label: 'Reporte de Asistencia',
             component: CellAttendance,
             customCheck: () => {
+                const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
                 const isModuleCoord = isCoordinator('enviar');
                 const isModuleSubCoord = isSubCoordinator('enviar');
-                return isModuleCoord || isModuleSubCoord;
+                return hasRoleAccess || isModuleCoord || isModuleSubCoord;
             }
         },
         {

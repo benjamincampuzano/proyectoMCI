@@ -15,6 +15,8 @@ const AVAILABLE_MODULES = [
 
 const useCoordinatorManagement = () => {
     const [coordinators, setCoordinators] = useState([]);
+    const [subCoordinators, setSubCoordinators] = useState([]);
+    const [treasurers, setTreasurers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedModule, setSelectedModule] = useState('ganar');
     const [moduleData, setModuleData] = useState({
@@ -31,6 +33,28 @@ const useCoordinatorManagement = () => {
         } catch (error) {
             console.error('Error fetching coordinators:', error);
             toast.error('Error al cargar coordinadores');
+        }
+    }, []);
+
+    // Fetch all sub-coordinators
+    const fetchSubCoordinators = useCallback(async () => {
+        try {
+            const response = await api.get('/coordinators/subcoordinators');
+            setSubCoordinators(response.data || []);
+        } catch (error) {
+            console.error('Error fetching sub-coordinators:', error);
+            // Don't show toast for sub-coordinators to avoid spam
+        }
+    }, []);
+
+    // Fetch all treasurers
+    const fetchTreasurers = useCallback(async () => {
+        try {
+            const response = await api.get('/coordinators/treasurers');
+            setTreasurers(response.data || []);
+        } catch (error) {
+            console.error('Error fetching treasurers:', error);
+            // Don't show toast for treasurers to avoid spam
         }
     }, []);
 
@@ -93,6 +117,7 @@ const useCoordinatorManagement = () => {
             const response = await api.post(`/coordinators/module/${moduleId}/subcoordinator`, { userId });
             toast.success('Subcoordinador asignado exitosamente');
             await fetchModuleData(moduleId);
+            await fetchSubCoordinators();
             return response.data;
         } catch (error) {
             console.error('Error assigning subcoordinator:', error);
@@ -108,6 +133,7 @@ const useCoordinatorManagement = () => {
             await api.delete(`/coordinators/module/${moduleId}/subcoordinator`);
             toast.success('Subcoordinador removido exitosamente');
             await fetchModuleData(moduleId);
+            await fetchSubCoordinators();
         } catch (error) {
             console.error('Error removing subcoordinator:', error);
             toast.error('Error al remover subcoordinador');
@@ -121,6 +147,7 @@ const useCoordinatorManagement = () => {
             const response = await api.post(`/coordinators/module/${moduleId}/treasurer`, { userId });
             toast.success('Tesorero asignado exitosamente');
             await fetchModuleData(moduleId);
+            await fetchTreasurers();
             return response.data;
         } catch (error) {
             console.error('Error assigning treasurer:', error);
@@ -136,6 +163,7 @@ const useCoordinatorManagement = () => {
             await api.delete(`/coordinators/module/${moduleId}/treasurer`);
             toast.success('Tesorero removido exitosamente');
             await fetchModuleData(moduleId);
+            await fetchTreasurers();
         } catch (error) {
             console.error('Error removing treasurer:', error);
             toast.error('Error al remover tesorero');
@@ -160,7 +188,9 @@ const useCoordinatorManagement = () => {
 
     useEffect(() => {
         fetchCoordinators();
-    }, [fetchCoordinators]);
+        fetchSubCoordinators();
+        fetchTreasurers();
+    }, [fetchCoordinators, fetchSubCoordinators, fetchTreasurers]);
 
     useEffect(() => {
         if (selectedModule) {
@@ -168,8 +198,18 @@ const useCoordinatorManagement = () => {
         }
     }, [selectedModule, fetchModuleData]);
 
+    // Combine all roles for overview display
+    const allCoordinators = [
+        ...coordinators.map(c => ({ ...c, assignmentType: 'Coordinador' })),
+        ...subCoordinators.map(sc => ({ ...sc, assignmentType: 'Subcoordinador' })),
+        ...treasurers.map(t => ({ ...t, assignmentType: 'Tesorero' }))
+    ];
+
     return {
         coordinators,
+        subCoordinators,
+        treasurers,
+        allCoordinators,
         loading,
         selectedModule,
         setSelectedModule,

@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { CaretDown, CaretUp, Plus, Pen, Trash, Calendar, BookOpen } from '@phosphor-icons/react';
 import { Button, AsyncSearchSelect } from '../ui';
 import { useAuth } from '../../context/AuthContext';
-import { ROLES } from '../../constants/roles';
+import { ROLES, ROLE_GROUPS } from '../../constants/roles';
 import ConfirmationModal from '../ConfirmationModal';
 import PropTypes from 'prop-types';
 
@@ -87,8 +87,9 @@ const KidsSchedule = ({ moduleCoordinator }) => {
         category: 'KIDS1'
     });
 
-    // Check if user is ADMIN or the specific coordinator of the KIDS module
-    const isKidsCoordinatorOrAdmin = hasAnyRole([ROLES.ADMIN]) || 
+    // Check if user can manage Kids schedule (ADMIN, COORDINADOR, SUBCOORDINADOR, TESORERO)
+    // or is the specific module coordinator
+    const canManageSchedule = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_KIDS_SCHEDULE) ||
         (moduleCoordinator && user?.id === moduleCoordinator.id);
 
     useEffect(() => {
@@ -319,7 +320,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                         <p className="text-sm text-[#86868b] dark:text-[#98989d]">Despliega un curso para ver su cronograma</p>
                     </div>
                 </div>
-                {hasAnyRole(['ADMIN', 'PASTOR','LIDER_DOCE']) && (
+                {hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.COORDINADOR]) && (
                     <Button
                         onClick={() => setShowCreateCourseModal(true)}
                         variant="primary"
@@ -372,23 +373,21 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                 {/* Accordion Content */}
                                 {isExpanded && (
                                     <div className="border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-[#272729]/80 p-0 sm:p-4">
-                                        {(isKidsCoordinatorOrAdmin || hasAnyRole([ROLES.ADMIN])) && (
+                                        {canManageSchedule && (
                                             <div className="px-4 py-3 sm:px-0 sm:py-0 sm:mb-4 flex flex-wrap gap-2">
-                                                {isKidsCoordinatorOrAdmin && (
-                                                    <Button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleOpenCreateModal(course.id, e);
-                                                        }}
-                                                        variant="primary"
-                                                        size="sm"
-                                                        icon={Plus}
-                                                        className="bg-indigo-600 hover:bg-indigo-700 flex-1 sm:flex-none"
-                                                    >
-                                                        Fila
-                                                    </Button>
-                                                )}
-                                                {hasAnyRole([ROLES.ADMIN]) && (
+                                                <Button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenCreateModal(course.id, e);
+                                                    }}
+                                                    variant="primary"
+                                                    size="sm"
+                                                    icon={Plus}
+                                                    className="bg-indigo-600 hover:bg-indigo-700 flex-1 sm:flex-none"
+                                                >
+                                                    Fila
+                                                </Button>
+                                                {hasAnyRole([ROLES.ADMIN, ROLES.COORDINADOR]) && (
                                                     <>
                                                         <Button
                                                             onClick={(e) => {
@@ -436,7 +435,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                                             <th className="px-4 py-3">Maestro</th>
                                                             <th className="px-4 py-3">Auxiliar</th>
                                                             <th className="px-4 py-3">Observaciones</th>
-                                                            {isKidsCoordinatorOrAdmin && <th className="px-4 py-3 text-right">Acciones</th>}
+                                                            {canManageSchedule && <th className="px-4 py-3 text-right">Acciones</th>}
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -469,7 +468,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                                                 <td className="px-4 py-3 text-[#86868b] dark:text-[#98989d] whitespace-normal min-w-[200px] text-xs">
                                                                     <TruncatedCell text={schedule.observations} maxLength={80} />
                                                                 </td>
-                                                                {isKidsCoordinatorOrAdmin && (
+                                                                {canManageSchedule && (
                                                                     <td className="px-4 py-3 text-right">
                                                                         <div className="flex justify-end gap-2">
                                                                             <button 

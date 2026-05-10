@@ -1,5 +1,5 @@
 const express = require('express');
-const { getModuleCoordinators, getDefaultModuleCoordinator, assignModuleCoordinator, removeModuleCoordinator, getModuleSubCoordinator, assignModuleSubCoordinator, removeModuleSubCoordinator, getModuleCandidates, getModuleTreasurer, assignModuleTreasurer, removeModuleTreasurer } = require('../controllers/coordinatorController');
+const { getModuleCoordinators, getDefaultModuleCoordinator, assignModuleCoordinator, removeModuleCoordinator, getModuleSubCoordinator, assignModuleSubCoordinator, removeModuleSubCoordinator, getModuleCandidates, getModuleTreasurer, assignModuleTreasurer, removeModuleTreasurer, getAllSubCoordinators, getAllTreasurers } = require('../controllers/coordinatorController');
 const { authenticate, isAdmin, authorize, checkCoordinatorStatus } = require('../middleware/auth');
 
 const router = express.Router();
@@ -9,6 +9,12 @@ router.use(checkCoordinatorStatus);
 
 // Get all module coordinators - ADMIN/PASTOR ven todos, LIDER_DOCE solo ve los de su red
 router.get('/', getModuleCoordinators);
+
+// Get all sub-coordinators
+router.get('/subcoordinators', getAllSubCoordinators);
+
+// Get all treasurers
+router.get('/treasurers', getAllTreasurers);
 
 // Get default coordinator for a specific module - abierto
 router.get('/module/:module', getDefaultModuleCoordinator);

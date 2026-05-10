@@ -29,11 +29,33 @@ const MODULE_COLORS = {
     indigo: 'bg-indigo-500'
 };
 
+// Map normalized module names from database to display names
+const MODULE_NAME_MAP = {
+    'ganar': 'Ganar',
+    'consolidar': 'Consolidar',
+    'enviar': 'Enviar',
+    'discipular': 'Discipular',
+    'kids': 'Kids',
+    'escuela-de-artes': 'Escuela de Artes',
+    'escuela de artes': 'Escuela de Artes',
+    'encuentro': 'Encuentros',
+    'encuentros': 'Encuentros',
+    'convencion': 'Convenciones',
+    'convenciones': 'Convenciones'
+};
+
+const getModuleDisplayName = (normalizedName) => {
+    if (!normalizedName) return normalizedName;
+    const key = normalizedName.toLowerCase().trim();
+    return MODULE_NAME_MAP[key] || normalizedName;
+};
+
 const CoordinatorManagement = () => {
     const { hasAnyRole } = useAuth();
     const isAdminOrPastor = hasAnyRole(['ADMIN', 'PASTOR']);
 
     const {
+        allCoordinators,
         coordinators,
         loading,
         selectedModule,
@@ -334,14 +356,14 @@ const CoordinatorManagement = () => {
                 </div>
             )}
 
-            {/* Coordinators Overview */}
+            {/* All Assignments Overview */}
             <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[24px] border border-[var(--ln-border-standard)] overflow-hidden shadow-lg mt-8">
                 <div className="px-6 py-5 border-b border-[var(--ln-border-standard)] bg-white/[0.02]">
                     <h3 className="text-lg font-semibold text-[var(--ln-text-primary)]">
-                        Vista General de Coordinadores
+                        Vista General de Asignaciones
                     </h3>
                     <p className="text-sm text-[var(--ln-text-secondary)] mt-1">
-                        Todos los coordinadores asignados en el sistema
+                        Coordinadores, Subcoordinadores y Tesoreros asignados en el sistema
                     </p>
                 </div>
                 <div className="overflow-x-auto">
@@ -352,7 +374,10 @@ const CoordinatorManagement = () => {
                                     Usuario
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Módulos Coordinados
+                                    Tipo
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    Módulos
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Rol
@@ -363,15 +388,15 @@ const CoordinatorManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                            {coordinators.length === 0 ? (
+                            {allCoordinators.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                         No hay coordinadores registrados
                                     </td>
                                 </tr>
                             ) : (
-                                coordinators.map((coordinator) => (
-                                    <tr key={coordinator.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/30">
+                                allCoordinators.map((coordinator) => (
+                                    <tr key={`${coordinator.id}-${coordinator.assignmentType}`} className="hover:bg-gray-50 dark:hover:bg-gray-900/30">
                                         <td className="px-6 py-4">
                                             <div>
                                                 <p className="font-medium text-gray-900 dark:text-white">
@@ -383,13 +408,24 @@ const CoordinatorManagement = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 text-xs rounded-full ${
+                                                coordinator.assignmentType === 'Coordinador'
+                                                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                                                    : coordinator.assignmentType === 'Subcoordinador'
+                                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                                        : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                                            }`}>
+                                                {coordinator.assignmentType}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
                                             <div className="flex flex-wrap gap-1">
                                                 {coordinator.coordinatedModules?.map((mod, idx) => (
                                                     <span
                                                         key={idx}
-                                                        className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded-full"
+                                                        className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full"
                                                     >
-                                                        {mod}
+                                                        {getModuleDisplayName(mod)}
                                                     </span>
                                                 ))}
                                                 {!coordinator.coordinatedModules?.length && (
@@ -398,17 +434,17 @@ const CoordinatorManagement = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
+                                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full">
                                                 {coordinator.role}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                                                coordinator.isCurrentlyCoordinating
+                                                (coordinator.isCurrentlyCoordinating || coordinator.isCurrentlySubCoordinating || coordinator.isCurrentlyTreasurer)
                                                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                                                     : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                                             }`}>
-                                                {coordinator.isCurrentlyCoordinating ? (
+                                                {(coordinator.isCurrentlyCoordinating || coordinator.isCurrentlySubCoordinating || coordinator.isCurrentlyTreasurer) ? (
                                                     <><CheckCircle size={12} /> Activo</>
                                                 ) : (
                                                     'Inactivo'

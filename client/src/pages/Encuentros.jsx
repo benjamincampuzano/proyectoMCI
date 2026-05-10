@@ -10,10 +10,11 @@ import MultiUserSelect from '../components/MultiUserSelect';
 import { AsyncSearchSelect, PageHeader, Button } from '../components/ui';
 import ActionModal from '../components/ActionModal';
 import ConfirmationModal from '../components/ConfirmationModal';
+import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ROLES } from '../constants/roles';
 
 const Encuentros = () => {
-    const { user, hasAnyRole, isCoordinator } = useAuth();
+    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const isModuleCoordinator = isCoordinator('encuentro');
     const [encuentros, setEncuentros] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -21,6 +22,9 @@ const Encuentros = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
+    const [moduleCoordinator, setModuleCoordinator] = useState(null);
+    const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
+    const [moduleTreasurer, setModuleTreasurer] = useState(null);
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
 
     // Delete Confirmation Modal State
@@ -44,7 +48,40 @@ const Encuentros = () => {
 
     useEffect(() => {
         fetchEncuentros();
+        fetchModuleCoordinator();
+        fetchModuleSubCoordinator();
+        fetchModuleTreasurer();
     }, []);
+
+    const fetchModuleCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/encuentro');
+            setModuleCoordinator(res.data);
+        } catch (error) {
+            console.error('Error fetching coordinator:', error);
+            setModuleCoordinator(null);
+        }
+    };
+
+    const fetchModuleSubCoordinator = async () => {
+        try {
+            const res = await api.get('/coordinators/module/encuentro/subcoordinator');
+            setModuleSubCoordinator(res.data);
+        } catch (error) {
+            console.error('Error fetching subcoordinator:', error);
+            setModuleSubCoordinator(null);
+        }
+    };
+
+    const fetchModuleTreasurer = async () => {
+        try {
+            const res = await api.get('/coordinators/module/encuentro/treasurer');
+            setModuleTreasurer(res.data);
+        } catch (error) {
+            console.error('Error fetching treasurer:', error);
+            setModuleTreasurer(null);
+        }
+    };
 
     const fetchEncuentros = async () => {
         setLoading(true);
@@ -296,6 +333,12 @@ const Encuentros = () => {
                 description="Gestión de Encuentros (Pre y Pos encuentros)"
                 action={
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                        <CoordinatorDisplay
+                            coordinator={moduleCoordinator}
+                            subCoordinator={moduleSubCoordinator}
+                            treasurer={moduleTreasurer}
+                            moduleName="Encuentros"
+                        />
                         {canCreateOrDelete && (
                             <Button
                                 variant="primary"
