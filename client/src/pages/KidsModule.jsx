@@ -12,7 +12,7 @@ import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const KidsModule = () => {
-    const { user, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
+    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const [isKidsTeacherOrAuxiliary, setIsKidsTeacherOrAuxiliary] = useState(null);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
@@ -74,7 +74,7 @@ const KidsModule = () => {
     const hasScheduleOrMatrixAccess = () => {
         const userRoles = hasAnyRole(SCHEDULE_AND_MATRIX_ROLES);
         const isModuleCoord = isCoordinator('kids');
-        const isModuleSubCoord = user?.moduleSubCoordinations?.includes('kids');
+        const isModuleSubCoord = isSubCoordinator('kids');
         const isModuleTreasurer = isTreasurer('kids');
         const isTeacherOrAuxiliary = isKidsTeacherOrAuxiliary === true;
 

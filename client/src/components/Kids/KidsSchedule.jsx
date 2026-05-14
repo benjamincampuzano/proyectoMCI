@@ -45,7 +45,7 @@ const CATEGORY_INFO = {
 };
 
 const KidsSchedule = ({ moduleCoordinator }) => {
-    const { user, hasAnyRole } = useAuth();
+    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const [courses, setCourses] = useState([]);
     const [expandedCourseIds, setExpandedCourseIds] = useState(new Set());
     const [schedules, setSchedules] = useState({});
@@ -88,8 +88,11 @@ const KidsSchedule = ({ moduleCoordinator }) => {
     });
 
     // Check if user can manage Kids schedule (ADMIN, COORDINADOR, SUBCOORDINADOR, TESORERO)
-    // or is the specific module coordinator
+    // or is the specific module coordinator, subcoordinator, or treasurer
     const canManageSchedule = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_KIDS_SCHEDULE) ||
+        isCoordinator('kids') ||
+        isSubCoordinator('kids') ||
+        isTreasurer('kids') ||
         (moduleCoordinator && user?.id === moduleCoordinator.id);
 
     useEffect(() => {

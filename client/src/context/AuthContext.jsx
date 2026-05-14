@@ -227,8 +227,16 @@ export const AuthProvider = ({ children }) => {
     const isCoordinator = (moduleName) => {
         if (!user) return false;
         if (user.isCoordinator) return true;
-        if (!moduleName) return user.isCoordinator || (user.moduleCoordinations && user.moduleCoordinations.length > 0);
-        return user.moduleCoordinations?.some(m => m.toLowerCase() === moduleName.toLowerCase());
+        
+        let coordinations = [];
+        if (Array.isArray(user.moduleCoordinations)) {
+            coordinations = user.moduleCoordinations;
+        } else if (user.moduleCoordinations?.coordinating) {
+            coordinations = user.moduleCoordinations.coordinating;
+        }
+
+        if (!moduleName) return user.isCoordinator || coordinations.length > 0;
+        return coordinations.some(m => m.toLowerCase() === moduleName.toLowerCase());
     };
 
     /**
@@ -245,19 +253,43 @@ export const AuthProvider = ({ children }) => {
 
         // Check if user is coordinator of this specific module
         const normalizedModule = moduleName.toLowerCase().trim().replace(/\s+/g, '-');
-        return user.moduleCoordinations?.some(m => m.toLowerCase() === normalizedModule);
+        
+        let coordinations = [];
+        if (Array.isArray(user.moduleCoordinations)) {
+            coordinations = user.moduleCoordinations;
+        } else if (user.moduleCoordinations?.coordinating) {
+            coordinations = user.moduleCoordinations.coordinating;
+        }
+        
+        return coordinations.some(m => m.toLowerCase() === normalizedModule);
     };
 
     const isSubCoordinator = (moduleName) => {
         if (!user) return false;
-        if (!moduleName) return user.isModuleSubCoordinator;
-        return user.moduleSubCoordinations?.some(m => m.toLowerCase() === moduleName.toLowerCase());
+        
+        let subCoordinations = [];
+        if (Array.isArray(user.moduleSubCoordinations)) {
+            subCoordinations = user.moduleSubCoordinations;
+        } else if (user.moduleCoordinations?.subCoordinating) {
+            subCoordinations = user.moduleCoordinations.subCoordinating;
+        }
+
+        if (!moduleName) return user.isModuleSubCoordinator || subCoordinations.length > 0;
+        return subCoordinations.some(m => m.toLowerCase() === moduleName.toLowerCase());
     };
 
     const isTreasurer = (moduleName) => {
         if (!user) return false;
-        if (!moduleName) return user.isModuleTreasurer;
-        return user.moduleTreasurers?.some(m => m.toLowerCase() === moduleName.toLowerCase());
+        
+        let treasurers = [];
+        if (Array.isArray(user.moduleTreasurers)) {
+            treasurers = user.moduleTreasurers;
+        } else if (user.moduleCoordinations?.treasuring) {
+            treasurers = user.moduleCoordinations.treasuring;
+        }
+
+        if (!moduleName) return user.isModuleTreasurer || treasurers.length > 0;
+        return treasurers.some(m => m.toLowerCase() === moduleName.toLowerCase());
     };
 
     const isDoceLeader = () => {

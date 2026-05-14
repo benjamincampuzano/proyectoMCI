@@ -154,3 +154,6 @@ server/nul
 DESIGN.md
 .gitignore
 .opencode/plans/agregar-customcheck-coordinadores.md
+.github/copilot-instructions.md
+Guia_Filtros.md
+server/prisma/schema.prisma.bak
