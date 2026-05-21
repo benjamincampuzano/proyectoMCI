@@ -123,6 +123,12 @@ export function buildCustomHierarchy(network, currentUser) {
     return node.disciples || [];
   }
 
+  // For ADMIN, return the full network directly without filtering
+  // ADMIN should see the complete hierarchy for any selected leader
+  if (userRole === ROLES.ADMIN) {
+    return network;
+  }
+
   const userNode = findNodeById(network, userId);
   if (!userNode) return network;
 

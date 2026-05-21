@@ -9,6 +9,7 @@ import RadialView from './radial/RadialView';
 import { buildCoupleNetwork } from '../utils/transformCouples';
 import { getRootNodeForRole } from '../utils/buildHierarchy';
 import { getUnassignedUsers } from '../utils/unassigned';
+import { ROLES } from '../constants/roles';
 import api from '../utils/api';
 import CardsView from './cards/CardsView';
 import ConfirmationModal from './ConfirmationModal';
@@ -33,10 +34,12 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     return getRootNodeForRole(fullNetwork, currentUser);
   }, [network, currentUser]);
 
+  const isAdmin = currentUser?.roles?.includes(ROLES.ADMIN);
+
   const unassigned = useMemo(() => {
-    const result = getUnassignedUsers({ allUsers, coupleRoot });
+    const result = getUnassignedUsers({ allUsers, coupleRoot, isAdmin });
     return result;
-  }, [allUsers, coupleRoot]);
+  }, [allUsers, coupleRoot, isAdmin]);
 
   useEffect(() => {
     (async () => {

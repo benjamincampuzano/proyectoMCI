@@ -99,12 +99,7 @@ const getNetwork = async (req, res) => {
 
         const allUsers = await prisma.user.findMany({
             where: {
-                id: { in: allIds },
-                roles: {
-                    none: {
-                        role: { name: 'ADMIN' }
-                    }
-                }
+                id: { in: allIds }
             },
             select: {
                 id: true,

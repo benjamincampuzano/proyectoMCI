@@ -72,51 +72,57 @@ const UserManagementRoute = ({ children }) => {
 };
 
 const KidsModuleRoute = ({ children }) => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, hasAnyRole } = useAuth();
   if (loading) return <div>Loading...</div>;
-  
-  // Check if user is ADMIN (always has access)
-  if (isAdmin()) {
+
+  // ADMIN and PASTOR always have access
+  if (hasAnyRole(['ADMIN', 'PASTOR'])) {
     return children;
   }
-  
-  // For non-admin users, we need to check if they have relationship with KIDS module
-  // This will be checked asynchronously
+
+  // For others, check if they have specific Kids module assignments
   const [hasKidsAccess, setHasKidsAccess] = useState(null);
-  
+
   useEffect(() => {
     const checkKidsAccess = async () => {
       try {
-        // Check if user is coordinator of KIDS module
-        const coordinatorRes = await api.get('/coordinators/module/kids');
+        const [coordinatorRes, subCoordinatorRes, treasurerRes] = await Promise.all([
+          api.get('/coordinators/module/kids'),
+          api.get('/coordinators/module/kids/subcoordinator'),
+          api.get('/coordinators/module/kids/treasurer')
+        ]);
+
         if (coordinatorRes.data && coordinatorRes.data.id === user.id) {
           setHasKidsAccess(true);
           return;
         }
-        
-        // Check if user has students enrolled in KIDS
-        const studentsRes = await api.get('/kids/students/check-access');
-        if (studentsRes.data.hasAccess) {
+
+        if (subCoordinatorRes.data && subCoordinatorRes.data.id === user.id) {
           setHasKidsAccess(true);
           return;
         }
-        
+
+        if (treasurerRes.data && treasurerRes.data.id === user.id) {
+          setHasKidsAccess(true);
+          return;
+        }
+
         setHasKidsAccess(false);
       } catch (error) {
         console.error('Error checking KIDS access:', error);
         setHasKidsAccess(false);
       }
     };
-    
+
     if (user) {
       checkKidsAccess();
     }
   }, [user]);
-  
+
   if (hasKidsAccess === null) {
     return <div>Loading...</div>;
   }
-  
+
   return user && hasKidsAccess ? children : <Navigate to="/" />;
 };
 

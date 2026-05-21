@@ -389,6 +389,31 @@ const CellManagement = ({ moduleCoordinator }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const requiredFields = [
+            { key: 'name', label: 'Nombre de la Célula' },
+            { key: 'cellType', label: 'Tipo de Célula' },
+            { key: 'liderDoceId', label: 'Líder 12' },
+            { key: 'leaderId', label: 'Líder de la Célula' },
+            { key: 'hostId', label: 'Anfitrión' },
+            { key: 'dayOfWeek', label: 'Día' },
+            { key: 'time', label: 'Hora' },
+            { key: 'city', label: 'Ciudad' },
+            { key: 'barrio', label: 'Barrio' },
+            { key: 'address', label: 'Dirección' },
+            { key: 'network', label: 'Red' },
+            { key: 'spiritualMappingUrl', label: 'Cartografía Espiritual (URL)' },
+            { key: 'fastingDate', label: 'Fecha de Ayuno' },
+            { key: 'rhemaWord', label: 'Palabra Rhema' },
+        ];
+
+        for (const field of requiredFields) {
+            if (!formData[field.key]) {
+                toast.error(`El campo "${field.label}" es obligatorio`);
+                return;
+            }
+        }
+
         setLoading(true);
         try {
             let response;
@@ -940,7 +965,7 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Líder 12
+                                                Líder 12 <span className="text-red-400">*</span>
                                             </label>
                                             <AsyncSearchSelect
                                                 fetchItems={async (term) => {
@@ -959,7 +984,6 @@ const CellManagement = ({ moduleCoordinator }) => {
                                                 }}
                                                 placeholder="Seleccionar Líder 12"
                                                 labelKey="fullName"
-                                                disabled={currentUser?.roles?.includes('LIDER_DOCE')}
                                                 renderItem={(leader) => (
                                                     <div>
                                                         <div className="font-medium text-gray-900 dark:text-white">
@@ -1057,10 +1081,11 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div className="sm:col-span-2">
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Barrio
+                                                Barrio <span className="text-red-400">*</span>
                                             </label>
                                             <input
                                                 type="text"
+                                                required
                                                 value={formData.barrio}
                                                 onChange={e => setFormData({ ...formData, barrio: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
@@ -1110,9 +1135,10 @@ const CellManagement = ({ moduleCoordinator }) => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Red
+                                                Red <span className="text-red-400">*</span>
                                             </label>
                                             <select
+                                                required
                                                 value={formData.network}
                                                 onChange={e => setFormData({ ...formData, network: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
@@ -1127,10 +1153,11 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Cartografía Espiritual (URL)
+                                                Cartografía Espiritual (URL) <span className="text-red-400">*</span>
                                             </label>
                                             <input
                                                 type="url"
+                                                required
                                                 value={formData.spiritualMappingUrl}
                                                 onChange={e => setFormData({ ...formData, spiritualMappingUrl: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
@@ -1140,10 +1167,11 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Fecha de Ayuno
+                                                Fecha de Ayuno <span className="text-red-400">*</span>
                                             </label>
                                             <input
                                                 type="date"
+                                                required
                                                 value={formData.fastingDate}
                                                 onChange={e => setFormData({ ...formData, fastingDate: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
@@ -1152,9 +1180,10 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Palabra Rhema
+                                                Palabra Rhema <span className="text-red-400">*</span>
                                             </label>
                                             <textarea
+                                                required
                                                 value={formData.rhemaWord}
                                                 onChange={e => setFormData({ ...formData, rhemaWord: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"

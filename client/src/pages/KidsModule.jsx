@@ -5,106 +5,90 @@ import KidsSchedule from '../components/Kids/KidsSchedule';
 import KidsStudentMatrix from '../components/Kids/KidsStudentMatrix';
 import KidsStats from '../components/Kids/KidsStats';
 import { PageHeader, Button } from '../components/ui';
-import { ROLES, ROLE_GROUPS } from '../constants/roles';
+import { ROLES } from '../constants/roles';
 import { useAuth } from '../context/AuthContext';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const KidsModule = () => {
-    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
+    const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const [isKidsTeacherOrAuxiliary, setIsKidsTeacherOrAuxiliary] = useState(null);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
-    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
-
-    const checkIfKidsTeacherOrAuxiliary = async () => {
-        try {
-            const res = await api.get('/kids/students/check-access');
-            setIsKidsTeacherOrAuxiliary(res.data.hasAccess);
-        } catch (error) {
-            console.error('Error checking KIDS teacher/auxiliary access:', error);
-            setIsKidsTeacherOrAuxiliary(false);
-        }
-    };
-
-    const fetchCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/kids');
-            setModuleCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching coordinator:', error);
-            setModuleCoordinator(null);
-        }
-    };
-
-    const fetchSubCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/kids/subcoordinator');
-            setModuleSubCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching subcoordinator:', error);
-            setModuleSubCoordinator(null);
-        }
-    };
-
-    const fetchTreasurer = async () => {
-        try {
-            const res = await api.get('/coordinators/module/kids/treasurer');
-            setModuleTreasurer(res.data);
-        } catch (error) {
-            console.error('Error fetching treasurer:', error);
-            setModuleTreasurer(null);
-        }
-    };
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
-        checkIfKidsTeacherOrAuxiliary();
-        fetchCoordinator();
-        fetchSubCoordinator();
-        fetchTreasurer();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        let isMounted = true;
 
-    // Define roles for specific tabs
-    const SCHEDULE_AND_MATRIX_ROLES = [ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA];
+        const fetchData = async () => {
+            try {
+                const [coordinatorRes, subCoordinatorRes, treasurerRes, teacherRes] = await Promise.all([
+                    api.get('/coordinators/module/kids').catch(() => ({ data: null })),
+                    api.get('/coordinators/module/kids/subcoordinator').catch(() => ({ data: null })),
+                    api.get('/coordinators/module/kids/treasurer').catch(() => ({ data: null })),
+                    api.get('/kids/students/check-access').catch(() => ({ data: { hasAccess: false } }))
+                ]);
 
-    // Custom role checker for schedule and matrix tabs
-    const hasScheduleOrMatrixAccess = () => {
-        const userRoles = hasAnyRole(SCHEDULE_AND_MATRIX_ROLES);
-        const isModuleCoord = isCoordinator('kids');
-        const isModuleSubCoord = isSubCoordinator('kids');
-        const isModuleTreasurer = isTreasurer('kids');
-        const isTeacherOrAuxiliary = isKidsTeacherOrAuxiliary === true;
+                if (isMounted) {
+                    setModuleCoordinator(coordinatorRes.data);
+                    setModuleSubCoordinator(subCoordinatorRes.data);
+                    setModuleTreasurer(treasurerRes.data);
+                    setIsKidsTeacherOrAuxiliary(teacherRes.data.hasAccess);
+                }
+            } catch (error) {
+                console.error('Error fetching module data:', error);
+                if (isMounted) {
+                    setModuleCoordinator(null);
+                    setModuleSubCoordinator(null);
+                    setModuleTreasurer(null);
+                    setIsKidsTeacherOrAuxiliary(false);
+                }
+            }
+        };
 
-        return userRoles || isModuleCoord || isModuleSubCoord || isModuleTreasurer || isTeacherOrAuxiliary;
+        fetchData();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [refreshKey]);
+
+    const handleRefresh = () => setRefreshKey(k => k + 1);
+
+    // Function to check if user has full access to Kids module (ADMIN, PASTOR, Coordinator, Subcoordinator, Treasurer)
+    const hasFullKidsAccess = () => {
+        return hasAnyRole(['ADMIN', 'PASTOR']) ||
+               isCoordinator('kids') ||
+               isSubCoordinator('kids') ||
+               isTreasurer('kids');
     };
-    
+
     const tabs = [
         {
             id: 'schedule',
             label: 'Cronograma',
             component: (props) => <KidsSchedule {...props} moduleCoordinator={moduleCoordinator} />,
-            customCheck: hasScheduleOrMatrixAccess
+            customCheck: hasFullKidsAccess
         },
-        { 
-            id: 'management', 
-            label: 'Clases y Notas', 
+        {
+            id: 'management',
+            label: 'Clases y Notas',
             component: KidsCourseManagement,
-            roles: ROLE_GROUPS.CAN_MANAGE_CLASSES
+            customCheck: hasFullKidsAccess
         },
         {
             id: 'matrix',
             label: 'Matriz de Estudiantes',
             component: KidsStudentMatrix,
-            customCheck: hasScheduleOrMatrixAccess
+            customCheck: hasFullKidsAccess
         },
         {
             id: 'stats',
             label: 'Reporte Estadístico',
             component: KidsStats,
-            roles: ROLE_GROUPS.ALL_LEADERS
+            customCheck: hasFullKidsAccess
         }
     ];
 
@@ -125,17 +109,12 @@ const KidsModule = () => {
                 }
             />
 
-            {/* Floating Refresh Button */}
             <div className="fixed bottom-8 right-8 z-40">
                 <Button
                     variant="primary"
                     size="sm"
                     icon={ArrowsClockwise}
-                    onClick={() => {
-                        fetchCoordinator();
-                        fetchSubCoordinator();
-                        fetchTreasurer();
-                    }}
+                    onClick={handleRefresh}
                     className="shadow-xl"
                 >
                     Actualizar

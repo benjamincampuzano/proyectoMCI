@@ -95,12 +95,23 @@ const KidsSchedule = ({ moduleCoordinator }) => {
         isTreasurer('kids') ||
         (moduleCoordinator && user?.id === moduleCoordinator.id);
 
+    // Check if user can view Kids schedule (same as hasFullKidsAccess from KidsModule)
+    const canViewSchedule = hasAnyRole(['ADMIN', 'PASTOR']) ||
+        isCoordinator('kids') ||
+        isSubCoordinator('kids') ||
+        isTreasurer('kids');
+
     useEffect(() => {
         fetchCourses();
     }, []);
 
     const handleCreateCourse = async (e) => {
         e.preventDefault();
+        // Check if user has permission to view schedules before making the request
+        if (!canViewSchedule) {
+            console.warn('User does not have permission to view kids schedule');
+            return;
+        }
         try {
             const categoryConfig = CATEGORY_INFO[courseFormData.category];
             const finalName = categoryConfig ? `${categoryConfig.label}` : courseFormData.category;
@@ -117,26 +128,31 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             toast.success('Clase creada exitosamente');
         } catch (error) {
             console.error('Error creating course:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Error creating course';
-            toast.error(errorMessage);
+            // Only show toast for unexpected errors, not permission errors (403)
+            if (error.response?.status !== 403) {
+                const errorMessage = error.response?.data?.message || error.message || 'Error creating course';
+                toast.error(errorMessage);
+            }
         }
     };
 
     const fetchCourses = async () => {
+        // Check if user has permission to view kids schedule before making the request
+        if (!canViewSchedule) {
+            console.warn('User does not have permission to view kids schedule');
+            return;
+        }
         try {
             const res = await api.get('/kids/modules');
             setCourses(res.data);
-            // Expand all courses by default
-            setExpandedCourseIds(new Set(res.data.map(c => c.id)));
-            // Fetch schedules for all courses
-            res.data.forEach(course => {
-                if (!schedules[course.id]) {
-                    fetchSchedulesForCourse(course.id);
-                }
-            });
+            // Start with no courses expanded to prevent overwhelming requests
+            setExpandedCourseIds(new Set());
         } catch (error) {
             console.error('Error fetching courses:', error);
-            toast.error('Error al cargar los cursos');
+            // Only show toast for unexpected errors, not permission errors (403)
+            if (error.response?.status !== 403) {
+                toast.error('Error al cargar los cursos');
+            }
         }
     };
 
@@ -153,6 +169,11 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
     const handleUpdateCourse = async (e) => {
         e.preventDefault();
+        // Check if user has permission to view schedules before making the request
+        if (!canViewSchedule) {
+            console.warn('User does not have permission to view kids schedule');
+            return;
+        }
         try {
             const categoryConfig = CATEGORY_INFO[courseEditFormData.category];
             const finalName = categoryConfig ? `${categoryConfig.label}` : courseEditFormData.name;
@@ -167,8 +188,11 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             toast.success('Clase actualizada exitosamente');
         } catch (error) {
             console.error('Error updating course:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Error updating course';
-            toast.error(errorMessage);
+            // Only show toast for unexpected errors, not permission errors (403)
+            if (error.response?.status !== 403) {
+                const errorMessage = error.response?.data?.message || error.message || 'Error updating course';
+                toast.error(errorMessage);
+            }
         }
     };
 
@@ -205,23 +229,39 @@ const KidsSchedule = ({ moduleCoordinator }) => {
     };
 
     const fetchSchedulesForCourse = async (courseId) => {
+        // Check if user has permission to view schedules before making the request
+        if (!canViewSchedule) {
+            console.warn('User does not have permission to view kids schedule');
+            return;
+        }
+
         try {
             const res = await api.get(`/kids-schedule/module/${courseId}`);
             setSchedules(prev => ({ ...prev, [courseId]: res.data }));
         } catch (error) {
             console.error('Error fetching schedules for course:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Error al cargar cronograma del curso';
-            toast.error(errorMessage);
+            // Only show toast for unexpected errors, not permission errors (403)
+            if (error.response?.status !== 403) {
+                const errorMessage = error.response?.data?.message || error.message || 'Error al cargar cronograma del curso';
+                toast.error(errorMessage);
+            }
         }
     };
 
     const toggleCourse = (courseId) => {
+        // Check if user has permission to view schedules before expanding
+        if (!canViewSchedule) {
+            console.warn('User does not have permission to view kids schedule');
+            return;
+        }
+
         setExpandedCourseIds(prev => {
             const newSet = new Set(prev);
             if (newSet.has(courseId)) {
                 newSet.delete(courseId);
             } else {
                 newSet.add(courseId);
+                // Only fetch schedules when expanding the course and if not already fetched
                 if (!schedules[courseId]) {
                     fetchSchedulesForCourse(courseId);
                 }
@@ -272,14 +312,24 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
     const performDelete = async () => {
         if (!scheduleToDelete) return;
+        // Check if user has permission to view schedules before making the request
+        if (!canViewSchedule) {
+            console.warn('User does not have permission to view kids schedule');
+            setShowDeleteConfirm(false);
+            setScheduleToDelete(null);
+            return;
+        }
         try {
             await api.delete(`/kids-schedule/${scheduleToDelete.id}`);
             toast.success('Entrada de cronograma eliminada');
             fetchSchedulesForCourse(scheduleToDelete.moduleId);
         } catch (error) {
             console.error('Error deleting schedule:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Error al eliminar';
-            toast.error(errorMessage);
+            // Only show toast for unexpected errors, not permission errors (403)
+            if (error.response?.status !== 403) {
+                const errorMessage = error.response?.data?.message || error.message || 'Error al eliminar';
+                toast.error(errorMessage);
+            }
         } finally {
             setShowDeleteConfirm(false);
             setScheduleToDelete(null);
@@ -288,6 +338,12 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // Check if user has permission to view schedules before making the request
+        if (!canViewSchedule) {
+            console.warn('User does not have permission to view kids schedule');
+            setShowModal(false);
+            return;
+        }
         try {
             const payload = {
                 ...formData,
@@ -306,8 +362,11 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             fetchSchedulesForCourse(formCourseId);
         } catch (error) {
             console.error('Error saving schedule:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Error al guardar en el cronograma';
-            toast.error(errorMessage);
+            // Only show toast for unexpected errors, not permission errors (403)
+            if (error.response?.status !== 403) {
+                const errorMessage = error.response?.data?.message || error.message || 'Error al guardar en el cronograma';
+                toast.error(errorMessage);
+            }
         }
     };
 
@@ -323,7 +382,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                         <p className="text-sm text-[#86868b] dark:text-[#98989d]">Despliega un curso para ver su cronograma</p>
                     </div>
                 </div>
-                {hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.COORDINADOR]) && (
+                {hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.COORDINADOR, ROLES.SUBCOORDINADOR, ROLES.TESORERO]) && (
                     <Button
                         onClick={() => setShowCreateCourseModal(true)}
                         variant="primary"
@@ -390,7 +449,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                                 >
                                                     Fila
                                                 </Button>
-                                                {hasAnyRole([ROLES.ADMIN, ROLES.COORDINADOR]) && (
+                                                {hasAnyRole([ROLES.ADMIN, ROLES.COORDINADOR, ROLES.SUBCOORDINADOR, ROLES.TESORERO]) && (
                                                     <>
                                                         <Button
                                                             onClick={(e) => {

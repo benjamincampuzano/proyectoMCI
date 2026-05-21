@@ -4,97 +4,87 @@ import CourseManagement from '../components/School/CourseManagement';
 import SchoolLeaderStats from '../components/School/SchoolLeaderStats';
 import StudentMatrix from '../components/School/StudentMatrix';
 import { PageHeader, Button } from '../components/ui';
-import { ROLES, ROLE_GROUPS } from '../constants/roles';
+import { ROLES } from '../constants/roles';
 import { useAuth } from '../context/AuthContext';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const Discipular = () => {
-    const { user, hasAnyRole, isCoordinator } = useAuth();
-    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
+    const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const isModuleCoordinator = isCoordinator('discipular');
+    const isModuleSubCoordinator = isSubCoordinator('discipular');
+    const isModuleTreasurer = isTreasurer('discipular');
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
-
-    const handleRefresh = () => {
-        fetchCoordinator();
-        fetchSubCoordinator();
-        fetchTreasurer();
-    };
-
-    const fetchCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/discipular');
-            setModuleCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching coordinator:', error);
-            // If the endpoint doesn't exist, try to find a coordinator by isCoordinator flag
-            try {
-                const coordinatorsRes = await api.get('/coordinators', {
-                    params: { module: 'discipular' }
-                });
-                const coordinators = coordinatorsRes.data;
-                if (coordinators && coordinators.length > 0) {
-                    // Find the first coordinator with ADMIN role or the first one
-                    const adminCoordinator = coordinators.find(c => c.role === ROLES.ADMIN) || coordinators[0];
-                    setModuleCoordinator(adminCoordinator);
-                } else {
-                    setModuleCoordinator(null);
-                }
-            } catch (fallbackError) {
-                console.error('Fallback coordinator fetch failed:', fallbackError);
-                setModuleCoordinator(null);
-            }
-        }
-    };
-
-    const fetchTreasurer = async () => {
-        try {
-            const res = await api.get('/coordinators/module/discipular/treasurer');
-            setModuleTreasurer(res.data);
-        } catch (error) {
-            console.error('Error fetching treasurer:', error);
-            setModuleTreasurer(null);
-        }
-    };
-
-    const fetchSubCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/discipular/subcoordinator');
-            setModuleSubCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching subcoordinator:', error);
-            setModuleSubCoordinator(null);
-        }
-    };
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
-        fetchCoordinator();
-        fetchSubCoordinator();
-        fetchTreasurer();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        let isMounted = true;
+
+        const fetchData = async () => {
+            try {
+                const [coordinatorRes, subCoordinatorRes, treasurerRes] = await Promise.all([
+                    api.get('/coordinators/module/discipular').catch(() => ({ data: null })),
+                    api.get('/coordinators/module/discipular/subcoordinator').catch(() => ({ data: null })),
+                    api.get('/coordinators/module/discipular/treasurer').catch(() => ({ data: null }))
+                ]);
+
+                if (isMounted) {
+                    setModuleCoordinator(coordinatorRes.data);
+                    setModuleSubCoordinator(subCoordinatorRes.data);
+                    setModuleTreasurer(treasurerRes.data);
+                }
+            } catch (error) {
+                console.error('Error fetching module data:', error);
+                if (isMounted) {
+                    setModuleCoordinator(null);
+                    setModuleSubCoordinator(null);
+                    setModuleTreasurer(null);
+                }
+            }
+        };
+
+        fetchData();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [refreshKey]);
+
+    const handleRefresh = () => setRefreshKey(k => k + 1);
+
+    const hasManagementAccess = () => true;
+
+    const hasMatrixAccess = () => {
+        const userRoles = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA]);
+        return userRoles || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
+    };
+
+    const hasStatsAccess = () => {
+        const userRoles = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE]);
+        return userRoles || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
+    };
 
     const tabs = [
         {
             id: 'management',
             label: 'Clases y Notas',
             component: CourseManagement,
-            customCheck: () => hasAdminOrPastor || isModuleCoordinator
+            customCheck: hasManagementAccess
         },
         {
             id: 'matrix',
             label: 'Matriz de Estudiantes',
             component: StudentMatrix,
-            roles: ROLE_GROUPS.ALL_LEADERS
+            customCheck: hasMatrixAccess
         },
         {
             id: 'stats',
             label: 'Reporte Estadístico',
             component: SchoolLeaderStats,
-            roles: ROLE_GROUPS.ALL_LEADERS
+            customCheck: hasStatsAccess
         }
     ];
 
@@ -115,7 +105,6 @@ const Discipular = () => {
                 }
             />
 
-            {/* Floating Refresh Button */}
             <div className="fixed bottom-8 right-8 z-40">
                 <Button
                     variant="primary"

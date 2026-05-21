@@ -1,4 +1,5 @@
 const prisma = require('../utils/database');
+const { hasAdminAccessOnModule } = require('./coordinatorAuth');
 
 /**
  * Middleware para verificar si el usuario tiene permiso para acceder al cronograma de kids
@@ -9,11 +10,8 @@ const authorizeKidsScheduleAccess = async (req, res, next) => {
         const user = req.user;
         const { moduleId } = req.params;
         
-        // Obtener el rol principal del usuario (primer rol del array)
-        const userRole = user.roles && user.roles.length > 0 ? user.roles[0] : undefined;
-        
-        // Si es ADMIN o PASTOR, permitir acceso inmediato
-        if (userRole === 'ADMIN' || userRole === 'PASTOR') {
+        // Si es ADMIN, PASTOR o Coordinador/Subcoordinador/Tesorero del módulo de KIDS, permitir acceso inmediato
+        if (hasAdminAccessOnModule(user, 'kids')) {
             return next();
         }
         
@@ -69,11 +67,8 @@ const authorizeKidsScheduleModification = async (req, res, next) => {
         const user = req.user;
         const { moduleId } = req.params;
         
-        // Obtener el rol principal del usuario (primer rol del array)
-        const userRole = user.roles && user.roles.length > 0 ? user.roles[0] : undefined;
-        
-        // Si es ADMIN o PASTOR, permitir acceso inmediato
-        if (userRole === 'ADMIN' || userRole === 'PASTOR') {
+        // Si es ADMIN, PASTOR o Coordinador/Subcoordinador/Tesorero del módulo de KIDS, permitir acceso inmediato
+        if (hasAdminAccessOnModule(user, 'kids')) {
             return next();
         }
         
@@ -111,11 +106,8 @@ const authorizeScheduleModification = async (req, res, next) => {
         const user = req.user;
         const { id } = req.params;
         
-        // Obtener el rol principal del usuario (primer rol del array)
-        const userRole = user.roles && user.roles.length > 0 ? user.roles[0] : undefined;
-        
-        // Si es ADMIN o PASTOR, permitir acceso inmediato
-        if (userRole === 'ADMIN' || userRole === 'PASTOR') {
+        // Si es ADMIN, PASTOR o Coordinador/Subcoordinador/Tesorero del módulo de KIDS, permitir acceso inmediato
+        if (hasAdminAccessOnModule(user, 'kids')) {
             return next();
         }
         

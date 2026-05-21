@@ -1,10 +1,34 @@
 
 // utils/unassigned.js
-function collect(root){const s=new Set();(function dfs(n){if(!n)return; n.partners?.forEach(p=>s.add(p.id)); n.disciples?.forEach(dfs);} )(root); return s;}
-export function getUnassignedUsers({allUsers=[],coupleRoot}){
-  if(!coupleRoot) return [];
-  const ids=collect(coupleRoot);
-  return Array.isArray(allUsers) 
+function collect(root){
+  const s = new Set();
+  (function dfs(n) {
+    if (!n) return;
+    n.partners?.forEach(p => s.add(p.id));
+    n.disciples?.forEach(dfs);
+  })(root);
+  return s;
+}
+
+export function getUnassignedUsers({ allUsers = [], coupleRoot, isAdmin = false }) {
+  if (!coupleRoot) return [];
+
+  // For ADMIN, filter only users with truly no leader assignment (leaderId is null/undefined)
+  // Do NOT show users assigned to OTHER leaders as "unassigned"
+  if (isAdmin) {
+    return Array.isArray(allUsers)
+      ? allUsers.filter(u => {
+          const roles = u.roles || [];
+          if (roles.includes('ADMIN')) return false;
+          // Only show users with NO leader assigned at all
+          return !u.leaderId && !u.liderCelulaId && !u.liderDoceId && !u.pastorId;
+        })
+      : [];
+  }
+
+  // For non-ADMIN users, use the existing logic
+  const ids = collect(coupleRoot);
+  return Array.isArray(allUsers)
     ? allUsers.filter(u => {
         if (ids.has(u.id)) return false;
         const roles = u.roles || [];

@@ -72,8 +72,8 @@ const createCell = async (req, res) => {
         const requestedHostId = hostId ? parseInt(hostId) : null;
         let requestedLiderDoceId = liderDoceId ? parseInt(liderDoceId) : null;
 
-        if (!name || !leaderId || !address || !city || !dayOfWeek || !time) {
-            return res.status(400).json({ error: 'Missing defined fields' });
+        if (!name || !leaderId || !address || !city || !dayOfWeek || !time || !cellType || !liderDoceId || !barrio || !network) {
+            return res.status(400).json({ error: 'Faltan campos obligatorios' });
         }
 
         const { roles, id } = req.user;

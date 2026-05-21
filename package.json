@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "Congregation CRM Web App",
   "scripts": {
-    "start": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "cd server && npm start",
+    "start": "npm run migrate && concurrently -n \"server,client\" -c \"yellow,blue\" \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
     "client": "cd client && npm run dev",
+    "migrate": "cd server && npm run migrate",
     "install:all": "npm install && cd client && npm install && cd server && npm install",
     "backup": "node scripts/backup-db.js",
     "restore": "node scripts/restore-db.js",
@@ -27,7 +28,7 @@
   "devDependencies": {
     "concurrently": "^9.2.1",
     "cypress": "^15.15.0",
-    "vite": "^8.0.12"
+    "vite": "^8.0.13"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
