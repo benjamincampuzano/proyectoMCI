@@ -177,63 +177,92 @@ const Home = () => {
                                         </h2>
                                     </div>
                                     
-                                    {network && (hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) && (
-                                        <div className="p-8 bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[24px] border border-[var(--ln-border-standard)] shadow-sm">
-                                            <div className="flex items-center gap-3 mb-8">
-                                                <div className="w-10 h-10 bg-[var(--ln-brand-indigo)]/10 rounded-xl flex items-center justify-center text-[var(--ln-brand-indigo)] border border-[var(--ln-brand-indigo)]/20">
-                                                    <Users size={20} weight="bold" />
+                                    {network && (hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) && (() => {
+                                        const spouseId = user?.spouseId || null;
+                                        
+                                        const filterSpouse = (list) => (list || []).filter(p => p.id !== spouseId);
+                                        
+                                        const filteredPastores = filterSpouse(network.pastores);
+                                        const filteredLideresDoce = filterSpouse(network.lideresDoce);
+                                        const filteredLideresCelula = filterSpouse(network.lideresCelula);
+                                        
+                                        const spouseNode = network.partners?.find(p => p.id !== user?.id && p.id === spouseId) || null;
+                                        
+                                        const hasAnyContent = spouseNode || filteredPastores.length > 0 || filteredLideresDoce.length > 0 || filteredLideresCelula.length > 0;
+                                        if (!hasAnyContent) return null;
+                                        
+                                        return (
+                                            <div className="p-8 bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[24px] border border-[var(--ln-border-standard)] shadow-sm">
+                                                <div className="flex items-center gap-3 mb-8">
+                                                    <div className="w-10 h-10 bg-[var(--ln-brand-indigo)]/10 rounded-xl flex items-center justify-center text-[var(--ln-brand-indigo)] border border-[var(--ln-brand-indigo)]/20">
+                                                        <Users size={20} weight="bold" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] tracking-tight">Línea de Autoridad</h3>
+                                                        <p className="text-[12px] text-[var(--ln-text-tertiary)] opacity-70">Cobertura directa sobre tu liderazgo.</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] tracking-tight">Línea de Autoridad</h3>
-                                                    <p className="text-[12px] text-[var(--ln-text-tertiary)] opacity-70">Cobertura directa sobre tu liderazgo.</p>
+                                                
+                                                <div className="flex flex-row gap-4 overflow-x-auto">
+                                                    {spouseNode && (
+                                                        <div key={`spouse-${spouseNode.id}`} className="flex-1 bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="w-6 h-6 bg-pink-500/10 rounded-lg flex items-center justify-center border border-pink-500/20">
+                                                                    <Users size={14} className="text-pink-500" weight="bold" />
+                                                                </div>
+                                                                <span className="text-[9px] weight-590 text-pink-500 uppercase tracking-widest">Pareja</span>
+                                                            </div>
+                                                            <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
+                                                                {spouseNode.fullName}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {filteredPastores.map((pastor, idx) => (
+                                                        <div key={`pastor-${idx}`} className="flex-1 bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="w-6 h-6 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20">
+                                                                    <Crown size={14} className="text-emerald-500" weight="bold" />
+                                                                </div>
+                                                                <span className="text-[9px] weight-590 text-emerald-500 uppercase tracking-widest">Pastor</span>
+                                                            </div>
+                                                            <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
+                                                                {pastor.fullName}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    {filteredLideresDoce.map((lider, idx) => (
+                                                        <div key={`lider-doce-${idx}`} className="flex-1 bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="w-6 h-6 bg-purple-500/10 rounded-lg flex items-center justify-center border border-purple-500/20">
+                                                                    <StarIcon size={14} className="text-purple-500" weight="bold" />
+                                                                </div>
+                                                                <span className="text-[9px] weight-590 text-purple-500 uppercase tracking-widest">Líder Doce</span>
+                                                            </div>
+                                                            <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
+                                                                {lider.fullName}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    {filteredLideresCelula.map((lider, idx) => (
+                                                        <div key={`lider-celula-${idx}`} className="flex-1 bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="w-6 h-6 bg-[var(--ln-brand-indigo)]/10 rounded-lg flex items-center justify-center border border-[var(--ln-brand-indigo)]/20">
+                                                                    <Users size={14} className="text-[var(--ln-brand-indigo)]" weight="bold" />
+                                                                </div>
+                                                                <span className="text-[9px] weight-590 text-[var(--ln-brand-indigo)] uppercase tracking-widest">Líder Célula</span>
+                                                            </div>
+                                                            <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
+                                                                {lider.fullName}
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                            
-                                            <div className="flex flex-row gap-4 overflow-x-auto">
-                                                {network.pastores && network.pastores.length > 0 && network.pastores.map((pastor, idx) => (
-                                                    <div key={`pastor-${idx}`} className="flex-1 bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <div className="w-6 h-6 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20">
-                                                                <Crown size={14} className="text-emerald-500" weight="bold" />
-                                                            </div>
-                                                            <span className="text-[9px] weight-590 text-emerald-500 uppercase tracking-widest">Pastor</span>
-                                                        </div>
-                                                        <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
-                                                            {pastor.fullName}
-                                                        </div>
-                                                    </div>
-                                                ))}
-
-                                                {network.lideresDoce && network.lideresDoce.length > 0 && network.lideresDoce.map((lider, idx) => (
-                                                    <div key={`lider-doce-${idx}`} className="flex-1 bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <div className="w-6 h-6 bg-purple-500/10 rounded-lg flex items-center justify-center border border-purple-500/20">
-                                                                <StarIcon size={14} className="text-purple-500" weight="bold" />
-                                                            </div>
-                                                            <span className="text-[9px] weight-590 text-purple-500 uppercase tracking-widest">Líder Doce</span>
-                                                        </div>
-                                                        <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
-                                                            {lider.fullName}
-                                                        </div>
-                                                    </div>
-                                                ))}
-
-                                                {network.lideresCelula && network.lideresCelula.length > 0 && hasRole('DISCIPULO') && network.lideresCelula.map((lider, idx) => (
-                                                    <div key={`lider-celula-${idx}`} className="flex-1 bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <div className="w-6 h-6 bg-[var(--ln-brand-indigo)]/10 rounded-lg flex items-center justify-center border border-[var(--ln-brand-indigo)]/20">
-                                                                <Users size={14} className="text-[var(--ln-brand-indigo)]" weight="bold" />
-                                                            </div>
-                                                            <span className="text-[9px] weight-590 text-[var(--ln-brand-indigo)] uppercase tracking-widest">Líder Célula</span>
-                                                        </div>
-                                                        <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
-                                                            {lider.fullName}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
                                     <div className="p-1 rounded-[32px] bg-white/[0.02] border border-[var(--ln-border-standard)] overflow-hidden shadow-2xl">
                                         <NetworkTree
                                             network={network}

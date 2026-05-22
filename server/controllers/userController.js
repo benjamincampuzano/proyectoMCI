@@ -463,7 +463,7 @@ const getAllUsers = async (req, res) => {
         if (req.user.roles.includes('LIDER_DOCE') || req.user.roles.includes('LIDER_CELULA')) {
             const requesterNetworkId = await getUserNetwork(req.user.id);
 
-            if (!requesterNetworkId || requesterNetworkId.length === 0) {
+            if ((!requesterNetworkId || requesterNetworkId.length === 0) && req.query.includeUnassigned !== 'true') {
                 return res.json({
                     users: [],
                     pagination: {
@@ -523,9 +523,19 @@ const getAllUsers = async (req, res) => {
                 };
             }
 
+            let networkFilter = { id: { in: requesterNetworkId || [] } };
+            if (req.query.includeUnassigned === 'true') {
+                networkFilter = {
+                    OR: [
+                        { id: { in: requesterNetworkId || [] } },
+                        { parents: { none: {} } }
+                    ]
+                };
+            }
+
             const whereClause = {
                 isDeleted: false,
-                id: { in: requesterNetworkId },
+                ...networkFilter,
                 ...roleFilterObj,
                 ...(Object.keys(searchFilter).length > 0 && searchFilter),
                 ...(Object.keys(sexFilterObj).length > 0 && sexFilterObj),

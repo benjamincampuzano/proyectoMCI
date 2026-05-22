@@ -464,9 +464,9 @@ const Convenciones = () => {
                 onClose={() => setShowCreateModal(false)}
                 size="lg"
             >
-                <form onSubmit={handleCreate}>
-                    <Modal.Content className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleCreate} className="flex flex-col min-h-0">
+                    <Modal.Content className="space-y-4 overflow-y-auto">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
                                 <select
@@ -512,7 +512,7 @@ const Convenciones = () => {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Transporte ($)</label>
                                 <input
@@ -535,7 +535,7 @@ const Convenciones = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
                                 <input

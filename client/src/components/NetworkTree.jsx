@@ -9,7 +9,6 @@ import RadialView from './radial/RadialView';
 import { buildCoupleNetwork } from '../utils/transformCouples';
 import { getRootNodeForRole } from '../utils/buildHierarchy';
 import { getUnassignedUsers } from '../utils/unassigned';
-import { ROLES } from '../constants/roles';
 import api from '../utils/api';
 import CardsView from './cards/CardsView';
 import ConfirmationModal from './ConfirmationModal';
@@ -34,19 +33,17 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     return getRootNodeForRole(fullNetwork, currentUser);
   }, [network, currentUser]);
 
-  const isAdmin = currentUser?.roles?.includes(ROLES.ADMIN);
-
   const unassigned = useMemo(() => {
     if (!coupleRoot) return [];
-    const result = getUnassignedUsers({ allUsers, coupleRoot, isAdmin });
+    const result = getUnassignedUsers({ allUsers, coupleRoot, isAdmin: true });
     return result;
-  }, [allUsers, coupleRoot, isAdmin]);
+  }, [allUsers, coupleRoot]);
 
   useEffect(() => {
     (async () => {
       try {
         // Obtener todos los usuarios sin límite (usar limite muy alto)
-        const response = await api.get('/users?limit=99999');
+        const response = await api.get('/users?limit=99999&includeUnassigned=true');
         const usersData = response.data?.users || response.data || [];
         setAllUsers(Array.isArray(usersData) ? usersData : []);
         } catch (error) {

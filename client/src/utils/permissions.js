@@ -31,5 +31,5 @@ export function canRemoveFromNode({ node, ancestors = [], currentUser, level = 0
 
 export function canManageAssignments(currentUser) {
   const roles = currentUser?.roles || [];
-  return roles.includes('ADMIN') || roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA');
+  return roles.includes('ADMIN') || roles.includes('PASTOR') || roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA');
 }

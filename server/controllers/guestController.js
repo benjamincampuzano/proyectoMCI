@@ -260,7 +260,17 @@ const getAllGuests = async (req, res) => {
             where: finalWhere,
             include: {
                 invitedBy: {
-                    include: { profile: true }
+                    include: {
+                        profile: true,
+                        parents: {
+                            where: { role: 'LIDER_DOCE' },
+                            include: {
+                                parent: {
+                                    include: { profile: true }
+                                }
+                            }
+                        }
+                    }
                 },
                 assignedTo: {
                     include: { profile: true }
@@ -304,36 +314,47 @@ const getAllGuests = async (req, res) => {
         });
 
         // Format for frontend
-        const formattedGuests = guests.map(g => ({
-            ...g,
-            invitedBy: g.invitedBy ? { id: g.invitedBy.id, fullName: g.invitedBy.profile?.fullName, email: g.invitedBy.email } : null,
-            assignedTo: g.assignedTo ? { id: g.assignedTo.id, fullName: g.assignedTo.profile?.fullName, email: g.assignedTo.email } : null,
-            registeredBy: g.registeredBy ? { id: g.registeredBy.id, fullName: g.registeredBy.profile?.fullName, email: g.registeredBy.email } : null,
-            cell: g.cell ? {
-                id: g.cell.id,
-                name: g.cell.name,
-                leader: g.cell.leader ? {
-                    id: g.cell.leader.id,
-                    fullName: g.cell.leader.profile?.fullName
+        const formattedGuests = guests.map(g => {
+            const invitedByLiderDoce = g.invitedBy?.parents?.[0]?.parent || null;
+            return {
+                ...g,
+                invitedBy: g.invitedBy ? {
+                    id: g.invitedBy.id,
+                    fullName: g.invitedBy.profile?.fullName,
+                    email: g.invitedBy.email,
+                    liderDoce: invitedByLiderDoce ? {
+                        id: invitedByLiderDoce.id,
+                        fullName: invitedByLiderDoce.profile?.fullName
+                    } : null
                 } : null,
-                liderDoce: g.cell.liderDoce ? {
-                    id: g.cell.liderDoce.id,
-                    fullName: g.cell.liderDoce.profile?.fullName
-                } : null
-            } : null,
-            calls: g.calls.map(c => ({ ...c, caller: c.caller ? { fullName: c.caller.profile?.fullName } : null })),
-            visits: g.visits.map(v => ({ ...v, visitor: v.visitor ? { fullName: v.visitor.profile?.fullName } : null })),
-            encuentroRegistrations: g.encuentroRegistrations?.map(er => ({
-                id: er.id,
-                status: er.status,
-                encuentro: er.encuentro ? {
-                    id: er.encuentro.id,
-                    name: er.encuentro.name,
-                    type: er.encuentro.type,
-                    startDate: er.encuentro.startDate
-                } : null
-            })) || []
-        }));
+                assignedTo: g.assignedTo ? { id: g.assignedTo.id, fullName: g.assignedTo.profile?.fullName, email: g.assignedTo.email } : null,
+                registeredBy: g.registeredBy ? { id: g.registeredBy.id, fullName: g.registeredBy.profile?.fullName, email: g.registeredBy.email } : null,
+                cell: g.cell ? {
+                    id: g.cell.id,
+                    name: g.cell.name,
+                    leader: g.cell.leader ? {
+                        id: g.cell.leader.id,
+                        fullName: g.cell.leader.profile?.fullName
+                    } : null,
+                    liderDoce: g.cell.liderDoce ? {
+                        id: g.cell.liderDoce.id,
+                        fullName: g.cell.liderDoce.profile?.fullName
+                    } : null
+                } : null,
+                calls: g.calls.map(c => ({ ...c, caller: c.caller ? { fullName: c.caller.profile?.fullName } : null })),
+                visits: g.visits.map(v => ({ ...v, visitor: v.visitor ? { fullName: v.visitor.profile?.fullName } : null })),
+                encuentroRegistrations: g.encuentroRegistrations?.map(er => ({
+                    id: er.id,
+                    status: er.status,
+                    encuentro: er.encuentro ? {
+                        id: er.encuentro.id,
+                        name: er.encuentro.name,
+                        type: er.encuentro.type,
+                        startDate: er.encuentro.startDate
+                    } : null
+                })) || []
+            };
+        });
 
         res.status(200).json({
             guests: formattedGuests,

@@ -474,118 +474,122 @@ const Encuentros = () => {
                 onClose={() => setShowCreateModal(false)}
                 containerClassName="max-w-lg"
             >
-                <form onSubmit={handleCreate} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Palabra Rhema</label>
-                        <input
-                            type="text"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            placeholder="Proverbios 27:23"
-                            required
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleCreate} className="flex flex-col min-h-0">
+                    <div className="space-y-4 overflow-y-auto px-6 py-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
-                            <select
-                                value={formData.type}
-                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Palabra Rhema</label>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                placeholder="Proverbios 27:23"
+                                required
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
+                                <select
+                                    value={formData.type}
+                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                >
+                                    <option value="HOMBRES">HOMBRES</option>
+                                    <option value="MUJERES">MUJERES</option>
+                                    <option value="JOVENES">JOVENES</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Donación Encuentro ($)</label>
+                                <input
+                                    type="number"
+                                    value={formData.cost}
+                                    onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    placeholder="Valor Encuentro"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Libro U. de la V. ($)</label>
+                                <input
+                                    type="number"
+                                    value={formData.transportCost}
+                                    onChange={(e) => setFormData({ ...formData, transportCost: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    placeholder="Valor Libro"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Otros Gastos ($)</label>
+                                <input
+                                    type="number"
+                                    value={formData.accommodationCost}
+                                    onChange={(e) => setFormData({ ...formData, accommodationCost: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
+                                <input
+                                    type="date"
+                                    value={formData.startDate}
+                                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
+                                <input
+                                    type="date"
+                                    value={formData.endDate}
+                                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Coordinador del Encuentro</label>
+                            <AsyncSearchSelect
+                                fetchItems={(term) => {
+                                    const params = { search: term, role: 'LIDER_DOCE' };
+                                    return api.get('/users/search', { params })
+                                        .then(res => res.data);
+                                }}
+                                selectedValue={formData.coordinatorId}
+                                onSelect={(user) => setFormData({ ...formData, coordinatorId: user })}
+                                placeholder="Seleccionar coordinador..."
+                                labelKey="fullName"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex gap-2 sm:gap-3">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => setShowCreateModal(false)}
+                                className="flex-1 text-sm"
+                                size="sm"
                             >
-                                <option value="HOMBRES">HOMBRES</option>
-                                <option value="MUJERES">MUJERES</option>
-                                <option value="JOVENES">JOVENES</option>
-                            </select>
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                className="flex-1 text-sm"
+                                size="sm"
+                            >
+                                Crear
+                            </Button>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Donación Encuentro ($)</label>
-                            <input
-                                type="number"
-                                value={formData.cost}
-                                onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                placeholder="Valor Encuentro"
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Libro U. de la V. ($)</label>
-                            <input
-                                type="number"
-                                value={formData.transportCost}
-                                onChange={(e) => setFormData({ ...formData, transportCost: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                placeholder="Valor Libro"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Otros Gastos ($)</label>
-                            <input
-                                type="number"
-                                value={formData.accommodationCost}
-                                onChange={(e) => setFormData({ ...formData, accommodationCost: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
-                            <input
-                                type="date"
-                                value={formData.startDate}
-                                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
-                            <input
-                                type="date"
-                                value={formData.endDate}
-                                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Coordinador del Encuentro</label>
-                        <AsyncSearchSelect
-                            fetchItems={(term) => {
-                                const params = { search: term, role: 'LIDER_DOCE' };
-                                return api.get('/users/search', { params })
-                                    .then(res => res.data);
-                            }}
-                            selectedValue={formData.coordinatorId}
-                            onSelect={(user) => setFormData({ ...formData, coordinatorId: user })}
-                            placeholder="Seleccionar coordinador..."
-                            labelKey="fullName"
-                        />
-                    </div>
-                    <div className="pt-4 flex gap-2 sm:gap-3">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => setShowCreateModal(false)}
-                            className="flex-1 text-sm"
-                            size="sm"
-                        >
-                            Cancelar
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="primary"
-                            className="flex-1 text-sm"
-                            size="sm"
-                        >
-                            Crear
-                        </Button>
                     </div>
                 </form>
             </ActionModal>

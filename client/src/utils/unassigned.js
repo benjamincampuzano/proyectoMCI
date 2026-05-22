@@ -11,17 +11,14 @@ function collect(root){
 }
 
 export function getUnassignedUsers({ allUsers = [], coupleRoot, isAdmin = false }) {
-  if (!coupleRoot) return [];
+  if (!coupleRoot && !isAdmin) return [];
 
-  // For ADMIN, filter only users with truly no leader assignment (leaderId is null/undefined)
-  // Do NOT show users assigned to OTHER leaders as "unassigned"
   if (isAdmin) {
     return Array.isArray(allUsers)
       ? allUsers.filter(u => {
           const roles = u.roles || [];
-          if (roles.includes('ADMIN')) return false;
-          // Only show users with NO leader assigned at all
-          return !u.leaderId && !u.liderCelulaId && !u.liderDoceId && !u.pastorId;
+          if (roles.includes('ADMIN') || roles.includes('PASTOR')) return false;
+          return !u.liderCelulaId && !u.liderDoceId && !u.pastorId;
         })
       : [];
   }

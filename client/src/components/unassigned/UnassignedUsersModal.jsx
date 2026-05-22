@@ -3,7 +3,6 @@ import React, { useMemo, useState } from 'react';
 import { X, MagnifyingGlass, UserPlus } from '@phosphor-icons/react';
 import { getUnassignedUsers } from '../../utils/unassigned';
 import { canManageAssignments } from '../../utils/permissions';
-import { ROLES } from '../../constants/roles';
 
 export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allUsers = [], selectedLeader, onAssign, currentUser }) {
   const [search, setSearch] = useState('');
@@ -11,12 +10,12 @@ export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allU
 
   // Verificar permisos del usuario actual
   const hasAssignmentPermission = currentUser ? canManageAssignments(currentUser) : false;
-  const isAdmin = currentUser?.roles?.includes(ROLES.ADMIN);
 
   const unassigned = useMemo(() => {
-    const result = getUnassignedUsers({ allUsers, coupleRoot, isAdmin });
+    // Mostrar siempre personas sin ningún líder asignado
+    const result = getUnassignedUsers({ allUsers, coupleRoot, isAdmin: true });
     return result;
-  }, [allUsers, coupleRoot, isAdmin]);
+  }, [allUsers, coupleRoot]);
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     if (!s) return unassigned;
@@ -29,8 +28,8 @@ export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allU
   
   if (!isOpen) return null;
 
-  const defaultLeaderId = selectedLeader?.partners?.[0]?.id;
-  const defaultLeaderName = selectedLeader?.partners?.map(p => p.fullName).join(' & ');
+  const defaultLeaderId = selectedLeader?.partners?.[0]?.id || currentUser?.id;
+  const defaultLeaderName = selectedLeader?.partners?.map(p => p.fullName).join(' & ') || currentUser?.fullName;
 
   const handleAssign = async (userId) => {
     if (!hasAssignmentPermission) {
