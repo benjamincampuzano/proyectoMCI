@@ -121,7 +121,7 @@ const KidsModule = () => {
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="schedule" moduleName="kids" />
+            <TabNavigator tabs={tabs} initialTabId="schedule" moduleName="kids" refreshTrigger={refreshKey} />
         </div>
     );
 };

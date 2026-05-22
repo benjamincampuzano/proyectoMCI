@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
  * TabNavigator - Unified tab system for module pages
  * Replaces manual tab logic in Ganar, Consolidar, Discipular, Enviar
  */
-const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange = null, moduleName = null }) => {
+const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange = null, moduleName = null, componentProps = {}, refreshTrigger = 0 }) => {
   const { hasAnyRole, isCoordinator } = useAuth();
   const [activeTabId, setActiveTabId] = useState(initialTabId);
 
@@ -78,7 +78,7 @@ const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange =
 
       {/* Tab Content */}
       <div className="mt-6">
-        <ActiveComponent />
+        <ActiveComponent {...componentProps} refreshTrigger={refreshTrigger} />
       </div>
     </div>
   );

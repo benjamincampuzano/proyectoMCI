@@ -5,8 +5,9 @@ import { useAuth } from '../hooks/useAuth';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import api from '../utils/api';
+import PropTypes from 'prop-types';
 
-const GuestStats = () => {
+const GuestStats = ({ refreshTrigger }) => {
     const { user: currentUser } = useAuth();
     const [stats, setStats] = useState(null);
     const [trackingStats, setTrackingStats] = useState([]);
@@ -29,7 +30,7 @@ const GuestStats = () => {
         if (startDate && endDate) {
             fetchStats();
         }
-    }, [startDate, endDate]);
+    }, [startDate, endDate, refreshTrigger]);
 
     const fetchStats = async () => {
         setLoading(true);
@@ -425,3 +426,7 @@ const GuestStats = () => {
 };
 
 export default GuestStats;
+
+GuestStats.propTypes = {
+    refreshTrigger: PropTypes.number,
+};

@@ -6,8 +6,9 @@ import { useAuth } from '../hooks/useAuth';
 import MultiUserSelect from './MultiUserSelect';
 import { Button } from './ui';
 import ConfirmationModal from './ConfirmationModal';
+import PropTypes from 'prop-types';
 
-const OracionDeTresManagement = () => {
+const OracionDeTresManagement = ({ refreshTrigger: externalRefresh }) => {
     const { user, hasRole, hasAnyRole } = useAuth();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -22,7 +23,7 @@ const OracionDeTresManagement = () => {
 
     useEffect(() => {
         fetchGroups();
-    }, [refreshTrigger]);
+    }, [refreshTrigger, externalRefresh]);
 
     const fetchGroups = async () => {
         setLoading(true);
@@ -469,3 +470,7 @@ const GroupModal = ({ onClose, onSubmit, initialData }) => {
 };
 
 export default OracionDeTresManagement;
+
+OracionDeTresManagement.propTypes = {
+    refreshTrigger: PropTypes.number,
+};

@@ -5,7 +5,7 @@ const { getUserNetwork } = require('../utils/networkUtils');
 
 // Helper to check if user has modification access to an encuentro
 const checkEncuentroAccess = async (user, encuentroId) => {
-    if (user.roles.includes('ADMIN')) return true;
+    if (user.roles.includes('ADMIN') || user.roles.includes('PASTOR')) return true;
 
     const encuentro = await prisma.encuentro.findUnique({
         where: { id: parseInt(encuentroId) },
@@ -13,7 +13,25 @@ const checkEncuentroAccess = async (user, encuentroId) => {
     });
 
     if (!encuentro) return false;
-    return encuentro.coordinatorId === parseInt(user.id);
+    if (encuentro.coordinatorId === parseInt(user.id)) return true;
+
+    if (!user.moduleCoordinations || !user.moduleSubCoordinations || !user.moduleTreasurers) {
+        const prisma = require('../utils/database');
+        const [coordinations, subCoordinations, treasurers] = await Promise.all([
+            prisma.moduleCoordinator.findMany({ where: { userId: user.id, isDeleted: false }, select: { moduleName: true } }),
+            prisma.moduleSubCoordinator.findMany({ where: { userId: user.id, isDeleted: false }, select: { moduleName: true } }),
+            prisma.moduleTreasurer.findMany({ where: { userId: user.id, isDeleted: false }, select: { moduleName: true } })
+        ]);
+        user.moduleCoordinations = coordinations.map(c => c.moduleName.toLowerCase());
+        user.moduleSubCoordinations = subCoordinations.map(sc => sc.moduleName.toLowerCase());
+        user.moduleTreasurers = treasurers.map(t => t.moduleName.toLowerCase());
+    }
+
+    const isModuleCoordinator = user.moduleCoordinations?.includes('encuentro');
+    const isModuleSubCoordinator = user.moduleSubCoordinations?.includes('encuentro');
+    const isModuleTreasurer = user.moduleTreasurers?.includes('encuentro');
+
+    return isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
 };
 
 const getEncuentros = async (req, res) => {
@@ -117,9 +135,17 @@ const getEncuentroById = async (req, res) => {
         let filteredRegistrations = encuentro.registrations;
 
         const isAdmin = roles.includes('ADMIN');
-        const isCoordinator = encuentro.coordinatorId === parseInt(currentUserId);
+        const isEncuentroCoordinator = encuentro.coordinatorId === parseInt(currentUserId);
+        const isModuleCoordinatorOfEncuentro = req.user.isModuleCoordinatorOfCurrent === true || 
+            (req.user.moduleCoordinations && req.user.moduleCoordinations.some(m => m.toLowerCase() === 'encuentro'));
+        const isModuleSubCoordinatorOfEncuentro = req.user.moduleSubCoordinations && 
+            req.user.moduleSubCoordinations.some(m => m.toLowerCase() === 'encuentro');
+        const isModuleTreasurerOfEncuentro = req.user.moduleTreasurers && 
+            req.user.moduleTreasurers.some(m => m.toLowerCase() === 'encuentro');
+        const hasFullAccess = isAdmin || isEncuentroCoordinator || isModuleCoordinatorOfEncuentro || 
+            isModuleSubCoordinatorOfEncuentro || isModuleTreasurerOfEncuentro;
 
-        if (!isAdmin && !isCoordinator) {
+        if (!hasFullAccess) {
             const networkIds = await getUserNetwork(currentUserId);
             const allowedIds = new Set([...networkIds, parseInt(currentUserId)]);
 
@@ -191,7 +217,10 @@ const getEncuentroById = async (req, res) => {
 const createEncuentro = async (req, res) => {
     try {
         const { roles, id: userId } = req.user;
-        const isAuthorized = roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r));
+        const isAuthorized = roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r)) ||
+            (req.user.moduleCoordinations && req.user.moduleCoordinations.some(m => m.toLowerCase() === 'encuentro')) ||
+            (req.user.moduleSubCoordinations && req.user.moduleSubCoordinations.some(m => m.toLowerCase() === 'encuentro')) ||
+            (req.user.moduleTreasurers && req.user.moduleTreasurers.some(m => m.toLowerCase() === 'encuentro'));
         if (!isAuthorized) {
             return res.status(403).json({ error: 'Not authorized to create encuentros' });
         }
@@ -224,7 +253,10 @@ const deleteEncuentro = async (req, res) => {
         const { id } = req.params;
         const { roles, id: userId } = req.user;
 
-        const isAuthorized = roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r));
+        const isAuthorized = roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r)) ||
+            (req.user.moduleCoordinations && req.user.moduleCoordinations.some(m => m.toLowerCase() === 'encuentro')) ||
+            (req.user.moduleSubCoordinations && req.user.moduleSubCoordinations.some(m => m.toLowerCase() === 'encuentro')) ||
+            (req.user.moduleTreasurers && req.user.moduleTreasurers.some(m => m.toLowerCase() === 'encuentro'));
         if (!isAuthorized) {
             return res.status(403).json({ error: 'Not authorized to delete encuentros' });
         }

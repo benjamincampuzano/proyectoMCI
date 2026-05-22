@@ -242,6 +242,7 @@ const GuestList = ({ refreshTrigger }) => {
                 { header: 'Dirección', key: 'address', width: 30 },
                 { header: 'Petición de Oración', key: 'prayerRequest', width: 40 },
                 { header: 'Estado', key: 'status', width: 12 },
+                { header: 'Líder Doce', key: 'liderDoce', width: 20 },
                 { header: 'Invitado Por', key: 'invitedBy', width: 20 },
                 { header: 'Asignado a', key: 'assignedTo', width: 20 },
                 { header: 'Célula', key: 'cell', width: 20 },
@@ -260,6 +261,7 @@ const GuestList = ({ refreshTrigger }) => {
                     address: guest.address || 'N/A',
                     prayerRequest: guest.prayerRequest || 'N/A',
                     status: getStatusLabel(guest.status) || 'N/A',
+                    liderDoce: guest.cell?.liderDoce?.fullName || 'N/A',
                     invitedBy: guest.invitedBy?.fullName || 'N/A',
                     assignedTo: guest.assignedTo?.fullName || 'Pendiente',
                     cell: guest.cell?.name || 'No asignado',
@@ -694,6 +696,7 @@ const GuestList = ({ refreshTrigger }) => {
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Dirección</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Petición de Oración</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Estado</th>
+                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Líder Doce</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Invitado Por</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Asignado a</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Célula</th>
@@ -704,13 +707,13 @@ const GuestList = ({ refreshTrigger }) => {
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {loading ? (
                             <tr>
-                                <td colSpan="13" className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan="14" className="px-4 py-8 text-center text-gray-400">
                                     <SpinnerIcon size={24} className="animate-spin mx-auto" />
                                 </td>
                             </tr>
                         ) : guests.length === 0 ? (
                             <tr>
-                                <td colSpan="13" className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan="14" className="px-4 py-8 text-center text-gray-400">
                                     No se encontraron invitados
                                 </td>
                             </tr>
@@ -800,6 +803,13 @@ const GuestList = ({ refreshTrigger }) => {
                                             <span className={`inline-block px-2 py-1 rounded text-xs ${getStatusBadgeColor(guest.status)}`}>
                                                 {getStatusLabel(guest.status)}
                                             </span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        {guest.cell?.liderDoce ? (
+                                            <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.cell.liderDoce.fullName}</p>
+                                        ) : (
+                                            <span className="text-gray-400 dark:text-gray-500 text-sm">N/A</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">

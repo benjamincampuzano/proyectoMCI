@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../middleware/auth');
+const { authenticate, checkCoordinatorStatus } = require('../middleware/auth');
 const {
     getEncuentros,
     getEncuentroById,
@@ -18,8 +18,9 @@ const {
 const { canManageTreasurerActions } = require('../middleware/coordinatorAuth');
 
 router.use(authenticate);
+router.use(checkCoordinatorStatus);
 
-const canManageEncuentroPayments = canManageTreasurerActions('Encuentros');
+const canManageEncuentroPayments = canManageTreasurerActions('encuentro');
 
 router.get('/', getEncuentros);
 router.post('/', createEncuentro);

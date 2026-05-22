@@ -14,57 +14,62 @@ import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import api from '../utils/api';
 
 const Ganar = () => {
-    const { user, hasRole, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
-
-    // Debug: Verificar roles del usuario
-    useEffect(() => {
-
-    }, [user, hasAnyRole]);
+    const { user, hasRole, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
 
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showRegistration, setShowRegistration] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
 
-    const fetchCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/ganar');
-            setModuleCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching coordinator:', error);
-            // If the endpoint doesn't exist, try to find a coordinator by isCoordinator flag
-            try {
-                const coordinatorsRes = await api.get('/coordinators', {
-                    params: { module: 'ganar' }
-                });
-                const coordinators = coordinatorsRes.data;
-                if (coordinators && coordinators.length > 0) {
-                    // Find the first coordinator with LIDER_DOCE role and isCoordinator flag
-                    const liderDoceCoordinator = coordinators.find(c => c.role === 'LIDER_DOCE') || coordinators[0];
-                    setModuleCoordinator(liderDoceCoordinator);
-                } else {
-                    setModuleCoordinator(null);
-                }
-            } catch (fallbackError) {
-                console.error('Fallback coordinator fetch failed:', fallbackError);
-                setModuleCoordinator(null);
-            }
-        }
-    };
-
-    const fetchSubCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/ganar/subcoordinator');
-            setModuleSubCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching subcoordinator:', error);
-            setModuleSubCoordinator(null);
-        }
-    };
-
     useEffect(() => {
+        let cancelled = false;
+
+        const fetchCoordinator = async () => {
+            try {
+                const res = await api.get('/coordinators/module/ganar');
+                if (!cancelled) setModuleCoordinator(res.data);
+            } catch (error) {
+                if (!cancelled) {
+                    console.error('Error fetching coordinator:', error);
+                    try {
+                        const coordinatorsRes = await api.get('/coordinators', {
+                            params: { module: 'ganar' }
+                        });
+                        const coordinators = coordinatorsRes.data;
+                        if (coordinators && coordinators.length > 0) {
+                            const liderDoceCoordinator = coordinators.find(c => c.role === 'LIDER_DOCE') || coordinators[0];
+                            if (!cancelled) setModuleCoordinator(liderDoceCoordinator);
+                        } else {
+                            if (!cancelled) setModuleCoordinator(null);
+                        }
+                    } catch (fallbackError) {
+                        if (!cancelled) {
+                            console.error('Fallback coordinator fetch failed:', fallbackError);
+                            setModuleCoordinator(null);
+                        }
+                    }
+                }
+            }
+        };
+
+        const fetchSubCoordinator = async () => {
+            try {
+                const res = await api.get('/coordinators/module/ganar/subcoordinator');
+                if (!cancelled) setModuleSubCoordinator(res.data);
+            } catch (error) {
+                if (!cancelled) {
+                    console.error('Error fetching subcoordinator:', error);
+                    setModuleSubCoordinator(null);
+                }
+            }
+        };
+
         fetchCoordinator();
         fetchSubCoordinator();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     // Check if user is pastor
@@ -80,7 +85,7 @@ const Ganar = () => {
             customCheck: () => {
                 const hasRoleAccess = hasAnyRole(ROLE_GROUPS.ALL_LEADERS);
                 const isModuleCoord = isCoordinator('ganar');
-                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('ganar');
+                const isModuleSubCoord = isSubCoordinator('ganar');
                 const isModuleTreasurer = isTreasurer('ganar');
                 return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
             }
@@ -92,7 +97,7 @@ const Ganar = () => {
             customCheck: () => {
                 const hasRoleAccess = hasAnyRole([ROLES.ADMIN, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA, ROLES.DISCIPULO]);
                 const isModuleCoord = isCoordinator('ganar');
-                const isModuleSubCoord = user?.moduleSubCoordinations?.includes('ganar');
+                const isModuleSubCoord = isSubCoordinator('ganar');
                 return hasRoleAccess || isModuleCoord || isModuleSubCoord;
             }
         },
@@ -103,7 +108,7 @@ const Ganar = () => {
             customCheck: () => {
                 // Solo ADMIN, PASTOR y el coordinador del módulo Ganar tienen acceso
                 const hasRoleAccess = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
-                const isModuleCoord = moduleCoordinator && moduleCoordinator.id === user?.id;
+                const isModuleCoord = !!(moduleCoordinator?.id && user?.id && String(moduleCoordinator.id) === String(user.id));
                 return hasRoleAccess || isModuleCoord;
             }
         }
@@ -141,7 +146,7 @@ const Ganar = () => {
             {/* Floating Refresh Button */}
             <div className="fixed bottom-8 right-8 z-40">
                 <button
-                    onClick={() => window.location.reload()}
+                    onClick={() => setRefreshTrigger(prev => prev + 1)}
                     className="flex items-center gap-2.5 px-4 py-2.5 bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] text-white rounded-xl weight-510 text-[13px] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95"
                 >
                     <ArrowsClockwise className="w-4 h-4" weight="bold" />
@@ -152,6 +157,7 @@ const Ganar = () => {
             <TabNavigator moduleName="ganar"
                 tabs={tabs}
                 initialTabId="list"
+                refreshTrigger={refreshTrigger}
                 onTabChange={(tabId) => {
                     setActiveTab(tabId);
                     if (tabId !== 'list') {

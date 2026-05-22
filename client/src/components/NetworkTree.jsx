@@ -37,6 +37,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   const isAdmin = currentUser?.roles?.includes(ROLES.ADMIN);
 
   const unassigned = useMemo(() => {
+    if (!coupleRoot) return [];
     const result = getUnassignedUsers({ allUsers, coupleRoot, isAdmin });
     return result;
   }, [allUsers, coupleRoot, isAdmin]);

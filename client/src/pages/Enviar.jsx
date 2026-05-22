@@ -13,58 +13,67 @@ import api from '../utils/api';
 
 const Enviar = () => {
     const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
-    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
 
     // Custom role checker for cells tab - allows coordinators to manage cells
     const hasCellsTabAccess = () => {
         const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_CELLS);
-        const isModuleCoord = moduleCoordinator &&
-            moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
-        const isModuleSubCoord = user?.moduleSubCoordinations?.includes('enviar');
+        const isModuleCoord = !!(moduleCoordinator?.id && user?.id && String(moduleCoordinator.id) === String(user.id));
+        const isModuleSubCoord = isSubCoordinator('enviar');
         return hasRoleAccess || isModuleCoord || isModuleSubCoord;
     };
 
-    const fetchCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/enviar');
-            setModuleCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching coordinator:', error);
-            // If the endpoint doesn't exist, try to find a coordinator by isCoordinator flag
-            try {
-                const coordinatorsRes = await api.get('/coordinators', {
-                    params: { module: 'enviar' }
-                });
-                const coordinators = coordinatorsRes.data;
-                if (coordinators && coordinators.length > 0) {
-                    // Find the first coordinator with ADMIN role or the first one
-                    const adminCoordinator = coordinators.find(c => c.role === 'ADMIN') || coordinators[0];
-                    setModuleCoordinator(adminCoordinator);
-                } else {
-                    setModuleCoordinator(null);
-                }
-            } catch (fallbackError) {
-                console.error('Fallback coordinator fetch failed:', fallbackError);
-                setModuleCoordinator(null);
-            }
-        }
-    };
-
-    const fetchSubCoordinator = async () => {
-        try {
-            const res = await api.get('/coordinators/module/enviar/subcoordinator');
-            setModuleSubCoordinator(res.data);
-        } catch (error) {
-            console.error('Error fetching subcoordinator:', error);
-            setModuleSubCoordinator(null);
-        }
-    };
-
     useEffect(() => {
+        let cancelled = false;
+
+        const fetchCoordinator = async () => {
+            try {
+                const res = await api.get('/coordinators/module/enviar');
+                if (!cancelled) setModuleCoordinator(res.data);
+            } catch (error) {
+                if (!cancelled) {
+                    console.error('Error fetching coordinator:', error);
+                    try {
+                        const coordinatorsRes = await api.get('/coordinators', {
+                            params: { module: 'enviar' }
+                        });
+                        const coordinators = coordinatorsRes.data;
+                        if (coordinators && coordinators.length > 0) {
+                            const adminCoordinator = coordinators.find(c => c.role === 'ADMIN') || coordinators[0];
+                            if (!cancelled) setModuleCoordinator(adminCoordinator);
+                        } else {
+                            if (!cancelled) setModuleCoordinator(null);
+                        }
+                    } catch (fallbackError) {
+                        if (!cancelled) {
+                            console.error('Fallback coordinator fetch failed:', fallbackError);
+                            setModuleCoordinator(null);
+                        }
+                    }
+                }
+            }
+        };
+
+        const fetchSubCoordinator = async () => {
+            try {
+                const res = await api.get('/coordinators/module/enviar/subcoordinator');
+                if (!cancelled) setModuleSubCoordinator(res.data);
+            } catch (error) {
+                if (!cancelled) {
+                    console.error('Error fetching subcoordinator:', error);
+                    setModuleSubCoordinator(null);
+                }
+            }
+        };
+
         fetchCoordinator();
         fetchSubCoordinator();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
     const tabs = [
         { id: 'cells', label: 'Células', component: (props) => <CellManagement {...props} moduleCoordinator={moduleCoordinator} />, customCheck: hasCellsTabAccess },
@@ -127,14 +136,14 @@ const Enviar = () => {
                     variant="primary"
                     size="sm"
                     icon={ArrowsClockwise}
-                    onClick={() => window.location.reload()}
+                    onClick={() => setRefreshTrigger(prev => prev + 1)}
                     className="shadow-xl"
                 >
                     Actualizar
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="cells" moduleName="enviar" />
+            <TabNavigator tabs={tabs} initialTabId="cells" moduleName="enviar" refreshTrigger={refreshTrigger} />
         </div>
     );
 };

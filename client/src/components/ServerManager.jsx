@@ -5,17 +5,13 @@ import api from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
 import { Button, AsyncSearchSelect } from './ui';
 import ConfirmationModal from './ConfirmationModal';
+import PropTypes from 'prop-types';
 
-const ServerManager = () => {
-    const { user, hasAnyRole, isCoordinator } = useAuth();
+const ServerManager = ({ refreshTrigger: externalRefresh }) => {
+    const { hasAnyRole, isCoordinator } = useAuth();
 
     // Verificar acceso: Solo ADMIN, PASTOR o Coordinador del módulo Ganar
     const hasAccess = hasAnyRole(['ADMIN', 'PASTOR']) || isCoordinator('ganar');
-
-    // Debug: Verificar roles del usuario
-    useEffect(() => {
-
-    }, [user, hasAnyRole]);
 
     const [servidores, setServidores] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -36,7 +32,7 @@ const ServerManager = () => {
 
     useEffect(() => {
         fetchServidores();
-    }, [refreshTrigger]);
+    }, [refreshTrigger, externalRefresh]);
 
     const fetchServidores = async () => {
         setLoading(true);
@@ -487,3 +483,7 @@ const ServerManager = () => {
 };
 
 export default ServerManager;
+
+ServerManager.propTypes = {
+    refreshTrigger: PropTypes.number,
+};

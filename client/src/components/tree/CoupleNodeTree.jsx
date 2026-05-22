@@ -17,6 +17,8 @@ export default memo(function CoupleNodeTree({
   onSelectLeader,
   selectedLeader
 }) {
+  if (!node) return null;
+
   const [localExpanded, setLocalExpanded] = useState(level < 2);
   
   const isExpanded = expandedNodes?.has(node.id) ?? localExpanded;

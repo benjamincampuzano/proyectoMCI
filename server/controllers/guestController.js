@@ -272,6 +272,9 @@ const getAllGuests = async (req, res) => {
                     include: {
                         leader: {
                             include: { profile: true }
+                        },
+                        liderDoce: {
+                            include: { profile: true }
                         }
                     }
                 },
@@ -312,6 +315,10 @@ const getAllGuests = async (req, res) => {
                 leader: g.cell.leader ? {
                     id: g.cell.leader.id,
                     fullName: g.cell.leader.profile?.fullName
+                } : null,
+                liderDoce: g.cell.liderDoce ? {
+                    id: g.cell.liderDoce.id,
+                    fullName: g.cell.liderDoce.profile?.fullName
                 } : null
             } : null,
             calls: g.calls.map(c => ({ ...c, caller: c.caller ? { fullName: c.caller.profile?.fullName } : null })),

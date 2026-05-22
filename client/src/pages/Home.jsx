@@ -295,35 +295,30 @@ const Home = () => {
         );
     }
 
-    if (error) {
-        return (
-            <div className="flex items-center justify-center h-[400px]">
-                <div className="max-w-md w-full bg-red-500/5 border border-red-500/20 p-8 rounded-[24px] text-center">
-                    <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500 mx-auto mb-4 border border-red-500/20">
-                        <X size={24} weight="bold" />
+    return (
+        <div className="space-y-10 pb-32">
+            {error && (
+                <div className="max-w-md w-full bg-red-500/5 border border-red-500/20 p-6 rounded-[24px] text-center mx-auto animate-in fade-in slide-in-from-top-4">
+                    <div className="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center text-red-500 mx-auto mb-3 border border-red-500/20">
+                        <X size={20} weight="bold" />
                     </div>
-                    <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] mb-2">Error de Sincronización</h3>
-                    <p className="text-sm text-red-500/70 mb-6">{error}</p>
+                    <h3 className="text-base weight-590 text-[var(--ln-text-primary)] mb-1">Error de Sincronización</h3>
+                    <p className="text-sm text-red-500/70 mb-4">{error}</p>
                     <button 
                         onClick={() => { 
                             setError(null); 
                             if (isAdmin()) fetchPastores();
                             else if (hasAnyRole(['PASTOR'])) fetchLideresDoce();
                         }}
-                        className="px-6 py-2 bg-[var(--ln-text-primary)] text-[var(--ln-bg-marketing)] rounded-xl weight-590 text-[13px] hover:opacity-90 transition-opacity"
+                        className="px-5 py-2 bg-[var(--ln-text-primary)] text-[var(--ln-bg-marketing)] rounded-xl weight-590 text-[12px] hover:opacity-90 transition-opacity"
                     >
                         Intentar Reconectar
                     </button>
                 </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-10 pb-32">
+            )}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-in slide-in-from-top-4 duration-700">
                 <PageHeader
-                    title={`Hola, ${user?.fullName.split(' ')[0]}`}
+                    title={`Hola, ${user?.fullName?.split(' ')[0] || 'Usuario'}`}
                     description={`Diligente en conocer el estado de tus ovejas, y mira con cuidado por tus rebaños.`}
                     action={``}
                 />

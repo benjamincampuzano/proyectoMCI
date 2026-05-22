@@ -1,6 +1,7 @@
 import { EnvelopeOpen, Phone, MapPin, Pencil, Trash, Key, IdentificationCard, GenderMale, GenderFemale, Cake, CheckCircle, Warning, UserCircle, WhatsappLogo } from '@phosphor-icons/react';
 import DataTable from '../ui/DataTable';
 import PropTypes from 'prop-types';
+import { getWhatsAppPhone } from '../../utils/phone';
 
 const calculateAge = (birthDate) => {
     if (!birthDate) return null;
@@ -102,7 +103,7 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
                                     <Phone size={13} className="text-[var(--ln-text-quaternary)]" weight="bold" />
                                     <span>{user.phone}</span>
                                     <a
-                                        href={`https://wa.me/${user.phone.replace(/\D/g, '')}`}
+                                        href={`https://wa.me/${getWhatsAppPhone(user.phone)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="ml-1 p-1 rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 hover:text-emerald-700 transition-colors"

@@ -7,8 +7,10 @@ import { useAuth } from '../hooks/useAuth';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ConfirmationModal from './ConfirmationModal';
+import { getWhatsAppPhone } from '../utils/phone';
+import PropTypes from 'prop-types';
 
-const GuestTracking = () => {
+const GuestTracking = ({ refreshTrigger }) => {
     const { user, hasRole, isAdmin, isCoordinator, isDoceLeader } = useAuth();
     const isModuleCoordinator = isCoordinator('ganar');
     const [guests, setGuests] = useState([]);
@@ -45,17 +47,20 @@ const GuestTracking = () => {
     // Auto-apply filter for LIDER_DOCE who are not coordinators
     useEffect(() => {
         if (isDoceLeader() && !isModuleCoordinator && user) {
-            // Automatically set filter to current user
             setLiderDoceFilter({
                 id: user.id,
                 fullName: user.profile?.fullName || user.email
             });
         }
+
+        return () => {
+            setLiderDoceFilter(null);
+        };
     }, [isDoceLeader, isModuleCoordinator, user]);
 
     useEffect(() => {
         fetchGuests();
-    }, [currentPage, startDate, endDate, liderDoceFilter, pendingCalls, pendingVisits]);
+    }, [currentPage, startDate, endDate, liderDoceFilter, pendingCalls, pendingVisits, refreshTrigger]);
 
     const fetchGuests = async () => {
         try {
@@ -292,9 +297,9 @@ const GuestTracking = () => {
         }
 
         // 2. Open WhatsApp
-        const phone = selectedGuest.phone.replace(/\D/g, '');
         const text = encodeURIComponent(whatsappData.previewText);
-        window.open(`https://wa.me/57${phone}?text=${text}`, '_blank');
+        const whatsappPhone = getWhatsAppPhone(selectedGuest.phone);
+        window.open(`https://wa.me/${whatsappPhone}?text=${text}`, '_blank');
 
         setModalType(null);
     };
@@ -1141,3 +1146,7 @@ const GuestTracking = () => {
 };
 
 export default GuestTracking;
+
+GuestTracking.propTypes = {
+    refreshTrigger: PropTypes.number,
+};

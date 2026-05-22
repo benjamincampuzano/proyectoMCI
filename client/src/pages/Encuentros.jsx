@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, UserIcon,Users, MoneyIcon, CaretRight, Trash, UserCheck, SquaresFour, List, FileTextIcon, TrendUpIcon, ArrowsClockwise } from '@phosphor-icons/react';
+import { Plus, Calendar, UserIcon,Users, MoneyIcon, Trash, UserCheck, SquaresFour, List, FileTextIcon, ArrowsClockwise } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import EncuentroDetails from '../components/EncuentroDetails';
 import EncuentroTable from '../components/EncuentroTable';
 import EncuentrosReport from '../components/EncuentrosReport';
-import MultiUserSelect from '../components/MultiUserSelect';
 import { AsyncSearchSelect, PageHeader, Button } from '../components/ui';
 import ActionModal from '../components/ActionModal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -15,7 +14,6 @@ import { ROLES } from '../constants/roles';
 
 const Encuentros = () => {
     const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
-    const isModuleCoordinator = isCoordinator('encuentro');
     const [encuentros, setEncuentros] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedEncuentro, setSelectedEncuentro] = useState(null);
@@ -25,7 +23,6 @@ const Encuentros = () => {
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
-    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
 
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -43,8 +40,6 @@ const Encuentros = () => {
         endDate: '',
         coordinatorId: null
     });
-
-    const hasAdminOrCoordinator = hasAnyRole(['ADMIN']) || isModuleCoordinator;
 
     useEffect(() => {
         fetchEncuentros();
@@ -172,7 +167,7 @@ const Encuentros = () => {
             totalInscritos += enc.registrations?.length || 0;
             // Count registrations with isConvert or converted flag
             enc.registrations?.forEach(reg => {
-                if (reg.isConvert || reg.converted || reg.userId) {
+                if (reg.isConvert || reg.converted) {
                     totalConversos++;
                 }
             });
@@ -190,8 +185,11 @@ const Encuentros = () => {
         };
     }, [encuentros]);
 
-    const canCreateOrDelete = hasAdminOrCoordinator;
-    const canViewReport = hasAdminOrCoordinator;
+    const canCreateOrDelete = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE]) 
+        || isCoordinator('encuentro') 
+        || isSubCoordinator('encuentro')
+        || isTreasurer('encuentro');
+    const canViewReport = canCreateOrDelete;
 
     // Renderizar contenido según vista
     const renderContent = () => {
@@ -360,7 +358,7 @@ const Encuentros = () => {
                     variant="primary"
                     size="sm"
                     icon={ArrowsClockwise}
-                    onClick={() => window.location.reload()}
+                    onClick={fetchEncuentros}
                     className="shadow-xl"
                 >
                     Actualizar
@@ -508,7 +506,7 @@ const Encuentros = () => {
                                 value={formData.cost}
                                 onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
                                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                Placeholder="Valor Encuentro"
+                                placeholder="Valor Encuentro"
                                 required
                             />
                         </div>
@@ -521,7 +519,7 @@ const Encuentros = () => {
                                 value={formData.transportCost}
                                 onChange={(e) => setFormData({ ...formData, transportCost: e.target.value })}
                                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                Placeholder="Valor Libro"
+                                placeholder="Valor Libro"
                             />
                         </div>
                         <div>

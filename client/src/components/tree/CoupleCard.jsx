@@ -5,9 +5,10 @@ import { CaretDown, CaretRight, Users, UserPlus, UserMinus, Crown, Star } from '
 function generateUserColors(userId) {
   if (!userId) return { primary: '#374151', secondary: '#4B5563' };
 
+  const userIdStr = String(userId);
   let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < userIdStr.length; i++) {
+    hash = userIdStr.charCodeAt(i) + ((hash << 5) - hash);
   }
 
   const colorGuitarIcons = [

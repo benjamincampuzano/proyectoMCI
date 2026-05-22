@@ -28,6 +28,7 @@ const Convenciones = () => {
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [conventionToDelete, setConventionToDelete] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
     // Create Form State
     const [formData, setFormData] = useState({
@@ -103,6 +104,7 @@ const Convenciones = () => {
 
     const handleCreate = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
         try {
             await api.post('/convenciones', {
                 ...formData,
@@ -126,6 +128,8 @@ const Convenciones = () => {
         } catch (error) {
             console.error('Error creating convention:', error);
             toast.error('Error creating convention: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -176,8 +180,8 @@ const Convenciones = () => {
         conventions.forEach(conv => {
             totalInscritos += conv.registrations?.length || 0;
             conv.registrations?.forEach(reg => {
-                totalRecaudado += reg.totalPaid || 0;
-                totalPendiente += reg.balance || 0;
+                totalRecaudado += Number(reg.totalPaid) || 0;
+                totalPendiente += Number(reg.balance) || 0;
             });
         });
 
@@ -344,7 +348,7 @@ const Convenciones = () => {
                     variant="primary"
                     size="sm"
                     icon={ArrowsClockwise}
-                    onClick={() => window.location.reload()}
+                    onClick={fetchConventions}
                     className="shadow-xl"
                 >
                     Actualizar
@@ -583,7 +587,7 @@ const Convenciones = () => {
                             </Button>
                             <Button
                                 type="submit"
-                                loading={loading}
+                                loading={submitting}
                                 className="flex-1 text-sm"
                                 size="sm"
                             >

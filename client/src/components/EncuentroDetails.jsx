@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, MoneyIcon, CheckCircle, X, XCircle, Trash, Calendar, BookOpen, Eye, FileTextIcon, PencilSimple  } from '@phosphor-icons/react';
+import { ArrowLeft, UserPlus, MoneyIcon, X, XCircle, Trash, Calendar, BookOpen, FileTextIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ROLES } from '../constants/roles';
 import { AsyncSearchSelect } from './ui';
-import MultiUserSelect from './MultiUserSelect';
 import EncuentroClassTracker from './EncuentroClassTracker';
 import BalanceReport from './BalanceReport';
 import { DATA_POLICY_URL } from '../constants/policies';
 import ConfirmationModal from './ConfirmationModal';
 
 const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
-    const { user, isAdmin, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
+    const { user, isAdmin, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     
     const [activeTab, setActiveTab] = useState('general'); // general | classes | report
     const [reportData, setReportData] = useState([]);
@@ -69,15 +68,17 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
 
     
     // Administrative permission: Admin, Pastor, or Module Coordinator
-    const hasAdminPower = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isCoordinator('Encuentros');
+    const hasModuleAccess = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || 
+        isCoordinator('encuentro') || 
+        isSubCoordinator('encuentro') || 
+        isTreasurer('encuentro');
     
-    // Can edit the encounter itself or register people
-    const canManageEncuentro = hasAdminPower || parseInt(user?.id) === parseInt(encuentro?.coordinatorId);
+    const isEncuentroCoordinator = parseInt(user?.id) === parseInt(encuentro?.coordinatorId) || parseInt(user?.id) === parseInt(encuentro?.coordinator?.id);
     
-    // Can register payments: Anyone with admin power OR the module treasurer
-    const canManagePayments = hasAdminPower || isTreasurer('Encuentros');
+    const canManageEncuentro = hasModuleAccess || isEncuentroCoordinator;
     
-    // Legacy support or specific use cases
+    const canManagePayments = hasModuleAccess || isEncuentroCoordinator;
+    
     const canModify = canManageEncuentro;
 
     useEffect(() => {
@@ -108,7 +109,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         const registrationData = {
             guestId: registrationType === 'GUEST' ? selectedGuest?.id : null,
             userId: registrationType === 'USER' ? selectedUser?.id : null,
-            discountPercentage: parseFloat(discount),
+            discountPercentage: parseFloat(discount) || 0,
             needsTransport,
             needsAccommodation
         };
@@ -288,7 +289,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         if (encuentro?.openEditModal && canModify) {
             openEditModal();
         }
-    }, [encuentro?.openEditModal]);
+    }, [encuentro?.openEditModal, canModify]);
 
     const handleUpdateEncuentro = async (e) => {
         e.preventDefault();
@@ -383,7 +384,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         </div>
                         <div className="flex flex-col">
                             <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">{formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (reg.totalPaid || 0), 0) || 0)}</span>
+                                <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">{formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (Number(reg.totalPaid) || 0), 0) || 0)}</span>
                             </div>
                             <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Dinero Recaudado</span>
                         </div>
@@ -397,7 +398,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente por Cobrar</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">{formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (reg.balance || 0), 0) || 0)}</span>
+                                <span className="text-3xl font-extrabold text-red-900 dark:text-white">{formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (Number(reg.balance) || 0), 0) || 0)}</span>
                             <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Dinero Pendiente</span>
                         </div>
                     </div>
@@ -488,32 +489,32 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                {formatCurrency(reg.finalCost)}
+                                                {formatCurrency(Number(reg.finalCost) || 0)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400 font-medium">
-                                                {formatCurrency(reg.totalPaid)}
+                                                {formatCurrency(Number(reg.totalPaid) || 0)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500 dark:text-red-400 font-medium">
                                                 <div className="flex flex-col items-end">
-                                                    <span>{formatCurrency(reg.balance)}</span>
-                                                    {reg.balance > 0 && (
+                                                    <span>{formatCurrency(Number(reg.balance) || 0)}</span>
+                                                    {(Number(reg.balance) || 0) > 0 && (
                                                         <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 leading-tight text-right">
-                                                            {(reg.baseCost - (reg.paymentsByType?.ENCUENTRO || 0)) > 0 && (
+                                                            {((Number(reg.baseCost) || 0) - (reg.paymentsByType?.ENCUENTRO || 0)) > 0 && (
                                                                 <div className="flex justify-between w-32">
                                                                     <span>Encuentro:</span>
-                                                                    <span>{formatCurrency(reg.baseCost - (reg.paymentsByType?.ENCUENTRO || 0))}</span>
+                                                                    <span>{formatCurrency((Number(reg.baseCost) || 0) - (reg.paymentsByType?.ENCUENTRO || 0))}</span>
                                                                 </div>
                                                             )}
-                                                            {(reg.transportCost - (reg.paymentsByType?.TRANSPORT || 0)) > 0 && (
+                                                            {((Number(reg.transportCost) || 0) - (reg.paymentsByType?.TRANSPORT || 0)) > 0 && (
                                                                 <div className="flex justify-between w-32">
                                                                     <span>Libro:</span>
-                                                                    <span>{formatCurrency(reg.transportCost - (reg.paymentsByType?.TRANSPORT || 0))}</span>
+                                                                    <span>{formatCurrency((Number(reg.transportCost) || 0) - (reg.paymentsByType?.TRANSPORT || 0))}</span>
                                                                 </div>
                                                             )}
-                                                            {(reg.accommodationCost - (reg.paymentsByType?.ACCOMMODATION || 0)) > 0 && (
+                                                            {((Number(reg.accommodationCost) || 0) - (reg.paymentsByType?.ACCOMMODATION || 0)) > 0 && (
                                                                 <div className="flex justify-between w-32">
                                                                     <span>Otros:</span>
-                                                                    <span>{formatCurrency(reg.accommodationCost - (reg.paymentsByType?.ACCOMMODATION || 0))}</span>
+                                                                    <span>{formatCurrency((Number(reg.accommodationCost) || 0) - (reg.paymentsByType?.ACCOMMODATION || 0))}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -543,15 +544,13 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                                 <UserPlus size={16} />
                                                             </button>
                                                         )}
-                                                        {isAdmin() && (
-                                                            <button
-                                                                onClick={() => handleDelete(reg.id)}
-                                                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
-                                                                title="Eliminar Registro"
-                                                            >
-                                                                <Trash size={16} />
-                                                            </button>
-                                                        )}
+                                                        <button
+                                                            onClick={() => handleDelete(reg.id)}
+                                                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
+                                                            title="Eliminar Registro"
+                                                        >
+                                                            <Trash size={16} />
+                                                        </button>
                                                     </>
                                                 )}
                                             </td>
@@ -838,7 +837,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                     <span className="text-xs text-gray-500 dark:text-gray-400">
                                                         {new Date(payment.date).toLocaleDateString()}
                                                     </span>
-                                                    {isAdmin() && (
+                                                    {canManagePayments && (
                                                         <button
                                                             onClick={() => handleDeletePayment(payment)}
                                                             className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
@@ -866,7 +865,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         <div className="p-6 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Total Abonado:</span>
-                                <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(selectedHistoryRegistration.totalPaid)}</span>
+                                <span className="font-bold text-green-600 dark:text-green-400">{formatCurrency(Number(selectedHistoryRegistration.totalPaid) || 0)}</span>
                             </div>
                         </div>
                     </div>
@@ -1145,15 +1144,15 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600 dark:text-gray-400">Total a Pagar:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(registrationToDelete.finalCost)}</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(Number(registrationToDelete.finalCost) || 0)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600 dark:text-gray-400">Abonado:</span>
-                                <span className="font-medium text-green-600 dark:text-green-400">{formatCurrency(registrationToDelete.totalPaid)}</span>
+                                <span className="font-medium text-green-600 dark:text-green-400">{formatCurrency(Number(registrationToDelete.totalPaid) || 0)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600 dark:text-gray-400">Saldo Pendiente:</span>
-                                <span className="font-medium text-red-600 dark:text-red-400">{formatCurrency(registrationToDelete.balance)}</span>
+                                <span className="font-medium text-red-600 dark:text-red-400">{formatCurrency(Number(registrationToDelete.balance) || 0)}</span>
                             </div>
                         </div>
                     </div>
