@@ -6,28 +6,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Start both dev servers (client + server)
-npm start
+pnpm start
 
 # Start only server (port 5000)
-npm run server
+pnpm run server
 
 # Start only client (Vite dev server, port 5173)
-npm run client
+pnpm run client
 
 # Install all dependencies
-npm run install:all
+pnpm run install:all
 
 # Client build and lint
-cd client && npm run build
-cd client && npm run lint
+cd client && pnpm run build
+cd client && pnpm run lint
 
 # Database migrations (server directory)
-npx prisma migrate dev
-npx prisma generate
+pnpm exec prisma migrate dev
+pnpm exec prisma generate
 
 # Cypress tests
-npm run test:open    # Interactive GUI
-npm run test:run     # Full suite
+pnpm run test:open    # Interactive GUI
+pnpm run test:run     # Full suite
 ```
 
 ## High-level Architecture

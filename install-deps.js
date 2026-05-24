@@ -3,7 +3,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚀 Iniciando la instalación de dependencias...');
+console.log('🚀 Iniciando la instalación de dependencias con pnpm...');
 
 function runCommand(command, cwd = process.cwd()) {
   console.log(`\n📌 Ejecutando: ${command}`);
@@ -23,19 +23,19 @@ function updateDependencies(cwd = process.cwd()) {
   // Obtener la lista de dependencias desactualizadas
   try {
     console.log('\n🔍 Buscando actualizaciones disponibles...');
-    execSync('npm outdated', { stdio: 'pipe', cwd });
+    execSync('pnpm outdated', { stdio: 'pipe', cwd });
     console.log('✅ Todas las dependencias están actualizadas');
   } catch (outdatedError) {
-    // Si hay paquetes desactualizados, npm outdated devuelve código de salida 1
+    // Si hay paquetes desactualizados, pnpm outdated devuelve código de salida 1
     if (outdatedError.status === 1) {
       console.log('📦 Actualizando paquetes a sus últimas versiones...');
-      if (!runCommand('npx npm-check-updates -u', cwd)) {
+      if (!runCommand('pnpm dlx npm-check-updates -u', cwd)) {
         console.warn('⚠️  No se pudo actualizar las dependencias automáticamente');
         return false;
       }
       
       // Instalar las dependencias actualizadas
-      if (!runCommand('npm install', cwd)) {
+      if (!runCommand('pnpm install', cwd)) {
         return false;
       }
     } else {
@@ -46,9 +46,21 @@ function updateDependencies(cwd = process.cwd()) {
   return true;
 }
 
+// Verificar si pnpm está instalado, de lo contrario instalarlo
+try {
+  execSync('pnpm --version', { stdio: 'ignore' });
+  console.log('✅ pnpm ya está instalado globalmente');
+} catch (e) {
+  console.log('⚠️ pnpm no está instalado. Instalándolo de forma global...');
+  if (!runCommand('npm install -g pnpm')) {
+    console.error('❌ No se pudo instalar pnpm globalmente. Por favor instálelo manualmente.');
+    process.exit(1);
+  }
+}
+
 // Instalar dependencias del root
 console.log('\n🔧 Instalando dependencias principales...');
-if (!runCommand('npm install')) {
+if (!runCommand('pnpm install')) {
   process.exit(1);
 }
 
@@ -61,7 +73,7 @@ if (!updateDependencies()) {
 console.log('\n💻 Instalando dependencias del cliente...');
 const clientPath = path.join(process.cwd(), 'client');
 if (fs.existsSync(clientPath)) {
-  if (!runCommand('npm install', clientPath)) {
+  if (!runCommand('pnpm install', clientPath)) {
     process.exit(1);
   }
   if (!updateDependencies(clientPath)) {
@@ -73,7 +85,7 @@ if (fs.existsSync(clientPath)) {
 console.log('\n🖥️  Instalando dependencias del servidor...');
 const serverPath = path.join(process.cwd(), 'server');
 if (fs.existsSync(serverPath)) {
-  if (!runCommand('npm install', serverPath)) {
+  if (!runCommand('pnpm install', serverPath)) {
     process.exit(1);
   }
   if (!updateDependencies(serverPath)) {
@@ -83,12 +95,12 @@ if (fs.existsSync(serverPath)) {
 
 // Ejecutar migraciones de Prisma
 console.log('\n🔄 Ejecutando migraciones de la base de datos...');
-if (!runCommand('npx prisma migrate dev', serverPath)) {
+if (!runCommand('pnpm exec prisma migrate dev', serverPath)) {
   console.warn('⚠️  No se pudieron ejecutar las migraciones. Verifica la configuración de la base de datos.');
 }
 
 console.log('\n✅ ¡Todas las dependencias se han instalado y actualizado correctamente!');
-!runCommand('npm install -g npm-check-updates')
+!runCommand('pnpm install -g npm-check-updates');
 console.log('🎉 ¡El proyecto está listo para desarrollarse!');
 console.log('\nPara iniciar el proyecto, ejecuta:');
-console.log('  npm run start\n');
+console.log('  pnpm run start\n');

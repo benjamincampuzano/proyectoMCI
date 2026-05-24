@@ -163,32 +163,32 @@ Cada módulo puede tener roles especiales:
 
 ```bash
 # Iniciar ambos servidores (cliente + servidor)
-npm start
+pnpm start
 
 # Iniciar solo el servidor
-npm run server
+pnpm run server
 
 # Iniciar solo el cliente
-npm run client
+pnpm run client
 
 # Instalar todas las dependencias
-npm run install:all
+pnpm run install:all
 
 # Scripts de base de datos
-npm run backup          # Crear respaldo
-npm run restore         # Restaurar respaldo
+pnpm run backup          # Crear respaldo
+pnpm run restore         # Restaurar respaldo
 
 # Scripts de usuarios
-npm run create-test-users    # Crear usuarios de prueba
-npm run delete-test-users    # Eliminar usuarios de prueba
-npm run verify-users         # Verificar usuarios
-npm run check-roles          # Verificar roles
-npm run manage-users         # Gestionar usuarios (menú interactivo)
-npm run menu-usuarios        # Menú de usuarios
+pnpm run create-test-users    # Crear usuarios de prueba
+pnpm run delete-test-users    # Eliminar usuarios de prueba
+pnpm run verify-users         # Verificar usuarios
+pnpm run check-roles          # Verificar roles
+pnpm run manage-users         # Gestionar usuarios (menú interactivo)
+pnpm run menu-usuarios        # Menú de usuarios
 
 # Tests
-npm run test:open    # Abrir Cypress
-npm run test:run     # Ejecutar tests
+pnpm run test:open    # Abrir Cypress
+pnpm run test:run     # Ejecutar tests
 ```
 
 ---
@@ -203,7 +203,7 @@ npm run test:run     # Ejecutar tests
 
 2. **Instalar dependencias**:
    ```bash
-   npm run install:all
+   pnpm run install:all
    ```
 
 3. **Configurar variables de entorno**:
@@ -212,7 +212,7 @@ npm run test:run     # Ejecutar tests
 
 4. **Iniciar la aplicación**:
    ```bash
-   npm start
+   pnpm start
    ```
 
 5. **Acceder a la aplicación**:

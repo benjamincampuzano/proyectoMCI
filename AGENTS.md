@@ -13,38 +13,38 @@ This document provides guidelines for AI agents working on this codebase.
 
 ### Root Commands
 ```bash
-npm start              # Run both client and server concurrently
-npm run install:all    # Install all dependencies in root, client, server
-npm run test:open      # Open Cypress test runner
-npm run test:run       # Run Cypress tests headless
+pnpm start             # Run both client and server concurrently
+pnpm run install:all   # Install all dependencies in root, client, server
+pnpm run test:open     # Open Cypress test runner
+pnpm run test:run      # Run Cypress tests headless
 ```
 
 ### Client (React + Vite)
 ```bash
 cd client
-npm run dev            # Development server (localhost:5173)
-npm run build          # Production build to dist/
-npm run lint           # Run ESLint
-npm run lint --fix     # Auto-fix lint issues
+pnpm run dev           # Development server (localhost:5173)
+pnpm run build         # Production build to dist/
+pnpm run lint          # Run ESLint
+pnpm run lint --fix    # Auto-fix lint issues
 ```
 
 ### Server (Express + Prisma)
 ```bash
 cd server
-npm run dev            # Development with nodemon
-npm run start          # Production: prisma migrate deploy + node index.js
+pnpm run dev           # Development with nodemon
+pnpm run start         # Production: prisma migrate deploy + node index.js
 ```
 
 ### Running a Single Test (Cypress)
 ```bash
 # Open Cypress UI to select specific test
-npm run test:open
+pnpm run test:open
 
 # Run specific spec file
-npx cypress run --spec "client/tests/test-auth-frontend.js"
+pnpm exec cypress run --spec "client/tests/test-auth-frontend.js"
 
 # Run tests matching a keyword
-npx cypress run --grep "login"
+pnpm exec cypress run --grep "login"
 ```
 
 ## Code Style Guidelines
@@ -113,7 +113,7 @@ npx cypress run --grep "login"
 ### Testing
 - Test files in `client/tests/` (Cypress)
 - Follow existing test patterns in spec files
-- Run `npm run test:run` before submitting changes
+- Run `pnpm run test:run` before submitting changes
 
 ## Existing Design System
 
@@ -146,8 +146,8 @@ Key colors to use:
 ### Database migration
 ```bash
 cd server
-npx prisma migrate dev --name migration_name
-npx prisma generate
+pnpm exec prisma migrate dev --name migration_name
+pnpm exec prisma generate
 ```
 
 ## Notes for AI Agents

@@ -5,14 +5,16 @@ RUN apt-get update && apt-get install -y curl ca-certificates gnupg && \
     echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/postgresql.list && \
     apt-get update && apt-get install -y postgresql-client-18 && rm -rf /var/lib/apt/lists/*
 
+RUN npm install -g pnpm
+
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json ./
 COPY prisma ./prisma/
-RUN npm ci --omit=dev && npx prisma generate
+RUN pnpm install --prod && pnpm exec prisma generate
 
 COPY . .
 
 EXPOSE 5000
 
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
