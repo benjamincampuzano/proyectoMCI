@@ -130,6 +130,9 @@ importers:
 
   server:
     dependencies:
+      '@prisma/client':
+        specifier: ^6.19.3
+        version: 6.19.3(prisma@6.19.3)
       axios:
         specifier: ^1.16.1
         version: 1.16.1
@@ -166,16 +169,13 @@ importers:
       pg:
         specifier: ^8.20.0
         version: 8.21.0
-    devDependencies:
-      '@prisma/client':
-        specifier: ^6.19.3
-        version: 6.19.3(prisma@6.19.3)
-      nodemon:
-        specifier: ^3.1.14
-        version: 3.1.14
       prisma:
         specifier: ^6.19.3
         version: 6.19.3
+    devDependencies:
+      nodemon:
+        specifier: ^3.1.14
+        version: 3.1.14
 
 packages:
 
