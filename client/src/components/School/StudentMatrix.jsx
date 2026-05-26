@@ -167,25 +167,31 @@ const StudentMatrix = () => {
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Nombre
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Líder de Doce
-                                </th>
-                                {SCHOOL_LEVELS.map(level => (
-                                    <th key={`${level.nivel}${level.seccion}`} className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        {level.nivel}{level.seccion}
-                                    </th>
-                                ))}
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Promedio
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Asistencia
-                                </th>
-                            </tr>
+                    <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Nombre
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Líder de Doce
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Encuentro
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Discipular
+                        </th>
+                        {SCHOOL_LEVELS.map(level => (
+                            <th key={`${level.nivel}${level.seccion}`} className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                {level.nivel}{level.seccion}
+                            </th>
+                        ))}
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Promedio
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Asistencia
+                        </th>
+                    </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {filteredStudents.map((student) => (
@@ -195,6 +201,36 @@ const StudentMatrix = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {student.leaderDoce?.fullName || 'Sin asignar'}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-center">
+                                        {student.encuentro ? (
+                                            <CheckCircle className="text-green-500" size={20} title="Completado" />
+                                        ) : (
+                                            <XCircle className="text-red-400" size={20} title="No completado" />
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-center">
+                                        <div className="flex flex-wrap gap-1 justify-center">
+                                            {[
+                                                { key: 'discipular1A', label: '1A' },
+                                                { key: 'discipular1B', label: '1B' },
+                                                { key: 'discipular2A', label: '2A' },
+                                                { key: 'discipular2B', label: '2B' },
+                                                { key: 'discipular3A', label: '3A' },
+                                                { key: 'discipular3B', label: '3B' },
+                                            ].map(({ key, label }) => (
+                                                <span
+                                                    key={key}
+                                                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                                        student[key]
+                                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                            : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                                                    }`}
+                                                >
+                                                    {label}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </td>
                                     {SCHOOL_LEVELS.map(level => {
                                         const enrollment = student.enrollments?.find(e => 

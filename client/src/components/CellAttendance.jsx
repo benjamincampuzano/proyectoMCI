@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Check, X, Users, MapPin, Clock, Info, List, SquaresFour, } from '@phosphor-icons/react';
+import { Calendar, Check, X, Users, MapPin, Clock, Info, List, SquaresFour, User } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import useCellAttendance from '../hooks/useCellAttendance';
 import { useAuth } from '../context/AuthContext';
 import CellMap from './CellMap';
+import ModalAttendance from './ModalAttendance';
 
 const CellAttendance = () => {
     const {
@@ -21,6 +22,7 @@ const CellAttendance = () => {
     } = useCellAttendance();
     const [showMap, setShowMap] = useState(false);
     const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
+    const [showReportModal, setShowReportModal] = useState(false);
     const { user, isAdmin, hasAnyRole } = useAuth();
 
     // Check if user is a standard member (DISCIPULO or MIEMBRO) without administrative roles
@@ -60,6 +62,13 @@ const CellAttendance = () => {
             return;
         }
         toast.error(res.message || 'Error al guardar asistencia');
+    };
+
+    const handleSaveReport = async (report) => {
+      // TODO: Llamar al endpoint del backend
+      // await api.post('/enviar/cell-attendance/self-report', report);
+      toast.success(`Asistencia a ${report.type === 'church' ? 'Iglesia' : 'Célula'} registrada`);
+      setShowReportModal(false);
     };
 
     return (
@@ -138,6 +147,13 @@ const CellAttendance = () => {
                             Tabla
                         </button>
                     </div>
+                    <button
+                        onClick={() => setShowReportModal(true)}
+                        className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                    >
+                        <User className="w-4 h-4" />
+                        Mi asistencia
+                    </button>
                     <button
                         onClick={handleSubmit}
                         disabled={saving || !selectedCell || !canEdit}
@@ -322,6 +338,16 @@ const CellAttendance = () => {
                     })}
                 </div>
             )}
+
+            <ModalAttendance
+                isOpen={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                initialType="cell"
+                user={user}
+                onSave={handleSaveReport}
+                requireReport={false}
+                allowOutsideClose={true}
+            />
         </div>
     );
 };

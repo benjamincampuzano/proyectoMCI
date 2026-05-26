@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { Prisma } = require('@prisma/client');
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 
@@ -72,18 +72,16 @@ const getGuestStats = async (req, res) => {
         }
 
         // Build security filter based on role
+        let networkIds = [];
         let securityFilter = {};
         if (isAdmin || isCoordinator) {
-            // ADMIN y COORDINADOR ven todas las estadísticas
             securityFilter = {};
         } else if (isLiderDoce || isPastor) {
-            // Get network IDs
-            const networkIds = await getUserNetwork(currentUserId);
+            networkIds = await getUserNetwork(currentUserId);
             securityFilter = {
                 invitedById: { in: [...networkIds, currentUserId] }
             };
         } else {
-            // LIDER_CELULA and DISCIPULO see only their own guests
             securityFilter = {
                 invitedById: currentUserId
             };
@@ -144,72 +142,38 @@ const getGuestStats = async (req, res) => {
             count: item._count
         }));
 
-        // Calculate invitations by LIDER_DOCE
-        // 1. Fetch all guests (id + inviterId)
-        const guestsWithInviterId = await prisma.guest.findMany({
-            where: whereClause,
-            select: { invitedById: true, createdAt: true }
-        });
+        // Calculate invitations by LIDER_DOCE — ✅ SQL GROUP BY directo
+        const networkFilterStats = networkIds.length > 0
+            ? Prisma.sql`AND g."invitedById" = ANY(${networkIds})`
+            : Prisma.empty;
 
-        // 2. Get unique inviter IDs
-        const uniqueInviterIds = [...new Set(guestsWithInviterId.map(g => g.invitedById))];
+        const guestLeaderRaw = await prisma.$queryRaw`
+            SELECT
+                COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
+                COUNT(g.id)::int AS count,
+                TO_CHAR(g."createdAt", 'YYYY-MM') AS month_key
+            FROM "Guest" g
+            LEFT JOIN "UserHierarchy" uh ON uh."childId" = g."invitedById" AND uh.role IN ('LIDER_DOCE', 'PASTOR', 'LIDER_CELULA')
+            LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
+            WHERE g."isDeleted" = false
+              ${networkFilterStats}
+            GROUP BY leader_name, month_key
+            ORDER BY count DESC
+        `;
 
-        // 3. Fetch detailed info for these inviters (Hierarchy up to 3 levels)
-        const hierarchyInclude = {
-            include: {
-                parent: {
-                    include: {
-                        profile: true,
-                        roles: { include: { role: true } },
-                        parents: { // Level 2
-                            include: {
-                                parent: {
-                                    include: {
-                                        profile: true,
-                                        roles: { include: { role: true } }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
-
-        const detailedInviters = await prisma.user.findMany({
-            where: { id: { in: uniqueInviterIds } },
-            include: {
-                profile: true,
-                roles: { include: { role: true } },
-                parents: hierarchyInclude // Level 1
-                // Note: We are nesting 2 levels deep in `hierarchyInclude`.
-                // User -> parents (L1) -> parent -> parents (L2) -> parent.
-            }
-        });
-
-        const inviterLiderMap = {}; // userId -> LiderName
-        detailedInviters.forEach(inv => {
-            inviterLiderMap[inv.id] = resolveLiderDoce(inv);
-        });
-
-        // 4. Map guests to their leader
         const liderDoceCounts = {};
-        guestsWithInviterId.forEach(guest => {
-            const leaderName = inviterLiderMap[guest.invitedById] || 'Sin Asignar';
-            liderDoceCounts[leaderName] = (liderDoceCounts[leaderName] || 0) + 1;
-        });
+        const guestsByMonth = {};
+
+        for (const row of guestLeaderRaw) {
+            const name = row.leader_name;
+            liderDoceCounts[name] = (liderDoceCounts[name] || 0) + Number(row.count);
+            const mk = row.month_key;
+            guestsByMonth[mk] = (guestsByMonth[mk] || 0) + Number(row.count);
+        }
 
         const invitationsByLiderDoce = Object.entries(liderDoceCounts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
-
-        // Calculate Monthly Average
-        const guestsByMonth = {};
-        guestsWithInviterId.forEach(guest => {
-            const date = new Date(guest.createdAt);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            guestsByMonth[key] = (guestsByMonth[key] || 0) + 1;
-        });
 
         const monthsCount = Object.keys(guestsByMonth).length || 1;
         const monthlyAverage = (totalGuests / monthsCount).toFixed(1);

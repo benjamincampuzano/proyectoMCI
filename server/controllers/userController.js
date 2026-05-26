@@ -352,11 +352,23 @@ const getAllUsers = async (req, res) => {
                         }
                     }
                 },
-                include: {
-                    profile: true,
-                    roles: { include: { role: true } },
-                    parents: { include: { parent: { include: { profile: true } } } },
-                    spouse: true
+                select: {
+                    id: true,
+                    email: true,
+                    profile: { select: { fullName: true, birthDate: true, phone: true, sex: true, network: true, avatar: true } },
+                    roles: { select: { role: { select: { name: true } } } },
+                    parents: {
+                        select: {
+                            role: true,
+                            parentId: true,
+                            parent: {
+                                select: {
+                                    profile: { select: { fullName: true } }
+                                }
+                            }
+                        }
+                    },
+                    spouse: { select: { id: true, profile: { select: { fullName: true } } } }
                 },
                 orderBy: { profile: { fullName: 'asc' } }
             });
@@ -366,9 +378,7 @@ const getAllUsers = async (req, res) => {
             });
         }
 
-        // Para ADMIN, no hay límite por defecto (pueden ver todos los usuarios)
-        // Para otros roles, mantener el límite de 50 por defecto
-        // Si export=true, siempre devolver todos los usuarios (solo ADMIN puede usar esto)
+        // Si export=true, devolver todos los usuarios con select reducido (solo ADMIN)
         const isExport = exportAll === 'true';
 
         // Solo ADMIN puede exportar todos los usuarios
@@ -376,7 +386,10 @@ const getAllUsers = async (req, res) => {
             return res.status(403).json({ message: 'Solo los administradores pueden exportar todos los usuarios' });
         }
 
-        let limitNum = isExport ? undefined : (limit ? parseInt(limit) : (req.user.roles.includes('ADMIN') ? undefined : 50));
+        // ✅ ADMIN tiene límite de 100 por página por defecto para evitar cargar toda la BD.
+        // Para exportar, se usará un select reducido (no USER_FULL_INCLUDE).
+        const MAX_LIMIT = 500;
+        let limitNum = isExport ? Math.min(MAX_LIMIT, parseInt(limit) || MAX_LIMIT) : Math.min(MAX_LIMIT, parseInt(limit) || (req.user.roles.includes('ADMIN') ? 100 : 50));
 
         if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
             let rolesFilter = undefined;
@@ -724,7 +737,7 @@ const updateUser = async (req, res) => {
             return res.status(403).json({ message: permission.reason });
         }
 
-        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, isCoordinator, spouseId } = req.body;
+        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, isCoordinator, spouseId, encuentro, discipular1A, discipular1B, discipular2A, discipular2B, discipular3A, discipular3B } = req.body;
 
         if (email) {
             const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -778,6 +791,13 @@ const updateUser = async (req, res) => {
                             ...(req.body.dataPolicyAccepted !== undefined && { dataPolicyAccepted: req.body.dataPolicyAccepted }),
                             ...(req.body.dataTreatmentAuthorized !== undefined && { dataTreatmentAuthorized: req.body.dataTreatmentAuthorized }),
                             ...(req.body.minorConsentAuthorized !== undefined && { minorConsentAuthorized: req.body.minorConsentAuthorized }),
+                            ...(encuentro !== undefined && { encuentro }),
+                            ...(discipular1A !== undefined && { discipular1A }),
+                            ...(discipular1B !== undefined && { discipular1B }),
+                            ...(discipular2A !== undefined && { discipular2A }),
+                            ...(discipular2B !== undefined && { discipular2B }),
+                            ...(discipular3A !== undefined && { discipular3A }),
+                            ...(discipular3B !== undefined && { discipular3B }),
                         }
                     }
                 },
@@ -989,7 +1009,7 @@ const updateUser = async (req, res) => {
 // Admin: Crear nuevo usuario
 const createUser = async (req, res) => {
     try {
-        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, generateTempPassword, mustChangePassword, spouseId } = req.body;
+        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, generateTempPassword, mustChangePassword, spouseId, encuentro, discipular1A, discipular1B, discipular2A, discipular2B, discipular3A, discipular3B } = req.body;
 
         if (!email || !fullName) {
             return res.status(400).json({ message: 'Email and full name are required' });
@@ -1079,6 +1099,13 @@ const createUser = async (req, res) => {
                             dataPolicyAccepted: req.body.dataPolicyAccepted || false,
                             dataTreatmentAuthorized: req.body.dataTreatmentAuthorized || false,
                             minorConsentAuthorized: req.body.minorConsentAuthorized || false,
+                            encuentro: encuentro || false,
+                            discipular1A: discipular1A || false,
+                            discipular1B: discipular1B || false,
+                            discipular2A: discipular2A || false,
+                            discipular2B: discipular2B || false,
+                            discipular3A: discipular3A || false,
+                            discipular3B: discipular3B || false,
                         }
                     }
                 },
@@ -1323,21 +1350,34 @@ const getMyNetwork = async (req, res) => {
 
         // Si es ADMIN, devolver todos los usuarios (excepto otros admins y el mismo usuario)
         if (userRoles.includes('ADMIN')) {
-            const users = await prisma.user.findMany({
-                where: {
-                    id: { not: userId },
-                    roles: {
-                        none: {
-                            role: { name: 'ADMIN' }
-                        }
+            const search = req.query.search ? req.query.search.trim() : '';
+            const page = Math.max(1, parseInt(req.query.page) || 1);
+            const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
+            const skip = (page - 1) * limit;
+
+            const where = {
+                id: { not: userId },
+                roles: { none: { role: { name: 'ADMIN' } } },
+                ...(search ? {
+                    profile: {
+                        fullName: { contains: search, mode: 'insensitive' }
                     }
-                },
-                include: {
-                    profile: true,
-                    roles: { include: { role: true } }
-                },
-                orderBy: { profile: { fullName: 'asc' } }
-            });
+                } : {})
+            };
+
+            const [users, totalCount] = await Promise.all([
+                prisma.user.findMany({
+                    where,
+                    skip,
+                    take: limit,
+                    include: {
+                        profile: true,
+                        roles: { include: { role: true } }
+                    },
+                    orderBy: { profile: { fullName: 'asc' } }
+                }),
+                prisma.user.count({ where })
+            ]);
 
             const formatted = users.map(u => ({
                 id: u.id,
@@ -1347,19 +1387,32 @@ const getMyNetwork = async (req, res) => {
                 roles: u.roles.map(r => r.role.name)
             }));
 
-            return res.json(formatted);
+            return res.json({
+                data: formatted,
+                pagination: {
+                    page,
+                    limit,
+                    total: totalCount,
+                    pages: Math.ceil(totalCount / limit)
+                }
+            });
         }
 
         // Para otros roles, usar la lógica normal de red
         const networkIds = await getUserNetwork(userId);
 
         if (networkIds.length === 0) {
-            return res.json([]);
+            return res.json({ data: [], pagination: { page: 1, limit: 100, total: 0, pages: 0 } });
         }
+
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
+        const skip = (page - 1) * limit;
+        const pagedIds = networkIds.slice(skip, skip + limit);
 
         const users = await prisma.user.findMany({
             where: {
-                id: { in: networkIds }
+                id: { in: pagedIds }
             },
             include: {
                 profile: true,
@@ -1376,7 +1429,15 @@ const getMyNetwork = async (req, res) => {
             roles: u.roles.map(r => r.role.name)
         }));
 
-        res.json(formatted);
+        res.json({
+            data: formatted,
+            pagination: {
+                page,
+                limit,
+                total: networkIds.length,
+                pages: Math.ceil(networkIds.length / limit)
+            }
+        });
     } catch (error) {
         console.error('Error fetching my network:', error);
         res.status(500).json({ error: 'Error fetching network' });

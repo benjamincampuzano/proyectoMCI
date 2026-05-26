@@ -798,6 +798,13 @@ const getStudentMatrix = async (req, res) => {
                     id: leaderDoce.id,
                     fullName: leaderDoce.profile?.fullName || 'Sin Nombre'
                 } : null,
+                encuentro: student.profile?.encuentro || false,
+                discipular1A: student.profile?.discipular1A || false,
+                discipular1B: student.profile?.discipular1B || false,
+                discipular2A: student.profile?.discipular2A || false,
+                discipular2B: student.profile?.discipular2B || false,
+                discipular3A: student.profile?.discipular3A || false,
+                discipular3B: student.profile?.discipular3B || false,
                 enrollments: enrollmentsWithAttendance
             };
         });

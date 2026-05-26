@@ -60,6 +60,13 @@ const useUserManagement = () => {
         liderCelulaSpouseIds: [],
         spouseId: '',
         isCoordinator: false,
+        encuentro: false,
+        discipular1A: false,
+        discipular1B: false,
+        discipular2A: false,
+        discipular2B: false,
+        discipular3A: false,
+        discipular3B: false,
         dataPolicyAccepted: false,
         dataTreatmentAuthorized: false,
         minorConsentAuthorized: false
@@ -281,6 +288,8 @@ const useUserManagement = () => {
                 liderDoceIds: [], liderDoceSpouseIds: [],
                 liderCelulaIds: [], liderCelulaSpouseIds: [],
                 spouseId: '',
+                encuentro: false, discipular1A: false, discipular1B: false,
+                discipular2A: false, discipular2B: false, discipular3A: false, discipular3B: false,
                 dataPolicyAccepted: false, dataTreatmentAuthorized: false, minorConsentAuthorized: false
             });
             fetchUsers();
@@ -318,7 +327,14 @@ const useUserManagement = () => {
                 birthDate: editingUser.birthDate,
                 dataPolicyAccepted: editingUser.dataPolicyAccepted,
                 dataTreatmentAuthorized: editingUser.dataTreatmentAuthorized,
-                minorConsentAuthorized: editingUser.minorConsentAuthorized
+                minorConsentAuthorized: editingUser.minorConsentAuthorized,
+                encuentro: editingUser.encuentro || false,
+                discipular1A: editingUser.discipular1A || false,
+                discipular1B: editingUser.discipular1B || false,
+                discipular2A: editingUser.discipular2A || false,
+                discipular2B: editingUser.discipular2B || false,
+                discipular3A: editingUser.discipular3A || false,
+                discipular3B: editingUser.discipular3B || false
             };
             await api.put(`/users/${userId}`, payload);
             setSuccess('Usuario actualizado');

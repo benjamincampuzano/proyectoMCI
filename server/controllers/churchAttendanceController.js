@@ -11,18 +11,20 @@ const recordAttendance = async (req, res) => {
             return res.status(400).json({ error: 'Date and attendances array required' });
         }
 
-        const results = await Promise.all(
+        // ✅ Batch upsert dentro de una transacción para reducir round-trips
+        const parsedDate = new Date(date);
+        const results = await prisma.$transaction(
             attendances.map(({ userId, status }) =>
                 prisma.churchAttendance.upsert({
                     where: {
                         date_userId: {
-                            date: new Date(date),
+                            date: parsedDate,
                             userId: parseInt(userId)
                         }
                     },
                     update: { status },
                     create: {
-                        date: new Date(date),
+                        date: parsedDate,
                         userId: parseInt(userId),
                         status
                     }
@@ -30,7 +32,7 @@ const recordAttendance = async (req, res) => {
             )
         );
 
-        res.json({ message: 'Attendance recorded successfully', count: results.length });
+        res.json({ message: 'Asistencia registrada', count: results.length });
     } catch (error) {
         console.error('Error recording church attendance:', error);
         res.status(500).json({ error: 'Error recording attendance' });
@@ -97,6 +99,15 @@ const getAllMembers = async (req, res) => {
         const { id, roles } = req.user;
         const userId = parseInt(id);
         const userRoles = roles || [];
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
+        const searchTerm = req.query.searchTerm || '';
+        const liderDoceId = req.query.liderDoceId ? parseInt(req.query.liderDoceId) : null;
+        const liderCelulaId = req.query.liderCelulaId ? parseInt(req.query.liderCelulaId) : null;
+        const rolFilter = req.query.rol || '';
+        const redFilter = req.query.red || '';
+
         let where = {};
 
         if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
@@ -128,53 +139,94 @@ const getAllMembers = async (req, res) => {
             where = { id: userId };
         }
 
-        const members = await prisma.user.findMany({
-            where,
-            select: {
-                id: true,
-                profile: { select: { fullName: true, network: true } },
-                email: true,
-                roles: {
-                    include: { role: true }
-                },
-                // Get cell info for leader data
-                cell: {
-                    select: {
-                        id: true,
-                        name: true,
-                        leader: {
-                            select: {
-                                id: true,
-                                profile: { select: { fullName: true } }
-                            }
-                        },
-                        liderDoce: {
-                            select: {
-                                id: true,
-                                profile: { select: { fullName: true } }
-                            }
-                        }
-                    }
-                },
-                // Get hierarchy parents (liderDoce from hierarchy)
-                parents: {
-                    where: {
-                        role: 'LIDER_DOCE'
-                    },
-                    select: {
-                        parent: {
-                            select: {
-                                id: true,
-                                profile: { select: { fullName: true } }
-                            }
-                        }
+        // Apply server-side filters
+        if (searchTerm) {
+            where.profile = {
+                ...where.profile,
+                fullName: {
+                    contains: searchTerm,
+                    mode: 'insensitive'
+                }
+            };
+        }
+
+        if (liderDoceId) {
+            where.liderDoceId = liderDoceId;
+        }
+
+        if (liderCelulaId) {
+            where.cellId = liderCelulaId;
+        }
+
+        if (rolFilter) {
+            where.roles = {
+                some: {
+                    role: {
+                        name: rolFilter
                     }
                 }
-            },
-            orderBy: {
-                profile: { fullName: 'asc' }
-            }
-        });
+            };
+        }
+
+        if (redFilter) {
+            where.profile = {
+                ...where.profile,
+                network: redFilter
+            };
+        }
+
+        const [members, total] = await Promise.all([
+            prisma.user.findMany({
+                where,
+                select: {
+                    id: true,
+                    profile: { select: { fullName: true, network: true } },
+                    email: true,
+                    roles: {
+                        include: { role: true }
+                    },
+                    // Get cell info for leader data
+                    cell: {
+                        select: {
+                            id: true,
+                            name: true,
+                            leader: {
+                                select: {
+                                    id: true,
+                                    profile: { select: { fullName: true } }
+                                }
+                            },
+                            liderDoce: {
+                                select: {
+                                    id: true,
+                                    profile: { select: { fullName: true } }
+                                }
+                            }
+                        }
+                    },
+                    // Get hierarchy parents (liderDoce from hierarchy)
+                    parents: {
+                        where: {
+                            role: 'LIDER_DOCE'
+                        },
+                        select: {
+                            parent: {
+                                select: {
+                                    id: true,
+                                    profile: { select: { fullName: true } }
+                                }
+                            }
+                        }
+                    }
+                },
+                orderBy: {
+                    profile: { fullName: 'asc' }
+                },
+                skip,
+                take: limit
+            }),
+            prisma.user.count({ where })
+        ]);
 
         // Format for frontend with hierarchy info
         const formattedMembers = members.map(m => {
@@ -203,7 +255,15 @@ const getAllMembers = async (req, res) => {
             };
         });
 
-        res.json(formattedMembers);
+        res.json({
+            members: formattedMembers,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
         console.error('Error fetching members:', error);
         res.status(500).json({ error: 'Error fetching members' });

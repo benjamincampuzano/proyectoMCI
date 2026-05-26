@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "UserProfile" ADD COLUMN     "discipular1A" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "discipular1B" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "discipular2A" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "discipular2B" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "discipular3A" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "discipular3B" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "encuentro" BOOLEAN NOT NULL DEFAULT false;

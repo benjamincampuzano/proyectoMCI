@@ -63,41 +63,43 @@ const getCurrentModule = (req) => {
 /**
  * Middleware para verificar si el usuario es coordinador activo de algún módulo
  * y establecer permisos específicos por módulo actual
+ * Optimizado para reducir el uso del pool de conexiones
  */
 const isModuleCoordinator = async (req, res, next) => {
     try {
         if (!req.user) {
             return res.status(401).json({ message: 'Authentication required' });
         }
-
-        const isAdminOrPastor = req.user.roles.some(role => ['ADMIN', 'PASTOR'].includes(role));
-        
-        // Fetch all roles for the user
-        const [coordinations, subCoordinations, treasurers] = await Promise.all([
-            prisma.moduleCoordinator.findMany({
-                where: { userId: parseInt(req.user.id), isDeleted: false },
-                select: { moduleName: true }
-            }),
-            prisma.moduleSubCoordinator.findMany({
-                where: { userId: parseInt(req.user.id), isDeleted: false },
-                select: { moduleName: true }
-            }),
-            prisma.moduleTreasurer.findMany({
-                where: { userId: parseInt(req.user.id), isDeleted: false },
-                select: { moduleName: true }
-            })
-        ]);
-
-        const coordFromDB = coordinations.map(c => normalizeModuleName(c.moduleName));
-        const subCoordFromDB = subCoordinations.map(sc => normalizeModuleName(sc.moduleName));
-        const treasFromDB = treasurers.map(t => normalizeModuleName(t.moduleName));
-
-        // Combinar con datos del token JWT (si existen) para redundancia
+        const isAdminOrPastor = req.user.roles.some(role => ['ADMIN','PASTOR'].includes(role));
         const tokenCoords = req.user.moduleCoordinationsFromToken || {};
-        
-        req.user.moduleCoordinations = [...new Set([...coordFromDB, ...(tokenCoords.coordinating || [])])];
-        req.user.moduleSubCoordinations = [...new Set([...subCoordFromDB, ...(tokenCoords.subCoordinating || [])])];
-        req.user.moduleTreasurers = [...new Set([...treasFromDB, ...(tokenCoords.treasuring || [])])];
+        const networkId = await getUserNetworkId(req.user.id);
+        req.userNetwork = networkId;
+        if (tokenCoords.coordinating || tokenCoords.subCoordinating || tokenCoords.treasuring) {
+            req.user.moduleCoordinations = tokenCoords.coordinating || [];
+            req.user.moduleSubCoordinations = tokenCoords.subCoordinating || [];
+            req.user.moduleTreasurers = tokenCoords.treasuring || [];
+        } else {
+            // Solo hacer queries si no hay datos en el token
+            // Hacer queries secuencialmente en lugar de simultáneas para reducir presión en el pool
+            const coordinations = await prisma.moduleCoordinator.findMany({
+                where: { userId: parseInt(req.user.id), isDeleted: false },
+                select: { moduleName: true }
+            });
+
+            const subCoordinations = await prisma.moduleSubCoordinator.findMany({
+                where: { userId: parseInt(req.user.id), isDeleted: false },
+                select: { moduleName: true }
+            });
+
+            const treasurers = await prisma.moduleTreasurer.findMany({
+                where: { userId: parseInt(req.user.id), isDeleted: false },
+                select: { moduleName: true }
+            });
+
+            req.user.moduleCoordinations = coordinations.map(c => normalizeModuleName(c.moduleName));
+            req.user.moduleSubCoordinations = subCoordinations.map(sc => normalizeModuleName(sc.moduleName));
+            req.user.moduleTreasurers = treasurers.map(t => normalizeModuleName(t.moduleName));
+        }
 
         // Obtener el módulo actual de la request
         const currentModule = getCurrentModule(req);
@@ -385,7 +387,7 @@ const canManageTreasurerActions = (moduleName) => {
             // Si los datos de módulo no están en el token, cargarlos de la base de datos
             if (!req.user.moduleCoordinations || !req.user.moduleSubCoordinations || !req.user.moduleTreasurers) {
                 const userId = req.user.id;
-                const [coordinations, subCoordinations, treasurers] = await Promise.all([
+                const [coordinations, subCoordinations, treasurers] = await prisma.$transaction([
                     prisma.moduleCoordinator.findMany({
                         where: { userId, isDeleted: false },
                         select: { moduleName: true }

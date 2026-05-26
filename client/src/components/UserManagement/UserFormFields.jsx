@@ -255,6 +255,46 @@ const UserFormFields = ({
                 </select>
             , true)}
 
+            {inputGroup("Encuentro",
+                <select
+                    className="ln-input appearance-none"
+                    value={formData.encuentro === true ? 'true' : formData.encuentro === false ? 'false' : ''}
+                    onChange={e => setFormData({ ...formData, encuentro: e.target.value === 'true' })}
+                >
+                    <option value="">Seleccionar...</option>
+                    <option value="true">Si</option>
+                    <option value="false">No</option>
+                </select>
+            )}
+
+            <div className="sm:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 p-4 rounded-2xl bg-[var(--ln-bg-panel)]/30 border border-[var(--ln-border-standard)]">
+                <div className="sm:col-span-2 sm:col-span-3">
+                    <label className="text-[11px] weight-700 text-[var(--ln-text-secondary)] uppercase tracking-wider flex items-center gap-1.5 px-1">
+                        Discipular - Módulos Completados
+                    </label>
+                </div>
+                {[
+                    { key: 'discipular1A', label: '1A - Pastoreados en su amor' },
+                    { key: 'discipular1B', label: '1B - El poder de una Visión' },
+                    { key: 'discipular2A', label: '2A - La estrategia del Ganar' },
+                    { key: 'discipular2B', label: '2B - Familias con Propósito' },
+                    { key: 'discipular3A', label: '3A - Liderazgo Eficaz' },
+                    { key: 'discipular3B', label: '3B - El Espíritu Santo en Mí' },
+                ].map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--ln-bg-panel)]/50 transition-all cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            className="w-4 h-4 rounded border-[var(--ln-border-standard)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)]/20"
+                            checked={formData[key] || false}
+                            onChange={e => setFormData({ ...formData, [key]: e.target.checked })}
+                        />
+                        <span className="text-[12.5px] text-[var(--ln-text-primary)] group-hover:text-[var(--ln-brand-indigo)] transition-colors">
+                            {label}
+                        </span>
+                    </label>
+                ))}
+            </div>
+
             {inputGroup("Barrio",
                 <div className="relative">
                     <input

@@ -34,16 +34,22 @@ const ASISTENCIA_TIPOS = [
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const limit = 50;
+
     useEffect(() => {
         fetchActivityData();
-    }, []);
+    }, [page]);
 
     const fetchActivityData = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/network/activity-list');
-            setData(response.data);
+            const response = await api.get('/network/activity-list', { params: { page, limit } });
+            setData(response.data.data);
+            setTotalPages(response.data.pagination.pages);
+            setTotalItems(response.data.pagination.total);
         } catch (err) {
             setError(err.response?.data?.error || 'Error al cargar los datos de actividad');
         } finally {
@@ -54,8 +60,8 @@ const ASISTENCIA_TIPOS = [
     const filteredData = useMemo(() => {
         return data.filter(item => {
             const matchesSearch = !searchTerm || 
-                item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                item.roles.some(r => r.toLowerCase().includes(searchTerm.toLowerCase()));
+                item.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (item.roles || []).some(r => r.toLowerCase().includes(searchTerm.toLowerCase()));
             return matchesSearch;
         });
     }, [data, searchTerm]);
@@ -283,10 +289,29 @@ const ASISTENCIA_TIPOS = [
             </div>
 
             {!loading && data.length > 0 && (
-                <div className="px-8 py-5 border-t border-[var(--ln-border-standard)] bg-white/[0.01]">
+                <div className="px-8 py-5 border-t border-[var(--ln-border-standard)] bg-white/[0.01] flex items-center justify-between">
                     <span className="text-[12px] weight-510 text-[var(--ln-text-tertiary)]">
-                        Mostrando <span className="text-[var(--ln-text-primary)] weight-590">{filteredData.length}</span> resultados de la red inmediata
+                        Mostrando <span className="text-[var(--ln-text-primary)] weight-590">{data.length}</span> de <span className="text-[var(--ln-text-primary)] weight-590">{totalItems}</span> resultados
                     </span>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page <= 1}
+                            className="px-3 py-1.5 text-[12px] weight-590 rounded-lg bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                            Anterior
+                        </button>
+                        <span className="text-[12px] weight-590 text-[var(--ln-text-tertiary)] px-2">
+                            {page} / {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page >= totalPages}
+                            className="px-3 py-1.5 text-[12px] weight-590 rounded-lg bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

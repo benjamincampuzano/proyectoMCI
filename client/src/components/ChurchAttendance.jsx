@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Check, X, Trash, Desktop, Users, MagnifyingGlass, UserMinus, Funnel } from '@phosphor-icons/react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Calendar, Check, X, Trash, Desktop, Users, MagnifyingGlass, UserMinus, Funnel, User } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import ModalAttendance from './ModalAttendance';
 import AsyncSearchSelect from './ui/AsyncSearchSelect';
 import { useAuth } from '../hooks/useAuth';
 import { ROLES } from '../constants/roles';
@@ -30,7 +31,11 @@ const ChurchAttendance = () => {
     const [saving, setSaving] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const PAGE_SIZE = 50;
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalMembers, setTotalMembers] = useState(0);
     
     // Estados para filtros
     const { user } = useAuth();
@@ -40,25 +45,31 @@ const ChurchAttendance = () => {
     const [rolFilter, setRolFilter] = useState('');
     const [redFilter, setRedFilter] = useState('');
 
-    useEffect(() => {
-        fetchMembers();
-        fetchAttendance();
-    }, [date]);
-
-    const fetchMembers = async () => {
+    const fetchMembers = useCallback(async (page) => {
+        const targetPage = page !== undefined ? page : currentPage;
         try {
             setLoading(true);
-            const response = await api.get('/consolidar/church-attendance/members/all');
-            const membersData = response.data;
-            setMembers(membersData);
-        } catch (error) {
+            const response = await api.get('/consolidar/church-attendance/members/all', {
+                params: {
+                    page: targetPage,
+                    limit: PAGE_SIZE,
+                    searchTerm,
+                    liderDoceId: liderDoceFilter?.id,
+                    liderCelulaId: liderCelulaFilter?.id,
+                    rol: rolFilter,
+                    red: redFilter
+                }
+            });
+            setMembers(response.data.members || []);
+            setTotalMembers(response.data.pagination?.total || 0);
+        } catch {
             toast.error('Error al cargar miembros. Por favor intenta nuevamente.');
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, searchTerm, liderDoceFilter, liderCelulaFilter, rolFilter, redFilter]);
 
-    const fetchAttendance = async () => {
+    const fetchAttendance = useCallback(async () => {
         try {
             const response = await api.get(`/consolidar/church-attendance/${date}`);
             const data = response.data;
@@ -68,10 +79,25 @@ const ChurchAttendance = () => {
                 attendanceMap[att.userId] = att.status;
             });
             setAttendances(attendanceMap);
-        } catch (error) {
+        } catch {
             toast.error('Error al cargar asistencia. Por favor intenta nuevamente.');
         }
-    };
+    }, [date]);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchAttendance();
+    }, [fetchAttendance]);
+
+    useEffect(() => {
+        const hasAnyFilter = searchTerm || liderDoceFilter || liderCelulaFilter || rolFilter || redFilter;
+        if (hasAnyFilter && currentPage !== 1) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setCurrentPage(1);
+            return;
+        }
+        fetchMembers();
+    }, [fetchMembers, currentPage, searchTerm, liderDoceFilter, liderCelulaFilter, rolFilter, redFilter]);
 
     const handleAttendanceChange = (userId, status) => {
         setAttendances(prev => {
@@ -108,7 +134,7 @@ const ChurchAttendance = () => {
             });
 
             toast.success('Asistencia guardada exitosamente');
-        } catch (error) {
+        } catch {
             toast.error('Error al guardar asistencia. Por favor intenta nuevamente.');
         } finally {
             setSaving(false);
@@ -122,11 +148,18 @@ const ChurchAttendance = () => {
             setAttendances({});
             setShowDeleteConfirm(false);
             toast.success('Registros de asistencia eliminados exitosamente');
-        } catch (error) {
+        } catch {
             toast.error('Error al eliminar registros de asistencia. Por favor intenta nuevamente.');
         } finally {
             setDeleting(false);
         }
+    };
+
+    const handleSaveReport = async (report) => {
+      // TODO: Llamar al endpoint del backend
+      // await api.post('/consolidar/church-attendance/self-report', report);
+      toast.success(`Asistencia a ${report.type === 'church' ? 'Iglesia' : 'Célula'} registrada`);
+      setShowReportModal(false);
     };
 
     // Verificar si hay filtros activos
@@ -141,62 +174,24 @@ const ChurchAttendance = () => {
         setSearchTerm('');
     };
 
-    const filteredMembers = useMemo(() => {
-        let filtered = members;
-        
-        // Filtro por término de búsqueda (nombre/email)
-        if (searchTerm) {
-            const lower = searchTerm.toLowerCase();
-            filtered = filtered.filter(m =>
-                m.fullName?.toLowerCase().includes(lower) ||
-                m.email?.toLowerCase().includes(lower)
-            );
-        }
-        
-        // Filtro por Líder de 12
-        if (liderDoceFilter) {
-            filtered = filtered.filter(m => m.liderDoceId === liderDoceFilter.id);
-        }
-        
-        // Filtro por Líder de Célula
-        if (liderCelulaFilter) {
-            filtered = filtered.filter(m => m.liderCelulaId === liderCelulaFilter.id);
-        }
-        
-        // Filtro por Rol
-        if (rolFilter) {
-            filtered = filtered.filter(m => m.roles?.includes(rolFilter));
-        }
-        
-        // Filtro por Red
-        if (redFilter) {
-            filtered = filtered.filter(m => m.red === redFilter);
-        }
-        
-        return filtered;
-    }, [members, searchTerm, liderDoceFilter, liderCelulaFilter, rolFilter, redFilter]);
-
     const stats = useMemo(() => {
-        // Usar filteredMembers para las estadísticas
-        const filteredIds = new Set(filteredMembers.map(m => m.id));
-        let totales = filteredMembers.length;
+        let totales = members.length;
         let presentes = 0;
         let ausentes = 0;
         let virtuales = 0;
 
-        // Solo contar asistencias de miembros filtrados
-        Object.entries(attendances).forEach(([userId, status]) => {
-            if (filteredIds.has(parseInt(userId))) {
-                if (status === 'PRESENTE') presentes++;
-                else if (status === 'AUSENTE') ausentes++;
-                else if (status === 'VIRTUAL') virtuales++;
-            }
+        // Contar asistencias de miembros en la página actual
+        members.forEach(member => {
+            const status = attendances[member.id];
+            if (status === 'PRESENTE') presentes++;
+            else if (status === 'AUSENTE') ausentes++;
+            else if (status === 'VIRTUAL') virtuales++;
         });
 
         let sinRegistro = totales - (presentes + ausentes + virtuales);
 
-        return { totales, presentes, ausentes, virtuales, sinRegistro, totalMembers: members.length };
-    }, [members, filteredMembers, attendances]);
+        return { totales, presentes, ausentes, virtuales, sinRegistro, totalMembers };
+    }, [members, attendances, totalMembers]);
 
     if (loading) {
         return (
@@ -272,6 +267,13 @@ const ChurchAttendance = () => {
                 </div>
                 
                 <div className="flex w-full md:w-auto items-center gap-3">
+                    <button
+                        onClick={() => setShowReportModal(true)}
+                        className="flex-1 md:flex-none px-4 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2"
+                    >
+                        <User className="w-5 h-5" />
+                        <span className="hidden sm:inline">Mi asistencia</span>
+                    </button>
                     <button
                         onClick={() => setShowDeleteConfirm(true)}
                         disabled={Object.keys(attendances).length === 0}
@@ -480,7 +482,7 @@ const ChurchAttendance = () => {
 
                 {/* Mobile View (Cards) */}
                 <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
-                    {filteredMembers.map(member => (
+                    {members.map(member => (
                         <div key={member.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <div className="flex items-center gap-3 mb-3">
                                 <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm shrink-0 border border-blue-200 dark:border-blue-800">
@@ -527,12 +529,37 @@ const ChurchAttendance = () => {
                             </div>
                         </div>
                     ))}
-                    {filteredMembers.length === 0 && (
+                    {members.length === 0 && (
                         <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                             No se encontraron miembros con esa búsqueda.
                         </div>
                     )}
                 </div>
+
+                {/* Mobile Pagination */}
+                {totalMembers > PAGE_SIZE && (
+                    <div className="md:hidden flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                            {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalMembers)} de {totalMembers}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1 || loading}
+                                className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Anterior
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalMembers / PAGE_SIZE), prev + 1))}
+                                disabled={currentPage === Math.ceil(totalMembers / PAGE_SIZE) || loading}
+                                className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Desktop View (Table) */}
                 <div className="hidden md:block overflow-x-auto">
@@ -551,7 +578,7 @@ const ChurchAttendance = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                            {filteredMembers.map((member) => (
+                            {members.map((member) => (
                                 <tr key={member.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors group">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-3">
@@ -609,7 +636,7 @@ const ChurchAttendance = () => {
                                     </td>
                                 </tr>
                             ))}
-                            {filteredMembers.length === 0 && (
+                            {members.length === 0 && (
                                 <tr>
                                     <td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                         No se encontraron miembros con esa búsqueda.
@@ -619,7 +646,45 @@ const ChurchAttendance = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalMembers > PAGE_SIZE && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                            Mostrando {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, totalMembers)} de {totalMembers} miembros
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1 || loading}
+                                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Anterior
+                            </button>
+                            <span className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200">
+                                Página {currentPage} de {Math.ceil(totalMembers / PAGE_SIZE)}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalMembers / PAGE_SIZE), prev + 1))}
+                                disabled={currentPage === Math.ceil(totalMembers / PAGE_SIZE) || loading}
+                                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
+
+            <ModalAttendance
+                isOpen={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                initialType="church"
+                user={user}
+                onSave={handleSaveReport}
+                requireReport={false}
+                allowOutsideClose={true}
+            />
 
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (

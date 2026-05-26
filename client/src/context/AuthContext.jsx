@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, useMemo } from 'react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 
@@ -296,13 +296,16 @@ export const AuthProvider = ({ children }) => {
         return hasRole('LIDER_DOCE');
     };
 
+    const contextValue = useMemo(() => ({
+        user, login, register, setup, logout, updateProfile,
+        loading, isInitialized,
+        hasRole, hasAnyRole, isAdmin, isCoordinator, isSubCoordinator, isTreasurer, hasModuleAdminAccess, isDoceLeader,
+        changePassword, getSessions, logoutAll
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [user, loading, isInitialized]);
+
     return (
-        <AuthContext.Provider value={{
-            user, login, register, setup, logout, updateProfile,
-            loading, isInitialized,
-            hasRole, hasAnyRole, isAdmin, isCoordinator, isSubCoordinator, isTreasurer, hasModuleAdminAccess, isDoceLeader,
-            changePassword, getSessions, logoutAll
-        }}>
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );

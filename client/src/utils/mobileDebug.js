@@ -1,5 +1,8 @@
 // Mobile debugging utilities for Chrome mobile issues
 export const mobileDebug = {
+  _intervalId: null,
+  _cleanupFns: [],
+
   // Log mobile-specific information
   logMobileInfo() {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -68,18 +71,35 @@ export const mobileDebug = {
         }
       };
       
-      // Check navigation every second
-      setInterval(checkNavigation, 1000);
+      // ✅ Store interval ID for cleanup
+      this._intervalId = setInterval(checkNavigation, 1000);
       
-      // Log errors globally
-      window.addEventListener('error', (event) => {
+      // ✅ Store event listener references for cleanup
+      const errorHandler = (event) => {
         console.error('Global error:', event.error);
-      });
-      
-      window.addEventListener('unhandledrejection', (event) => {
+      };
+      const rejectionHandler = (event) => {
         console.error('Unhandled promise rejection:', event.reason);
-      });
+      };
+      
+      window.addEventListener('error', errorHandler);
+      window.addEventListener('unhandledrejection', rejectionHandler);
+      
+      this._cleanupFns = [
+        () => { window.removeEventListener('error', errorHandler); },
+        () => { window.removeEventListener('unhandledrejection', rejectionHandler); }
+      ];
     }
+  },
+
+  // ✅ Cleanup function to clear all intervals and listeners
+  destroy() {
+    if (this._intervalId) {
+      clearInterval(this._intervalId);
+      this._intervalId = null;
+    }
+    this._cleanupFns.forEach(fn => fn());
+    this._cleanupFns = [];
   }
 };
 

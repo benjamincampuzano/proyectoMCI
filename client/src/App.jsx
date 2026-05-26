@@ -10,6 +10,7 @@ import ConnectivityHandler from './components/ConnectivityHandler';
 import LoadingOverlay from './components/LoadingOverlay';
 import TransitionLoader from './components/TransitionLoader';
 import ChangePasswordModal from './components/ChangePasswordModal';
+import PostLoginAttendanceModal from './components/PostLoginAttendanceModal';
 import api from './utils/api';
 import './utils/logger';
 import mobileDebug from './utils/mobileDebug';
@@ -86,23 +87,21 @@ const KidsModuleRoute = ({ children }) => {
   useEffect(() => {
     const checkKidsAccess = async () => {
       try {
-        const [coordinatorRes, subCoordinatorRes, treasurerRes] = await Promise.all([
-          api.get('/coordinators/module/kids'),
-          api.get('/coordinators/module/kids/subcoordinator'),
-          api.get('/coordinators/module/kids/treasurer')
-        ]);
+        // Use consolidated endpoint to get all roles in one call
+        const rolesRes = await api.get('/coordinators/module/kids/roles')
+          .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
 
-        if (coordinatorRes.data && coordinatorRes.data.id === user.id) {
+        if (rolesRes.data.coordinator && rolesRes.data.coordinator.id === user.id) {
           setHasKidsAccess(true);
           return;
         }
 
-        if (subCoordinatorRes.data && subCoordinatorRes.data.id === user.id) {
+        if (rolesRes.data.subCoordinator && rolesRes.data.subCoordinator.id === user.id) {
           setHasKidsAccess(true);
           return;
         }
 
-        if (treasurerRes.data && treasurerRes.data.id === user.id) {
+        if (rolesRes.data.treasurer && rolesRes.data.treasurer.id === user.id) {
           setHasKidsAccess(true);
           return;
         }
@@ -142,27 +141,29 @@ const LegalDocumentsRoute = ({ children }) => {
   useEffect(() => {
     const checkKidsAccess = async () => {
       try {
-        // Check if user is coordinator of KIDS module
-        const coordinatorRes = await api.get('/coordinators/module/kids');
-        if (coordinatorRes.data && coordinatorRes.data.id === user.id) {
+        // Use consolidated endpoint to check if user is coordinator of KIDS module
+        const rolesRes = await api.get('/coordinators/module/kids/roles')
+          .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
+
+        if (rolesRes.data.coordinator && rolesRes.data.coordinator.id === user.id) {
           setHasKidsAccess(true);
           return;
         }
-        
+
         // Check if user has students enrolled in KIDS
         const studentsRes = await api.get('/kids/students/check-access');
         if (studentsRes.data.hasAccess) {
           setHasKidsAccess(true);
           return;
         }
-        
+
         setHasKidsAccess(false);
       } catch (error) {
         console.error('Error checking Legal Documents access:', error);
         setHasKidsAccess(false);
       }
     };
-    
+
     if (user) {
       checkKidsAccess();
     }
@@ -266,6 +267,7 @@ function App() {
                 </Route>
               </Routes>
             </Suspense>
+            <PostLoginAttendanceModal />
           </AuthProvider>
         </BrowserRouter>
       </LoadingProvider>

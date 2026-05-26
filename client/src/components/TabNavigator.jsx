@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 
 /**
@@ -10,7 +10,7 @@ const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange =
   const [activeTabId, setActiveTabId] = useState(initialTabId);
 
   // Filter tabs based on user roles
-  const allowedTabs = tabs.filter(tab => {
+  const allowedTabs = useMemo(() => tabs.filter(tab => {
     // If tab has customCheck function, use it
     if (tab.customCheck && typeof tab.customCheck === 'function') {
       return tab.customCheck();
@@ -21,15 +21,14 @@ const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange =
     // Check if user has required roles OR if tab allows coordinators
     const hasRoleAccess = hasAnyRole(tab.roles);
     const hasCoordinatorAccess = tab.requiresCoordinator && (moduleName ? isCoordinator(moduleName) : isCoordinator());
-
-    // Debug: Log tab filtering
     
     return hasRoleAccess || hasCoordinatorAccess;
-  });
+  }), [tabs, hasAnyRole, isCoordinator, moduleName]);
 
   // Set initial tab if not provided or if current tab is not allowed
   useEffect(() => {
     if (!activeTabId || !allowedTabs.find(tab => tab.id === activeTabId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTabId(allowedTabs[0]?.id || null);
     }
   }, [activeTabId, allowedTabs]);

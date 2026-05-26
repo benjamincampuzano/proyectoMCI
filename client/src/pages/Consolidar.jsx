@@ -4,7 +4,7 @@ import ChurchAttendance from '../components/ChurchAttendance';
 import ChurchAttendanceChart from '../components/ChurchAttendanceChart';
 import GuestTracking from '../components/GuestTracking';
 import GuestTrackingStats from '../components/GuestTrackingStats';
-import { ROLES, ROLE_GROUPS } from '../constants/roles';
+import { ROLE_GROUPS } from '../constants/roles';
 import { PageHeader, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
@@ -16,57 +16,34 @@ const Consolidar = () => {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
+    const [moduleTreasurer, setModuleTreasurer] = useState(null);
 
     useEffect(() => {
         let cancelled = false;
 
-        const fetchCoordinator = async () => {
+        const fetchRoles = async () => {
             try {
-                const res = await api.get('/coordinators/module/consolidar');
-                if (!cancelled) setModuleCoordinator(res.data);
+                const res = await api.get('/coordinators/module/consolidar/roles')
+                    .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
+                if (!cancelled) {
+                    const { coordinator, subCoordinator, treasurer } = res.data;
+                    setModuleCoordinator(coordinator);
+                    setModuleSubCoordinator(subCoordinator);
+                    setModuleTreasurer(treasurer);
+                }
             } catch (error) {
                 if (!cancelled) {
-                    console.error('Error fetching coordinator:', error);
-                    try {
-                        const coordinatorsRes = await api.get('/coordinators', {
-                            params: { module: 'consolidar' }
-                        });
-                        const coordinators = coordinatorsRes.data;
-                        if (coordinators && coordinators.length > 0) {
-                            const adminCoordinator = coordinators.find(c => c.role === 'ADMIN') || coordinators[0];
-                            if (!cancelled) setModuleCoordinator(adminCoordinator);
-                        } else {
-                            if (!cancelled) setModuleCoordinator(null);
-                        }
-                    } catch (fallbackError) {
-                        if (!cancelled) {
-                            console.error('Fallback coordinator fetch failed:', fallbackError);
-                            setModuleCoordinator(null);
-                        }
-                    }
+                    console.error('Error fetching module roles:', error);
                 }
             }
         };
 
-        const fetchSubCoordinator = async () => {
-            try {
-                const res = await api.get('/coordinators/module/consolidar/subcoordinator');
-                if (!cancelled) setModuleSubCoordinator(res.data);
-            } catch (error) {
-                if (!cancelled) {
-                    console.error('Error fetching subcoordinator:', error);
-                    setModuleSubCoordinator(null);
-                }
-            }
-        };
-
-        fetchCoordinator();
-        fetchSubCoordinator();
+        fetchRoles();
 
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [refreshTrigger]);
     const tabs = [
         { id: 'attendance', label: 'Asistencia a la Iglesia', component: ChurchAttendance },
         { 
@@ -93,6 +70,7 @@ const Consolidar = () => {
                         <CoordinatorDisplay
                             coordinator={moduleCoordinator}
                             subCoordinator={moduleSubCoordinator}
+                            treasurer={moduleTreasurer}
                             moduleName="Consolidar"
                         />
                     </div>

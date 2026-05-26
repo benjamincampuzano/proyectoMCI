@@ -34,59 +34,47 @@ const getUserNetwork = async (leaderId) => {
 };
 
 /**
- * Get the "12 Leader" (Lider Doce) for a specific user by traversing up the hierarchy.
- * @param {number} userId 
+ * Get the "12 Leader" (Lider Doce) for a specific user — single query via UserHierarchy.
+ * Replaces the old iterative loop (up to 5 DB queries per call) with a direct lookup.
+ * @param {number} userId
  * @returns {Promise<{ name: string } | null>}
  */
 const getLiderDoceName = async (userId) => {
-    // Since we don't have direct relations, we have to walk up "parents".
-    // A user might have multiple parents entries in UserHierarchy (e.g. historical),
-    // but usually one active for structure.
-    // hierarchy roles: PASTOR, LIDER_DOCE, LIDER_CELULA, DISCIPULO
-
-    // We fetch the user with parents recursively (up to reasonable depth, e.g. 3 levels)
-    // to find the first ancestor with valid role/status to be "Lider Doce".
-    // Alternatively, we can do a reverse CTE if supported, or iterative lookup.
-    // Iterative is safer for complex logic.
-
-    let currentId = userId;
-    let depth = 0;
-    while (depth < 5) { // Safety break
-        const userWithParents = await prisma.user.findUnique({
-            where: { id: currentId },
+    try {
+        // ✅ Una sola query en lugar del loop while con hasta 5 queries
+        const hierarchy = await prisma.userHierarchy.findFirst({
+            where: {
+                childId: parseInt(userId),
+                role: 'LIDER_DOCE'
+            },
             include: {
-                roles: { include: { role: true } },
-                parents: {
-                    include: {
-                        parent: {
-                            include: {
-                                profile: true,
-                                roles: { include: { role: true } }
-                            }
-                        }
+                parent: {
+                    select: {
+                        profile: { select: { fullName: true } }
                     }
                 }
             }
         });
 
-        if (!userWithParents) return null;
-
-        // Check if current user IS a Lider Doce (and not the start user if we are strict, but usually leader IS their own leader if they are at that level?)
-        // The original logic checked inviter's role.
-        if (userWithParents.roles.some(r => r.role.name === 'LIDER_DOCE')) {
-            return { name: userWithParents.profile?.fullName || 'Sin Nombre' };
+        if (hierarchy?.parent?.profile?.fullName) {
+            return { name: hierarchy.parent.profile.fullName };
         }
 
-        // If not found, look for parent.
-        // Assuming single parent structure in UserHierarchy for line of command.
-        // Ideally we pick the parent that is LIDER_DOCE, LIDER_CELULA etc.
-        const parentEntry = userWithParents.parents[0]; // Simplification: take first parent
-        if (!parentEntry) return null; // No parent, stop
+        // Fallback: buscar via PASTOR si no hay LIDER_DOCE directo
+        const pastorHierarchy = await prisma.userHierarchy.findFirst({
+            where: { childId: parseInt(userId), role: 'PASTOR' },
+            include: {
+                parent: { select: { profile: { select: { fullName: true } } } }
+            }
+        });
 
-        currentId = parentEntry.parentId;
-        depth++;
+        return pastorHierarchy?.parent?.profile?.fullName
+            ? { name: pastorHierarchy.parent.profile.fullName }
+            : null;
+    } catch (error) {
+        console.error('Error in getLiderDoceName:', error);
+        return null;
     }
-    return null;
 };
 
 module.exports = {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, ArrowsClockwise } from '@phosphor-icons/react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
 import TabNavigator from '../components/TabNavigator';
 import GuestRegistrationForm from '../components/GuestRegistrationForm';
 import GuestList from '../components/GuestList';
@@ -20,57 +20,34 @@ const Ganar = () => {
     const [showRegistration, setShowRegistration] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
+    const [moduleTreasurer, setModuleTreasurer] = useState(null);
 
     useEffect(() => {
         let cancelled = false;
 
-        const fetchCoordinator = async () => {
+        const fetchRoles = async () => {
             try {
-                const res = await api.get('/coordinators/module/ganar');
-                if (!cancelled) setModuleCoordinator(res.data);
+                const res = await api.get('/coordinators/module/ganar/roles')
+                    .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
+                if (!cancelled) {
+                    const { coordinator, subCoordinator, treasurer } = res.data;
+                    setModuleCoordinator(coordinator);
+                    setModuleSubCoordinator(subCoordinator);
+                    setModuleTreasurer(treasurer);
+                }
             } catch (error) {
                 if (!cancelled) {
-                    console.error('Error fetching coordinator:', error);
-                    try {
-                        const coordinatorsRes = await api.get('/coordinators', {
-                            params: { module: 'ganar' }
-                        });
-                        const coordinators = coordinatorsRes.data;
-                        if (coordinators && coordinators.length > 0) {
-                            const liderDoceCoordinator = coordinators.find(c => c.role === 'LIDER_DOCE') || coordinators[0];
-                            if (!cancelled) setModuleCoordinator(liderDoceCoordinator);
-                        } else {
-                            if (!cancelled) setModuleCoordinator(null);
-                        }
-                    } catch (fallbackError) {
-                        if (!cancelled) {
-                            console.error('Fallback coordinator fetch failed:', fallbackError);
-                            setModuleCoordinator(null);
-                        }
-                    }
+                    console.error('Error fetching module roles:', error);
                 }
             }
         };
 
-        const fetchSubCoordinator = async () => {
-            try {
-                const res = await api.get('/coordinators/module/ganar/subcoordinator');
-                if (!cancelled) setModuleSubCoordinator(res.data);
-            } catch (error) {
-                if (!cancelled) {
-                    console.error('Error fetching subcoordinator:', error);
-                    setModuleSubCoordinator(null);
-                }
-            }
-        };
-
-        fetchCoordinator();
-        fetchSubCoordinator();
+        fetchRoles();
 
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [refreshTrigger]);
 
     // Check if user is pastor
     const isPastor = hasRole(ROLES.PASTOR);
@@ -126,6 +103,7 @@ const Ganar = () => {
                         <CoordinatorDisplay
                             coordinator={moduleCoordinator}
                             subCoordinator={moduleSubCoordinator}
+                            treasurer={moduleTreasurer}
                             moduleName="Ganar"
                         />
                         {activeTab === 'list' && (

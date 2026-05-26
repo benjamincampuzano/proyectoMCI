@@ -1,5 +1,5 @@
 const express = require('express');
-const { getModuleCoordinators, getDefaultModuleCoordinator, assignModuleCoordinator, removeModuleCoordinator, getModuleSubCoordinator, assignModuleSubCoordinator, removeModuleSubCoordinator, getModuleCandidates, getModuleTreasurer, assignModuleTreasurer, removeModuleTreasurer, getAllSubCoordinators, getAllTreasurers } = require('../controllers/coordinatorController');
+const { getModuleCoordinators, getDefaultModuleCoordinator, assignModuleCoordinator, removeModuleCoordinator, getModuleSubCoordinator, assignModuleSubCoordinator, removeModuleSubCoordinator, getModuleCandidates, getModuleTreasurer, assignModuleTreasurer, removeModuleTreasurer, getAllSubCoordinators, getAllTreasurers, getModuleRoles } = require('../controllers/coordinatorController');
 const { authenticate, isAdmin, authorize, checkCoordinatorStatus } = require('../middleware/auth');
 
 const router = express.Router();
@@ -34,6 +34,9 @@ router.delete('/module/:module/subcoordinator', removeModuleSubCoordinator);
 router.get('/module/:module/treasurer', getModuleTreasurer);
 router.post('/module/:module/treasurer', assignModuleTreasurer);
 router.delete('/module/:module/treasurer', removeModuleTreasurer);
+
+// Consolidated endpoint to get all module roles in one call
+router.get('/module/:module/roles', getModuleRoles);
 
 router.get('/module/:module/candidates', getModuleCandidates);
 

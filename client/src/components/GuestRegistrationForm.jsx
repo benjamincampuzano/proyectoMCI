@@ -30,26 +30,9 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
         setCurrentUser(user);
-
-        // Auto-assign DISCIPULO to themselves
-        if (user && user.roles?.includes('DISCIPULO')) {
-            setFormData(prev => ({ 
-                ...prev, 
-                assignedToId: user.id,
-                assignedTo: { id: user.id, fullName: user.fullName }
-            }));
-        }
     }, []);
 
     const getAssignedToFetchItems = () => {
-        const roles = currentUser?.roles || [];
-        
-        if (roles.includes('DISCIPULO')) {
-            // DISCIPULO is auto-assigned, no search needed
-            return () => Promise.resolve([]);
-        }
-        
-        // All other roles can search any user except ADMIN and PASTOR
         return (term) => api.get('/users/search', { 
             params: { 
                 search: term,
@@ -329,9 +312,8 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                                     fetchItems={getAssignedToFetchItems()}
                                     selectedValue={formData.assignedTo}
                                     onSelect={(user) => setFormData({ ...formData, assignedToId: user?.id, assignedTo: user })}
-                                    placeholder={currentUser?.roles?.includes('DISCIPULO') ? "Auto-asignado a ti mismo" : "Seleccionar Líder responsable..."}
+                                    placeholder="Seleccionar Líder responsable..."
                                     labelKey="fullName"
-                                    disabled={currentUser?.roles?.includes('DISCIPULO')}
                                 />
                             </div>
 

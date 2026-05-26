@@ -160,11 +160,16 @@ const generateBackup = async (req, res) => {
         res.setHeader("Content-Type", "application/sql");
 
         const stream = fs.createReadStream(generatedPath);
-        stream.on("close", () => {
-            fs.unlink(generatedPath, () => {});
-        });
+        const cleanup = () => {
+            fs.unlink(generatedPath, (err) => {
+                if (err && process.env.NODE_ENV !== 'production') {
+                    console.warn('⚠️ No se pudo eliminar el backup temporal:', err.message);
+                }
+            });
+        };
+        stream.on("close", cleanup);
         stream.on("error", (e) => {
-            fs.unlink(generatedPath, () => {});
+            cleanup();
             res.status(500).json({ error: e.message });
         });
         stream.pipe(res);
@@ -186,12 +191,22 @@ const restoreBackup = async (req, res) => {
         await restoreBackupFile(databaseUrl, filePath, { cleanBeforeRestore });
 
         // borrar archivo subido por multer
-        fs.unlink(filePath, () => {});
+        fs.unlink(filePath, (err) => {
+            if (err && process.env.NODE_ENV !== 'production') {
+                console.warn('⚠️ No se pudo eliminar el backup subido:', err.message);
+            }
+        });
 
         res.json({ success: true });
     } catch (error) {
         console.error("❌ Error restoring backup:", error.message);
-        if (req.file?.path) fs.unlink(req.file.path, () => {});
+        if (req.file?.path) {
+            fs.unlink(req.file.path, (err) => {
+                if (err && process.env.NODE_ENV !== 'production') {
+                    console.warn('⚠️ No se pudo eliminar archivo temporal:', err.message);
+                }
+            });
+        }
         res.status(500).json({ success: false, error: error.message });
     }
 };

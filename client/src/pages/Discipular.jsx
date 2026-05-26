@@ -18,42 +18,48 @@ const Discipular = () => {
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
-    const [refreshKey, setRefreshKey] = useState(0);
+    const [loading, setLoading] = useState(false);
 
+    // Load coordinator data on mount (needed for header display)
     useEffect(() => {
-        let isMounted = true;
-
-        const fetchData = async () => {
+        const fetchCoordinatorData = async () => {
+            setLoading(true);
             try {
-                const [coordinatorRes, subCoordinatorRes, treasurerRes] = await Promise.all([
-                    api.get('/coordinators/module/discipular').catch(() => ({ data: null })),
-                    api.get('/coordinators/module/discipular/subcoordinator').catch(() => ({ data: null })),
-                    api.get('/coordinators/module/discipular/treasurer').catch(() => ({ data: null }))
-                ]);
+                const rolesRes = await api.get('/coordinators/module/discipular/roles')
+                    .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
 
-                if (isMounted) {
-                    setModuleCoordinator(coordinatorRes.data);
-                    setModuleSubCoordinator(subCoordinatorRes.data);
-                    setModuleTreasurer(treasurerRes.data);
-                }
+                setModuleCoordinator(rolesRes.data.coordinator);
+                setModuleSubCoordinator(rolesRes.data.subCoordinator);
+                setModuleTreasurer(rolesRes.data.treasurer);
             } catch (error) {
-                console.error('Error fetching module data:', error);
-                if (isMounted) {
-                    setModuleCoordinator(null);
-                    setModuleSubCoordinator(null);
-                    setModuleTreasurer(null);
-                }
+                console.error('Error fetching coordinator data:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchData();
+        fetchCoordinatorData();
+    }, []);
 
-        return () => {
-            isMounted = false;
+    const handleRefresh = () => {
+        const fetchCoordinatorData = async () => {
+            setLoading(true);
+            try {
+                const rolesRes = await api.get('/coordinators/module/discipular/roles')
+                    .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
+
+                setModuleCoordinator(rolesRes.data.coordinator);
+                setModuleSubCoordinator(rolesRes.data.subCoordinator);
+                setModuleTreasurer(rolesRes.data.treasurer);
+            } catch (error) {
+                console.error('Error fetching coordinator data:', error);
+            } finally {
+                setLoading(false);
+            }
         };
-    }, [refreshKey]);
 
-    const handleRefresh = () => setRefreshKey(k => k + 1);
+        fetchCoordinatorData();
+    };
 
     const hasManagementAccess = () => true;
 
@@ -95,12 +101,16 @@ const Discipular = () => {
                 description="Escuela de Liderazgo"
                 action={
                     <div className="flex flex-col sm:flex-row items-center gap-3">
-                        <CoordinatorDisplay
-                            coordinator={moduleCoordinator}
-                            subCoordinator={moduleSubCoordinator}
-                            treasurer={moduleTreasurer}
-                            moduleName="Discipular"
-                        />
+                        {loading ? (
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                        ) : (
+                            <CoordinatorDisplay
+                                coordinator={moduleCoordinator}
+                                subCoordinator={moduleSubCoordinator}
+                                treasurer={moduleTreasurer}
+                                moduleName="Discipular"
+                            />
+                        )}
                     </div>
                 }
             />

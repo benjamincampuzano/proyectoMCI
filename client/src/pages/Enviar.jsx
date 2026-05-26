@@ -4,7 +4,7 @@ import CellManagement from '../components/CellManagement';
 import CellAttendance from '../components/CellAttendance';
 import AttendanceChart from '../components/AttendanceChart';
 import UnassignedPeople from '../components/UnassignedPeople';
-import { ROLES, ROLE_GROUPS } from '../constants/roles';
+import { ROLE_GROUPS } from '../constants/roles';
 import { PageHeader, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
@@ -16,102 +16,64 @@ const Enviar = () => {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
+    const [moduleTreasurer, setModuleTreasurer] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    // Custom role checker for cells tab - allows coordinators to manage cells
-    const hasCellsTabAccess = () => {
-        const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_CELLS);
-        const isModuleCoord = !!(moduleCoordinator?.id && user?.id && String(moduleCoordinator.id) === String(user.id));
-        const isModuleSubCoord = isSubCoordinator('enviar');
-        return hasRoleAccess || isModuleCoord || isModuleSubCoord;
-    };
+    const isModuleCoordinator = isCoordinator('enviar');
+    const isModuleSubCoordinator = isSubCoordinator('enviar');
+    const isModuleTreasurer = isTreasurer('enviar');
+    const hasViewStatsAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
 
     useEffect(() => {
         let cancelled = false;
 
-        const fetchCoordinator = async () => {
+        const fetchRoles = async () => {
+            setLoading(true);
             try {
-                const res = await api.get('/coordinators/module/enviar');
-                if (!cancelled) setModuleCoordinator(res.data);
+                const res = await api.get('/coordinators/module/enviar/roles')
+                    .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
+                if (!cancelled) {
+                    const { coordinator, subCoordinator, treasurer } = res.data;
+                    setModuleCoordinator(coordinator);
+                    setModuleSubCoordinator(subCoordinator);
+                    setModuleTreasurer(treasurer);
+                }
             } catch (error) {
                 if (!cancelled) {
-                    console.error('Error fetching coordinator:', error);
-                    try {
-                        const coordinatorsRes = await api.get('/coordinators', {
-                            params: { module: 'enviar' }
-                        });
-                        const coordinators = coordinatorsRes.data;
-                        if (coordinators && coordinators.length > 0) {
-                            const adminCoordinator = coordinators.find(c => c.role === 'ADMIN') || coordinators[0];
-                            if (!cancelled) setModuleCoordinator(adminCoordinator);
-                        } else {
-                            if (!cancelled) setModuleCoordinator(null);
-                        }
-                    } catch (fallbackError) {
-                        if (!cancelled) {
-                            console.error('Fallback coordinator fetch failed:', fallbackError);
-                            setModuleCoordinator(null);
-                        }
-                    }
+                    console.error('Error fetching module roles:', error);
                 }
+            } finally {
+                if (!cancelled) setLoading(false);
             }
         };
 
-        const fetchSubCoordinator = async () => {
-            try {
-                const res = await api.get('/coordinators/module/enviar/subcoordinator');
-                if (!cancelled) setModuleSubCoordinator(res.data);
-            } catch (error) {
-                if (!cancelled) {
-                    console.error('Error fetching subcoordinator:', error);
-                    setModuleSubCoordinator(null);
-                }
-            }
-        };
-
-        fetchCoordinator();
-        fetchSubCoordinator();
+        fetchRoles();
 
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [refreshTrigger]);
+
+    const hasCellsTabAccess = () => {
+        const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_CELLS);
+        const isModuleCoord = moduleCoordinator?.id === user?.id;
+        return hasRoleAccess || isModuleCoord || isModuleSubCoordinator || hasAnyRole(['DISCIPULO']);
+    };
+
+    const hasAttendanceAccess = () => {
+        return hasViewStatsAccess || isModuleCoordinator || isModuleSubCoordinator || hasAnyRole(['DISCIPULO']);
+    };
+
+    // Política de acceso: DISCIPULO tiene permiso de solo lectura en todas las pestañas del módulo Enviar
+    const hasStatsAccess = () => {
+        return hasViewStatsAccess || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer || hasAnyRole(['DISCIPULO']);
+    };
+
     const tabs = [
-        { id: 'cells', label: 'Células', component: (props) => <CellManagement {...props} moduleCoordinator={moduleCoordinator} />, customCheck: hasCellsTabAccess },
-        {
-            id: 'attendance',
-            label: 'Reporte de Asistencia',
-            component: CellAttendance,
-            customCheck: () => {
-                const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
-                const isModuleCoord = isCoordinator('enviar');
-                const isModuleSubCoord = isSubCoordinator('enviar');
-                return hasRoleAccess || isModuleCoord || isModuleSubCoord;
-            }
-        },
-        {
-            id: 'stats',
-            label: 'Estadísticas',
-            component: AttendanceChart,
-            customCheck: () => {
-                const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
-                const isModuleCoord = isCoordinator('enviar');
-                const isModuleSubCoord = isSubCoordinator('enviar');
-                const isModuleTreasurer = isTreasurer('enviar');
-                return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
-            }
-        },
-        {
-            id: 'unassigned',
-            label: 'Personas sin Célula',
-            component: UnassignedPeople,
-            customCheck: () => {
-                const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
-                const isModuleCoord = isCoordinator('enviar');
-                const isModuleSubCoord = isSubCoordinator('enviar');
-                const isModuleTreasurer = isTreasurer('enviar');
-                return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
-            }
-        },
+        { id: 'cells', label: 'Células', component: CellManagement, customCheck: hasCellsTabAccess },
+        { id: 'attendance', label: 'Reporte de Asistencia', component: CellAttendance, customCheck: hasAttendanceAccess },
+        { id: 'stats', label: 'Estadísticas', component: AttendanceChart, customCheck: hasStatsAccess },
+        { id: 'unassigned', label: 'Personas sin Célula', component: UnassignedPeople, customCheck: hasStatsAccess },
     ];
 
     return (
@@ -121,16 +83,20 @@ const Enviar = () => {
                 description="Gestión de asistencia a células y estadísticas"
                 action={
                     <div className="flex items-center gap-4">
-                        <CoordinatorDisplay
-                            coordinator={moduleCoordinator}
-                            subCoordinator={moduleSubCoordinator}
-                            moduleName="Enviar"
-                        />
+                        {loading ? (
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+                        ) : (
+                            <CoordinatorDisplay
+                                coordinator={moduleCoordinator}
+                                subCoordinator={moduleSubCoordinator}
+                                treasurer={moduleTreasurer}
+                                moduleName="Enviar"
+                            />
+                        )}
                     </div>
                 }
             />
 
-            {/* Floating Refresh Button */}
             <div className="fixed bottom-8 right-8 z-40">
                 <Button
                     variant="primary"
@@ -143,7 +109,13 @@ const Enviar = () => {
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="cells" moduleName="enviar" refreshTrigger={refreshTrigger} />
+            <TabNavigator
+                tabs={tabs}
+                initialTabId="cells"
+                moduleName="enviar"
+                refreshTrigger={refreshTrigger}
+                componentProps={{ moduleCoordinator }}
+            />
         </div>
     );
 };

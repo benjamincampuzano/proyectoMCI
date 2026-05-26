@@ -19,6 +19,9 @@ model UserHierarchy {
 
   @@unique([parentId, childId, role])
   @@index([role])
+  @@index([parentId])
+  @@index([childId])
+  @@index([childId, role])
 }
 
 model ModuleCoordinator {
@@ -33,6 +36,7 @@ model ModuleCoordinator {
 
   @@index([userId, moduleName])
   @@index([moduleName])
+  @@index([moduleName, isDeleted])
 }
 
 model ModuleSubCoordinator {
@@ -49,6 +53,7 @@ model ModuleSubCoordinator {
 
   @@index([userId, moduleName])
   @@index([moduleName])
+  @@index([moduleName, isDeleted])
   @@index([coordinatorId])
 }
 
@@ -64,6 +69,7 @@ model ModuleTreasurer {
 
   @@index([userId, moduleName])
   @@index([moduleName])
+@@index([moduleName, isDeleted])
 }
 
 model RegistrarCode {
@@ -148,6 +154,7 @@ model User {
   @@index([email])
   @@index([createdAt])
   @@index([isCoordinator])
+  @@index([isDeleted])
 }
 
 model UserProfile {
@@ -168,9 +175,18 @@ model UserProfile {
   maritalStatus           MaritalStatus?
   network                 Network?
   neighborhood            String?
+  encuentro               Boolean        @default(false)
+  discipular1A            Boolean        @default(false)
+  discipular1B            Boolean        @default(false)
+  discipular2A            Boolean        @default(false)
+  discipular2B            Boolean        @default(false)
+  discipular3A            Boolean        @default(false)
+  discipular3B            Boolean        @default(false)
   user                    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([documentType, documentNumber])
+  @@index([fullName])
+  @@index([network])
 }
 
 model Role {
@@ -318,6 +334,7 @@ model ChurchAttendance {
   @@index([date])
   @@index([createdAt])
   @@index([status])
+  @@index([userId, date])
 }
 
 model CellAttendance {
@@ -335,6 +352,7 @@ model CellAttendance {
   @@index([date])
   @@index([createdAt])
   @@index([status])
+  @@index([cellId, date])
 }
 
 model SeminarModule {
@@ -476,6 +494,7 @@ model ConventionRegistration {
   @@unique([userId, conventionId])
   @@index([status])
   @@index([createdAt])
+  @@index([conventionId])
 }
 
 model ConventionPayment {
@@ -544,6 +563,7 @@ model EncuentroRegistration {
   @@unique([userId, encuentroId])
   @@index([status])
   @@index([createdAt])
+  @@index([encuentroId])
 }
 
 model EncuentroPayment {
@@ -586,6 +606,7 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([action])
   @@index([createdAt])
+  @@index([action, createdAt])
 }
 
 model Goal {
@@ -819,6 +840,7 @@ model RefreshToken {
   @@index([token])
   @@index([expiresAt])
   @@index([isRevoked])
+  @@index([expiresAt, isRevoked])
 }
 
 enum EncuentroPaymentType {

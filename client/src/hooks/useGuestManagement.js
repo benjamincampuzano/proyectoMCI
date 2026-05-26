@@ -103,10 +103,14 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         setCurrentPage(prev => Math.max(1, prev - 1));
     }, []);
 
+    // ✅ Un solo efecto para filtros NO-search: fetch inmediato con reset a página 1
     useEffect(() => {
-        fetchGuests(currentPage);
-    }, [fetchGuests, refreshTrigger, currentPage, statusFilter, invitedByFilter, liderDoceFilter, startDate, endDate, pendingCalls, pendingVisits]);
+        setCurrentPage(1);
+        fetchGuests(1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [statusFilter, invitedByFilter, liderDoceFilter, startDate, endDate, pendingCalls, pendingVisits, refreshTrigger]);
 
+    // ✅ Solo searchTerm usa debounce para evitar doble fetch por tecleo
     useEffect(() => {
         if (searchDebounceTimeoutRef.current) {
             clearTimeout(searchDebounceTimeoutRef.current);
@@ -122,12 +126,8 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
                 clearTimeout(searchDebounceTimeoutRef.current);
             }
         };
-    }, [fetchGuests, searchTerm]);
-
-    // Resetear página cuando cambian los filtros
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [statusFilter, invitedByFilter, liderDoceFilter, startDate, endDate, pendingCalls, pendingVisits]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm]);
 
     const updateGuest = useCallback(async (guestId, updates) => {
         try {

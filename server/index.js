@@ -80,7 +80,8 @@ app.use(
 
 /* ✅ JSON parser */
 app.use(express.json());
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+// ✅ Límite reducido a 5mb (el original de 100mb permitía picos de heap enormes)
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 /* ✅ Rate Limiting */
 const authLimiter = rateLimit({
@@ -183,17 +184,30 @@ app.get("/", (req, res) => {
 /* Scheduled Tasks */
 const { cleanupExpiredTokens } = require('./scripts/cleanupExpiredTokens');
 const { cleanupOrphanedTokens } = require('./scripts/cleanupOrphanedTokens');
+const { cleanupOldAuditLogs } = require('./scripts/cleanupOldAuditLogs');
 
-// Schedule cleanup of expired refresh tokens every hour
+// Limpieza de refresh tokens expirados — cada hora
 cron.schedule('0 * * * *', async () => {
   try {
     const expiredCount = await cleanupExpiredTokens();
     const orphanedCount = await cleanupOrphanedTokens();
     if (process.env.NODE_ENV !== "production") {
-      console.log(`🧹 Scheduled cleanup: Removed ${expiredCount} expired and ${orphanedCount} orphaned refresh tokens`);
+      console.log(`🧹 Token cleanup: ${expiredCount} expirados + ${orphanedCount} huérfanos eliminados`);
     }
   } catch (error) {
-    console.error('Scheduled cleanup failed:', error);
+    console.error('Token cleanup failed:', error);
+  }
+});
+
+// ✅ Limpieza de AuditLog — diariamente a las 2 AM (previene que la tabla crezca sin control)
+cron.schedule('0 2 * * *', async () => {
+  try {
+    const deleted = await cleanupOldAuditLogs();
+    if (process.env.NODE_ENV !== "production" && deleted > 0) {
+      console.log(`🧹 AuditLog cleanup: ${deleted} registros viejos eliminados`);
+    }
+  } catch (error) {
+    console.error('AuditLog cleanup failed:', error);
   }
 });
 

@@ -19,7 +19,7 @@ L.Icon.Default.mergeOptions({
 });
 
 const CellManagement = ({ moduleCoordinator }) => {
-    const { hasAnyRole, isCoordinator } = useAuth();
+    const { user, hasAnyRole, isCoordinator } = useAuth();
     const [cells, setCells] = useState([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -31,9 +31,12 @@ const CellManagement = ({ moduleCoordinator }) => {
     const canManageCells = () => {
         const hasRoleAccess = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
         const isModuleCoordinator = moduleCoordinator &&
-            moduleCoordinator.id === JSON.parse(localStorage.getItem('user') || '{}').id;
+            moduleCoordinator.id === user?.id;
         return hasRoleAccess || isModuleCoordinator;
     };
+
+    // Check if user is a disciple
+    const isDisciple = hasAnyRole(['DISCIPULO']);
 
     // Form States
     const [formData, setFormData] = useState({
@@ -42,8 +45,8 @@ const CellManagement = ({ moduleCoordinator }) => {
         hostId: '',
         liderDoceId: '',
         address: '',
-        city: 'Ciudad',
-        barrio: 'Barrio',
+        city: '',
+        barrio: '',
         network: '',
         spiritualMappingUrl: '',
         fastingDate: '',
@@ -381,7 +384,11 @@ const CellManagement = ({ moduleCoordinator }) => {
             setShowDeleteCellModal(false);
             setCellToDelete(null);
         } catch (error) {
-            toast.error(error.message);
+            const message = error.response?.data?.error
+                || error.response?.data?.message
+                || error.message
+                || 'Error inesperado';
+            toast.error(message);
         } finally {
             setLoading(false);
         }
@@ -428,7 +435,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                     : 'pero no se pudo obtener su ubicación en el mapa. Verifique la dirección más tarde.';
                 toast.success(`Célula creada exitosamente ${geoStatus}`);
             }
-
+            await fetchCells();
             setShowCreateForm(false);
             setIsEditing(false);
             setEditingCellId(null);
@@ -457,7 +464,12 @@ const CellManagement = ({ moduleCoordinator }) => {
             });
             fetchCells();
         } catch (error) {
-            toast.error(error.message);
+            const message = error.response?.data?.error
+                || error.response?.data?.message
+                || error.message
+                || 'Error inesperado al guardar la célula';
+            toast.error(message);
+            console.error('Error saving cell:', error);
         } finally {
             setLoading(false);
         }
@@ -508,8 +520,12 @@ const CellManagement = ({ moduleCoordinator }) => {
             fetchAssignedMembers(selectedCell.id);
             fetchCells();
         } catch (error) {
+            const message = error.response?.data?.error
+                || error.response?.data?.message
+                || error.message
+                || 'Error inesperado';
+            toast.error(message);
             console.error('Error assigning member:', error);
-            toast.error(error.message);
         } finally {
             setLoading(false);
         }
@@ -535,7 +551,11 @@ const CellManagement = ({ moduleCoordinator }) => {
             setMemberToRemove(null);
             setMemberTypeToRemove(null);
         } catch (error) {
-            toast.error(error.message);
+            const message = error.response?.data?.error
+                || error.response?.data?.message
+                || error.message
+                || 'Error inesperado';
+            toast.error(message);
         } finally {
             setLoading(false);
         }
@@ -546,6 +566,15 @@ const CellManagement = ({ moduleCoordinator }) => {
         const matchesLeader = !filterLeader || cell.leaderId === parseInt(filterLeader);
         const matchesBarrio = !filterBarrio || (cell.barrio && cell.barrio.toLowerCase().includes(filterBarrio.toLowerCase()));
         const matchesDayOfWeek = !filterDayOfWeek || cell.dayOfWeek === filterDayOfWeek;
+        
+        // For disciples, only show the cell they belong to
+        if (isDisciple) {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const belongsToCell = cell.members?.some(memberId => memberId === user.id) ||
+                               cell.leaderId === user.id;
+            return belongsToCell && matchesDoce && matchesLeader && matchesBarrio && matchesDayOfWeek;
+        }
+        
         return matchesDoce && matchesLeader && matchesBarrio && matchesDayOfWeek;
     });
 
@@ -713,8 +742,8 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             fetchItems={async (term) => {
                                                 try {
                                                     // Get users from my network only (ADMIN gets all users)
-                                                    const networkResponse = await api.get('/users/my-network/all');
-                                                    const networkUsers = networkResponse.data;
+                                                    const networkResponse = await api.get('/users/my-network/all', { params: { limit: 500 } });
+                                                    const networkUsers = networkResponse.data.data;
 
                                                     // Check if current user is ADMIN
                                                     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -929,7 +958,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                         </div>
 
                         {/* Content */}
-                        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+                        <form onSubmit={handleSubmit} noValidate className="flex-1 flex flex-col overflow-hidden">
                             <div className="flex-1 overflow-y-auto p-4">
                                 <div className="space-y-4 sm:space-y-6">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1561,14 +1590,16 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                             <div className="mt-4 pt-4 border-t border-gray-100 dark:border-[#3a3a3c] flex justify-between items-center">
                                 <div className="flex gap-4">
-                                    <Button
-                                        onClick={() => setSelectedCell(cell)}
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-blue-600 hover:text-blue-800"
-                                    >
-                                        Agregar Usuarios
-                                    </Button>
+                                    {!isDisciple && (
+                                        <Button
+                                            onClick={() => setSelectedCell(cell)}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-blue-600 hover:text-blue-800"
+                                        >
+                                            Agregar Usuarios
+                                        </Button>
+                                    )}
                                     {canManageCells() && (
                                         <Button
                                             onClick={() => handleEditClick(cell)}
@@ -1668,14 +1699,16 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex justify-end gap-2">
-                                                <Button
-                                                    onClick={() => setSelectedCell(cell)}
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-blue-600 hover:text-blue-800"
-                                                >
-                                                    Agregar Usuarios
-                                                </Button>
+                                                {!isDisciple && (
+                                                    <Button
+                                                        onClick={() => setSelectedCell(cell)}
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        Agregar Usuarios
+                                                    </Button>
+                                                )}
                                                 {canManageCells() && (
                                                     <Button
                                                         onClick={() => handleEditClick(cell)}

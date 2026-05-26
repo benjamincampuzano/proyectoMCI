@@ -62,16 +62,14 @@ const useCoordinatorManagement = () => {
     const fetchModuleData = useCallback(async (moduleId) => {
         setLoading(true);
         try {
-            const [coordinatorRes, subCoordinatorRes, treasurerRes] = await Promise.all([
-                api.get(`/coordinators/module/${moduleId}`).catch(() => ({ data: null })),
-                api.get(`/coordinators/module/${moduleId}/subcoordinator`).catch(() => ({ data: null })),
-                api.get(`/coordinators/module/${moduleId}/treasurer`).catch(() => ({ data: null }))
-            ]);
+            // Use consolidated endpoint to get all roles in one call
+            const rolesRes = await api.get(`/coordinators/module/${moduleId}/roles`)
+                .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
 
             setModuleData({
-                coordinator: coordinatorRes.data,
-                subCoordinator: subCoordinatorRes.data,
-                treasurer: treasurerRes.data
+                coordinator: rolesRes.data.coordinator,
+                subCoordinator: rolesRes.data.subCoordinator,
+                treasurer: rolesRes.data.treasurer
             });
         } catch (error) {
             console.error('Error fetching module data:', error);
@@ -198,12 +196,75 @@ const useCoordinatorManagement = () => {
         }
     }, [selectedModule, fetchModuleData]);
 
-    // Combine all roles for overview display
-    const allCoordinators = [
-        ...coordinators.map(c => ({ ...c, assignmentType: 'Coordinador' })),
-        ...subCoordinators.map(sc => ({ ...sc, assignmentType: 'Subcoordinador' })),
-        ...treasurers.map(t => ({ ...t, assignmentType: 'Tesorero' }))
-    ];
+    // Combine all roles for overview display, merging by user to avoid duplicates
+    const allCoordinators = (() => {
+        const userMap = new Map();
+
+        coordinators.forEach(c => {
+            const existing = userMap.get(c.id) || {
+                id: c.id,
+                fullName: c.fullName,
+                email: c.email,
+                network: c.network,
+                role: c.role,
+                assignmentTypes: [],
+                coordinatedModules: [],
+                isActive: false
+            };
+            existing.assignmentTypes.push('Coordinador');
+            if (c.coordinatedModules) {
+                c.coordinatedModules.forEach(m => {
+                    if (!existing.coordinatedModules.includes(m)) existing.coordinatedModules.push(m);
+                });
+            }
+            if (c.isCurrentlyCoordinating) existing.isActive = true;
+            userMap.set(c.id, existing);
+        });
+
+        subCoordinators.forEach(sc => {
+            const existing = userMap.get(sc.id) || {
+                id: sc.id,
+                fullName: sc.fullName,
+                email: sc.email,
+                network: sc.network,
+                role: sc.role,
+                assignmentTypes: [],
+                coordinatedModules: [],
+                isActive: false
+            };
+            existing.assignmentTypes.push('Subcoordinador');
+            if (sc.coordinatedModules) {
+                sc.coordinatedModules.forEach(m => {
+                    if (!existing.coordinatedModules.includes(m)) existing.coordinatedModules.push(m);
+                });
+            }
+            if (sc.isCurrentlySubCoordinating) existing.isActive = true;
+            userMap.set(sc.id, existing);
+        });
+
+        treasurers.forEach(t => {
+            const existing = userMap.get(t.id) || {
+                id: t.id,
+                fullName: t.fullName,
+                email: t.email,
+                network: t.network,
+                role: t.role,
+                assignmentTypes: [],
+                coordinatedModules: [],
+                isActive: false
+            };
+            existing.assignmentTypes.push('Tesorero');
+            if (t.coordinatedModules) {
+                t.coordinatedModules.forEach(m => {
+                    if (!existing.coordinatedModules.includes(m)) existing.coordinatedModules.push(m);
+                });
+            }
+            if (t.isCurrentlyTreasurer) existing.isActive = true;
+            userMap.set(t.id, existing);
+        });
+
+        return Array.from(userMap.values());
+    })();
 
     return {
         coordinators,

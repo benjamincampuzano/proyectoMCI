@@ -1,7 +1,7 @@
 
 // NetworkTree.jsx
-import React, { useMemo, useState, useEffect } from 'react';
-import { FlowArrow, CardsThree, UsersThree, UserPlus, UserMinus, Users, CaretDown, CaretRight } from '@phosphor-icons/react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { FlowArrow, CardsThree, UsersThree, UserPlus, UserMinus, Users, CaretDown, CaretRight, CaretLeft } from '@phosphor-icons/react';
 import CoupleNodeTree from './tree/CoupleNodeTree';
 import UnassignedUsersModal from './unassigned/UnassignedUsersModal';
 import AssignConfirmDialog from './common/AssignConfirmDialog';
@@ -27,6 +27,8 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   const [expandedNodes, setExpandedNodes] = useState(new Set());
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [partnerToRemove, setPartnerToRemove] = useState(null);
+  const PAGE_SIZE = 50;
+  const allUsersFetched = useRef(false);
 
   const coupleRoot = useMemo(() => {
     const fullNetwork = buildCoupleNetwork(network);
@@ -40,13 +42,20 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   }, [allUsers, coupleRoot]);
 
   useEffect(() => {
+    if (allUsersFetched.current) return;
+    allUsersFetched.current = true;
+
     (async () => {
       try {
-        // Obtener todos los usuarios sin límite (usar limite muy alto)
-        const response = await api.get('/users?limit=99999&includeUnassigned=true');
+        const response = await api.get('/users', {
+          params: {
+            limit: 10000,
+            includeUnassigned: true
+          }
+        });
         const usersData = response.data?.users || response.data || [];
         setAllUsers(Array.isArray(usersData) ? usersData : []);
-        } catch (error) {
+      } catch (error) {
         console.error('Error loading users:', error);
         setAllUsers([]);
       }
@@ -83,29 +92,27 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     }
   };
 
-  const handleUnassignedModalOpen = () => {
-    // Open modal with current network's root leader as selected if available
+  const handleUnassignedModalOpen = useCallback(() => {
     setSelectedLeaderForModal(coupleRoot);
     setUnassignedOpen(true);
-  };
+  }, [coupleRoot]);
 
-  const handleAddUserToNode = (node) => {
+  const handleAddUserToNode = useCallback((node) => {
     setSelectedLeaderForModal(node);
     setUnassignedOpen(true);
-  };
+  }, []);
 
-  const handleRemoveUser = (partner) => {
+  const handleRemoveUser = useCallback((partner) => {
     setPartnerToRemove(partner);
     setShowRemoveConfirm(true);
-  };
+  }, []);
 
   const performRemoveUser = async () => {
     try {
       setLoading(true);
       await api.delete(`/network/remove/${partnerToRemove.id}`);
       onNetworkChange?.();
-      const response = await api.get('/users');
-      setAllUsers(Array.isArray(response.data) ? response.data : []);
+      setAllUsers(prev => Array.isArray(prev) ? prev.filter(u => u.id !== partnerToRemove.id) : []);
       setShowRemoveConfirm(false);
       setPartnerToRemove(null);
     } catch (error) {
@@ -115,11 +122,11 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     }
   };
 
-  const handleSelectLeader = (leader) => {
+  const handleSelectLeader = useCallback((leader) => {
     setSelectedLeaderForModal(leader);
-  };
+  }, []);
 
-  const toggleNodeExpansion = (nodeId) => {
+  const toggleNodeExpansion = useCallback((nodeId) => {
     setExpandedNodes(prev => {
       const newSet = new Set(prev);
       if (newSet.has(nodeId)) {
@@ -129,7 +136,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
       }
       return newSet;
     });
-  };
+  }, []);
 
   if (!network) {
     return (

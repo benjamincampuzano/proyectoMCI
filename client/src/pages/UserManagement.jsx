@@ -194,7 +194,14 @@ const UserManagement = () => {
                                 neighborhood: user.neighborhood || '',
                                 role: user.roles?.find(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'].includes(r)) || user.roles?.[0] || 'DISCIPULO',
                                 sex: user.sex || '',
-                                documentType: user.documentType || ''
+                                documentType: user.documentType || '',
+                                encuentro: user.encuentro || false,
+                                discipular1A: user.discipular1A || false,
+                                discipular1B: user.discipular1B || false,
+                                discipular2A: user.discipular2A || false,
+                                discipular2B: user.discipular2B || false,
+                                discipular3A: user.discipular3A || false,
+                                discipular3B: user.discipular3B || false
                             })}
                             onDelete={handleDeleteUser}
                             onResetPassword={setPasswordResetUser}

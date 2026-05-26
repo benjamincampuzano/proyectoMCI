@@ -201,15 +201,18 @@ const getGoals = async (req, res) => {
         });
 
         // Calculate progress for each goal
+        // ✅ Batch all getUserNetwork calls: collect unique userIds, call once per user
+        const uniqueUserIds = [...new Set(goals.filter(g => g.userId).map(g => g.userId))];
+        const networkCache = new Map();
+        await Promise.all(uniqueUserIds.map(async (uid) => {
+            const descendants = await getUserNetwork(uid);
+            networkCache.set(uid, [uid, ...descendants]);
+        }));
+
         const goalsWithProgress = await Promise.all(goals.map(async (goal) => {
             let currentValue = 0;
             let extraData = {};
-            let networkIds = [];
-
-            if (goal.userId) {
-                const descendants = await getUserNetwork(goal.userId);
-                networkIds = [goal.userId, ...descendants];
-            }
+            let networkIds = networkCache.get(goal.userId) || [];
 
             switch (goal.type) {
                 case 'ENCUENTRO_REGISTRATIONS':

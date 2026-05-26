@@ -17,45 +17,60 @@ const KidsModule = () => {
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
-    const [refreshKey, setRefreshKey] = useState(0);
+    const [loading, setLoading] = useState(false);
 
+    // Load coordinator data on mount (needed for header display)
     useEffect(() => {
-        let isMounted = true;
-
-        const fetchData = async () => {
+        const fetchCoordinatorData = async () => {
+            setLoading(true);
             try {
-                const [coordinatorRes, subCoordinatorRes, treasurerRes, teacherRes] = await Promise.all([
-                    api.get('/coordinators/module/kids').catch(() => ({ data: null })),
-                    api.get('/coordinators/module/kids/subcoordinator').catch(() => ({ data: null })),
-                    api.get('/coordinators/module/kids/treasurer').catch(() => ({ data: null })),
-                    api.get('/kids/students/check-access').catch(() => ({ data: { hasAccess: false } }))
-                ]);
+                const rolesRes = await api.get('/coordinators/module/kids/roles')
+                    .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
 
-                if (isMounted) {
-                    setModuleCoordinator(coordinatorRes.data);
-                    setModuleSubCoordinator(subCoordinatorRes.data);
-                    setModuleTreasurer(treasurerRes.data);
-                    setIsKidsTeacherOrAuxiliary(teacherRes.data.hasAccess);
-                }
+                setModuleCoordinator(rolesRes.data.coordinator);
+                setModuleSubCoordinator(rolesRes.data.subCoordinator);
+                setModuleTreasurer(rolesRes.data.treasurer);
             } catch (error) {
-                console.error('Error fetching module data:', error);
-                if (isMounted) {
-                    setModuleCoordinator(null);
-                    setModuleSubCoordinator(null);
-                    setModuleTreasurer(null);
-                    setIsKidsTeacherOrAuxiliary(false);
-                }
+                console.error('Error fetching coordinator data:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchData();
+        fetchCoordinatorData();
+    }, []);
 
-        return () => {
-            isMounted = false;
+    // Lazy load teacher access data only when needed
+    const fetchTeacherAccess = async () => {
+        try {
+            const teacherRes = await api.get('/kids/students/check-access')
+                .catch(() => ({ data: { hasAccess: false } }));
+            setIsKidsTeacherOrAuxiliary(teacherRes.data.hasAccess);
+        } catch (error) {
+            console.error('Error fetching teacher access:', error);
+            setIsKidsTeacherOrAuxiliary(false);
+        }
+    };
+
+    const handleRefresh = () => {
+        const fetchCoordinatorData = async () => {
+            setLoading(true);
+            try {
+                const rolesRes = await api.get('/coordinators/module/kids/roles')
+                    .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
+
+                setModuleCoordinator(rolesRes.data.coordinator);
+                setModuleSubCoordinator(rolesRes.data.subCoordinator);
+                setModuleTreasurer(rolesRes.data.treasurer);
+            } catch (error) {
+                console.error('Error fetching coordinator data:', error);
+            } finally {
+                setLoading(false);
+            }
         };
-    }, [refreshKey]);
 
-    const handleRefresh = () => setRefreshKey(k => k + 1);
+        fetchCoordinatorData();
+    };
 
     // Function to check if user has full access to Kids module (ADMIN, PASTOR, Coordinator, Subcoordinator, Treasurer)
     const hasFullKidsAccess = () => {
@@ -70,25 +85,29 @@ const KidsModule = () => {
             id: 'schedule',
             label: 'Cronograma',
             component: (props) => <KidsSchedule {...props} moduleCoordinator={moduleCoordinator} />,
-            customCheck: hasFullKidsAccess
+            customCheck: hasFullKidsAccess,
+            onTabSelect: fetchModuleData
         },
         {
             id: 'management',
             label: 'Clases y Notas',
             component: KidsCourseManagement,
-            customCheck: hasFullKidsAccess
+            customCheck: hasFullKidsAccess,
+            onTabSelect: fetchModuleData
         },
         {
             id: 'matrix',
             label: 'Matriz de Estudiantes',
             component: KidsStudentMatrix,
-            customCheck: hasFullKidsAccess
+            customCheck: hasFullKidsAccess,
+            onTabSelect: fetchModuleData
         },
         {
             id: 'stats',
             label: 'Reporte Estadístico',
             component: KidsStats,
-            customCheck: hasFullKidsAccess
+            customCheck: hasFullKidsAccess,
+            onTabSelect: fetchModuleData
         }
     ];
 
@@ -99,12 +118,16 @@ const KidsModule = () => {
                 description="Escuela infantil: Kids 1 (5-7), Kids 2 (8 a 10), Teens (11-13) y Jóvenes (14+)"
                 action={
                     <div className="flex items-center gap-4">
-                        <CoordinatorDisplay
-                            coordinator={moduleCoordinator}
-                            subCoordinator={moduleSubCoordinator}
-                            treasurer={moduleTreasurer}
-                            moduleName="Kids"
-                        />
+                        {loading ? (
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                        ) : (
+                            <CoordinatorDisplay
+                                coordinator={moduleCoordinator}
+                                subCoordinator={moduleSubCoordinator}
+                                treasurer={moduleTreasurer}
+                                moduleName="Kids"
+                            />
+                        )}
                     </div>
                 }
             />

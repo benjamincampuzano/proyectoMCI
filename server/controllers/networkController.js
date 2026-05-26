@@ -27,8 +27,8 @@ const getLosDoce = async (req, res) => {
                     select: { fullName: true }
                 },
                 roles: {
-                    include: {
-                        role: true
+                    select: {
+                        role: { select: { id: true, name: true } }
                     }
                 }
             },
@@ -97,6 +97,29 @@ const getNetwork = async (req, res) => {
             }
         });
 
+        // Also fetch grandparents (pastors of leaders) for deeper authority chain
+        const leaderParentEntries = rootUser.parents?.filter(p => ['LIDER_CELULA', 'LIDER_DOCE'].includes(p.role)) || [];
+        if (leaderParentEntries.length > 0) {
+            const leaderParentIds = leaderParentEntries.map(p => p.parentId);
+            const leaderUsers = await prisma.user.findMany({
+                where: { id: { in: leaderParentIds } },
+                select: {
+                    id: true,
+                    parents: {
+                        where: { role: 'PASTOR' },
+                        select: { parentId: true, role: true }
+                    }
+                }
+            });
+            for (const lu of leaderUsers) {
+                for (const p of lu.parents) {
+                    if (!allIds.includes(p.parentId)) {
+                        allIds.push(p.parentId);
+                    }
+                }
+            }
+        }
+
         const allUsers = await prisma.user.findMany({
             where: {
                 id: { in: allIds }
@@ -106,19 +129,31 @@ const getNetwork = async (req, res) => {
                 spouseId: true,
                 cellId: true,
                 profile: true,
-                roles: { include: { role: true } },
-                children: { // Get direct children for linkage
-                    include: {
-                        child: true // We just need ID mainly, but full details helps validation
+                roles: { select: { role: { select: { id: true, name: true } } } },
+                children: {
+                    select: {
+                        child: {
+                            select: {
+                                id: true, email: true, spouseId: true, cellId: true,
+                                profile: { select: { fullName: true } },
+                                roles: { select: { role: { select: { id: true, name: true } } } },
+                                cell: { select: { id: true, name: true, liderDoceId: true } },
+                                spouse: { select: { id: true, profile: { select: { fullName: true } } } },
+                                spouseOf: { select: { id: true, profile: { select: { fullName: true } } } }
+                            }
+                        }
                     }
                 },
-                parents: { // To know who is their parent in THIS sub-network
-                    include: {
+                parents: {
+                    select: {
                         parent: {
-                            include: {
-                                profile: true,
-                                roles: { include: { role: true } },
-                                spouse: { include: { profile: true } }
+                            select: {
+                                id: true, email: true, spouseId: true, cellId: true,
+                                profile: { select: { fullName: true } },
+                                roles: { select: { role: { select: { id: true, name: true } } } },
+                                cell: { select: { id: true, name: true, liderDoceId: true } },
+                                spouse: { select: { id: true, profile: { select: { fullName: true } } } },
+                                spouseOf: { select: { id: true, profile: { select: { fullName: true } } } }
                             }
                         }
                     }
@@ -172,33 +207,18 @@ const getNetwork = async (req, res) => {
             'DISCIPULO': 0
         };
 
-        // Fetch indirect PASTOR from LIDER_DOCE's parents if root user doesn't have direct PASTOR
-        let indirectPastor = null;
-        const rootUserHasDirectPastor = rootUser.parents?.some(p => p.role === 'PASTOR');
-        if (!rootUserHasDirectPastor) {
-            const rootUserLideresDoce = rootUser.parents?.filter(p => p.role === 'LIDER_DOCE').map(p => p.parentId) || [];
-            if (rootUserLideresDoce.length > 0) {
-                const liderDoceUsers = await prisma.user.findMany({
-                    where: { id: { in: rootUserLideresDoce } },
-                    include: {
-                        parents: {
-                            include: {
-                                parent: {
-                                    include: {
-                                        profile: true,
-                                        roles: { include: { role: true } }
-                                    }
-                                }
-                            }
+        // Collect indirect pastors from leaders' parents via userMap
+        const indirectPastors = [];
+        const leaderParents = rootUser.parents?.filter(p => ['LIDER_CELULA', 'LIDER_DOCE'].includes(p.role)) || [];
+        for (const entry of leaderParents) {
+            const leaderUser = userMap.get(entry.parentId);
+            if (leaderUser) {
+                for (const parentEntry of (leaderUser.parents || [])) {
+                    if (parentEntry.role === 'PASTOR') {
+                        const alreadyAdded = indirectPastors.some(p => p.id === parentEntry.parent.id);
+                        if (!alreadyAdded) {
+                            indirectPastors.push(parentEntry.parent);
                         }
-                    }
-                });
-
-                for (const liderDoce of liderDoceUsers) {
-                    const pastorParent = liderDoce.parents?.find(p => p.role === 'PASTOR');
-                    if (pastorParent) {
-                        indirectPastor = pastorParent.parent;
-                        break;
                     }
                 }
             }
@@ -316,15 +336,17 @@ const getNetwork = async (req, res) => {
 
         const tree = buildNode(rootId);
 
-        // Add indirect pastor if found
-        if (indirectPastor && tree) {
+        // Add indirect pastors from leaders' parents (deduplicated)
+        if (tree) {
             if (!tree.pastores) tree.pastores = [];
-            const pastorExists = tree.pastores.some(p => p.id === indirectPastor.id);
-            if (!pastorExists) {
-                tree.pastores.push({
-                    id: indirectPastor.id,
-                    fullName: indirectPastor.profile?.fullName
-                });
+            for (const pastor of indirectPastors) {
+                const pastorExists = tree.pastores.some(p => p.id === pastor.id);
+                if (!pastorExists) {
+                    tree.pastores.push({
+                        id: pastor.id,
+                        fullName: pastor.profile?.fullName
+                    });
+                }
             }
         }
 
@@ -372,10 +394,10 @@ const getAvailableUsers = async (req, res) => {
             select: {
                 id: true,
                 profile: { select: { fullName: true } },
-                roles: { include: { role: true } },
+                roles: { select: { role: { select: { id: true, name: true } } } },
                 parents: {
-                    include: {
-                        parent: { select: { id: true, profile: { select: { fullName: true } }, roles: { include: { role: true } } } }
+                    select: {
+                        parent: { select: { id: true, profile: { select: { fullName: true } }, roles: { select: { role: { select: { id: true, name: true } } } } } }
                     }
                 }
             },
@@ -507,13 +529,13 @@ const getPastores = async (req, res) => {
                 email: true,
                 phone: true,
                 profile: { select: { fullName: true } },
-                roles: { include: { role: true } },
+                roles: { select: { role: { select: { id: true, name: true } } } },
                 spouse: {
                     select: {
                         id: true,
                         phone: true,
                         profile: { select: { fullName: true } },
-                        roles: { include: { role: true } }
+                        roles: { select: { role: { select: { id: true, name: true } } } }
                     }
                 },
                 spouseOf: {
@@ -521,7 +543,7 @@ const getPastores = async (req, res) => {
                         id: true,
                         phone: true,
                         profile: { select: { fullName: true } },
-                        roles: { include: { role: true } }
+                        roles: { select: { role: { select: { id: true, name: true } } } }
                     }
                 },
                 spouseId: true
@@ -593,39 +615,137 @@ const getUserActivityList = async (req, res) => {
         const currentUserId = parseInt(requesterId);
         const isAdmin = requesterRoles.includes('ADMIN');
 
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+        const skip = (page - 1) * limit;
+
         let targetUserIds = [];
 
         if (isAdmin) {
-            // Admin can see all non-admin users
-            const allUsers = await prisma.user.findMany({
-                where: {
-                    roles: { none: { role: { name: 'ADMIN' } } },
-                    isDeleted: false
-                },
-                select: { id: true }
+            // Admin can see all non-admin users — only fetch count + paginated IDs
+            const [{ totalCount }] = await prisma.$queryRaw`
+                SELECT COUNT(*)::int AS "totalCount"
+                FROM "User" u
+                WHERE u."isDeleted" = false
+                  AND NOT EXISTS (
+                    SELECT 1 FROM "UserRole" ur
+                    JOIN "Role" r ON r.id = ur."roleId"
+                    WHERE ur."userId" = u.id AND r.name = 'ADMIN'
+                  )
+            `;
+
+            if (totalCount === 0) {
+                return res.json({ data: [], pagination: { page, limit, total: 0, pages: 0 } });
+            }
+
+            const pagedUsers = await prisma.$queryRaw`
+                SELECT u.id
+                FROM "User" u
+                WHERE u."isDeleted" = false
+                  AND NOT EXISTS (
+                    SELECT 1 FROM "UserRole" ur
+                    JOIN "Role" r ON r.id = ur."roleId"
+                    WHERE ur."userId" = u.id AND r.name = 'ADMIN'
+                  )
+                ORDER BY u.id DESC
+                OFFSET ${skip}
+                LIMIT ${limit}
+            `;
+
+            targetUserIds = pagedUsers.map(u => u.id);
+
+            // Now fetch full data only for the paged users
+            const users = await prisma.user.findMany({
+                where: { id: { in: targetUserIds } },
+                include: {
+                    profile: true,
+                    roles: { include: { role: true } },
+                    _count: {
+                        select: {
+                            invitedGuests: true,
+                            hostedCells: true,
+                            churchAttendances: { where: { status: 'PRESENTE' } },
+                            cellAttendances: { where: { status: 'PRESENTE' } },
+                            encuentroRegistrations: { where: { status: 'ATTENDED' } },
+                            conventionRegistrations: { where: { status: 'ATTENDED' } }
+                        }
+                    },
+                    cell: { select: { name: true } },
+                    parents: {
+                        include: {
+                            parent: {
+                                include: {
+                                    profile: { select: { fullName: true } }
+                                }
+                            }
+                        }
+                    },
+                    classAttendances: {
+                        select: {
+                            enrollmentId: true,
+                            classNumber: true,
+                            grade: true,
+                            notes: true,
+                            status: true,
+                            enrollment: {
+                                select: {
+                                    module: { select: { name: true } }
+                                }
+                            }
+                        }
+                    },
+                    seminarEnrollments: {
+                        where: {
+                            module: { type: { not: null } }
+                        },
+                        include: { module: { select: { name: true } } }
+                    },
+                    auditLogs: {
+                        where: { action: 'LOGIN' },
+                        orderBy: { createdAt: 'desc' },
+                        take: 1
+                    }
+                }
             });
-            targetUserIds = allUsers.map(u => u.id);
-        } else {
-            // Get leader's network
-            const networkIds = await getUserNetwork(currentUserId);
-            // Include themselves
-            targetUserIds = [...new Set([...networkIds, currentUserId])];
+
+            const activityList = buildActivityList(users);
+            return res.json({
+                data: activityList,
+                pagination: { page, limit, total: totalCount, pages: Math.ceil(totalCount / limit) }
+            });
         }
+
+        // Non-admin path: get leader's network
+        const networkIds = await getUserNetwork(currentUserId);
+        targetUserIds = [...new Set([...networkIds, currentUserId])];
 
         if (targetUserIds.length === 0) {
-            return res.json([]);
+            return res.json({ data: [], pagination: { page, limit, total: 0, pages: 0 } });
         }
 
-        // Fetch user basic info and activity-related relations
+        const [{ totalCount }] = await prisma.$queryRaw`
+            SELECT COUNT(*)::int AS "totalCount"
+            FROM unnest(${targetUserIds}::int[]) AS ids(id)
+        `;
+
+        const pagedIds = targetUserIds.slice(skip, skip + limit);
+        if (pagedIds.length === 0) {
+            return res.json({ data: [], pagination: { page, limit, total: totalCount, pages: Math.ceil(totalCount / limit) } });
+        }
+
         const users = await prisma.user.findMany({
-            where: { id: { in: targetUserIds } },
+            where: { id: { in: pagedIds } },
             include: {
                 profile: true,
                 roles: { include: { role: true } },
                 _count: {
                     select: {
                         invitedGuests: true,
-                        hostedCells: true
+                        hostedCells: true,
+                        churchAttendances: { where: { status: 'PRESENTE' } },
+                        cellAttendances: { where: { status: 'PRESENTE' } },
+                        encuentroRegistrations: { where: { status: 'ATTENDED' } },
+                        conventionRegistrations: { where: { status: 'ATTENDED' } }
                     }
                 },
                 cell: { select: { name: true } },
@@ -638,37 +758,23 @@ const getUserActivityList = async (req, res) => {
                         }
                     }
                 },
-                oracionesMiembro: {
-                    include: {
-                        oracionDeTres: true
-                    }
-                },
-                churchAttendances: {
-                    where: { status: 'PRESENTE' }
-                },
-                cellAttendances: {
-                    where: { status: 'PRESENTE' }
-                },
                 classAttendances: {
-                    include: {
+                    select: {
+                        enrollmentId: true,
+                        classNumber: true,
+                        grade: true,
+                        notes: true,
+                        status: true,
                         enrollment: {
-                            include: { module: true }
+                            select: {
+                                module: { select: { name: true } }
+                            }
                         }
                     }
                 },
                 seminarEnrollments: {
-                    include: { module: true }
+                    include: { module: { select: { name: true } } }
                 },
-                encuentroRegistrations: {
-                    where: { status: 'ATTENDED' },
-                    include: { encuentro: true }
-                },
-                conventionRegistrations: {
-                    where: { status: 'ATTENDED' },
-                    include: { convention: true }
-                },
-                guestCalls: true,
-                guestVisits: true,
                 auditLogs: {
                     where: { action: 'LOGIN' },
                     orderBy: { createdAt: 'desc' },
@@ -677,88 +783,86 @@ const getUserActivityList = async (req, res) => {
             }
         });
 
-        const threeMonthsAgo = new Date();
-        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-        const activityList = users.map(u => {
-
-            // Attendance counters
-            const churchCount = u.churchAttendances.length;
-            const cellCount = u.cellAttendances.length;
-            const schoolCount = u.classAttendances.filter(ca => ca.status === 'ASISTE').length;
-
-            // Encuentro attendance: either status is ATTENDED or has class attendances
-            // Let's also check for specific EncuentroClassAttendance but for now we use status 'ATTENDED'
-            const encuentroCount = u.encuentroRegistrations.length;
-
-            // Ganar Reports: Calls + Visits
-            const ganarReports = u.guestCalls.length + u.guestVisits.length;
-
-            // Class details
-            const classes = u.seminarEnrollments.map(enrol => {
-                const classNotes = u.classAttendances
-                    .filter(ca => ca.enrollmentId === enrol.id)
-                    .map(ca => ({
-                        class: ca.classNumber,
-                        grade: ca.grade,
-                        notes: ca.notes
-                    }));
-
-                return {
-                    moduleName: enrol.module.name,
-                    finalGrade: enrol.finalGrade,
-                    status: enrol.status,
-                    notes: classNotes
-                };
-            });
-
-            // Lider de 12 logic (Handle multiple)
-            const userRoles = u.roles.map(r => r.role.name);
-            const isLiderDoce = userRoles.includes('LIDER_DOCE');
-            
-            let liderDoceName = 'N/A';
-            if (isLiderDoce) {
-                const pastores = u.parents.filter(p => p.role === 'PASTOR');
-                liderDoceName = pastores.length > 0 
-                    ? pastores.map(p => p.parent?.profile?.fullName).join(', ') 
-                    : 'N/A';
-            } else {
-                const lideresDoce = u.parents.filter(p => p.role === 'LIDER_DOCE');
-                liderDoceName = lideresDoce.length > 0 
-                    ? lideresDoce.map(p => p.parent?.profile?.fullName).join(', ') 
-                    : 'N/A';
-            }
-
-            return {
-                id: u.id,
-                fullName: u.profile?.fullName || 'Sin Nombre',
-                roles: userRoles,
-                invitadosCount: u._count.invitedGuests,
-                liderDoce: liderDoceName,
-                asistencias: {
-                    iglesia: churchCount,
-                    celula: cellCount,
-                    escuela: schoolCount,
-                    encuentro: encuentroCount,
-                    ganar: ganarReports
-                },
-                clases: classes,
-                celula: {
-                    nombre: u.cell?.name || 'No registrada',
-                    isAnfitrion: u._count.hostedCells > 0,
-                    hostedCount: u._count.hostedCells
-                },
-                encuentrosAsistidos: encuentroCount,
-                convencionesAsistidas: u.conventionRegistrations.length,
-                ultimoAcceso: u.auditLogs[0]?.createdAt || null
-            };
+        const activityList = buildActivityList(users);
+        res.json({
+            data: activityList,
+            pagination: { page, limit, total: totalCount, pages: Math.ceil(totalCount / limit) }
         });
-
-        res.json(activityList);
     } catch (error) {
         console.error('Error in getUserActivityList:', error);
         res.status(500).json({ error: 'Error al obtener el listado de actividad: ' + error.message });
     }
+};
+
+/**
+ * Build activity list from user records
+ */
+const buildActivityList = (users) => {
+    return users.map(u => {
+        const churchCount = u._count.churchAttendances;
+        const cellCount = u._count.cellAttendances;
+        const schoolCount = u.classAttendances.filter(ca => ca.status === 'ASISTE').length;
+        const encuentroCount = u._count.encuentroRegistrations;
+        const conventionCount = u._count.conventionRegistrations;
+        const ganarReports = u._count.invitedGuests;
+
+        const classes = u.seminarEnrollments.map(enrol => {
+            const classNotes = u.classAttendances
+                .filter(ca => ca.enrollmentId === enrol.id)
+                .map(ca => ({
+                    class: ca.classNumber,
+                    grade: ca.grade,
+                    notes: ca.notes
+                }));
+            return {
+                moduleName: enrol.module?.name || 'Desconocido',
+                finalGrade: enrol.finalGrade,
+                status: enrol.status,
+                notes: classNotes
+            };
+        });
+
+        const userRoles = u.roles.map(r => r.role.name);
+        const isLiderDoce = userRoles.includes('LIDER_DOCE');
+
+        let liderDoceName = 'N/A';
+        if (isLiderDoce) {
+            const pastores = u.parents.filter(p => p.role === 'PASTOR');
+            liderDoceName = pastores.length > 0
+                ? pastores.map(p => p.parent?.profile?.fullName).join(', ')
+                : 'N/A';
+        } else {
+            const lideresDoce = u.parents.filter(p => p.role === 'LIDER_DOCE');
+            liderDoceName = lideresDoce.length > 0
+                ? lideresDoce.map(p => p.parent?.profile?.fullName).join(', ')
+                : 'N/A';
+        }
+
+        return {
+            id: u.id,
+            fullName: u.profile?.fullName || 'Sin Nombre',
+            roles: userRoles,
+            invitadosCount: u._count.invitedGuests,
+            liderDoce: liderDoceName,
+            asistencias: {
+                iglesia: churchCount,
+                celula: cellCount,
+                escuela: schoolCount,
+                encuentro: encuentroCount,
+                ganar: ganarReports,
+                ventana: '90 días'
+            },
+            clases: classes,
+            celula: {
+                nombre: u.cell?.name || 'No registrada',
+                isAnfitrion: u._count.hostedCells > 0,
+                hostedCount: u._count.hostedCells
+            },
+            encuentrosAsistidos: encuentroCount,
+            convencionesAsistidas: conventionCount,
+            ultimoAcceso: u.auditLogs[0]?.createdAt || null
+        };
+    });
 };
 
 module.exports = {

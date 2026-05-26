@@ -1,5 +1,3 @@
-const { PrismaClient } = require('@prisma/client');
-
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 
@@ -14,6 +12,7 @@ const normalizeModuleName = (name) => {
 /**
  * Get module coordinators
  * ADMIN/PASTOR ven todos, LIDER_DOCE solo ve los de su red
+ * Solo retorna usuarios que tienen asignaciones activas como coordinadores
  */
 const getModuleCoordinators = async (req, res) => {
     try {
@@ -21,29 +20,24 @@ const getModuleCoordinators = async (req, res) => {
 
         const where = {
             isDeleted: false,
-            roles: {
-                some: {
-                    role: { name: 'LIDER_DOCE' }
-                }
+            moduleCoordinations: {
+                some: { isDeleted: false }
             }
         };
 
         if (!req.user.roles.includes('ADMIN') && !req.user.roles.includes('PASTOR')) {
-            // Get the requester's network from their profile
-            const userWithProfile = await prisma.user.findUnique({
-                where: { id: req.user.id },
-                include: { profile: { select: { network: true } } }
-            });
-            
-            const userNetwork = userWithProfile?.profile?.network;
-            if (userNetwork) {
-                where.profile = { network: userNetwork };
+            const requesterNetwork = req.userNetwork;
+            if (requesterNetwork) {
+                where.profile = { network: requesterNetwork };
             }
         }
 
         if (module) {
             where.moduleCoordinations = {
-                some: { moduleName: normalizeModuleName(module) }
+                some: {
+                    moduleName: normalizeModuleName(module),
+                    isDeleted: false
+                }
             };
         }
 
@@ -115,7 +109,7 @@ const getDefaultModuleCoordinator = async (req, res) => {
                 }
             },
             orderBy: {
-                createdAt: 'asc'
+                createdAt: 'desc'
             }
         });
 
@@ -211,11 +205,7 @@ const assignModuleCoordinator = async (req, res) => {
         }
 
         // Hallazgo #11: Validar red en asignaciones
-        const requesterNetworkUser = await prisma.user.findUnique({
-            where: { id: req.user.id },
-            include: { profile: { select: { network: true } } }
-        });
-        const requesterNetwork = requesterNetworkUser?.profile?.network;
+        const requesterNetwork = req.userNetwork;
         const moduleNetworkMap = {
             'ganar': 'HOMBRES',
             'consolidar': 'HOMBRES',
@@ -366,6 +356,7 @@ const getModuleSubCoordinator = async (req, res) => {
         const { module } = req.params;
         const subCoordinator = await prisma.moduleSubCoordinator.findFirst({
             where: { moduleName: normalizeModuleName(module), isDeleted: false },
+            orderBy: { createdAt: 'desc' },
             include: {
                 user: {
                     select: {
@@ -410,11 +401,7 @@ const assignModuleSubCoordinator = async (req, res) => {
         }
 
         // Hallazgo #11: Validar red en asignaciones
-        const requesterNetworkUser = await prisma.user.findUnique({
-            where: { id: req.user.id },
-            include: { profile: { select: { network: true } } }
-        });
-        const requesterNetwork = requesterNetworkUser?.profile?.network;
+        const requesterNetwork = req.userNetwork;
         const moduleNetworkMap = {
             'ganar': 'HOMBRES',
             'consolidar': 'HOMBRES',
@@ -699,6 +686,7 @@ const getModuleTreasurer = async (req, res) => {
 
         const treasurer = await prisma.moduleTreasurer.findFirst({
             where: { moduleName: normalizedModule, isDeleted: false },
+            orderBy: { createdAt: 'desc' },
             include: {
                 user: {
                     select: {
@@ -724,6 +712,81 @@ const getModuleTreasurer = async (req, res) => {
 };
 
 /**
+ * Get all module roles (coordinator, subcoordinator, treasurer) in a single query
+ * Consolidates 3 separate queries into 1 to reduce connection pool usage
+ */
+const getModuleRoles = async (req, res) => {
+    try {
+        const { module } = req.params;
+        const normalizedModule = normalizeModuleName(module);
+
+        // Single query to get all roles for the module
+        const [coordinator, subCoordinator, treasurer] = await Promise.all([
+            prisma.moduleCoordinator.findFirst({
+                where: { moduleName: normalizedModule, isDeleted: false },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            profile: { select: { fullName: true } }
+                        }
+                    }
+                }
+            }),
+            prisma.moduleSubCoordinator.findFirst({
+                where: { moduleName: normalizedModule, isDeleted: false },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            profile: { select: { fullName: true } }
+                        }
+                    }
+                }
+            }),
+            prisma.moduleTreasurer.findFirst({
+                where: { moduleName: normalizedModule, isDeleted: false },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            email: true,
+                            profile: { select: { fullName: true } }
+                        }
+                    }
+                }
+            })
+        ]);
+
+        res.json({
+            coordinator: coordinator ? {
+                id: coordinator.user.id,
+                email: coordinator.user.email,
+                fullName: coordinator.user.profile?.fullName || 'Sin Nombre'
+            } : null,
+            subCoordinator: subCoordinator ? {
+                id: subCoordinator.user.id,
+                email: subCoordinator.user.email,
+                fullName: subCoordinator.user.profile?.fullName || 'Sin Nombre'
+            } : null,
+            treasurer: treasurer ? {
+                id: treasurer.user.id,
+                email: treasurer.user.email,
+                fullName: treasurer.user.profile?.fullName || 'Sin Nombre'
+            } : null
+        });
+    } catch (error) {
+        console.error('Error getting module roles:', error);
+        res.status(500).json({ message: 'Server error fetching module roles' });
+    }
+};
+
+/**
  * Assign Treasurer to a module
  */
 const assignModuleTreasurer = async (req, res) => {
@@ -743,11 +806,7 @@ const assignModuleTreasurer = async (req, res) => {
         }
 
         // Hallazgo #11: Validar red en asignaciones
-        const requesterNetworkUser = await prisma.user.findUnique({
-            where: { id: req.user.id },
-            include: { profile: { select: { network: true } } }
-        });
-        const requesterNetwork = requesterNetworkUser?.profile?.network;
+        const requesterNetwork = req.userNetwork;
         const moduleNetworkMap = {
             'ganar': 'HOMBRES',
             'consolidar': 'HOMBRES',
@@ -935,11 +994,7 @@ const getAllSubCoordinators = async (req, res) => {
         };
 
         if (!req.user.roles.includes('ADMIN') && !req.user.roles.includes('PASTOR')) {
-            const userWithProfile = await prisma.user.findUnique({
-                where: { id: req.user.id },
-                include: { profile: { select: { network: true } } }
-            });
-            const userNetwork = userWithProfile?.profile?.network;
+            const userNetwork = req.userNetwork;
             if (userNetwork) {
                 where.profile = { network: userNetwork };
             }
@@ -996,11 +1051,7 @@ const getAllTreasurers = async (req, res) => {
         };
 
         if (!req.user.roles.includes('ADMIN') && !req.user.roles.includes('PASTOR')) {
-            const userWithProfile = await prisma.user.findUnique({
-                where: { id: req.user.id },
-                include: { profile: { select: { network: true } } }
-            });
-            const userNetwork = userWithProfile?.profile?.network;
+            const userNetwork = req.userNetwork;
             if (userNetwork) {
                 where.profile = { network: userNetwork };
             }
@@ -1057,5 +1108,6 @@ module.exports = {
     assignModuleTreasurer,
     removeModuleTreasurer,
     getAllSubCoordinators,
-    getAllTreasurers
+    getAllTreasurers,
+    getModuleRoles
 };

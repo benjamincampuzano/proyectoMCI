@@ -264,17 +264,20 @@ const getEligibleLeaders = async (req, res) => {
 
         const leaders = await prisma.user.findMany({
             where,
-            include: {
-                profile: true,
-                roles: { include: { role: true } }
+            select: {
+                id: true,
+                profile: { select: { fullName: true } },
+                roles: { select: { role: { select: { name: true } } } }
             }
         });
 
-        const formatted = leaders.map(l => ({
-            id: l.id,
-            fullName: l.profile.fullName,
-            roles: l.roles.map(r => r.role.name)
-        }));
+        const formatted = leaders
+            .filter(l => l.profile)
+            .map(l => ({
+                id: l.id,
+                fullName: l.profile.fullName,
+                roles: l.roles.map(r => r.role.name)
+            }));
 
         res.json(formatted);
     } catch (error) {
@@ -331,9 +334,10 @@ const getEligibleHosts = async (req, res) => {
 
         const hosts = await prisma.user.findMany({
             where,
-            include: {
-                profile: true,
-                roles: { include: { role: true } }
+            select: {
+                id: true,
+                profile: { select: { fullName: true } },
+                roles: { select: { role: { select: { name: true } } } }
             }
         });
 
@@ -425,9 +429,11 @@ const getEligibleMembers = async (req, res) => {
 
         const members = await prisma.user.findMany({
             where,
-            include: {
-                profile: true,
-                roles: { include: { role: true } },
+            select: {
+                id: true,
+                cellId: true,
+                profile: { select: { fullName: true } },
+                roles: { select: { role: { select: { name: true } } } },
                 cell: { select: { name: true } }
             }
         });
@@ -691,9 +697,11 @@ const getEligibleDoceLeaders = async (req, res) => {
 
         const leaders = await prisma.user.findMany({
             where,
-            include: {
-                profile: true,
-                roles: { include: { role: true } },
+            select: {
+                id: true,
+                spouseId: true,
+                profile: { select: { fullName: true } },
+                roles: { select: { role: { select: { name: true } } } },
                 spouse: {
                     select: {
                         id: true,
