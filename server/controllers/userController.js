@@ -356,7 +356,8 @@ const getAllUsers = async (req, res) => {
                 select: {
                     id: true,
                     email: true,
-                    profile: { select: { fullName: true, birthDate: true, phone: true, sex: true, network: true, avatar: true } },
+                    phone: true,
+                    profile: { select: { fullName: true, birthDate: true, sex: true, network: true } },
                     roles: { select: { role: { select: { name: true } } } },
                     parents: {
                         select: {

@@ -55,7 +55,7 @@ const CourseManagement = () => {
 
     useEffect(() => {
         fetchCourses();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [user.roles]);
 
     const fetchCourses = async () => {

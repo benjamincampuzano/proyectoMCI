@@ -175,9 +175,9 @@ const ModalAttendance = ({
                   </button>
                 </div>
                 {!user?.cellId && (
-                  <div className="mt-2 flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                    <WarningCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" weight="fill" />
-                    <p className="text-xs text-amber-300 leading-relaxed">
+                  <div className="mt-2 flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                    <WarningCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" weight="fill" />
+                    <p className="text-xs text-red-300 leading-relaxed">
                       No tienes una célula asignada por el momento. Debes de comunicarte con tu líder para que te asigne a una.
                     </p>
                   </div>

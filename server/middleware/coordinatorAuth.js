@@ -74,7 +74,7 @@ const isModuleCoordinator = async (req, res, next) => {
         const tokenCoords = req.user.moduleCoordinationsFromToken || {};
         const networkId = await getUserNetworkId(req.user.id);
         req.userNetwork = networkId;
-        if (tokenCoords.coordinating || tokenCoords.subCoordinating || tokenCoords.treasuring) {
+        if (tokenCoords.coordinating?.length || tokenCoords.subCoordinating?.length || tokenCoords.treasuring?.length) {
             req.user.moduleCoordinations = tokenCoords.coordinating || [];
             req.user.moduleSubCoordinations = tokenCoords.subCoordinating || [];
             req.user.moduleTreasurers = tokenCoords.treasuring || [];

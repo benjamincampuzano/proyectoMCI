@@ -44,7 +44,8 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
         description: '',
         cost: '',
         duration: '',
-        schedule: ''
+        schedule: '',
+        durationHours: 0
     });
 
     // Enrollment Form State
@@ -61,11 +62,11 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
     const [paymentNotes, setPaymentNotes] = useState('');
 
     const hasAdminOrPastor = hasAnyRole(['ADMIN', 'PASTOR']);
-    const isModuleCoordinator = isCoordinator('escuela-de-artes');
+    const isModuleCoordinator = isCoordinator('escuela-de-artes') || isCoordinator('arts');
     const isModuleSubCoordinator = user?.isModuleSubCoordinator || 
-                                   (user?.moduleSubCoordinations && user.moduleSubCoordinations.includes('escuela-de-artes'));
+                                   (user?.moduleSubCoordinations && (user.moduleSubCoordinations.includes('escuela-de-artes') || user.moduleSubCoordinations.includes('arts')));
     const isModuleTreasurer = user?.isModuleTreasurer || 
-                               (user?.moduleTreasurers && user.moduleTreasurers.includes('escuela-de-artes'));
+                               (user?.moduleTreasurers && (user.moduleTreasurers.includes('escuela-de-artes') || user.moduleTreasurers.includes('arts')));
     const hasFullEditAccess = hasAdminOrPastor || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
     const canModify = hasFullEditAccess || parseInt(user?.id) === parseInt(artClass?.professorId);
 
@@ -201,7 +202,8 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
             description: artClass.description || '',
             cost: artClass.cost,
             duration: artClass.duration,
-            schedule: artClass.schedule
+            schedule: artClass.schedule,
+            durationHours: artClass.durationHours || 0
         });
         setShowEditModal(true);
     };
@@ -754,8 +756,8 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
                                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duración (Horas por clase)</label>
                                                 <input
                                                     type="number"
-                                                    value={durationHours}
-                                                    onChange={(e) => setDurationHours(e.target.value)}
+                                                    value={editData.durationHours}
+                                                    onChange={(e) => setEditData({ ...editData, durationHours: parseInt(e.target.value) || 0 })}
                                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                                     required
                                                 />

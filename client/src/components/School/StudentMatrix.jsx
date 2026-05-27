@@ -12,6 +12,16 @@ const SCHOOL_LEVELS = [
     { nivel: '3', seccion: 'B', name: 'El Espiritu Santo en Mi', moduleNumber: 6 }
 ];
 
+const MODULE_BOOLEAN_MAP = {
+    1: 'discipular1A',
+    2: 'discipular1B',
+    3: 'discipular2A',
+    4: 'discipular2B',
+    5: 'discipular3A',
+    6: 'discipular3B',
+};
+
+
 const StudentMatrix = () => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -21,7 +31,7 @@ const StudentMatrix = () => {
 
     useEffect(() => {
         fetchStudentMatrix();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, []);
 
     const fetchStudentMatrix = async () => {
@@ -177,9 +187,6 @@ const StudentMatrix = () => {
                         <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Encuentro
                         </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Discipular
-                        </th>
                         {SCHOOL_LEVELS.map(level => (
                             <th key={`${level.nivel}${level.seccion}`} className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 {level.nivel}{level.seccion}
@@ -209,29 +216,6 @@ const StudentMatrix = () => {
                                             <XCircle className="text-red-400" size={20} title="No completado" />
                                         )}
                                     </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-center">
-                                        <div className="flex flex-wrap gap-1 justify-center">
-                                            {[
-                                                { key: 'discipular1A', label: '1A' },
-                                                { key: 'discipular1B', label: '1B' },
-                                                { key: 'discipular2A', label: '2A' },
-                                                { key: 'discipular2B', label: '2B' },
-                                                { key: 'discipular3A', label: '3A' },
-                                                { key: 'discipular3B', label: '3B' },
-                                            ].map(({ key, label }) => (
-                                                <span
-                                                    key={key}
-                                                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                                                        student[key]
-                                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                                            : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
-                                                    }`}
-                                                >
-                                                    {label}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </td>
                                     {SCHOOL_LEVELS.map(level => {
                                         const enrollment = student.enrollments?.find(e => 
                                             e.module?.moduleNumber === level.moduleNumber
@@ -247,12 +231,20 @@ const StudentMatrix = () => {
                                                         </div>
                                                     ) : (
                                                         <div className="flex justify-center">
-                                                            <XCircle className="text-red-500" size={20} title={`No completado - Nota: ${status.grade}`} />
+                                                            {student[MODULE_BOOLEAN_MAP[level.moduleNumber]] ? (
+                                                                <CheckCircle className="text-green-500" size={20} title="Completado (Marcado manualmente)" />
+                                                            ) : (
+                                                                <XCircle className="text-red-500" size={20} title={`No completado - Nota: ${status.grade}`} />
+                                                            )}
                                                         </div>
                                                     )
                                                 ) : (
                                                     <div className="flex justify-center">
-                                                        <Clock className="text-gray-400" size={20} title="No iniciado" />
+                                                        {student[MODULE_BOOLEAN_MAP[level.moduleNumber]] ? (
+                                                            <CheckCircle className="text-green-500" size={20} title="Completado (Marcado manualmente)" />
+                                                        ) : (
+                                                            <Clock className="text-red-500" size={20} title="No iniciado" />
+                                                        )}
                                                     </div>
                                                 )}
                                             </td>
@@ -290,7 +282,7 @@ const StudentMatrix = () => {
                         <span className="text-gray-600 dark:text-gray-400">Clase no aprobada</span>
                     </div>
                     <div className="flex items-center">
-                        <Clock className="text-gray-400 mr-2" size={16} />
+                        <Clock className="text-red-500 mr-2" size={16} />
                         <span className="text-gray-600 dark:text-gray-400">No iniciado</span>
                     </div>
                 </div>

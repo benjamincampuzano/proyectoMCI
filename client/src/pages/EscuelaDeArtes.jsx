@@ -25,9 +25,9 @@ const EscuelaDeArtes = () => {
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
     const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
-    const isModuleCoordinator = isCoordinator('escuela-de-artes');
-    const isModuleSubCoordinator = isSubCoordinator('escuela-de-artes');
-    const isModuleTreasurer = isTreasurer('escuela-de-artes');
+    const isModuleCoordinator = isCoordinator('escuela-de-artes') || isCoordinator('arts');
+    const isModuleSubCoordinator = isSubCoordinator('escuela-de-artes') || isSubCoordinator('arts');
+    const isModuleTreasurer = isTreasurer('escuela-de-artes') || isTreasurer('arts');
     const hasFullEditAccess = hasAdminOrPastor || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
 
     // Delete Confirmation Modal State
