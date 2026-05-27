@@ -127,7 +127,7 @@ const Discipular = () => {
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="management" moduleName="discipular" refreshTrigger={refreshKey} />
+            <TabNavigator tabs={tabs} initialTabId="management" moduleName="discipular" />
         </div>
     );
 };

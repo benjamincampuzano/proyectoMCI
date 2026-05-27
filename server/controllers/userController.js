@@ -159,6 +159,7 @@ const formatUser = (user) => {
         liderCelulaSpouseIds,
         pastorName,
         liderDoceName,
+        cellId: user.cellId,
         isCoordinator: user.isCoordinator || (user.moduleCoordinations && user.moduleCoordinations.length > 0),
         isModuleTreasurer: user.moduleTreasurers && user.moduleTreasurers.length > 0,
         moduleCoordinations: user.moduleCoordinations?.map(mc => mc.moduleName) || [],

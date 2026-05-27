@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import api from '../utils/api';
 import ModalAttendance from './ModalAttendance';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -28,11 +29,19 @@ const PostLoginAttendanceModal = () => {
   const handleSave = async (report) => {
     const today = format(new Date(), 'yyyy-MM-dd');
     const key = `${STORAGE_PREFIX}${user.id}_${today}`;
-    // TODO: Enviar al backend
-    // await api.post('/attendance/self-report', report);
-    localStorage.setItem(key, 'true');
-    setShowModal(false);
-    toast.success('Asistencia registrada');
+    try {
+      await api.post('/attendance/self-report', {
+        type: report.type,
+        date: report.date,
+        attended: report.attended,
+      });
+      localStorage.setItem(key, 'true');
+      setShowModal(false);
+      toast.success('Asistencia registrada');
+    } catch (error) {
+      const msg = error.response?.data?.error || 'Error al registrar asistencia';
+      toast.error(msg);
+    }
   };
 
   const handleClose = () => {

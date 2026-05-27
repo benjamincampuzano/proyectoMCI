@@ -23,7 +23,7 @@ const getNetworkLabel = (redValue) => {
     return network?.label || redValue;
 };
 
-const ChurchAttendance = () => {
+const ChurchAttendance = (props) => {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [members, setMembers] = useState([]);
     const [attendances, setAttendances] = useState({});
@@ -133,7 +133,11 @@ const ChurchAttendance = () => {
                 attendances: attendanceData
             });
 
-            toast.success('Asistencia guardada exitosamente');
+            if (props.onSaveSuccess) {
+                props.onSaveSuccess();
+            } else {
+                toast.success('Asistencia guardada exitosamente');
+            }
         } catch {
             toast.error('Error al guardar asistencia. Por favor intenta nuevamente.');
         } finally {
@@ -156,10 +160,18 @@ const ChurchAttendance = () => {
     };
 
     const handleSaveReport = async (report) => {
-      // TODO: Llamar al endpoint del backend
-      // await api.post('/consolidar/church-attendance/self-report', report);
-      toast.success(`Asistencia a ${report.type === 'church' ? 'Iglesia' : 'Célula'} registrada`);
-      setShowReportModal(false);
+      try {
+        await api.post('/attendance/self-report', {
+          type: report.type,
+          date: report.date,
+          attended: report.attended,
+        });
+        toast.success(`Asistencia a ${report.type === 'church' ? 'Iglesia' : 'Célula'} registrada`);
+        setShowReportModal(false);
+      } catch (error) {
+        const msg = error.response?.data?.error || 'Error al registrar asistencia';
+        toast.error(msg);
+      }
     };
 
     // Verificar si hay filtros activos

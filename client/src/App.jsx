@@ -223,7 +223,7 @@ const RouteTransitionHandler = () => {
   return null;
 };
 
-// import { Toaster } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   // Initialize mobile debugging in development only if enabled
@@ -241,7 +241,7 @@ function App() {
             <ConnectivityHandler />
             <RouteTransitionHandler />
             <LoadingOverlay />
-            {/* <Toaster position="top-right" toastOptions={{ duration: 4000 }} /> */}
+            <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
             <Suspense fallback={<TransitionLoader />}>
               <Routes>
                 <Route path="/setup" element={<SetupWizard />} />

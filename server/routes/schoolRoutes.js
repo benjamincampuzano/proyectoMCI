@@ -40,9 +40,19 @@ router.post('/modules/:moduleId/materials/:classNumber',
     updateClassMaterial);
 
 // Stats
-router.get('/stats/leader', authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), getSchoolStatsByLeader);
+router.get('/stats/leader', (req, res, next) => {
+    const allowedRoles = ['ADMIN', 'PASTOR', 'LIDER_DOCE'];
+    const hasRole = req.user.roles.some(role => allowedRoles.includes(role));
+    if (hasRole || req.user.isModuleCoordinator || req.user.isModuleTreasurer) return next();
+    return res.status(403).json({ message: 'Access denied. You do not have the required permissions.' });
+}, getSchoolStatsByLeader);
 
 // Student Matrix
-router.get('/student-matrix', authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), getStudentMatrix);
+router.get('/student-matrix', (req, res, next) => {
+    const allowedRoles = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'];
+    const hasRole = req.user.roles.some(role => allowedRoles.includes(role));
+    if (hasRole || req.user.isModuleCoordinator || req.user.isModuleTreasurer) return next();
+    return res.status(403).json({ message: 'Access denied. You do not have the required permissions.' });
+}, getStudentMatrix);
 
 module.exports = router;

@@ -337,17 +337,19 @@ const deleteAttendanceByDate = async (req, res) => {
         const isAdmin = userRoles.includes('ADMIN');
         const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
 
-        if (!isAdmin && !isLeader) {
-            return res.status(403).json({ error: 'Insufficient permissions to delete attendance' });
-        }
-
-        // Build where clause with network filtering for leaders
+        // Build where clause based on permissions
         let where = { date: parsedDate };
 
-        if (isLeader && !isAdmin) {
+        if (isAdmin) {
+            // Admin can delete everyone's attendance for the date
+        } else if (isLeader) {
+            // Leaders can delete their network's attendance
             const networkIds = await getUserNetwork(parseInt(id));
             networkIds.push(parseInt(id));
             where.userId = { in: networkIds };
+        } else {
+            // Regular users can only delete their own attendance
+            where.userId = parseInt(id);
         }
 
         // Delete attendance records

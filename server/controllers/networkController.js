@@ -695,9 +695,6 @@ const getUserActivityList = async (req, res) => {
                         }
                     },
                     seminarEnrollments: {
-                        where: {
-                            module: { type: { not: null } }
-                        },
                         include: { module: { select: { name: true } } }
                     },
                     auditLogs: {

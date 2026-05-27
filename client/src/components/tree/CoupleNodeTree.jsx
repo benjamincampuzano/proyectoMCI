@@ -27,10 +27,7 @@ export default memo(function CoupleNodeTree({
   const canManage = canManageAssignments(currentUser);
 
   // For PASTOR users, filter to show couples and single individuals (nodes with at least one partner)
-  const isPastor = currentUser?.roles?.includes('PASTOR');
-  const disciplesToShow = isPastor
-    ? (node.disciples || []).filter(child => child.partners && child.partners.length >= 1)
-    : (node.disciples || []);
+  const disciplesToShow = node.disciples || [];
 
   const handleToggle = () => {
     if (onToggleNode) {

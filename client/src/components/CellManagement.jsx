@@ -45,9 +45,9 @@ const CellManagement = ({ moduleCoordinator }) => {
         hostId: '',
         liderDoceId: '',
         address: '',
-        city: '',
+        city: 'Manizales',
         barrio: '',
-        network: '',
+        network: 'MIXTA',
         spiritualMappingUrl: '',
         fastingDate: '',
         rhemaWord: '',
@@ -402,16 +402,12 @@ const CellManagement = ({ moduleCoordinator }) => {
             { key: 'cellType', label: 'Tipo de Célula' },
             { key: 'liderDoceId', label: 'Líder 12' },
             { key: 'leaderId', label: 'Líder de la Célula' },
-            { key: 'hostId', label: 'Anfitrión' },
             { key: 'dayOfWeek', label: 'Día' },
             { key: 'time', label: 'Hora' },
             { key: 'city', label: 'Ciudad' },
             { key: 'barrio', label: 'Barrio' },
             { key: 'address', label: 'Dirección' },
             { key: 'network', label: 'Red' },
-            { key: 'spiritualMappingUrl', label: 'Cartografía Espiritual (URL)' },
-            { key: 'fastingDate', label: 'Fecha de Ayuno' },
-            { key: 'rhemaWord', label: 'Palabra Rhema' },
         ];
 
         for (const field of requiredFields) {
@@ -451,7 +447,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                 address: '',
                 city: '',
                 barrio: '',
-                network: '',
+                network: 'MIXTA',
                 spiritualMappingUrl: '',
                 fastingDate: '',
                 rhemaWord: '',
@@ -607,7 +603,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                     address: '',
                                     city: 'Manizales',
                                     barrio: '',
-                                    network: '',
+                                    network: 'MIXTA',
                                     spiritualMappingUrl: '',
                                     fastingDate: '',
                                     rhemaWord: '',
@@ -941,7 +937,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         address: '',
                                         city: '',
                                         barrio: '',
-                                        network: '',
+                                        network: 'MIXTA',
                                         spiritualMappingUrl: '',
                                         fastingDate: '',
                                         rhemaWord: '',
@@ -1047,7 +1043,7 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Anfitrión <span className="text-red-400">*</span>
+                                                Anfitrión
                                             </label>
                                             <AsyncSearchSelect
                                                 fetchItems={(term) => {
@@ -1182,11 +1178,10 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Cartografía Espiritual (URL) <span className="text-red-400">*</span>
+                                                Cartografía Espiritual (URL)
                                             </label>
                                             <input
                                                 type="url"
-                                                required
                                                 value={formData.spiritualMappingUrl}
                                                 onChange={e => setFormData({ ...formData, spiritualMappingUrl: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
@@ -1196,11 +1191,10 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Fecha de Ayuno <span className="text-red-400">*</span>
+                                                Fecha de Ayuno
                                             </label>
                                             <input
                                                 type="date"
-                                                required
                                                 value={formData.fastingDate}
                                                 onChange={e => setFormData({ ...formData, fastingDate: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
@@ -1209,10 +1203,9 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Palabra Rhema <span className="text-red-400">*</span>
+                                                Palabra Rhema
                                             </label>
                                             <textarea
-                                                required
                                                 value={formData.rhemaWord}
                                                 onChange={e => setFormData({ ...formData, rhemaWord: e.target.value })}
                                                 className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
@@ -1243,7 +1236,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             address: '',
                                             city: '',
                                             barrio: '',
-                                            network: '',
+                                            network: 'MIXTA',
                                             spiritualMappingUrl: '',
                                             fastingDate: '',
                                             rhemaWord: '',

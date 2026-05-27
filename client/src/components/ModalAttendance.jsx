@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Check, X } from '@phosphor-icons/react';
+import { Check, X, WarningCircle } from '@phosphor-icons/react';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import Input from './ui/Input';
@@ -156,17 +156,32 @@ const ModalAttendance = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFormField('type', 'cell')}
+                    onClick={() => {
+                      if (!user?.cellId) return;
+                      setFormField('type', 'cell');
+                    }}
                     className={`flex-1 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      form.type === 'cell'
-                        ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
-                        : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                      !user?.cellId
+                        ? 'opacity-40 cursor-not-allowed'
+                        : form.type === 'cell'
+                          ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
+                          : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
                     }`}
                     aria-pressed={form.type === 'cell'}
+                    disabled={!user?.cellId}
+                    title={!user?.cellId ? 'No tienes una célula asignada' : 'Célula'}
                   >
                     Célula
                   </button>
                 </div>
+                {!user?.cellId && (
+                  <div className="mt-2 flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                    <WarningCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" weight="fill" />
+                    <p className="text-xs text-amber-300 leading-relaxed">
+                      No tienes una célula asignada por el momento. Debes de comunicarte con tu líder para que te asigne a una.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

@@ -69,11 +69,16 @@ const Enviar = () => {
         return hasViewStatsAccess || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer || hasAnyRole(['DISCIPULO']);
     };
 
+    const hasUnassignedAccess = () => {
+        const hasRoleAccess = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
+        return hasRoleAccess || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
+    };
+
     const tabs = [
         { id: 'cells', label: 'Células', component: CellManagement, customCheck: hasCellsTabAccess },
         { id: 'attendance', label: 'Reporte de Asistencia', component: CellAttendance, customCheck: hasAttendanceAccess },
         { id: 'stats', label: 'Estadísticas', component: AttendanceChart, customCheck: hasStatsAccess },
-        { id: 'unassigned', label: 'Personas sin Célula', component: UnassignedPeople, customCheck: hasStatsAccess },
+        { id: 'unassigned', label: 'Personas sin Célula', component: UnassignedPeople, customCheck: hasUnassignedAccess },
     ];
 
     return (

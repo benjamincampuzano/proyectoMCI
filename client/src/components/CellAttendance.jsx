@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Calendar, Check, X, Users, MapPin, Clock, Info, List, SquaresFour, User } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
+import api from '../utils/api';
 import useCellAttendance from '../hooks/useCellAttendance';
 import { useAuth } from '../context/AuthContext';
 import CellMap from './CellMap';
@@ -65,10 +66,18 @@ const CellAttendance = () => {
     };
 
     const handleSaveReport = async (report) => {
-      // TODO: Llamar al endpoint del backend
-      // await api.post('/enviar/cell-attendance/self-report', report);
-      toast.success(`Asistencia a ${report.type === 'church' ? 'Iglesia' : 'Célula'} registrada`);
-      setShowReportModal(false);
+      try {
+        await api.post('/attendance/self-report', {
+          type: report.type,
+          date: report.date,
+          attended: report.attended,
+        });
+        toast.success(`Asistencia a ${report.type === 'church' ? 'Iglesia' : 'Célula'} registrada`);
+        setShowReportModal(false);
+      } catch (error) {
+        const msg = error.response?.data?.error || 'Error al registrar asistencia';
+        toast.error(msg);
+      }
     };
 
     return (

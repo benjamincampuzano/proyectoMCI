@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
+import toast from 'react-hot-toast';
 
 const Consolidar = () => {
     const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
@@ -60,7 +61,11 @@ const Consolidar = () => {
         }
     ];
 
-        return (
+        const handleAttendanceSaveSuccess = () => {
+        toast.success('Asistencia guardada exitosamente');
+    };
+
+    return (
         <div className="space-y-6">
             <PageHeader
                 title="Consolidar"
@@ -88,7 +93,15 @@ const Consolidar = () => {
                 </button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="attendance" moduleName="consolidar" refreshTrigger={refreshTrigger} />
+            <TabNavigator 
+                tabs={tabs} 
+                initialTabId="attendance" 
+                moduleName="consolidar" 
+                refreshTrigger={refreshTrigger} 
+                componentProps={{
+                    onSaveSuccess: handleAttendanceSaveSuccess
+                }}
+            />
         </div>
     );
 };

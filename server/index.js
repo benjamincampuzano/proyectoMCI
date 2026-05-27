@@ -129,6 +129,7 @@ const artSchoolRoutes = require('./routes/artSchoolRoutes');
 const servidorRoutes = require('./routes/servidorRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const dashboardTasksRoutes = require('./routes/dashboardTasksRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
 
 /* ✅ Proteger directorios sensibles */
 app.use('/backups', (req, res) => {
@@ -171,6 +172,7 @@ app.use("/api/arts", artSchoolRoutes);
 app.use("/api/servidores", servidorRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/dashboard-tasks", dashboardTasksRoutes);
+app.use("/api/attendance", attendanceRoutes);
 
 /* ✅ Healthcheck */
 app.get("/", (req, res) => {
