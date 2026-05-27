@@ -37,6 +37,10 @@ const GuestList = ({ refreshTrigger }) => {
         setPendingCalls,
         pendingVisits,
         setPendingVisits,
+        alreadyCalled,
+        setAlreadyCalled,
+        alreadyVisited,
+        setAlreadyVisited,
         currentUser,
         fetchGuests,
         fetchAllGuests,
@@ -203,7 +207,7 @@ const GuestList = ({ refreshTrigger }) => {
     const isLiderDoceFilterAutoApplied = isDoceLeader() && !isModuleCoordinator && liderDoceFilter?.id === user?.id;
     
     const hasAdvancedFilters = searchTerm || statusFilter || invitedByFilter || (liderDoceFilter && !isLiderDoceFilterAutoApplied) || startDate || endDate || pendingCalls || pendingVisits;
-    const activeAdvancedCount = [searchTerm, statusFilter, invitedByFilter, (liderDoceFilter && !isLiderDoceFilterAutoApplied), startDate, endDate, pendingCalls, pendingVisits].filter(Boolean).length;
+    const activeAdvancedCount = [searchTerm, statusFilter, invitedByFilter, (liderDoceFilter && !isLiderDoceFilterAutoApplied), startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited].filter(Boolean).length;
 
     const clearAdvancedFilters = () => {
         setSearchTerm('');
@@ -532,6 +536,52 @@ const GuestList = ({ refreshTrigger }) => {
                                 </div>
                                 <span className={`text-sm font-medium ${pendingVisits ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                     Pendientes por visitar
+                                </span>
+                            </label>
+
+                            {/* Checkbox Ya llamados */}
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
+                                    alreadyCalled
+                                        ? 'bg-blue-500 border-blue-500'
+                                        : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
+                                }`}>
+                                    <input
+                                        type="checkbox"
+                                        checked={alreadyCalled}
+                                        onChange={(e) => {
+                                            setAlreadyCalled(e.target.checked);
+                                            setCurrentPage(1);
+                                        }}
+                                        className="absolute opacity-0 w-full h-full cursor-pointer"
+                                    />
+                                    {alreadyCalled && <CheckCircle size={14} className="text-white" weight="fill" />}
+                                </div>
+                                <span className={`text-sm font-medium ${alreadyCalled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                    Ya fueron llamados
+                                </span>
+                            </label>
+
+                            {/* Checkbox Ya visitados */}
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
+                                    alreadyVisited
+                                        ? 'bg-blue-500 border-blue-500'
+                                        : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
+                                }`}>
+                                    <input
+                                        type="checkbox"
+                                        checked={alreadyVisited}
+                                        onChange={(e) => {
+                                            setAlreadyVisited(e.target.checked);
+                                            setCurrentPage(1);
+                                        }}
+                                        className="absolute opacity-0 w-full h-full cursor-pointer"
+                                    />
+                                    {alreadyVisited && <CheckCircle size={14} className="text-white" weight="fill" />}
+                                </div>
+                                <span className={`text-sm font-medium ${alreadyVisited ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                    Ya fueron visitados
                                 </span>
                             </label>
                         </div>

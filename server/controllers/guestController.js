@@ -112,7 +112,7 @@ const createGuest = async (req, res) => {
 // Obtener todos los invitados con filtros opcionales
 const getAllGuests = async (req, res) => {
     try {
-        const { status, invitedById, assignedToId, search, liderDoceId, sex, minBirthDate, startDate, endDate, pendingCalls, pendingVisits } = req.query;
+        const { status, invitedById, assignedToId, search, liderDoceId, sex, minBirthDate, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited } = req.query;
         const { roles, id: currentUserId } = req.user;
 
         let securityFilter = {};
@@ -240,6 +240,20 @@ const getAllGuests = async (req, res) => {
         if (pendingVisits === 'true') {
             queryFilters.visits = {
                 none: {}
+            };
+        }
+
+        // Filtro por invitados que YA fueron llamados
+        if (alreadyCalled === 'true') {
+            queryFilters.calls = {
+                some: {}
+            };
+        }
+
+        // Filtro por invitados que YA fueron visitados
+        if (alreadyVisited === 'true') {
+            queryFilters.visits = {
+                some: {}
             };
         }
 

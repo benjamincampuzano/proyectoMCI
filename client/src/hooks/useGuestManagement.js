@@ -14,6 +14,8 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
     const [endDate, setEndDate] = useState('');
     const [pendingCalls, setPendingCalls] = useState(false);
     const [pendingVisits, setPendingVisits] = useState(false);
+    const [alreadyCalled, setAlreadyCalled] = useState(false);
+    const [alreadyVisited, setAlreadyVisited] = useState(false);
 
     // Paginación numérica (10 registros por página)
     const [currentPage, setCurrentPage] = useState(1);
@@ -46,6 +48,8 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
             if (endDate) params.append('endDate', endDate);
             if (pendingCalls) params.append('pendingCalls', 'true');
             if (pendingVisits) params.append('pendingVisits', 'true');
+            if (alreadyCalled) params.append('alreadyCalled', 'true');
+            if (alreadyVisited) params.append('alreadyVisited', 'true');
 
             const res = await api.get('/guests', {
                 params: Object.fromEntries(params)
@@ -62,7 +66,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         } finally {
             setLoading(false);
         }
-    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits, guestsPerPage]);
+    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, guestsPerPage]);
 
     // Obtener todos los invitados filtrados (sin paginación) para exportar
     const fetchAllGuests = useCallback(async () => {
@@ -79,6 +83,8 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
             if (endDate) params.append('endDate', endDate);
             if (pendingCalls) params.append('pendingCalls', 'true');
             if (pendingVisits) params.append('pendingVisits', 'true');
+            if (alreadyCalled) params.append('alreadyCalled', 'true');
+            if (alreadyVisited) params.append('alreadyVisited', 'true');
 
             const res = await api.get('/guests', {
                 params: Object.fromEntries(params)
@@ -88,7 +94,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         } catch (err) {
             throw new Error(err.userMessage || err.response?.data?.message || 'Error al cargar invitados');
         }
-    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits]);
+    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited]);
 
     // Funciones de paginación
     const handlePageChange = useCallback((newPage) => {
@@ -198,6 +204,10 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         setPendingCalls,
         pendingVisits,
         setPendingVisits,
+        alreadyCalled,
+        setAlreadyCalled,
+        alreadyVisited,
+        setAlreadyVisited,
         currentUser,
         fetchGuests,
         fetchAllGuests, // Exportar función para obtener todos los datos filtrados
