@@ -303,7 +303,7 @@ model Cell {
   createdAt           DateTime         @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime         @updatedAt @db.Timestamptz(6)
   barrio              String?
-  fastingDate         DateTime?        @db.Timestamptz(6)
+  fastingDate         String?
   network             String?          @default("MIXTA")
   pastorsMeeting      Boolean          @default(false)
   rhemaWord           String?

@@ -484,7 +484,7 @@ const CellManagement = ({ moduleCoordinator }) => {
             barrio: cell.barrio || '',
             network: cell.network || '',
             spiritualMappingUrl: cell.spiritualMappingUrl || '',
-            fastingDate: cell.fastingDate ? cell.fastingDate.split('T')[0] : '',
+            fastingDate: cell.fastingDate || '',
             rhemaWord: cell.rhemaWord || '',
             pastorsMeeting: cell.pastorsMeeting || false,
             dayOfWeek: cell.dayOfWeek,
@@ -1191,14 +1191,24 @@ const CellManagement = ({ moduleCoordinator }) => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
-                                                Fecha de Ayuno
+                                                Día de Ayuno
                                             </label>
-                                            <input
-                                                type="date"
-                                                value={formData.fastingDate}
-                                                onChange={e => setFormData({ ...formData, fastingDate: e.target.value })}
-                                                className="w-full px-4 py-2 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                                            />
+                                            <div className="flex flex-wrap gap-2">
+                                                {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(day => (
+                                                    <button
+                                                        key={day}
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, fastingDate: day })}
+                                                        className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
+                                                            formData.fastingDate === day
+                                                                ? 'bg-[#0071e3] text-white border-[#0071e3]'
+                                                                : 'bg-white dark:bg-[#1d1d1f] text-[#1d1d1f] dark:text-white border-[#d1d1d6] dark:border-[#3a3a3c] hover:border-[#0071e3]'
+                                                        }`}
+                                                    >
+                                                        {day}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
 
                                         <div>

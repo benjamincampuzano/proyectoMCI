@@ -2,6 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = require('../utils/database');
 const { SCHOOL_LEVELS } = require('../utils/levelConstants');
 const { getUserNetwork } = require('../utils/networkUtils');
+const { isModuleCompleted } = require('../utils/schoolUtils');
  
 // Helper to check if a user is a coordinator for a specific module
 const isUserCoordinator = async (userId, moduleName = 'discipular') => {
@@ -344,6 +345,15 @@ const unenrollStudent = async (req, res) => {
 
 // --- Matrix Logic ---
 
+const MODULE_BOOLEAN_MAP = {
+    1: 'discipular1A',
+    2: 'discipular1B',
+    3: 'discipular2A',
+    4: 'discipular2B',
+    5: 'discipular3A',
+    6: 'discipular3B',
+};
+
 const getModuleMatrix = async (req, res) => {
     try {
         const { id } = req.params;
@@ -586,7 +596,12 @@ const getSchoolStatsByLeader = async (req, res) => {
         const enrollments = await prisma.seminarEnrollment.findMany({
             where: whereClause,
             include: {
-                classAttendances: true
+                classAttendances: true,
+                module: {
+                    include: {
+                        _count: { select: { materials: true } }
+                    }
+                }
             }
         });
 
@@ -633,23 +648,25 @@ const getSchoolStatsByLeader = async (req, res) => {
             const stats = statsByLeader[leaderName];
             stats.totalStudents++;
 
+            if (isModuleCompleted(enrol)) {
+                stats.passedCount++;
+            }
             if (enrol.finalGrade) {
                 stats.totalGradeSum += enrol.finalGrade;
                 stats.gradeCount++;
-                if (enrol.finalGrade >= 7) stats.passedCount++;
             }
 
-            const expectedClasses = 10;
+            const expectedClasses = enrol.module.classCount || enrol.module._count.materials || 0;
             const attended = enrol.classAttendances.filter(c => c.status === 'ASISTE').length;
-            const pct = (attended / expectedClasses) * 100;
+            const pct = expectedClasses > 0 ? (attended / expectedClasses) * 100 : 0;
             stats.totalAttendancePctSum += pct;
         });
 
         const report = Object.values(statsByLeader).map(s => ({
             leaderName: s.leaderName,
             students: s.totalStudents,
-            avgGrade: s.gradeCount > 0 ? (s.totalGradeSum / s.gradeCount).toFixed(1) : 0,
-            avgAttendance: s.totalStudents > 0 ? (s.totalAttendancePctSum / s.totalStudents).toFixed(1) : 0,
+            avgGrade: s.gradeCount > 0 ? (s.totalGradeSum / s.gradeCount) : 0,
+            avgAttendance: s.totalStudents > 0 ? (s.totalAttendancePctSum / s.totalStudents) : 0,
             passed: s.passedCount
         }));
 
@@ -741,11 +758,8 @@ const getStudentMatrix = async (req, res) => {
                     },
                     include: {
                         module: {
-                            select: {
-                                id: true,
-                                name: true,
-                                moduleNumber: true,
-                                type: true
+                            include: {
+                                _count: { select: { materials: true } }
                             }
                         },
                         classAttendances: {
@@ -761,7 +775,8 @@ const getStudentMatrix = async (req, res) => {
         const formattedStudents = students.map(student => {
             // Calculate attendance rate for each enrollment
             const enrollmentsWithAttendance = student.seminarEnrollments.map(enrollment => {
-                const expectedClasses = 10; // Assuming 10 classes per module
+                const module = enrollment.module;
+                const expectedClasses = module.classCount || module._count.materials || 0;
                 const attendedClasses = enrollment.classAttendances.filter(c => c.status === 'ASISTE').length;
                 const attendanceRate = expectedClasses > 0 ? (attendedClasses / expectedClasses) * 100 : 0;
 
@@ -776,14 +791,40 @@ const getStudentMatrix = async (req, res) => {
 
                 return {
                     ...enrollment,
+                    module: {
+                        id: module.id,
+                        name: module.name,
+                        moduleNumber: module.moduleNumber,
+                        type: module.type
+                    },
                     attendanceRate,
                     avgGrade,
+                    isCompleted: isModuleCompleted(enrollment),
                     grades: enrollment.classAttendances.map(c => ({
                         classNumber: c.classNumber,
                         grade: c.grade,
                         finalGrade: enrollment.finalGrade
                     }))
                 };
+            });
+
+            // Resolve completed status for legacy fields
+            // Start with profile values
+            const completionStatus = {
+                discipular1A: student.profile?.discipular1A || false,
+                discipular1B: student.profile?.discipular1B || false,
+                discipular2A: student.profile?.discipular2A || false,
+                discipular2B: student.profile?.discipular2B || false,
+                discipular3A: student.profile?.discipular3A || false,
+                discipular3B: student.profile?.discipular3B || false,
+            };
+
+            // Override with enrollment truth if exists
+            student.seminarEnrollments.forEach(enrollment => {
+                const field = MODULE_BOOLEAN_MAP[enrollment.module?.moduleNumber];
+                if (field) {
+                    completionStatus[field] = isModuleCompleted(enrollment);
+                }
             });
 
             // Find the leader (prioritize LIDER_DOCE)
@@ -799,12 +840,7 @@ const getStudentMatrix = async (req, res) => {
                     fullName: leaderDoce.profile?.fullName || 'Sin Nombre'
                 } : null,
                 encuentro: student.profile?.encuentro || false,
-                discipular1A: student.profile?.discipular1A || false,
-                discipular1B: student.profile?.discipular1B || false,
-                discipular2A: student.profile?.discipular2A || false,
-                discipular2B: student.profile?.discipular2B || false,
-                discipular3A: student.profile?.discipular3A || false,
-                discipular3B: student.profile?.discipular3B || false,
+                ...completionStatus,
                 enrollments: enrollmentsWithAttendance
             };
         });

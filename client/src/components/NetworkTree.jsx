@@ -27,6 +27,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   const [expandedNodes, setExpandedNodes] = useState(new Set());
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [partnerToRemove, setPartnerToRemove] = useState(null);
+  const [networkData, setNetworkData] = useState(network);
   const PAGE_SIZE = 50;
   const allUsersFetched = useRef(false);
 
@@ -37,9 +38,14 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
 
   const unassigned = useMemo(() => {
     if (!coupleRoot) return [];
-    const result = getUnassignedUsers({ allUsers, coupleRoot, isAdmin: true });
+    const isAdmin = currentUser?.roles?.includes('ADMIN');
+    const result = getUnassignedUsers({ allUsers, coupleRoot, isAdmin });
     return result;
-  }, [allUsers, coupleRoot]);
+  }, [allUsers, coupleRoot, currentUser]);
+
+  useEffect(() => {
+    setNetworkData(network);
+  }, [network]);
 
   useEffect(() => {
     if (allUsersFetched.current) return;
@@ -60,7 +66,8 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
         setAllUsers([]);
       }
     })();
-  }, []);
+  });
+
 
   const confirmAssign = async () => {
     if (!pendingAssign) return;
@@ -89,6 +96,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
       onNetworkChange?.();
     } catch (error) {
       console.error('Error assigning user:', error);
+      alert('Error al asignar usuario: ' + (error.message || 'Error desconocido'));
     }
   };
 

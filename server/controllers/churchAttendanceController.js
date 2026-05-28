@@ -312,7 +312,7 @@ const getAttendanceStats = async (req, res) => {
             total,
             present,
             absent: total - present,
-            attendanceRate: total > 0 ? ((present / total) * 100).toFixed(2) : 0
+            attendanceRate: total > 0 ? ((present / total) * 100) : 0
         });
     } catch (error) {
         console.error('Error fetching attendance stats:', error);

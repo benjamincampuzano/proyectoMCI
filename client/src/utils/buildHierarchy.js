@@ -43,8 +43,8 @@ export function buildCustomHierarchy(network, currentUser) {
   function findPastor(node, root) {
     if (!node) return null;
     
-    if (node.pastor && node.pastor.fullName) {
-      return node.pastor;
+    if (Array.isArray(node.pastores) && node.pastores.length > 0) {
+      return node.pastores[0];
     }
     
     return null;
@@ -53,8 +53,8 @@ export function buildCustomHierarchy(network, currentUser) {
   function findLiderDoce(node, root) {
     if (!node) return null;
     
-    if (node.liderDoce && node.liderDoce.fullName) {
-      return node.liderDoce;
+    if (Array.isArray(node.lideresDoce) && node.lideresDoce.length > 0) {
+      return node.lideresDoce[0];
     }
     
     return null;
@@ -160,8 +160,8 @@ export function buildCustomHierarchy(network, currentUser) {
       
       const customRootLC = {
         ...userNode,
-        pastor: userNode.pastor || null,
-        liderDoce: userNode.liderDoce || null,
+        pastor: pastorLC || null,
+        liderDoce: liderDoceLC || null,
         liderCelula: null,
         disciples: disciplesLC
       };
@@ -174,9 +174,9 @@ export function buildCustomHierarchy(network, currentUser) {
       
       const customRootD = {
         ...userNode,
-        pastor: userNode.pastor || null,
-        liderDoce: userNode.liderDoce || null,
-        liderCelula: userNode.liderCelula || null,
+        pastor: pastorD || null,
+        liderDoce: liderDoceD || null,
+        liderCelula: liderCelulaD || null,
         disciples: []
       };
       return customRootD;

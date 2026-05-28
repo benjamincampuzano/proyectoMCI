@@ -35,3 +35,4 @@ export { default as Icon, LazyIcon, IconButton, IconBadge, IconStack, iconUtils 
 // Overlays
 export { default as Tooltip, SimpleTooltip, TooltipProvider } from './Tooltip';
 export { default as Dropdown, SelectDropdown, ContextMenu } from './Dropdown';
+export { default as ErrorState } from './ErrorState';

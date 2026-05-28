@@ -12,15 +12,6 @@ const SCHOOL_LEVELS = [
     { nivel: '3', seccion: 'B', name: 'El Espiritu Santo en Mi', moduleNumber: 6 }
 ];
 
-const MODULE_BOOLEAN_MAP = {
-    1: 'discipular1A',
-    2: 'discipular1B',
-    3: 'discipular2A',
-    4: 'discipular2B',
-    5: 'discipular3A',
-    6: 'discipular3B',
-};
-
 
 const StudentMatrix = () => {
     const [students, setStudents] = useState([]);
@@ -31,7 +22,7 @@ const StudentMatrix = () => {
 
     useEffect(() => {
         fetchStudentMatrix();
-         
+
     }, []);
 
     const fetchStudentMatrix = async () => {
@@ -48,42 +39,42 @@ const StudentMatrix = () => {
 
     const getClassStatus = (enrollment, level) => {
         if (!enrollment) return null;
-        
+
         // Check if this enrollment matches the level by moduleNumber
         if (enrollment.module?.moduleNumber !== level.moduleNumber) return null;
-        
+
         // Use finalGrade from enrollment or calculate from classAttendances
         const finalGrade = enrollment.finalGrade;
-        
+
         if (finalGrade !== null && finalGrade >= 7) {
             return { completed: true, grade: finalGrade };
         } else if (finalGrade !== null) {
             return { completed: false, grade: finalGrade };
         }
-        
+
         return { completed: false, grade: null };
     };
 
     const getAverageGrade = (enrollments) => {
         if (!enrollments || enrollments.length === 0) return '-';
-        
+
         const completedGrades = enrollments
             .filter(e => e.finalGrade !== null)
             .map(e => e.finalGrade);
-            
+
         if (completedGrades.length === 0) return '-';
-        
+
         const average = completedGrades.reduce((sum, grade) => sum + grade, 0) / completedGrades.length;
         return average.toFixed(1);
     };
 
     const getAttendanceRate = (enrollments) => {
         if (!enrollments || enrollments.length === 0) return '-';
-        
+
         const totalAttendance = enrollments.reduce((sum, e) => {
             return sum + (e.attendanceRate || 0);
         }, 0);
-        
+
         const average = totalAttendance / enrollments.length;
         return `${average.toFixed(1)}%`;
     };
@@ -91,13 +82,13 @@ const StudentMatrix = () => {
     const filteredStudents = students.filter(student => {
         const matchesSearch = student.fullName.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesLeader = !selectedLeader || student.leaderDoce?.id === parseInt(selectedLeader);
-        const matchesLevel = !selectedLevel || 
-            student.enrollments?.some(e => 
+        const matchesLevel = !selectedLevel ||
+            student.enrollments?.some(e =>
                 e.module?.moduleNumber === SCHOOL_LEVELS.find(
                     level => `${level.nivel}${level.seccion}` === selectedLevel
                 )?.moduleNumber
             );
-        
+
         return matchesSearch && matchesLeader && matchesLevel;
     });
 
@@ -133,7 +124,7 @@ const StudentMatrix = () => {
                                 className="pl-10"
                             />
                         </div>
-                    </div>
+                    </div
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -150,7 +141,7 @@ const StudentMatrix = () => {
                             placeholder="Todos los líderes..."
                             labelKey="fullName"
                         />
-                    </div>
+                    </div
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -217,11 +208,11 @@ const StudentMatrix = () => {
                                         )}
                                     </td>
                                     {SCHOOL_LEVELS.map(level => {
-                                        const enrollment = student.enrollments?.find(e => 
+                                        const enrollment = student.enrollments?.find(e =>
                                             e.module?.moduleNumber === level.moduleNumber
                                         );
                                         const status = getClassStatus(enrollment, level);
-                                        
+
                                         return (
                                             <td key={`${level.nivel}${level.seccion}`} className="px-4 py-4 whitespace-nowrap text-center">
                                                 {status ? (
@@ -231,20 +222,12 @@ const StudentMatrix = () => {
                                                         </div>
                                                     ) : (
                                                         <div className="flex justify-center">
-                                                            {student[MODULE_BOOLEAN_MAP[level.moduleNumber]] ? (
-                                                                <CheckCircle className="text-green-500" size={20} title="Completado (Marcado manualmente)" />
-                                                            ) : (
-                                                                <XCircle className="text-red-500" size={20} title={`No completado - Nota: ${status.grade}`} />
-                                                            )}
+                                                            <XCircle className="text-red-500" size={20} title={`No completado - Nota: ${status.grade}`} />
                                                         </div>
                                                     )
                                                 ) : (
                                                     <div className="flex justify-center">
-                                                        {student[MODULE_BOOLEAN_MAP[level.moduleNumber]] ? (
-                                                            <CheckCircle className="text-green-500" size={20} title="Completado (Marcado manualmente)" />
-                                                        ) : (
-                                                            <Clock className="text-red-500" size={20} title="No iniciado" />
-                                                        )}
+                                                        <Clock className="text-red-500" size={20} title="No iniciado" />
                                                     </div>
                                                 )}
                                             </td>
@@ -261,7 +244,7 @@ const StudentMatrix = () => {
                         </tbody>
                     </table>
                 </div>
-                
+
                 {filteredStudents.length === 0 && (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                         No se encontraron estudiantes con los filtros seleccionados

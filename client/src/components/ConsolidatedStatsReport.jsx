@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend} from 'recharts';
 import toast from 'react-hot-toast';
-import { Lock, Medal, TrendUp, Users, Calendar, ChartLine, Envelope, CurrencyDollar, Student, PrinterIcon, MapPin, BookOpenIcon } from '@phosphor-icons/react';
+import { Lock, Medal, TrendUp, Users, PrinterIcon, MapPin, BookOpenIcon } from '@phosphor-icons/react';
 
 const LN_COLORS = ['var(--ln-brand-indigo)', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
 
@@ -30,9 +30,9 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
         if (hasAccess) {
             fetchStats();
         }
-    }, [startDate, endDate, hasAccess]);
+    }, [startDate, endDate, hasAccess, fetchStats]);
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
             setLoading(true);
             const response = await api.get('/consolidar/stats/general', {
@@ -44,7 +44,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [startDate, endDate]);
 
     const handlePrint = () => {
         window.print();

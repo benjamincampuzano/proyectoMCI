@@ -30,19 +30,21 @@ const getGeneralStats = async (req, res) => {
             ? Prisma.sql`AND u.id = ANY(${networkIds})`
             : Prisma.empty;
 
+        const networkFilterCells = networkIds.length > 0
+            ? Prisma.sql`AND c."leaderId" = ANY(${networkIds})`
+            : Prisma.empty;
+
         const guestRaw = await prisma.$queryRaw`
             SELECT
                 up."fullName" AS leader_name,
-                COUNT(g.id)::int AS total_guests,
-                COUNT(CASE WHEN g.status = 'GANADO' THEN 1 END)::int AS total_conversions,
-                COUNT(CASE WHEN gc.id IS NOT NULL THEN 1 END)::int AS with_call,
-                COUNT(CASE WHEN gv.id IS NOT NULL THEN 1 END)::int AS with_visit
+                COUNT(DISTINCT g.id)::int AS total_guests,
+                COUNT(DISTINCT CASE WHEN g.status = 'GANADO' THEN g.id END)::int AS total_conversions,
+                (SELECT COUNT(*) FROM "GuestCall" gc2 WHERE gc2."guestId" = g.id LIMIT 1)::int AS with_call,
+                (SELECT COUNT(*) FROM "GuestVisit" gv2 WHERE gv2."guestId" = g.id LIMIT 1)::int AS with_visit
             FROM "Guest" g
             JOIN "User" u ON u.id = g."invitedById"
             JOIN "UserHierarchy" uh ON uh."childId" = u.id AND uh.role IN ('LIDER_DOCE', 'PASTOR', 'LIDER_CELULA')
             JOIN "UserProfile" up ON up."userId" = uh."parentId"
-            LEFT JOIN "GuestCall" gc ON gc."guestId" = g.id
-            LEFT JOIN "GuestVisit" gv ON gv."guestId" = g.id
             WHERE g."createdAt" BETWEEN ${start} AND ${end}
               AND g."isDeleted" = false
               ${networkFilterGuests}
@@ -126,8 +128,8 @@ const getGeneralStats = async (req, res) => {
         const studentStats = moduleRaw.map(m => ({
             moduleName: m.module_name,
             studentCount: Number(m.student_count),
-            avgGrade: Number(m.avg_grade).toFixed(1),
-            avgAttendance: Number(m.avg_attendance).toFixed(1)
+            avgGrade: Number(m.avg_grade),
+            avgAttendance: Number(m.avg_attendance)
         }));
 
         // 4. CELLS — ✅ SQL GROUP BY
@@ -135,20 +137,28 @@ const getGeneralStats = async (req, res) => {
             SELECT
                 up."fullName" AS leader_name,
                 COUNT(DISTINCT c.id)::int AS cell_count,
-                AVG(
-                    COALESCE(
-                        (SELECT COUNT(*) FROM "CellAttendance" ca2
-                         WHERE ca2."cellId" = c.id
-                           AND ca2.date BETWEEN ${start} AND ${end}
-                           AND ca2.status = 'PRESENTE'
-                         GROUP BY ca2.date), 0
-                    )
-                )::float AS avg_attendance
+                COALESCE(
+                    (SELECT AVG(cnt) FROM (
+                        SELECT COUNT(*)::int AS cnt
+                        FROM "CellAttendance" ca2
+                        WHERE ca2."cellId" = c.id
+                          AND ca2.date BETWEEN ${start} AND ${end}
+                          AND ca2.status = 'PRESENTE'
+                        GROUP BY ca2.date
+                    ) sub), 0
+                )::float AS avg_attendance,
+                COALESCE(
+                    json_agg(
+                        json_build_object('address', c.address, 'city', c.city, 'lat', c.latitude, 'lng', c.longitude)
+                        ORDER BY c.name
+                    ) FILTER (WHERE c.address IS NOT NULL),
+                    '[]'::json
+                ) AS cell_locations
             FROM "Cell" c
             JOIN "UserHierarchy" uh ON uh."childId" = c."leaderId" AND uh.role = 'LIDER_DOCE'
             JOIN "UserProfile" up ON up."userId" = uh."parentId"
             WHERE c."isDeleted" = false
-              ${networkFilterGuests}
+              ${networkFilterCells}
             GROUP BY leader_name
             ORDER BY cell_count DESC
         `;
@@ -158,8 +168,8 @@ const getGeneralStats = async (req, res) => {
             const name = row.leader_name || 'Sin Asignar';
             cellsByLeader[name] = {
                 count: Number(row.cell_count),
-                locations: [],
-                avgAttendance: Number(row.avg_attendance).toFixed(1)
+                locations: row.cell_locations || [],
+                avgAttendance: Number(row.avg_attendance)
             };
         }
 
@@ -168,11 +178,12 @@ const getGeneralStats = async (req, res) => {
             SELECT
                 COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
                 COUNT(DISTINCT er.id)::int AS reg_count,
-                COALESCE(SUM(ep.amount), 0)::float AS total_paid
+                COALESCE(SUM(ep.amount), 0)::float AS total_paid,
+                COALESCE(SUM(e.cost), 0)::float AS total_cost
             FROM "EncuentroRegistration" er
             JOIN "Encuentro" e ON e.id = er."encuentroId"
-            LEFT JOIN "User" u ON u.id = COALESCE(er."userId", g."assignedToId")
             LEFT JOIN "Guest" g ON g.id = er."guestId"
+            LEFT JOIN "User" u ON u.id = COALESCE(er."userId", g."assignedToId")
             LEFT JOIN "UserHierarchy" uh ON uh."childId" = COALESCE(er."userId", g."assignedToId")
                 AND uh.role = 'LIDER_DOCE'
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
@@ -196,7 +207,9 @@ const getGeneralStats = async (req, res) => {
             }
             const st = encuentrosInfo[name]['Sin Célula'];
             st.count += Number(row.reg_count);
+            st.totalCost += Number(row.total_cost);
             st.totalPaid += Number(row.total_paid);
+            st.balance = st.totalCost - st.totalPaid;
         }
 
         // 6. CONVENTIONS — ✅ SQL GROUP BY con agregación
@@ -204,7 +217,8 @@ const getGeneralStats = async (req, res) => {
             SELECT
                 COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
                 COUNT(DISTINCT cr.id)::int AS reg_count,
-                COALESCE(SUM(cp.amount), 0)::float AS total_paid
+                COALESCE(SUM(cp.amount), 0)::float AS total_paid,
+                COALESCE(SUM(conv.cost), 0)::float AS total_cost
             FROM "ConventionRegistration" cr
             JOIN "Convention" conv ON conv.id = cr."conventionId"
             LEFT JOIN "User" u ON u.id = cr."userId"
@@ -230,7 +244,9 @@ const getGeneralStats = async (req, res) => {
             }
             const st = conventionsInfo[name];
             st.count += Number(row.reg_count);
+            st.totalCost += Number(row.total_cost);
             st.totalPaid += Number(row.total_paid);
+            st.balance = st.totalCost - st.totalPaid;
         }
 
         // Limpiar helpers que ya no se usan
@@ -248,7 +264,7 @@ const getGeneralStats = async (req, res) => {
             summary: {
                 totalGuests,
                 totalConversions,
-                conversionRate: totalGuests > 0 ? ((totalConversions / totalGuests) * 100).toFixed(1) : 0,
+                conversionRate: totalGuests > 0 ? ((totalConversions / totalGuests) * 100) : 0,
                 totalCells: Object.values(cellsByLeader).reduce((acc, c) => acc + c.count, 0),
                 totalMembers: await prisma.user.count({
                     where: {
@@ -257,10 +273,16 @@ const getGeneralStats = async (req, res) => {
                             none: {
                                 role: { name: 'ADMIN' }
                             }
-                        }
+                        },
+                        ...(networkIds.length > 0 ? { id: { in: networkIds } } : {})
                     }
                 }),
-                activeStudents: await prisma.seminarEnrollment.count({ where: { status: 'EN_PROGRESO' } }),
+                activeStudents: await prisma.seminarEnrollment.count({
+                    where: {
+                        status: 'EN_PROGRESO',
+                        ...(networkIds.length > 0 ? { userId: { in: networkIds } } : {})
+                    }
+                }),
                 graduatedInPeriod: 0
             }
         });
@@ -316,8 +338,8 @@ const getSeminarStatsByLeader = async (req, res) => {
         res.json(statsRaw.map(s => ({
             leaderName: s.leader_name,
             students: Number(s.total_students),
-            avgGrade: Number(s.avg_grade).toFixed(1),
-            avgAttendance: Number(s.avg_attendance_pct).toFixed(1),
+            avgGrade: Number(s.avg_grade),
+            avgAttendance: Number(s.avg_attendance_pct),
             passed: Number(s.passed_count)
         })));
     } catch (error) {

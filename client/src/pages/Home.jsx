@@ -56,8 +56,8 @@ const Home = () => {
     };
 
     const fetchLideresDoce = async () => {
+        setLoading(true);
         try {
-            setLoading(true);
             if (hasAnyRole(['PASTOR'])) {
                 try {
                     const pastorNetworkResponse = await api.get(`/network/${user.id}`);
@@ -82,12 +82,9 @@ const Home = () => {
                     } else if (pastorNetworkResponse.data) {
                         setNetwork(pastorNetworkResponse.data);
                         setSelectedLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
-                    } else {
-                        setLoading(false);
                     }
                 } catch (err) {
                     setError(err.response?.data?.message || err.message);
-                    setLoading(false);
                 }
             } else {
                 const response = await api.get('/network/los-doce');
@@ -96,9 +93,9 @@ const Home = () => {
                     handleSelectLeader({ id: response.data[0].id, fullName: response.data[0].fullName, roles: ['LIDER_DOCE'] });
                 }
             }
-            setLoading(false);
         } catch (err) {
             setError(err.response?.data?.message || err.message);
+        } finally {
             setLoading(false);
         }
     };

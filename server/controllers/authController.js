@@ -7,6 +7,7 @@ const { validatePassword } = require('../utils/passwordValidator');
 const { normalizeModuleName } = require('../middleware/coordinatorAuth');
 
 const prisma = require('../utils/database');
+const { getUserNetwork } = require('../utils/networkUtils');
 
 /**
  * Obtiene las coordinaciones de módulo del usuario (para incluir en JWT)
@@ -73,31 +74,6 @@ const register = async (req, res) => {
             return res.status(400).json({ message: validation.message });
         }
 
-        // Check if phone already exists (if provided)
-        if (phone) {
-            const existingUserByPhone = await prisma.user.findUnique({
-                where: { phone }
-            });
-            if (existingUserByPhone) {
-                return res.status(400).json({ message: 'El número de teléfono ya está registrado' });
-            }
-        }
-
-        // Check if document already exists (if both type and number are provided)
-        if (documentType && documentNumber) {
-            const existingProfile = await prisma.userProfile.findUnique({
-                where: { 
-                    documentType_documentNumber: {
-                        documentType,
-                        documentNumber
-                    }
-                }
-            });
-            if (existingProfile) {
-                return res.status(400).json({ message: 'El número de documento ya está registrado' });
-            }
-        }
-
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Transaction to ensure atomicity
@@ -108,7 +84,7 @@ const register = async (req, res) => {
                     email,
                     password: hashedPassword,
                     phone,
-                    mustChangePassword: false, // Los usuarios nuevos no necesitan cambiar contraseña
+                    mustChangePassword: false,
                     profile: {
                         create: {
                             fullName,
@@ -144,15 +120,24 @@ const register = async (req, res) => {
             });
 
             // 3. Handle Hierarchy if parent or liderDoceId provided
-            const reqParentId = parentId || liderDoceId;
-            if (reqParentId) {
-                const parentUserId = parseInt(reqParentId);
+            // Determine the correct role based on which ID was provided
+            let hierarchyRole = roleInHierarchy || 'DISCIPULO'; // Default
+            if (liderDoceId) {
+                // If liderDoceId is specifically provided, use LIDER_DOCE role
+                hierarchyRole = 'LIDER_DOCE';
+            } else if (parentId && !roleInHierarchy) {
+                // If only parentId is provided without explicit role, default to DISCIPULO
+                hierarchyRole = 'DISCIPULO';
+            }
+            
+            if (liderDoceId) {
+                const parentUserId = parseInt(liderDoceId);
 
                 await tx.userHierarchy.create({
                     data: {
                         parentId: parentUserId,
                         childId: newUser.id,
-                        role: roleInHierarchy || 'DISCIPULO'
+                        role: hierarchyRole
                     }
                 });
 
@@ -167,7 +152,7 @@ const register = async (req, res) => {
                         data: {
                             parentId: parentUser.spouseId,
                             childId: newUser.id,
-                            role: roleInHierarchy || 'DISCIPULO'
+                            role: hierarchyRole
                         }
                     });
                 } else if (parentUser) {
@@ -180,7 +165,48 @@ const register = async (req, res) => {
                             data: {
                                 parentId: spouseOfUser.id,
                                 childId: newUser.id,
-                                role: roleInHierarchy || 'DISCIPULO'
+                                role: hierarchyRole
+                            }
+                        });
+                    }
+                }
+            } else if (parentId) {
+                // Handle parentId case (for backward compatibility)
+                const parentUserId = parseInt(parentId);
+
+                await tx.userHierarchy.create({
+                    data: {
+                        parentId: parentUserId,
+                        childId: newUser.id,
+                        role: hierarchyRole
+                    }
+                });
+
+                // Check for spouse to assign automatically as well
+                const parentUser = await tx.user.findUnique({
+                    where: { id: parentUserId },
+                    select: { spouseId: true }
+                });
+
+                if (parentUser && parentUser.spouseId) {
+                    await tx.userHierarchy.create({
+                        data: {
+                            parentId: parentUser.spouseId,
+                            childId: newUser.id,
+                            role: hierarchyRole
+                        }
+                    });
+                } else if (parentUser) {
+                    const spouseOfUser = await tx.user.findFirst({
+                        where: { spouseId: parentUserId },
+                        select: { id: true }
+                    });
+                    if (spouseOfUser) {
+                        await tx.userHierarchy.create({
+                            data: {
+                                parentId: spouseOfUser.id,
+                                childId: newUser.id,
+                                role: hierarchyRole
                             }
                         });
                     }
@@ -191,9 +217,7 @@ const register = async (req, res) => {
                 where: { id: newUser.id },
                 include: {
                     profile: true,
-                    roles: { include: { role: true } },
-                    parents: { include: { parent: { include: { profile: true } } } },
-                    moduleCoordinations: true
+                    roles: { include: { role: true } }
                 }
             });
         });
@@ -212,7 +236,7 @@ const register = async (req, res) => {
         const refreshToken = await generateRefreshToken(user.id, req.headers['user-agent'], req.ip);
         
         // Clean expired tokens periodically
-        await cleanExpiredTokens();
+        cleanExpiredTokens().catch(err => console.error('Token cleanup error:', err));
 
         res.status(201).json({
             token,
@@ -263,11 +287,10 @@ const login = async (req, res) => {
             },
             include: {
                 profile: true,
-                roles: {
-                    include: {
-                        role: true
-                    }
-                }
+                roles: { include: { role: true } },
+                moduleCoordinations: { where: { isDeleted: false }, select: { moduleName: true } },
+                moduleSubCoordinations: { where: { isDeleted: false }, select: { moduleName: true } },
+                moduleTreasurers: { where: { isDeleted: false }, select: { moduleName: true } }
             }
         });
 
@@ -286,7 +309,11 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const moduleCoordinations = await getUserModuleCoordinations(user.id);
+        const moduleCoordinations = {
+            coordinating: user.moduleCoordinations.map(c => normalizeModuleName(c.moduleName)),
+            subCoordinating: user.moduleSubCoordinations.map(sc => normalizeModuleName(sc.moduleName)),
+            treasuring: user.moduleTreasurers.map(t => normalizeModuleName(t.moduleName))
+        };
         const token = jwt.sign({
             userId: user.id, 
             email: user.email, 
@@ -301,7 +328,7 @@ const login = async (req, res) => {
         const refreshToken = await generateRefreshToken(user.id, req.headers['user-agent'], req.ip);
         
         // Clean expired tokens periodically
-        await cleanExpiredTokens();
+        cleanExpiredTokens().catch(err => console.error('Token cleanup error:', err));
 
         // Auditoría de login exitoso
         await logActivity(user.id, 'LOGIN', 'USER', user.id, { 
@@ -414,31 +441,6 @@ const registerSetup = async (req, res) => {
             return res.status(400).json({ message: validation.message });
         }
 
-        // Check if phone already exists (if provided)
-        if (phone) {
-            const existingUserByPhone = await prisma.user.findUnique({
-                where: { phone }
-            });
-            if (existingUserByPhone) {
-                return res.status(400).json({ message: 'El número de teléfono ya está registrado' });
-            }
-        }
-
-        // Check if document already exists (if both type and number are provided)
-        if (documentType && documentNumber) {
-            const existingProfile = await prisma.userProfile.findUnique({
-                where: { 
-                    documentType_documentNumber: {
-                        documentType,
-                        documentNumber
-                    }
-                }
-            });
-            if (existingProfile) {
-                return res.status(400).json({ message: 'El número de documento ya está registrado' });
-            }
-        }
-
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await prisma.$transaction(async (tx) => {
@@ -495,7 +497,7 @@ const registerSetup = async (req, res) => {
         const refreshToken = await generateRefreshToken(user.id, req.headers['user-agent'], req.ip);
         
         // Clean expired tokens periodically
-        await cleanExpiredTokens();
+        cleanExpiredTokens().catch(err => console.error('Token cleanup error:', err));
 
         await logActivity(user.id, 'CREATE', 'USER', user.id, { message: 'Inicialización del sistema: Primer Usuario (ADMIN)' }, req.ip, req.headers['user-agent']);
 
@@ -543,7 +545,8 @@ const changePassword = async (req, res) => {
         }
 
         const user = await prisma.user.findUnique({
-            where: { id: userId }
+            where: { id: userId },
+            include: { profile: true }
         });
 
         if (!user) {
@@ -557,13 +560,9 @@ const changePassword = async (req, res) => {
         }
 
         // Validate new password
-        const userProfile = await prisma.userProfile.findUnique({
-            where: { userId: userId }
-        });
-
         const validation = validatePassword(newPassword, {
             email: user.email,
-            fullName: userProfile?.fullName
+            fullName: user.profile?.fullName
         });
 
         if (!validation.isValid) {
@@ -603,7 +602,6 @@ const forcePasswordChange = async (req, res) => {
         const targetUserId = parseInt(userId);
 
         if (!isSelfAdmin) {
-            const { getUserNetwork } = require('../utils/networkUtils');
             const networkIds = await getUserNetwork(req.user.id);
             if (!networkIds.includes(targetUserId)) {
                 return res.status(403).json({ message: 'No tienes permiso para resetear esta contraseña' });
@@ -688,7 +686,7 @@ const refreshToken = async (req, res) => {
             req.ip
         );
 
-        await cleanExpiredTokens();
+        cleanExpiredTokens().catch(err => console.error('Token cleanup error:', err));
 
         await logActivity(
             storedToken.user.id, 

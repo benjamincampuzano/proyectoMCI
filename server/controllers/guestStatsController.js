@@ -109,7 +109,7 @@ const getGuestStats = async (req, res) => {
 
         // Calculate conversion rate
         const ganados = byStatus.GANADO || 0;
-        const conversionRate = totalGuests > 0 ? ((ganados / totalGuests) * 100).toFixed(1) : 0;
+        const conversionRate = totalGuests > 0 ? ((ganados / totalGuests) * 100) : 0;
 
         // Get top inviters (Count only)
         const topInvitersData = await prisma.guest.groupBy({
@@ -176,7 +176,7 @@ const getGuestStats = async (req, res) => {
             .sort((a, b) => b.count - a.count);
 
         const monthsCount = Object.keys(guestsByMonth).length || 1;
-        const monthlyAverage = (totalGuests / monthsCount).toFixed(1);
+        const monthlyAverage = (totalGuests / monthsCount);
 
         const monthlyTrend = Object.entries(guestsByMonth)
             .map(([month, count]) => ({ month, count }))
@@ -185,10 +185,10 @@ const getGuestStats = async (req, res) => {
         res.status(200).json({
             totalGuests,
             byStatus,
-            conversionRate: parseFloat(conversionRate),
+            conversionRate,
             topInviters,
             invitationsByLiderDoce,
-            monthlyAverage: parseFloat(monthlyAverage),
+            monthlyAverage,
             monthlyTrend
         });
     } catch (error) {

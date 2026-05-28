@@ -13,9 +13,10 @@ export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allU
 
   const unassigned = useMemo(() => {
     // Mostrar siempre personas sin ningún líder asignado
-    const result = getUnassignedUsers({ allUsers, coupleRoot, isAdmin: true });
+    const isAdmin = currentUser?.roles?.includes('ADMIN');
+    const result = getUnassignedUsers({ allUsers, coupleRoot, isAdmin });
     return result;
-  }, [allUsers, coupleRoot]);
+  }, [allUsers, coupleRoot, currentUser]);
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     if (!s) return unassigned;

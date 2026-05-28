@@ -749,8 +749,8 @@ const getKidsStatsByLeader = async (req, res) => {
             return {
                 leaderName: `${leader.profile?.fullName || 'Sin nombre'} (${roleDisplay})`,
                 students: totalStudents,
-                avgGrade: gradeCount > 0 ? (totalGrades / gradeCount).toFixed(1) : '0.0',
-                avgAttendance: attendanceCount > 0 ? (totalAttendance / attendanceCount).toFixed(1) : '0.0',
+                avgGrade: gradeCount > 0 ? (totalGrades / gradeCount) : 0,
+                avgAttendance: attendanceCount > 0 ? (totalAttendance / attendanceCount) : 0,
                 passed
             };
         }).filter(l => l.students > 0);

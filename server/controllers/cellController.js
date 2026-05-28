@@ -145,7 +145,7 @@ const createCell = async (req, res) => {
                 barrio,
                 network,
                 spiritualMappingUrl,
-                fastingDate: fastingDate ? new Date(fastingDate) : null,
+                fastingDate: fastingDate || null,
                 rhemaWord,
                 pastorsMeeting: pastorsMeeting || false,
                 latitude: finalLat,
@@ -597,7 +597,7 @@ const updateCell = async (req, res) => {
         if (barrio !== undefined) data.barrio = barrio;
         if (network !== undefined) data.network = network;
         if (spiritualMappingUrl !== undefined) data.spiritualMappingUrl = spiritualMappingUrl;
-        if (fastingDate !== undefined) data.fastingDate = fastingDate ? new Date(fastingDate) : null;
+        if (fastingDate !== undefined) data.fastingDate = fastingDate || null;
         if (rhemaWord !== undefined) data.rhemaWord = rhemaWord;
         if (pastorsMeeting !== undefined) data.pastorsMeeting = pastorsMeeting;
 

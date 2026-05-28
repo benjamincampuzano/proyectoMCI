@@ -420,21 +420,20 @@ const Register = () => {
                                     required
                                 />
                             </div>
-                            <div>
-                                <label className="ln-label">Líder de Los Doce</label>
-                                <AsyncSearchSelect
-                                    fetchItems={fetchLeaders}
-                                    onSelect={handleLeaderSelect}
-                                    selectedValue={selectedLeader}
-                                    placeholder="Buscar líder por nombre..."
-                                    labelKey="fullName"
-                                    valueKey="id"
-                                    className="ln-input !p-0 border-none"
-                                />
-                            </div>
                         </div>
                     </div>
-
+                        <div>
+                            <label className="ln-label">Selecciona tu Líder Doce</label>
+                            <AsyncSearchSelect
+                                fetchItems={fetchLeaders}
+                                onSelect={handleLeaderSelect}
+                                selectedValue={selectedLeader}
+                                placeholder="Buscar líder por nombre..."
+                                labelKey="fullName"
+                                 valueKey="id"
+                                className="ln-input !p-0 border-none"
+                            />
+                        </div>
                     {/* Captcha */}
                     <div className="bg-[var(--ln-bg-marketing)]/50 p-3 sm:p-5 rounded-xl border border-[var(--ln-border-standard)]">
                         <label className="ln-label !mb-2 sm:!mb-3 text-[11px] sm:text-xs">Verificación de Seguridad</label>

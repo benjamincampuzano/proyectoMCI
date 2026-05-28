@@ -18,7 +18,7 @@ export function getUnassignedUsers({ allUsers = [], coupleRoot, isAdmin = false 
       ? allUsers.filter(u => {
           const roles = u.roles || [];
           if (roles.includes('ADMIN') || roles.includes('PASTOR')) return false;
-          return !u.liderCelulaId && !u.liderDoceId && !u.pastorId;
+          return (u.hierarchy || []).length === 0;
         })
       : [];
   }

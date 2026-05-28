@@ -11,17 +11,18 @@ const getUserNetwork = async (leaderId) => {
     if (isNaN(id)) return [];
 
     try {
-        // Recursive CTE to get all descendants from UserHierarchy
-        // This query finds all users where there is a path from leaderId to them in UserHierarchy table
+        // Recursive CTE con límite de profundidad y detección de ciclos
         const descendants = await prisma.$queryRaw`
             WITH RECURSIVE hierarchy AS (
-                SELECT "childId"
+                SELECT "childId", 1 AS depth, ARRAY["parentId"] AS visited
                 FROM "UserHierarchy"
                 WHERE "parentId" = ${id}
                 UNION ALL
-                SELECT uh."childId"
+                SELECT uh."childId", h.depth + 1, h.visited || uh."parentId"
                 FROM "UserHierarchy" uh
                 INNER JOIN hierarchy h ON uh."parentId" = h."childId"
+                WHERE h.depth < 50
+                  AND NOT uh."childId" = ANY(h.visited)
             )
             SELECT DISTINCT "childId" FROM hierarchy;
         `;
