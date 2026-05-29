@@ -33,6 +33,7 @@ const UserManagement = lazy(() => import('./pages/UserManagement'));
 const SetupWizard = lazy(() => import('./pages/SetupWizard'));
 const Metas = lazy(() => import('./pages/Metas'));
 const PublicGuestRegistration = lazy(() => import('./pages/PublicGuestRegistration'));
+const PublicConventionRegistration = lazy(() => import('./pages/PublicConventionRegistration'));
 const LegalDocuments = lazy(() => import('./pages/LegalDocuments'));
 
 // 
@@ -248,6 +249,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/public-guest-registration" element={<PublicGuestRegistration />} />
+                <Route path="/public-convention-registration" element={<PublicConventionRegistration />} />
 
                 <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
                   <Route index element={<Home />} />

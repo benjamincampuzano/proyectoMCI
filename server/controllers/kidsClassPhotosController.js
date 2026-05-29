@@ -1,4 +1,5 @@
 const prisma = require('../utils/database');
+const { hasAdminAccessOnModule } = require('../middleware/coordinatorAuth');
 
 exports.createClassPhoto = async (req, res) => {
     try {
@@ -80,8 +81,10 @@ exports.deleteClassPhoto = async (req, res) => {
             return res.status(404).json({ message: 'Evidencia de clase no encontrada' });
         }
 
-        // Solo el usuario que subió la foto o un admin puede eliminarla
-        if (photo.uploadedBy !== parseInt(userId) && req.user.role !== 'ADMIN') {
+        const canManageKidsModule = hasAdminAccessOnModule(req.user, 'kids');
+
+        // Solo el usuario que subió la foto o el liderazgo completo de Kids puede eliminarla
+        if (photo.uploadedBy !== parseInt(userId) && !canManageKidsModule) {
             return res.status(403).json({ 
                 message: 'No tienes permiso para eliminar esta evidencia' 
             });

@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import CellMap from './CellMap';
 import ModalAttendance from './ModalAttendance';
 
-const CellAttendance = () => {
+const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasurer }) => {
     const {
         date,
         setDate,
@@ -30,7 +30,14 @@ const CellAttendance = () => {
     // or being the leader of the selected cell
     const currentCell = useMemo(() => cells.find(c => c.id === selectedCell), [cells, selectedCell]);
 
-    const isLeadership = isAdmin() || hasAnyRole(['PASTOR', 'LIDER_DOCE']);
+    const isModuleCoordinator = moduleCoordinator?.id === user?.id;
+    const isModuleSubCoordinator = moduleSubCoordinator?.id === user?.id;
+    const isModuleTreasurer = moduleTreasurer?.id === user?.id;
+    const isLeadership = isAdmin() ||
+        hasAnyRole(['PASTOR', 'LIDER_DOCE']) ||
+        isModuleCoordinator ||
+        isModuleSubCoordinator ||
+        isModuleTreasurer;
     const isCellLeader = currentCell?.leaderId === user?.id;
     const isStandardMember = hasAnyRole(['DISCIPULO', 'MIEMBRO']);
 

@@ -210,6 +210,17 @@ const Login = () => {
                             Registrar Nuevo Invitado
                         </button>
                     </div>
+                    <div className="mt-4 pt-6 border-t border-[var(--ln-border-standard)] text-center">
+                        <p className="text-[13px] text-[var(--ln-text-secondary)] mb-4">
+                            Quieres registrarte a una Convención?
+                        </p>
+                        <button
+                            onClick={() => navigate('/public-convention-registration')}
+                            className="w-full bg-[var(--ln-brand-indigo)] text-white font-medium py-3.5 rounded-xl hover:bg-[var(--ln-accent-hover)] active:scale-[0.98] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 text-[14px]"
+                        >
+                            Registrar Convención
+                        </button>
+                    </div>
                     
                 </div>
                 <div className="pt-6 text-center">

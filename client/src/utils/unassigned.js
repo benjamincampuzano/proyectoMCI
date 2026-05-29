@@ -1,36 +1,58 @@
-
 // utils/unassigned.js
-function collect(root){
-  const s = new Set();
-  (function dfs(n) {
-    if (!n) return;
-    n.partners?.forEach(p => s.add(p.id));
-    n.disciples?.forEach(dfs);
+const LEADERSHIP_ROLES = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'];
+
+function collect(root) {
+  const ids = new Set();
+
+  (function dfs(node) {
+    if (!node) return;
+
+    node.partners?.forEach(partner => ids.add(partner.id));
+    node.disciples?.forEach(dfs);
   })(root);
-  return s;
+
+  return ids;
+}
+
+function hasHierarchyAssignment(user) {
+  if (!user) return false;
+
+  if (user.isUnassignedInHierarchy === false) {
+    return true;
+  }
+
+  if (Array.isArray(user.hierarchy) && user.hierarchy.length > 0) {
+    return true;
+  }
+
+  if (Array.isArray(user.parents) && user.parents.length > 0) {
+    return true;
+  }
+
+  return Boolean(user.pastorId || user.liderDoceId || user.liderCelulaId);
+}
+
+function isLeadershipUser(user) {
+  const roles = Array.isArray(user?.roles) ? user.roles : [];
+  return roles.some(role => LEADERSHIP_ROLES.includes(role));
+}
+
+function isAssignedUser(user) {
+  return isLeadershipUser(user) || hasHierarchyAssignment(user);
 }
 
 export function getUnassignedUsers({ allUsers = [], coupleRoot, isAdmin = false }) {
-  if (!coupleRoot && !isAdmin) return [];
+  if (!Array.isArray(allUsers)) return [];
 
-  if (isAdmin) {
-    return Array.isArray(allUsers)
-      ? allUsers.filter(u => {
-          const roles = u.roles || [];
-          if (roles.includes('ADMIN') || roles.includes('PASTOR')) return false;
-          return (u.hierarchy || []).length === 0;
-        })
-      : [];
-  }
+  const visibleIds = isAdmin ? null : collect(coupleRoot);
 
-  // For non-ADMIN users, use the existing logic
-  const ids = collect(coupleRoot);
-  return Array.isArray(allUsers)
-    ? allUsers.filter(u => {
-        if (ids.has(u.id)) return false;
-        const roles = u.roles || [];
-        if (roles.includes('ADMIN')) return false;
-        return true;
-      })
-    : [];
+  return allUsers.filter(user => {
+    if (!user) return false;
+
+    if (visibleIds && visibleIds.has(user.id)) {
+      return false;
+    }
+
+    return !isAssignedUser(user);
+  });
 }

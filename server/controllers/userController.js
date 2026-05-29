@@ -1565,7 +1565,7 @@ const searchUsers = async (req, res) => {
             // No additional role restrictions - excludeRoles already handled in where clause
         }
         // Special case for Art School enrollment - allow all roles
-        else if (allowAllRolesBool && (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR') || req.user.isModuleCoordinator)) {
+        else if (allowAllRolesBool && (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR') || req.user.isModuleCoordinator || req.user.isModuleTreasurer || hasAdminAccessOnModule(req.user, 'enviar'))) {
             if (roleFilter) {
                 where['roles'] = {
                     ...(where['roles'] || {}),
@@ -1573,7 +1573,7 @@ const searchUsers = async (req, res) => {
                 };
             }
         }
-        else if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
+        else if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR') || req.user.isModuleTreasurer || hasAdminAccessOnModule(req.user, 'enviar')) {
             if (roleFilter) {
                 where['roles'] = {
                     ...(where['roles'] || {}),
@@ -1581,7 +1581,7 @@ const searchUsers = async (req, res) => {
                 };
             }
         }
-        else if (req.user.isModuleCoordinator) {
+        else if (req.user.isModuleCoordinator || req.user.isModuleTreasurer || hasAdminAccessOnModule(req.user, 'enviar')) {
             const allowedRoles = [...MANAGABLE_ROLES, 'LIDER_DOCE'];
 
             if (role) {

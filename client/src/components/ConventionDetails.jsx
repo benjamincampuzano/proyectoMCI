@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, MoneyIcon, XCircle, Trash, FileTextIcon, Users, Pen, MicrosoftExcelLogoIcon } from '@phosphor-icons/react';
+import { ArrowLeft, UserPlus, MoneyIcon, XCircle, Trash, FileTextIcon, Users, Pen, MicrosoftExcelLogoIcon, CheckCircle, Clock } from '@phosphor-icons/react';
 import { ROLES } from '../constants/roles';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -7,7 +7,6 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { useAuth } from '../context/AuthContext';
 import { AsyncSearchSelect } from './ui';
-import MultiUserSelect from './MultiUserSelect';
 import BalanceReport from './BalanceReport';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -23,11 +22,11 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     
     // Can register payments
     const canManagePayments = hasAdminPower || isTreasurer('Convenciones');
+    const canReviewPendingRegistrations = canManageConvention;
 
     // Maintain compatibility with existing code
     const canModify = canManageConvention;
-    const isAdmin = hasAnyRole([ROLES.ADMIN]);
-    const [activeTab, setActiveTab] = useState('attendees'); // attendees, report
+    const [activeTab, setActiveTab] = useState('attendees'); // attendees, pending, report
     const [reportData, setReportData] = useState([]);
     const [loadingReport, setLoadingReport] = useState(false);
 
@@ -61,6 +60,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     // Registration Form State
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [discount, setDiscount] = useState(0);
+    const [ticketType, setTicketType] = useState('GENERAL');
     const [needsTransport, setNeedsTransport] = useState(false);
     const [needsAccommodation, setNeedsAccommodation] = useState(false);
 
@@ -68,6 +68,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentNotes, setPaymentNotes] = useState('');
     const [paymentType, setPaymentType] = useState('CONVENTION');
+
+    const pendingRegistrations = convention.pendingRegistrations || [];
 
     useEffect(() => {
         if (activeTab === 'report') {
@@ -95,12 +97,14 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             await api.post(`/convenciones/${convention.id}/register`, {
                 userId: selectedUserId,
                 discountPercentage: parseFloat(discount),
+                ticketType,
                 needsTransport,
                 needsAccommodation
             });
             setShowRegisterModal(false);
             setSelectedUserId(null);
             setDiscount(0);
+            setTicketType('GENERAL');
             setNeedsTransport(false);
             setNeedsAccommodation(false);
             onRefresh();
@@ -113,12 +117,42 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         }
     };
 
+    const handleApprovePendingRegistration = async (registrationId) => {
+        setLoading(true);
+        try {
+            await api.patch(`/convenciones/registrations/${registrationId}/approve`);
+            toast.success('Solicitud aprobada');
+            onRefresh();
+        } catch (error) {
+            console.error('Error approving registration:', error);
+            toast.error('Error al aprobar la solicitud');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRejectPendingRegistration = async (registrationId) => {
+        setLoading(true);
+        try {
+            await api.patch(`/convenciones/registrations/${registrationId}/reject`);
+            toast.success('Solicitud rechazada');
+            onRefresh();
+        } catch (error) {
+            console.error('Error rejecting registration:', error);
+            toast.error('Error al rechazar la solicitud');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const openEditModal = () => {
         setEditData({
             type: convention.type,
             year: convention.year,
             theme: convention.theme || '',
             cost: convention.cost,
+            vipPlateaCost: convention.vipPlateaCost || 0,
+            generalCost: convention.generalCost || 0,
             transportCost: convention.transportCost || 0,
             accommodationCost: convention.accommodationCost || 0,
             startDate: new Date(convention.startDate).toISOString().split('T')[0],
@@ -162,6 +196,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                 { header: 'Nombre', key: 'fullName', width: 30 },
                 { header: 'Email', key: 'email', width: 25 },
                 { header: 'Rol', key: 'roles', width: 20 },
+                { header: 'Tipo Entrada', key: 'ticketTypeLabel', width: 15 },
                 { header: 'Costo Base', key: 'cost', width: 15 },
                 { header: 'Descuento %', key: 'discount', width: 12 },
                 { header: 'Total a Pagar', key: 'finalCost', width: 15 },
@@ -176,10 +211,11 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             convention.registrations.forEach((reg, index) => {
                 worksheet.addRow({
                     index: index + 1,
-                    fullName: reg.user.fullName,
-                    email: reg.user.email,
-                    roles: reg.user.roles?.join(', '),
-                    cost: convention.cost,
+                    fullName: reg.fullName || reg.user?.fullName,
+                    email: reg.user?.email || reg.phone || '',
+                    roles: reg.user?.roles?.join(', '),
+                    ticketTypeLabel: reg.ticketType === 'VIP_PLATEA' ? 'VIP Platea' : 'General',
+                    cost: reg.ticketBaseCost || convention.cost,
                     discount: reg.discountPercentage,
                     finalCost: reg.finalCost,
                     totalPaid: reg.totalPaid,
@@ -307,6 +343,23 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                         <Users size={16} className="mr-2" />
                         Asistentes
                     </button>
+                    {canReviewPendingRegistrations && (
+                        <button
+                            onClick={() => setActiveTab('pending')}
+                            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'pending'
+                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                }`}
+                        >
+                            <Clock size={16} className="mr-2" />
+                            Pendientes
+                            {pendingRegistrations.length > 0 && (
+                                <span className="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                    {pendingRegistrations.length}
+                                </span>
+                            )}
+                        </button>
+                    )}
                     <button
                         onClick={() => setActiveTab('report')}
                         className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'report'
@@ -404,6 +457,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asistente</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo Entrada</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descuento</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total a Pagar</th>
@@ -421,13 +475,24 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                     className="text-left group"
                                                 >
                                                     <div className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors underline decoration-dotted decoration-gray-400">
-                                                        {reg.user.fullName}
+                                                        {reg.fullName}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">{reg.user.email}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {reg.user?.email || reg.phone || 'Registro público'}
+                                                    </div>
                                                 </button>
                                             </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                                    reg.ticketType === 'VIP_PLATEA'
+                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                                                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                                }`}>
+                                                    {reg.ticketType === 'VIP_PLATEA' ? 'VIP Platea' : 'General'}
+                                                </span>
+                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                {formatCurrency(convention.cost)}
+                                                {formatCurrency(reg.ticketBaseCost || convention.cost)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {reg.discountPercentage}%
@@ -490,7 +555,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                     ))}
                                     {(!convention.registrations || convention.registrations.length === 0) && (
                                         <tr>
-                                            <td colSpan="7" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                            <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                                 No hay inscritos aún.
                                             </td>
                                         </tr>
@@ -500,6 +565,92 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                         </div>
                     </div>
                 </>
+            ) : activeTab === 'pending' ? (
+                <div className="space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Solicitudes pendientes</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Revisa y aprueba las solicitudes creadas desde el formulario público.
+                            </p>
+                        </div>
+                        <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                            <Clock size={16} />
+                            {pendingRegistrations.length} pendientes
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nombre</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contacto</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Entrada</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {pendingRegistrations.map((reg) => (
+                                        <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {reg.fullName}
+                                                </div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                    Estado: {reg.status}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.phone || 'Sin teléfono'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                                    reg.ticketType === 'VIP_PLATEA'
+                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                                                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                                }`}>
+                                                    {reg.ticketType === 'VIP_PLATEA' ? 'VIP Platea' : 'General'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.createdAt ? new Date(reg.createdAt).toLocaleString() : 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <button
+                                                        onClick={() => handleApprovePendingRegistration(reg.id)}
+                                                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-white transition-colors hover:bg-emerald-700"
+                                                        disabled={loading}
+                                                    >
+                                                        <CheckCircle size={16} />
+                                                        Aprobar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRejectPendingRegistration(reg.id)}
+                                                        className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-2 text-white transition-colors hover:bg-red-700"
+                                                        disabled={loading}
+                                                    >
+                                                        Rechazar
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {pendingRegistrations.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                                No hay solicitudes pendientes.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             ) : (
                 <div className="animate-fade-in">
                     {loadingReport ? (
@@ -541,6 +692,19 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                     placeholder="Buscar por nombre..."
                                     labelKey="fullName"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Tipo de Entrada
+                                </label>
+                                <select
+                                    value={ticketType}
+                                    onChange={(e) => setTicketType(e.target.value)}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="VIP_PLATEA">VIP Platea {convention.vipPlateaCost > 0 && `(+${formatCurrency(convention.vipPlateaCost)})`}</option>
+                                    <option value="GENERAL">General {convention.generalCost > 0 && `(+${formatCurrency(convention.generalCost)})`}</option>
+                                </select>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -606,7 +770,9 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 mx-6 mt-6 rounded-lg">
                             <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-600 dark:text-gray-400">Usuario:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{selectedRegistration.user.fullName}</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {selectedRegistration.fullName || selectedRegistration.user?.fullName}
+                                </span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600 dark:text-gray-400">Saldo Pendiente:</span>
@@ -676,7 +842,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
                         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                Historial de Pagos - {selectedHistoryRegistration.user.fullName}
+                                Historial de Pagos - {selectedHistoryRegistration.fullName || selectedHistoryRegistration.user?.fullName}
                             </h3>
                             <button onClick={() => setShowHistoryModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                                 <XCircle size={24} />
@@ -771,15 +937,25 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Total Convencion ($)</label>
-                                <input
-                                    type="number"
-                                    value={editData.cost}
-                                    onChange={(e) => setEditData({ ...editData, cost: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                    required
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo VIP Platea ($)</label>
+                                    <input
+                                        type="number"
+                                        value={editData.vipPlateaCost}
+                                        onChange={(e) => setEditData({ ...editData, vipPlateaCost: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo General ($)</label>
+                                    <input
+                                        type="number"
+                                        value={editData.generalCost}
+                                        onChange={(e) => setEditData({ ...editData, generalCost: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
                             </div>
 
                             <div>
@@ -880,7 +1056,9 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-gray-600 dark:text-gray-400">Asistente:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">{registrationToDelete.user.fullName}</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {registrationToDelete.fullName || registrationToDelete.user?.fullName}
+                                </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600 dark:text-gray-400">Total a Pagar:</span>

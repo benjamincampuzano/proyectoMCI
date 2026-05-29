@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
-const { isModuleCoordinator } = require('../middleware/coordinatorAuth');
+const { hasAdminAccessOnModule } = require('../middleware/coordinatorAuth');
 const {
     createModule,
     getModules,
@@ -19,10 +19,20 @@ const {
 
 router.use(authenticate);
 
-router.post('/modules', authenticate, isModuleCoordinator, createModule);
+const authorizeKidsModuleAccess = (req, res, next) => {
+    if (hasAdminAccessOnModule(req.user, 'kids')) {
+        return next();
+    }
+
+    return res.status(403).json({
+        message: 'Acceso denegado. Se requiere acceso completo al módulo Kids.'
+    });
+};
+
+router.post('/modules', authorizeKidsModuleAccess, createModule);
 router.get('/modules', getModules);
-router.put('/modules/:id', authenticate, isModuleCoordinator, updateModule);
-router.delete('/modules/:id', authenticate, isModuleCoordinator, deleteModule);
+router.put('/modules/:id', authorizeKidsModuleAccess, updateModule);
+router.delete('/modules/:id', authorizeKidsModuleAccess, deleteModule);
 router.get('/modules/:id/matrix', getModuleMatrix);
 
 router.post('/enroll', enrollStudent);

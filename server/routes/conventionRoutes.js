@@ -7,6 +7,9 @@ const {
     createConvention,
     updateConvention,
     registerUser,
+    getPendingConventionRegistrations,
+    approveConventionRegistration,
+    rejectConventionRegistration,
     addPayment,
     deleteRegistration,
     deleteConvention,
@@ -25,8 +28,11 @@ router.get('/:id', getConventionById);
 router.put('/:id', updateConvention);
 router.delete('/:id', deleteConvention);
 router.get('/:id/report/balance', getConventionBalanceReport);
+router.get('/:conventionId/registrations/pending', getPendingConventionRegistrations);
 
 router.post('/:conventionId/register', registerUser);
+router.patch('/registrations/:registrationId/approve', approveConventionRegistration);
+router.patch('/registrations/:registrationId/reject', rejectConventionRegistration);
 router.post('/registrations/:registrationId/payments', canManageConventionPayments, addPayment);
 router.delete('/registrations/:registrationId', deleteRegistration);
 

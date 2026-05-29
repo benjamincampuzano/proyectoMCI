@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = require('../utils/database');
+const { getUserNetwork } = require('../utils/networkUtils');
 
 const CATEGORY_CONFIG = {
     'KIDS1': { label: 'Kids 1 (5-7 años)', minAge: 5, maxAge: 7 },
@@ -656,15 +657,49 @@ const getEligibleStudents = async (req, res) => {
 
 const getKidsStatsByLeader = async (req, res) => {
     try {
-        const leaders = await prisma.user.findMany({
-            where: {
-                roles: { 
-                    some: { 
-                        role: { name: { in: ['LIDER_DOCE', 'LIDER_CELULA'] } } 
-                    } 
-                },
-                isDeleted: false
+        const userId = req.user.id;
+        const userRoles = (req.user.roles || []).map(r => String(r).toUpperCase());
+        
+        const privilegeRoles = ['ADMIN', 'PASTOR', 'COORDINADOR', 'SUBCOORDINADOR', 'TESORERO'];
+        const hasFullAccess = userRoles.some(role => privilegeRoles.includes(role));
+        const isLeaderRole = userRoles.some(role => ['LIDER_DOCE', 'LIDER_CELULA'].includes(role));
+
+        let whereClause = {
+            roles: { 
+                some: { 
+                    role: { name: { in: ['LIDER_DOCE', 'LIDER_CELULA'] } } 
+                } 
             },
+            isDeleted: false
+        };
+
+        if (!hasFullAccess) {
+            if (isLeaderRole) {
+                const networkIds = await getUserNetwork(userId);
+                whereClause = {
+                    id: { in: [...new Set([userId, ...networkIds.map(id => parseInt(id))])] },
+                    roles: {
+                        some: {
+                            role: { name: { in: ['LIDER_DOCE', 'LIDER_CELULA'] } }
+                        }
+                    },
+                    isDeleted: false
+                };
+            } else {
+                whereClause = {
+                    id: userId,
+                    roles: {
+                        some: {
+                            role: { name: { in: ['LIDER_DOCE', 'LIDER_CELULA'] } }
+                        }
+                    },
+                    isDeleted: false
+                };
+            }
+        }
+
+        const leaders = await prisma.user.findMany({
+            where: whereClause,
             select: {
                 id: true,
                 profile: { select: { fullName: true } },
@@ -766,9 +801,16 @@ const checkKidsAccess = async (req, res) => {
     try {
         const userId = req.user.id;
         const userRoles = req.user.roles || [];
+        const hasFullKidsAccess = userRoles.some(role => [
+            'ADMIN',
+            'PASTOR',
+            'COORDINADOR',
+            'SUBCOORDINADOR',
+            'TESORERO'
+        ].includes(role));
 
-        // Admin and Pastor always have access
-        if (userRoles.includes('ADMIN') || userRoles.includes('PASTOR')) {
+        // Admin, Pastor and module leadership always have access
+        if (hasFullKidsAccess) {
             return res.json({ hasAccess: true });
         }
 
@@ -800,10 +842,14 @@ const checkKidsAccess = async (req, res) => {
             return res.json({ hasAccess: true });
         }
 
+        const descendantIds = userRoles.some(role => ['LIDER_DOCE', 'LIDER_CELULA'].includes(role))
+            ? [userId, ...(await getUserNetwork(userId))]
+            : [userId];
+
         // Check if user has KIDS students in their hierarchy (as leader)
         const hasKidsInHierarchy = await prisma.user.findFirst({
             where: {
-                id: userId,
+                id: { in: [...new Set(descendantIds.map(id => parseInt(id)))] },
                 children: {
                     some: {
                         child: {

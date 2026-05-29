@@ -58,6 +58,7 @@ const getGuestStats = async (req, res) => {
         const isPastor = userRoles.includes('PASTOR');
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
         const isCoordinator = userRoles.includes('COORDINADOR');
+        const canSeeAllGuests = isAdmin || isPastor || isCoordinator;
 
         // Build date filter
         const dateFilter = {};
@@ -74,9 +75,9 @@ const getGuestStats = async (req, res) => {
         // Build security filter based on role
         let networkIds = [];
         let securityFilter = {};
-        if (isAdmin || isCoordinator) {
+        if (canSeeAllGuests) {
             securityFilter = {};
-        } else if (isLiderDoce || isPastor) {
+        } else if (isLiderDoce) {
             networkIds = await getUserNetwork(currentUserId);
             securityFilter = {
                 invitedById: { in: [...networkIds, currentUserId] }

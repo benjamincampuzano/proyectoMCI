@@ -5,7 +5,7 @@ import KidsSchedule from '../components/Kids/KidsSchedule';
 import KidsStudentMatrix from '../components/Kids/KidsStudentMatrix';
 import KidsStats from '../components/Kids/KidsStats';
 import { PageHeader, Button } from '../components/ui';
-import { ROLES } from '../constants/roles';
+import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import { useAuth } from '../context/AuthContext';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ArrowsClockwise } from '@phosphor-icons/react';
@@ -13,63 +13,47 @@ import api from '../utils/api';
 
 const KidsModule = () => {
     const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
-    const [isKidsTeacherOrAuxiliary, setIsKidsTeacherOrAuxiliary] = useState(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    // Load coordinator data on mount (needed for header display)
+    // Load coordinator data on mount and when manually refreshed
     useEffect(() => {
+        let cancelled = false;
+
         const fetchCoordinatorData = async () => {
             setLoading(true);
             try {
                 const rolesRes = await api.get('/coordinators/module/kids/roles')
                     .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
 
-                setModuleCoordinator(rolesRes.data.coordinator);
-                setModuleSubCoordinator(rolesRes.data.subCoordinator);
-                setModuleTreasurer(rolesRes.data.treasurer);
+                if (!cancelled) {
+                    setModuleCoordinator(rolesRes.data.coordinator);
+                    setModuleSubCoordinator(rolesRes.data.subCoordinator);
+                    setModuleTreasurer(rolesRes.data.treasurer);
+                }
             } catch (error) {
-                console.error('Error fetching coordinator data:', error);
+                if (!cancelled) {
+                    console.error('Error fetching coordinator data:', error);
+                }
             } finally {
-                setLoading(false);
+                if (!cancelled) {
+                    setLoading(false);
+                }
             }
         };
 
         fetchCoordinatorData();
-    }, []);
 
-    // Lazy load teacher access data only when needed
-    const fetchTeacherAccess = async () => {
-        try {
-            const teacherRes = await api.get('/kids/students/check-access')
-                .catch(() => ({ data: { hasAccess: false } }));
-            setIsKidsTeacherOrAuxiliary(teacherRes.data.hasAccess);
-        } catch (error) {
-            console.error('Error fetching teacher access:', error);
-            setIsKidsTeacherOrAuxiliary(false);
-        }
-    };
+        return () => {
+            cancelled = true;
+        };
+    }, [refreshTrigger]);
 
     const handleRefresh = () => {
-        const fetchCoordinatorData = async () => {
-            setLoading(true);
-            try {
-                const rolesRes = await api.get('/coordinators/module/kids/roles')
-                    .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
-
-                setModuleCoordinator(rolesRes.data.coordinator);
-                setModuleSubCoordinator(rolesRes.data.subCoordinator);
-                setModuleTreasurer(rolesRes.data.treasurer);
-            } catch (error) {
-                console.error('Error fetching coordinator data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCoordinatorData();
+        setRefreshTrigger(prev => prev + 1);
     };
 
     // Function to check if user has full access to Kids module (ADMIN, PASTOR, Coordinator, Subcoordinator, Treasurer)
@@ -80,34 +64,34 @@ const KidsModule = () => {
                isTreasurer('kids');
     };
 
+    const hasStatsAccess = () => {
+        return hasFullKidsAccess() || hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
+    };
+
     const tabs = [
         {
             id: 'schedule',
             label: 'Cronograma',
             component: (props) => <KidsSchedule {...props} moduleCoordinator={moduleCoordinator} />,
-            customCheck: hasFullKidsAccess,
-            onTabSelect: fetchModuleData
+            customCheck: hasFullKidsAccess
         },
         {
             id: 'management',
             label: 'Clases y Notas',
             component: KidsCourseManagement,
-            customCheck: hasFullKidsAccess,
-            onTabSelect: fetchModuleData
+            customCheck: hasFullKidsAccess
         },
         {
             id: 'matrix',
             label: 'Matriz de Estudiantes',
             component: KidsStudentMatrix,
-            customCheck: hasFullKidsAccess,
-            onTabSelect: fetchModuleData
+            customCheck: hasFullKidsAccess
         },
         {
             id: 'stats',
             label: 'Reporte Estadístico',
             component: KidsStats,
-            customCheck: hasFullKidsAccess,
-            onTabSelect: fetchModuleData
+            customCheck: hasStatsAccess
         }
     ];
 
@@ -144,7 +128,7 @@ const KidsModule = () => {
                 </Button>
             </div>
 
-            <TabNavigator tabs={tabs} initialTabId="schedule" moduleName="kids" refreshTrigger={refreshKey} />
+            <TabNavigator tabs={tabs} initialTabId="schedule" moduleName="kids" refreshTrigger={refreshTrigger} />
         </div>
     );
 };

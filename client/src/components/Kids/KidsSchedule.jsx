@@ -449,7 +449,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                                 >
                                                     Fila
                                                 </Button>
-                                                {hasAnyRole([ROLES.ADMIN, ROLES.COORDINADOR, ROLES.SUBCOORDINADOR, ROLES.TESORERO]) && (
+                                                {hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.COORDINADOR, ROLES.SUBCOORDINADOR, ROLES.TESORERO]) && (
                                                     <>
                                                         <Button
                                                             onClick={(e) => {

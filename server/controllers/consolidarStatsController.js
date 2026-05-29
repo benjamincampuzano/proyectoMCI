@@ -36,15 +36,15 @@ const getGeneralStats = async (req, res) => {
 
         const guestRaw = await prisma.$queryRaw`
             SELECT
-                up."fullName" AS leader_name,
+                COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
                 COUNT(DISTINCT g.id)::int AS total_guests,
                 COUNT(DISTINCT CASE WHEN g.status = 'GANADO' THEN g.id END)::int AS total_conversions,
                 (SELECT COUNT(*) FROM "GuestCall" gc2 WHERE gc2."guestId" = g.id LIMIT 1)::int AS with_call,
                 (SELECT COUNT(*) FROM "GuestVisit" gv2 WHERE gv2."guestId" = g.id LIMIT 1)::int AS with_visit
             FROM "Guest" g
             JOIN "User" u ON u.id = g."invitedById"
-            JOIN "UserHierarchy" uh ON uh."childId" = u.id AND uh.role IN ('LIDER_DOCE', 'PASTOR', 'LIDER_CELULA')
-            JOIN "UserProfile" up ON up."userId" = uh."parentId"
+            LEFT JOIN "UserHierarchy" uh ON uh."childId" = u.id AND uh.role IN ('LIDER_DOCE', 'PASTOR', 'LIDER_CELULA')
+            LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             WHERE g."createdAt" BETWEEN ${start} AND ${end}
               AND g."isDeleted" = false
               ${networkFilterGuests}
@@ -80,12 +80,12 @@ const getGeneralStats = async (req, res) => {
         const attendanceRaw = await prisma.$queryRaw`
             SELECT
                 TO_CHAR(ca.date, 'YYYY-MM') AS month_key,
-                up."fullName" AS leader_name,
+                COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
                 COUNT(ca.id)::int AS attendance_count
             FROM "ChurchAttendance" ca
             JOIN "User" u ON u.id = ca."userId"
-            JOIN "UserHierarchy" uh ON uh."childId" = u.id AND uh.role = 'LIDER_DOCE'
-            JOIN "UserProfile" up ON up."userId" = uh."parentId"
+            LEFT JOIN "UserHierarchy" uh ON uh."childId" = u.id AND uh.role = 'LIDER_DOCE'
+            LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             WHERE ca.date BETWEEN ${start} AND ${end}
               AND ca.status = 'PRESENTE'
               ${networkFilter_sql}
@@ -135,7 +135,7 @@ const getGeneralStats = async (req, res) => {
         // 4. CELLS — ✅ SQL GROUP BY
         const cellsRaw = await prisma.$queryRaw`
             SELECT
-                up."fullName" AS leader_name,
+                COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
                 COUNT(DISTINCT c.id)::int AS cell_count,
                 COALESCE(
                     (SELECT AVG(cnt) FROM (
@@ -155,8 +155,8 @@ const getGeneralStats = async (req, res) => {
                     '[]'::json
                 ) AS cell_locations
             FROM "Cell" c
-            JOIN "UserHierarchy" uh ON uh."childId" = c."leaderId" AND uh.role = 'LIDER_DOCE'
-            JOIN "UserProfile" up ON up."userId" = uh."parentId"
+            LEFT JOIN "UserHierarchy" uh ON uh."childId" = c."leaderId" AND uh.role = 'LIDER_DOCE'
+            LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             WHERE c."isDeleted" = false
               ${networkFilterCells}
             GROUP BY leader_name
@@ -185,7 +185,6 @@ const getGeneralStats = async (req, res) => {
             LEFT JOIN "Guest" g ON g.id = er."guestId"
             LEFT JOIN "User" u ON u.id = COALESCE(er."userId", g."assignedToId")
             LEFT JOIN "UserHierarchy" uh ON uh."childId" = COALESCE(er."userId", g."assignedToId")
-                AND uh.role = 'LIDER_DOCE'
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             LEFT JOIN "EncuentroPayment" ep ON ep."registrationId" = er.id
             WHERE er.status != 'CANCELLED'
@@ -223,7 +222,6 @@ const getGeneralStats = async (req, res) => {
             JOIN "Convention" conv ON conv.id = cr."conventionId"
             LEFT JOIN "User" u ON u.id = cr."userId"
             LEFT JOIN "UserHierarchy" uh ON uh."childId" = cr."userId"
-                AND uh.role = 'LIDER_DOCE'
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             LEFT JOIN "ConventionPayment" cp ON cp."registrationId" = cr.id
             WHERE cr.status != 'CANCELLED'
@@ -326,7 +324,7 @@ const getSeminarStatsByLeader = async (req, res) => {
                 )::float AS avg_attendance_pct
             FROM "SeminarEnrollment" se
             JOIN "User" u ON u.id = se."userId"
-            LEFT JOIN "UserHierarchy" uh ON uh."childId" = se."userId" AND uh.role = 'LIDER_DOCE'
+            LEFT JOIN "UserHierarchy" uh ON uh."childId" = se."userId"
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             LEFT JOIN "ClassAttendance" ca ON ca."enrollmentId" = se.id
             WHERE 1=1

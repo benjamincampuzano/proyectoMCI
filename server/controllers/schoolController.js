@@ -375,7 +375,7 @@ const getModuleMatrix = async (req, res) => {
         const roles = user.roles || [];
         const isAdmin = roles.includes('ADMIN');
         const isCoordinator = await isUserCoordinator(user.id, 'discipular');
-        const isProfessor = moduleData.professors.some(p => p.id === user.id) || isAdmin || isCoordinator;
+        const isProfessor = moduleData.professors.some(p => p.id === user.id) || isAdmin || isCoordinator || roles.includes('PASTOR');
         const isAuxiliar = moduleData.auxiliaries.some(a => a.id === user.id);
         const isDisciple = roles.includes('DISCIPULO');
         
@@ -585,7 +585,7 @@ const getSchoolStatsByLeader = async (req, res) => {
 
         // Filter by network for leaders
         const roles = user.roles || [];
-        if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA') || roles.includes('PASTOR')) {
+        if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
             const networkUserIds = await getUserNetwork(userId);
             whereClause.userId = { in: [...networkUserIds, userId] };
         } else if (roles.includes('DISCIPULO')) {

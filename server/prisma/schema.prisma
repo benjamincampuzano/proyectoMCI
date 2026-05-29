@@ -448,6 +448,8 @@ model Convention {
   year              Int
   theme             String?
   cost              Float
+  vipPlateaCost     Float                    @default(0)
+  generalCost       Float                    @default(0)
   transportCost     Float                    @default(0)
   accommodationCost Float                    @default(0)
   startDate         DateTime                 @db.Timestamptz(6)
@@ -477,10 +479,13 @@ model ConventionLeader {
 
 model ConventionRegistration {
   id                 Int                 @id @default(autoincrement())
-  userId             Int
+  userId             Int?
   conventionId       Int
-  status             RegistrationStatus  @default(REGISTERED)
+  fullName           String?
+  phone              String?
+  status             RegistrationStatus  @default(PENDING)
   discountPercentage Float               @default(0)
+  ticketType         TicketType           @default(GENERAL)
   needsTransport     Boolean             @default(false)
   needsAccommodation Boolean             @default(false)
   registeredById     Int?
@@ -489,12 +494,14 @@ model ConventionRegistration {
   payments           ConventionPayment[]
   convention         Convention          @relation(fields: [conventionId], references: [id], onDelete: Cascade)
   registeredBy       User?               @relation("ConventionRegistrar", fields: [registeredById], references: [id])
-  user               User                @relation(fields: [userId], references: [id])
+  user               User?               @relation(fields: [userId], references: [id])
 
   @@unique([userId, conventionId])
   @@index([status])
   @@index([createdAt])
   @@index([conventionId])
+  @@index([conventionId, status])
+  @@index([fullName])
 }
 
 model ConventionPayment {
@@ -812,10 +819,17 @@ model ArtAttendance {
   @@unique([enrollmentId, sessionId])
 }
 
+enum ArtPaymentType {
+  TUITION
+  MATERIAL
+  OTHER
+}
+
 model ArtPayment {
   id             Int           @id @default(autoincrement())
   enrollmentId   Int
   amount         Float
+  paymentType    ArtPaymentType @default(TUITION)
   date           DateTime      @default(now()) @db.Timestamptz(6)
   notes          String?
   registeredById Int?
@@ -976,9 +990,15 @@ enum ConventionType {
 }
 
 enum RegistrationStatus {
+  PENDING
   REGISTERED
   CANCELLED
   ATTENDED
+}
+
+enum TicketType {
+  VIP_PLATEA
+  GENERAL
 }
 
 enum ConventionPaymentType {

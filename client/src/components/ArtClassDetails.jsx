@@ -24,6 +24,8 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
 
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [selectedHistoryEnrollment, setSelectedHistoryEnrollment] = useState(null);
+    const [historyPayments, setHistoryPayments] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
     const [showConvertModal, setShowConvertModal] = useState(false);
     const [convertData, setConvertData] = useState({
         email: '',
@@ -125,15 +127,13 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
                 notes: paymentNotes
             });
             setShowPaymentModal(false);
-            setSelectedEnrollment(null);
-            setPaymentAmount('');
-            setPaymentType('TUITION');
-            setPaymentNotes('');
+            resetPaymentForm();
+            toast.success('Abono registrado exitosamente');
             onRefresh();
             if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error adding payment:', error);
-            toast.error('Error adding payment');
+            toast.error(error.response?.data?.error || error.userMessage || 'Error al registrar el abono');
         } finally {
             setLoading(false);
         }
@@ -224,9 +224,19 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
         }
     };
 
-    const openHistoryModal = (enrollment) => {
+    const openHistoryModal = async (enrollment) => {
         setSelectedHistoryEnrollment(enrollment);
         setShowHistoryModal(true);
+        setLoadingHistory(true);
+        try {
+            const response = await api.get(`/arts/enrollments/${enrollment.id}/payments`);
+            setHistoryPayments(response.data);
+        } catch (error) {
+            console.error('Error fetching payments:', error);
+            setHistoryPayments(enrollment.payments || []);
+        } finally {
+            setLoadingHistory(false);
+        }
     };
 
     const openConvertModal = (enrollment) => {
@@ -234,9 +244,31 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
         setShowConvertModal(true);
     };
 
+    const resetPaymentForm = () => {
+        setPaymentAmount('');
+        setPaymentType('TUITION');
+        setPaymentNotes('');
+        setSelectedEnrollment(null);
+    };
+
     const openPaymentModal = (enrollment) => {
+        resetPaymentForm();
         setSelectedEnrollment(enrollment);
         setShowPaymentModal(true);
+    };
+
+    const handleDeletePayment = async (paymentId) => {
+        if (!window.confirm('¿Estás seguro de eliminar este abono?')) return;
+        try {
+            await api.delete(`/arts/payments/${paymentId}`);
+            setHistoryPayments(prev => prev.filter(p => p.id !== paymentId));
+            toast.success('Abono eliminado');
+            onRefresh();
+            if (activeTab === 'report') fetchReport();
+        } catch (error) {
+            console.error('Error deleting payment:', error);
+            toast.error(error.response?.data?.error || 'Error al eliminar abono');
+        }
     };
 
     const formatCurrency = (amount) => {
@@ -637,7 +669,7 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
                                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                                     <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Registrar Abono</h3>
-                                        <button onClick={() => setShowPaymentModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                        <button onClick={() => { setShowPaymentModal(false); resetPaymentForm(); }} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                                             <XCircle size={24} />
                                         </button>
                                     </div>
@@ -655,13 +687,13 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto del Abono ($)</label>
                                             <input
                                                 type="number"
-                                                min="0"
-                                                max={selectedEnrollment.balance}
-                                                step="0.01"
+                                                min="1"
+                                                max={selectedEnrollment.balance > 0 ? selectedEnrollment.balance : undefined}
+                                                step="1"
                                                 value={paymentAmount}
                                                 onChange={(e) => setPaymentAmount(e.target.value)}
                                                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                                placeholder="0.00"
+                                                placeholder="Ingrese el monto"
                                                 required
                                             />
                                         </div>
@@ -693,7 +725,7 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
                                         <div className="pt-4 flex space-x-3">
                                             <button
                                                 type="button"
-                                                onClick={() => setShowPaymentModal(false)}
+                                                onClick={() => { setShowPaymentModal(false); resetPaymentForm(); }}
                                                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                             >
                                                 Cancelar
@@ -826,6 +858,89 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
                                 </div>
                             )}
                         </ConfirmationModal>
+
+                        {/* Payment History Modal */}
+                        {showHistoryModal && selectedHistoryEnrollment && (
+                            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+                                    <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                            Historial de Abonos
+                                        </h3>
+                                        <button
+                                            onClick={() => { setShowHistoryModal(false); setSelectedHistoryEnrollment(null); }}
+                                            className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                        >
+                                            <XCircle size={24} />
+                                        </button>
+                                    </div>
+                                    <div className="p-6">
+                                        <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-6">
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                {selectedHistoryEnrollment.guest?.name || selectedHistoryEnrollment.user?.profile?.fullName || selectedHistoryEnrollment.user?.fullName}
+                                            </p>
+                                            <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                                <span>Total pagado: <strong className="text-green-600 dark:text-green-400">{formatCurrency(selectedHistoryEnrollment.totalPaid)}</strong></span>
+                                                <span>Saldo: <strong className="text-red-500 dark:text-red-400">{formatCurrency(selectedHistoryEnrollment.balance)}</strong></span>
+                                            </div>
+                                        </div>
+                                        {loadingHistory ? (
+                                            <div className="text-center py-8">
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+                                                <p className="mt-2 text-sm text-gray-500">Cargando abonos...</p>
+                                            </div>
+                                        ) : historyPayments.length === 0 ? (
+                                            <div className="text-center py-8 text-gray-500">
+                                                No hay abonos registrados.
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                                {historyPayments.map((payment) => (
+                                                    <div
+                                                        key={payment.id}
+                                                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-100 dark:border-gray-700"
+                                                    >
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                                    {formatCurrency(payment.amount)}
+                                                                </span>
+                                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                                                    payment.paymentType === 'TUITION' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
+                                                                    payment.paymentType === 'MATERIAL' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                                                                    'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-300'
+                                                                }`}>
+                                                                    {payment.paymentType === 'TUITION' ? 'Matrícula' :
+                                                                     payment.paymentType === 'MATERIAL' ? 'Material' : 'Otro'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                                <span>{new Date(payment.date).toLocaleDateString('es-CO')}</span>
+                                                                {payment.registeredBy?.profile?.fullName && (
+                                                                    <span>por {payment.registeredBy.profile.fullName}</span>
+                                                                )}
+                                                            </div>
+                                                            {payment.notes && (
+                                                                <p className="text-xs text-gray-400 mt-1">{payment.notes}</p>
+                                                            )}
+                                                        </div>
+                                                        {canModify && (
+                                                            <button
+                                                                onClick={() => handleDeletePayment(payment.id)}
+                                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                title="Eliminar abono"
+                                                            >
+                                                                <Trash size={16} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </>
                 </>
             )}

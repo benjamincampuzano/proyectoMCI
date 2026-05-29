@@ -23,6 +23,10 @@ const Enviar = () => {
     const isModuleSubCoordinator = isSubCoordinator('enviar');
     const isModuleTreasurer = isTreasurer('enviar');
     const hasViewStatsAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
+    const hasFullEnviarAccess = hasAnyRole(['ADMIN', 'PASTOR']) ||
+        isModuleCoordinator ||
+        isModuleSubCoordinator ||
+        isModuleTreasurer;
 
     useEffect(() => {
         let cancelled = false;
@@ -55,23 +59,23 @@ const Enviar = () => {
     }, [refreshTrigger]);
 
     const hasCellsTabAccess = () => {
-        const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_CELLS);
         const isModuleCoord = moduleCoordinator?.id === user?.id;
-        return hasRoleAccess || isModuleCoord || isModuleSubCoordinator || hasAnyRole(['DISCIPULO']);
+        const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_CELLS);
+        return hasRoleAccess || hasFullEnviarAccess || isModuleCoord || hasAnyRole(['DISCIPULO']);
     };
 
     const hasAttendanceAccess = () => {
-        return hasViewStatsAccess || isModuleCoordinator || isModuleSubCoordinator || hasAnyRole(['DISCIPULO']);
+        return hasViewStatsAccess || hasFullEnviarAccess || hasAnyRole(['DISCIPULO']);
     };
 
     // Política de acceso: DISCIPULO tiene permiso de solo lectura en todas las pestañas del módulo Enviar
     const hasStatsAccess = () => {
-        return hasViewStatsAccess || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer || hasAnyRole(['DISCIPULO']);
+        return hasViewStatsAccess || hasFullEnviarAccess || hasAnyRole(['DISCIPULO']);
     };
 
     const hasUnassignedAccess = () => {
         const hasRoleAccess = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
-        return hasRoleAccess || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
+        return hasRoleAccess || hasFullEnviarAccess;
     };
 
     const tabs = [
@@ -119,7 +123,11 @@ const Enviar = () => {
                 initialTabId="cells"
                 moduleName="enviar"
                 refreshTrigger={refreshTrigger}
-                componentProps={{ moduleCoordinator }}
+                componentProps={{
+                    moduleCoordinator,
+                    moduleSubCoordinator,
+                    moduleTreasurer,
+                }}
             />
         </div>
     );

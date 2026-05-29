@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, UserIcon,Users, MoneyIcon, Trash, UserCheck, SquaresFour, List, FileTextIcon, ArrowsClockwise } from '@phosphor-icons/react';
+import { Plus, Calendar, UserIcon,Users, MoneyIcon, Trash, UserCheck, SquaresFour, List, FileTextIcon, ArrowsClockwise, Clock } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import EncuentroDetails from '../components/EncuentroDetails';
@@ -156,12 +156,39 @@ const Encuentros = () => {
                 total: 0,
                 inscritos: 0,
                 promedioInscritos: 0,
-                conversos: 0
+                conversos: 0,
+                pendientes: 0,
+                saldoPendiente: 0
             };
         }
 
         let totalInscritos = 0;
         let totalConversos = 0;
+        let totalPendientes = 0;
+        let totalSaldoPendiente = 0;
+
+        const calculateFinancials = (encuentro, registration) => {
+            const paymentsByType = {
+                ENCUENTRO: 0,
+                TRANSPORT: 0,
+                ACCOMMODATION: 0
+            };
+
+            registration.payments?.forEach((payment) => {
+                if (paymentsByType[payment.paymentType] !== undefined) {
+                    paymentsByType[payment.paymentType] += Number(payment.amount) || 0;
+                }
+            });
+
+            const totalPaid = Object.values(paymentsByType).reduce((sum, amount) => sum + amount, 0);
+            const baseCost = encontro.cost * (1 - ((registration.discountPercentage || 0) / 100));
+            const transportCost = registration.needsTransport ? encontro.transportCost : 0;
+            const accommodationCost = registration.needsAccommodation ? encontro.accommodationCost : 0;
+            const finalCost = baseCost + transportCost + accommodationCost;
+            const balance = finalCost - totalPaid;
+
+            return { balance };
+        };
 
         encuentros.forEach(enc => {
             totalInscritos += enc.registrations?.length || 0;
@@ -169,6 +196,12 @@ const Encuentros = () => {
             enc.registrations?.forEach(reg => {
                 if (reg.isConvert || reg.converted) {
                     totalConversos++;
+                }
+
+                const { balance } = calculateFinancials(enc, reg);
+                if (balance > 0) {
+                    totalPendientes++;
+                    totalSaldoPendiente += balance;
                 }
             });
         });
@@ -181,7 +214,9 @@ const Encuentros = () => {
             total: encuentros.length,
             inscritos: totalInscritos,
             promedioInscritos,
-            conversos: totalConversos
+            conversos: totalConversos,
+            pendientes: totalPendientes,
+            saldoPendiente: totalSaldoPendiente
         };
     }, [encuentros]);
 
@@ -367,7 +402,7 @@ const Encuentros = () => {
 
             {/* Estadísticas Resumidas - Solo cuando no estamos en reporte */}
                         {!showReport && encuentros.length > 0 && (
-            		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
@@ -419,6 +454,21 @@ const Encuentros = () => {
                         <div className="flex flex-col">
                             <span className="text-3xl font-extrabold text-orange-900 dark:text-white">{stats.conversos}</span>
                             <span className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">Cantidad de Conversos</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-amber-50 dark:bg-amber-900/20 p-5 rounded-xl border border-amber-100 dark:border-amber-800 shadow-sm">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg text-amber-600 dark:text-amber-300">
+                                <Clock size={20} />
+                            </div>
+                            <span className="text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Pendientes</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-3xl font-extrabold text-amber-900 dark:text-white">{stats.pendientes}</span>
+                            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">
+                                Saldo pendiente: {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(stats.saldoPendiente)}
+                            </span>
                         </div>
                     </div>
                 </div>

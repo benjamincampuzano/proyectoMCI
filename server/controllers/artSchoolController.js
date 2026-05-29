@@ -95,8 +95,10 @@ exports.updateClass = async (req, res) => {
     const { id } = req.params;
     const { name, description, cost, startDate, endDate, professorId, isDeleted } = req.body;
 
+    const classId = Number(id);
+
     const updatedClass = await prisma.artClass.update({
-      where: { id: Number(id) },
+      where: { id: classId },
       data: {
         name,
         description,
@@ -111,8 +113,33 @@ exports.updateClass = async (req, res) => {
       }
     });
 
+    // Si se actualizó el costo, recalcular finalCost de inscripciones activas
+    if (cost !== undefined) {
+      const newCost = Number(cost);
+      const activeEnrollments = await prisma.artEnrollment.findMany({
+        where: {
+          classId,
+          status: { in: ['INSCRITO', 'EN_PROGRESO'] }
+        }
+      });
+
+      if (activeEnrollments.length > 0) {
+        await Promise.all(
+          activeEnrollments.map(enr => {
+            const discount = enr.discountPercentage || 0;
+            const newFinalCost = newCost * (1 - discount / 100);
+            return prisma.artEnrollment.update({
+              where: { id: enr.id },
+              data: { finalCost: newFinalCost }
+            });
+          })
+        );
+      }
+    }
+
     res.status(200).json(updatedClass);
   } catch (error) {
+    console.error('Error al actualizar la clase:', error);
     res.status(500).json({ error: 'Error al actualizar la clase' });
   }
 };
@@ -505,7 +532,13 @@ exports.getEnrollmentById = async (req, res) => {
                 guest: { select: { id: true, name: true, phone: true } },
                 artClass: true,
                 attendances: true,
-                payments: true
+            payments: {
+              include: {
+                registeredBy: {
+                  select: { id: true, profile: { select: { fullName: true } } }
+                }
+              }
+            }
             }
         });
 
@@ -565,10 +598,29 @@ exports.registerAttendance = async (req, res) => {
 // PAGOS
 // ==========================================
 
+exports.getEnrollmentPayments = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payments = await prisma.artPayment.findMany({
+      where: { enrollmentId: Number(id) },
+      include: {
+        registeredBy: {
+          select: { id: true, profile: { select: { fullName: true } } }
+        }
+      },
+      orderBy: { date: 'desc' }
+    });
+    res.json(payments);
+  } catch (error) {
+    console.error('Error al obtener pagos:', error);
+    res.status(500).json({ error: 'Error al obtener pagos' });
+  }
+};
+
 exports.registerPayment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { enrollmentId, amount, notes, date } = req.body;
+    const { enrollmentId, amount, notes, date, paymentType } = req.body;
     const registeredById = req.user.id;
 
     const finalEnrollmentId = id ? Number(id) : Number(enrollmentId);
@@ -577,10 +629,20 @@ exports.registerPayment = async (req, res) => {
       return res.status(400).json({ error: 'La inscripción es requerida' });
     }
 
+    const paymentAmount = Number(amount);
+    if (!paymentAmount || paymentAmount <= 0) {
+      return res.status(400).json({ error: 'El monto del abono debe ser mayor a 0' });
+    }
+
+    // Validar paymentType
+    const validTypes = ['TUITION', 'MATERIAL', 'OTHER'];
+    const finalPaymentType = validTypes.includes(paymentType) ? paymentType : 'TUITION';
+
     const payment = await prisma.artPayment.create({
       data: {
         enrollmentId: finalEnrollmentId,
-        amount: Number(amount),
+        amount: paymentAmount,
+        paymentType: finalPaymentType,
         notes,
         date: date ? new Date(date) : new Date(),
         registeredById
@@ -589,6 +651,7 @@ exports.registerPayment = async (req, res) => {
 
     res.status(201).json(payment);
   } catch (error) {
+    console.error('Error al registrar pago:', error);
     res.status(500).json({ error: 'Error al registrar pago' });
   }
 };

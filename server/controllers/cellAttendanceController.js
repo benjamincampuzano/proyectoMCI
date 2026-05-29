@@ -1,8 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
+const { hasAdminAccessOnModule } = require('../middleware/coordinatorAuth');
 
 // Helper function to get all users in a leader's network (disciples and sub-disciples)
+const hasFullEnviarAccess = (user) => hasAdminAccessOnModule(user, 'enviar');
 
 // Record cell attendance
 const recordCellAttendance = async (req, res) => {
@@ -30,7 +32,7 @@ const recordCellAttendance = async (req, res) => {
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
         const isDiscipulo = userRoles.includes('DISCIPULO') || userRoles.includes('MIEMBRO');
 
-        const isAuthorized = isAdmin || isLiderDoce || isPastor || cell.leaderId === userId;
+        const isAuthorized = hasFullEnviarAccess(req.user) || isAdmin || isLiderDoce || isPastor || cell.leaderId === userId;
 
         if (!isAuthorized) {
             // If they are not leadership, they MUST be a DISCIPULO/MIEMBRO recording ONLY THEIR OWN attendance
@@ -112,7 +114,7 @@ const getCellAttendance = async (req, res) => {
         const isDiscipulo = (userRoles.includes('DISCIPULO') || userRoles.includes('MIEMBRO')) &&
             !isAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId;
 
-        if (!isAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId && !isMember) {
+        if (!hasFullEnviarAccess(req.user) && !isAdmin && !isLiderDoce && !isPastor && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell attendance' });
         }
 
@@ -176,8 +178,7 @@ const getCells = async (req, res) => {
         let where = {};
 
         // Check if user is module coordinator of enviar module
-        const isEnviarCoordinator = req.user.moduleCoordinations?.includes('enviar') ||
-                                   req.user.moduleSubCoordinations?.includes('enviar');
+        const isEnviarCoordinator = hasFullEnviarAccess(req.user);
 
         // Get user's spouse if exists
         const user = await prisma.user.findUnique({
@@ -186,7 +187,7 @@ const getCells = async (req, res) => {
         });
         const spouseId = user?.spouseId;
 
-        if (userRoles.includes('ADMIN') || userRoles.includes('ADMIN') || isEnviarCoordinator) {
+        if (isEnviarCoordinator || userRoles.includes('ADMIN')) {
             // ADMIN and enviar module coordinators see all cells (no filter)
             where = {};
         } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
@@ -299,8 +300,7 @@ const getCellMembers = async (req, res) => {
         const userId = req.user.id;
 
         // Check if user is module coordinator of enviar module
-        const isEnviarCoordinator = req.user.moduleCoordinations?.includes('enviar') ||
-                                   req.user.moduleSubCoordinations?.includes('enviar');
+        const isEnviarCoordinator = hasFullEnviarAccess(req.user);
 
         const cell = await prisma.cell.findUnique({
             where: { id: parseInt(cellId) },
@@ -383,9 +383,8 @@ const getAttendanceStats = async (req, res) => {
         const userRoles = req.user.roles || [];
         const userId = req.user.id;
 
-        // Check if user is module coordinator of enviar module
-        const isEnviarCoordinator = req.user.moduleCoordinations?.includes('enviar') ||
-                                   req.user.moduleSubCoordinations?.includes('enviar');
+        // Check if user has full access on the Enviar module
+        const isEnviarCoordinator = hasFullEnviarAccess(req.user);
 
         // Default to last 30 days if no date range provided
         const end = endDate ? new Date(endDate) : new Date();

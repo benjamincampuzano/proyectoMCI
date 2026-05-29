@@ -17,10 +17,10 @@ const GuestStats = ({ refreshTrigger }) => {
     const [endDate, setEndDate] = useState('');
 
     useEffect(() => {
-        // Set default date range (last 30 days)
+        // Set default date range (last 12 months) to avoid hiding older history by default
         const end = new Date();
         const start = new Date();
-        start.setDate(start.getDate() - 30);
+        start.setFullYear(start.getFullYear() - 1);
 
         setStartDate(start.toISOString().split('T')[0]);
         setEndDate(end.toISOString().split('T')[0]);

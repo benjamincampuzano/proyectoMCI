@@ -87,6 +87,7 @@ router.get('/classes/:id/report/balance', artSchoolController.getClassBalanceRep
 // Pagos — Tesoreros y Coordinadores pueden gestionar pagos
 const canManageArtsPayments = canManageTreasurerActions('Escuela de Artes');
 
+router.get('/enrollments/:id/payments', canManageArtsPayments, artSchoolController.getEnrollmentPayments);
 router.post('/payments', canManageArtsPayments, artSchoolController.registerPayment);
 router.post('/enrollments/:id/payments', canManageArtsPayments, artSchoolController.registerPayment);
 router.delete('/payments/:id', canManageArtsPayments, artSchoolController.deletePayment);

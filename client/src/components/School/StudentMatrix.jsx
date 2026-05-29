@@ -124,7 +124,7 @@ const StudentMatrix = () => {
                                 className="pl-10"
                             />
                         </div>
-                    </div
+                    </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -141,7 +141,7 @@ const StudentMatrix = () => {
                             placeholder="Todos los líderes..."
                             labelKey="fullName"
                         />
-                    </div
+                    </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

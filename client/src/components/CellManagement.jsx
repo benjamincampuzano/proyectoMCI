@@ -18,7 +18,7 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-const CellManagement = ({ moduleCoordinator }) => {
+const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasurer }) => {
     const { user, hasAnyRole, isCoordinator } = useAuth();
     const [cells, setCells] = useState([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -32,7 +32,11 @@ const CellManagement = ({ moduleCoordinator }) => {
         const hasRoleAccess = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
         const isModuleCoordinator = moduleCoordinator &&
             moduleCoordinator.id === user?.id;
-        return hasRoleAccess || isModuleCoordinator;
+        const isModuleSubCoordinator = moduleSubCoordinator &&
+            moduleSubCoordinator.id === user?.id;
+        const isModuleTreasurer = moduleTreasurer &&
+            moduleTreasurer.id === user?.id;
+        return hasRoleAccess || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
     };
 
     // Check if user is a disciple
@@ -737,71 +741,28 @@ const CellManagement = ({ moduleCoordinator }) => {
                                         <AsyncSearchSelect
                                             fetchItems={async (term) => {
                                                 try {
-                                                    // Get users from my network only (ADMIN gets all users)
-                                                    const networkResponse = await api.get('/users/my-network/all', { params: { limit: 500 } });
-                                                    const networkUsers = networkResponse.data.data;
-
-                                                    // Check if current user is ADMIN
-                                                    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-                                                    const isAdmin = currentUser.roles?.includes('ADMIN');
-
-                                                    // If no network users, provide helpful feedback
-                                                    if (!networkUsers || networkUsers.length === 0) {
-                                                        // Return a special indicator to show a message
-                                                        return [{
-                                                            _specialMessage: true,
-                                                            message: isAdmin
-                                                                ? 'No hay usuarios disponibles en el sistema.'
-                                                                : 'No tienes usuarios en tu red de discipulado. Solo los líderes (Líder de 12, Pastor) pueden asignar discípulos a células.',
-                                                            fullName: 'Sin usuarios disponibles',
-                                                            disabled: true,
-                                                            id: 'special-no-network'
-                                                        }];
-                                                    }
-
-                                                    // Filter to include only LIDER_DOCE, LIDER_CELULA, and DISCIPULO roles
-                                                    const filteredUsers = networkUsers.filter(user => {
-                                                        const userRoles = user.roles || [];
-                                                        return userRoles.includes('LIDER_DOCE') ||
-                                                            userRoles.includes('LIDER_CELULA') ||
-                                                            userRoles.includes('DISCIPULO');
-                                                    });
-
-                                                    // If no users after filtering, show appropriate message
-                                                    if (filteredUsers.length === 0) {
-                                                        return [{
-                                                            _specialMessage: true,
-                                                            message: isAdmin
-                                                                ? 'No hay usuarios con roles compatibles para asignar a células (se necesitan roles: Líder de 12, Líder de Célula, Discípulo).'
-                                                                : 'Los usuarios en tu red no tienen roles compatibles para asignar a células (se necesitan roles: Líder de 12, Líder de Célula, Discípulo).',
-                                                            fullName: 'Sin usuarios compatibles',
-                                                            disabled: true,
-                                                            id: 'special-no-compatible'
-                                                        }];
-                                                    }
-
-                                                    // Filter by search term if provided
-                                                    if (term && term.length > 0) {
-                                                        const searchTerm = term.toLowerCase();
-                                                        const searchFiltered = filteredUsers.filter(user =>
-                                                            user.fullName.toLowerCase().includes(searchTerm) ||
-                                                            user.email.toLowerCase().includes(searchTerm)
-                                                        );
-
-                                                        if (searchFiltered.length === 0) {
-                                                            return [{
-                                                                _specialMessage: true,
-                                                                message: `No se encontraron usuarios que coincidan con "${term}" ${isAdmin ? 'en el sistema' : 'en tu red'}.`,
-                                                                fullName: 'Sin resultados',
-                                                                disabled: true,
-                                                                id: 'special-no-search'
-                                                            }];
+                                                    const response = await api.get('/users/search', {
+                                                        params: {
+                                                            search: term,
+                                                            role: ['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'],
+                                                            limit: 500,
                                                         }
+                                                    });
+                                                    const users = response.data || [];
 
-                                                        return searchFiltered;
+                                                    if (!users || users.length === 0) {
+                                                        return [{
+                                                            _specialMessage: true,
+                                                            message: term && term.length > 0
+                                                                ? `No se encontraron usuarios que coincidan con "${term}".`
+                                                                : 'No hay usuarios disponibles para asignar.',
+                                                            fullName: term && term.length > 0 ? 'Sin resultados' : 'Sin usuarios disponibles',
+                                                            disabled: true,
+                                                            id: term && term.length > 0 ? 'special-no-search' : 'special-no-network'
+                                                        }];
                                                     }
 
-                                                    return filteredUsers;
+                                                    return users;
                                                 } catch (error) {
                                                     console.error('Error fetching users for assignment:', error);
                                                     toast.error('Error al cargar usuarios disponibles');
@@ -1028,18 +989,17 @@ const CellManagement = ({ moduleCoordinator }) => {
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Líder de la Célula <span className="text-red-400">*</span>
                                             </label>
-                                            <AsyncSearchSelect
-                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: ['LIDER_DOCE', 'LIDER_CELULA'] } }).then(res => res.data)}
-                                                selectedValue={selectedLeader}
-                                                onSelect={(user) => {
-                                                    setFormData({ ...formData, leaderId: user?.id || '' });
-                                                    setSelectedLeader(user);
-                                                }}
-                                                placeholder="Seleccionar Líder"
-                                                labelKey="fullName"
-                                                disabled={currentUser?.roles?.includes('PASTOR')}
-                                            />
-                                        </div>
+                                                <AsyncSearchSelect
+                                                    fetchItems={(term) => api.get('/users/search', { params: { search: term, role: ['LIDER_DOCE', 'LIDER_CELULA'] } }).then(res => res.data)}
+                                                    selectedValue={selectedLeader}
+                                                    onSelect={(user) => {
+                                                        setFormData({ ...formData, leaderId: user?.id || '' });
+                                                        setSelectedLeader(user);
+                                                    }}
+                                                    placeholder="Seleccionar Líder"
+                                                    labelKey="fullName"
+                                                />
+                                            </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
@@ -1428,11 +1388,7 @@ const CellManagement = ({ moduleCoordinator }) => {
                     <AsyncSearchSelect
                         fetchItems={(term) => {
                             const params = { search: term };
-                            if (currentUser?.roles?.includes('PASTOR')) {
-                                params.role = 'LIDER_DOCE';
-                            } else {
-                                params.role = 'LIDER_DOCE';
-                            }
+                            params.role = 'LIDER_DOCE';
                             return api.get('/users/search', { params }).then(res => res.data);
                         }}
                         selectedValue={eligibleDoceLeaders.find(l => l.id === parseInt(filterDoce)) || (filterDoce ? { id: filterDoce, fullName: 'Cargando...' } : null)}

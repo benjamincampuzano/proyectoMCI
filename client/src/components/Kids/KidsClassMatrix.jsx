@@ -27,8 +27,12 @@ const calculateAge = (birthDate) => {
 };
 
 const KidsClassMatrix = ({ courseId }) => {
-    const { hasAnyRole, isCoordinator } = useAuth();
+    const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const isModuleCoordinator = isCoordinator('kids');
+    const hasFullKidsAccess = hasAnyRole(['ADMIN', 'PASTOR']) ||
+        isModuleCoordinator ||
+        isSubCoordinator('kids') ||
+        isTreasurer('kids');
     const [matrix, setMatrix] = useState([]);
     const [courseInfo, setCourseInfo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -64,23 +68,23 @@ const KidsClassMatrix = ({ courseId }) => {
     }, [courseInfo, currentUserId]);
 
     const canUploadEvidence = useMemo(() => 
-        hasAnyRole(['ADMIN', 'PASTOR']) || isModuleCoordinator || isModuleProfessor || isModuleAuxiliary, // ADMIN, PASTOR, coordinadores, profesores y auxiliares del módulo pueden subir evidencias
-        [hasAnyRole, isModuleCoordinator, isModuleProfessor, isModuleAuxiliary]
+        hasFullKidsAccess || isModuleProfessor || isModuleAuxiliary, // acceso completo del módulo, profesores y auxiliares pueden subir evidencias
+        [hasFullKidsAccess, isModuleProfessor, isModuleAuxiliary]
     );
 
     const canEditAttendance = useMemo(() => 
-        hasAnyRole(['ADMIN', 'PASTOR']) || isModuleProfessor || isModuleAuxiliary, // ADMIN, PASTOR, profesores y auxiliares del módulo pueden editar asistencia
-        [hasAnyRole, isModuleProfessor, isModuleAuxiliary]
+        hasFullKidsAccess || isModuleProfessor || isModuleAuxiliary, // acceso completo del módulo, profesores y auxiliares pueden editar asistencia
+        [hasFullKidsAccess, isModuleProfessor, isModuleAuxiliary]
     );
 
     const canEnrollStudents = useMemo(() => 
-        hasAnyRole(['ADMIN', 'PASTOR']) || isModuleCoordinator || isModuleProfessor || isModuleAuxiliary, // ADMIN, PASTOR, coordinadores, profesores y auxiliares del módulo pueden inscribir estudiantes
-        [hasAnyRole, isModuleCoordinator, isModuleProfessor, isModuleAuxiliary]
+        hasFullKidsAccess || isModuleProfessor || isModuleAuxiliary, // acceso completo del módulo, profesores y auxiliares pueden inscribir estudiantes
+        [hasFullKidsAccess, isModuleProfessor, isModuleAuxiliary]
     );
 
     const canDeleteStudents = useMemo(() => 
-        hasAnyRole(['ADMIN', 'PASTOR']) || isModuleProfessor, // ADMIN, PASTOR y profesores del módulo pueden eliminar estudiantes
-        [hasAnyRole, isModuleProfessor]
+        hasFullKidsAccess || isModuleProfessor, // acceso completo del módulo y profesores pueden eliminar estudiantes
+        [hasFullKidsAccess, isModuleProfessor]
     );
 
     useEffect(() => {

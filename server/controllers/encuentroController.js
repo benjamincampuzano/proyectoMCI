@@ -750,12 +750,7 @@ const getEncuentroBalanceReport = async (req, res) => {
 const deletePayment = async (req, res) => {
     try {
         const { paymentId } = req.params;
-        const { id: userId, roles } = req.user;
-
-        // Only ADMIN can delete payments
-        if (!roles.includes('ADMIN')) {
-            return res.status(403).json({ error: 'Solo ADMIN puede eliminar abonos.' });
-        }
+        const { id: userId } = req.user;
 
         const payment = await prisma.encuentroPayment.findUnique({
             where: { id: parseInt(paymentId) },
@@ -768,6 +763,11 @@ const deletePayment = async (req, res) => {
 
         if (!payment) {
             return res.status(404).json({ error: 'Payment not found' });
+        }
+
+        const hasAccess = await checkEncuentroAccess(req.user, payment.registration.encuentroId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para eliminar abonos.' });
         }
 
         const deletedPayment = await prisma.encuentroPayment.delete({

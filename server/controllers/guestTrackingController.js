@@ -12,11 +12,13 @@ const getGuestTrackingStats = async (req, res) => {
 
         let networkIds = [];
         const isAdmin = userRoles.includes('ADMIN');
+        const isPastor = userRoles.includes('PASTOR');
         const isCoordinator = userRoles.includes('COORDINADOR');
         const isModuleCoordinator = req.user.isModuleCoordinator || false;
         const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
+        const canSeeAllGuests = isAdmin || isPastor || isCoordinator;
 
-        if (isLeader && currentUserId && !isAdmin && !isCoordinator && !isModuleCoordinator) {
+        if (isLeader && currentUserId && !canSeeAllGuests && !isModuleCoordinator) {
             networkIds = await getUserNetwork(currentUserId);
             networkIds.push(currentUserId);
         }
