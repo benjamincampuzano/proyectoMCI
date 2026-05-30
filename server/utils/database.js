@@ -1,22 +1,23 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../generated/prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
 
 const CONNECTION_LIMIT = process.env.NODE_ENV === 'production' ? 30 : 20;
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  throw new Error('DATABASE_URL is required to initialize Prisma');
+}
+
+const adapter = new PrismaPg({
+  connectionString: DATABASE_URL,
+  max: CONNECTION_LIMIT,
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 300000,
+});
 
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'production' ? ['error'] : ['warn', 'error'],
-  datasources: {
-    db: {
-      url: (() => {
-        const url = new URL(process.env.DATABASE_URL);
-        url.searchParams.set('connection_limit', String(CONNECTION_LIMIT));
-        url.searchParams.set('pool_timeout', '30');
-        url.searchParams.set('connect_timeout', '10');
-        url.searchParams.set('idle_in_transaction_session_timeout', '60000');
-        url.searchParams.set('statement_timeout', '60000');
-        return url.toString();
-      })()
-    }
-  }
+  adapter,
 });
 
 // Set statement timeout at database level (kills runaway queries after 60s)

@@ -23,7 +23,7 @@
   "author": "Benjamin Campuzano Castañeda",
   "license": "ISC",
   "engines": {
-    "node": ">=18"
+    "node": ">=20.19.0"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

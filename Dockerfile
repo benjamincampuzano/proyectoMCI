@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20.19-alpine
 
 # `pg_dump` y `psql` para backup/restore
 RUN apk add --no-cache postgresql-client
@@ -6,15 +6,16 @@ RUN apk add --no-cache postgresql-client
 # Instalar pnpm
 RUN npm install -g pnpm
 
-WORKDIR /app/server
+WORKDIR /app
 
-# Instalar dependencias del backend
-COPY server/package.json ./
-RUN pnpm install --prod
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY client/package.json ./client/package.json
+COPY server/package.json ./server/package.json
+COPY server/prisma ./server/prisma
+COPY server/prisma.config.cjs ./server/prisma.config.cjs
+RUN pnpm install && pnpm -C server exec prisma generate
 
-# Copiar código del backend y generar Prisma Client
-COPY server/ ./
-RUN pnpm exec prisma generate
+COPY . .
 
 EXPOSE 5000
 

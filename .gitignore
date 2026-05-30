@@ -39,6 +39,7 @@ logs/
 dist/
 build/
 backups/
+server/generated/
 .vercel/
 .netlify/
 .out/

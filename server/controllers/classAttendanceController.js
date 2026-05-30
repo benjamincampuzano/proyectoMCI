@@ -1,4 +1,3 @@
-const { PrismaClient } = require('@prisma/client');
 const prisma = require('../utils/database');
 const { SCHOOL_LEVELS } = require('../utils/levelConstants');
 const { isDescendant } = require('../middleware/hierarchyMiddleware');

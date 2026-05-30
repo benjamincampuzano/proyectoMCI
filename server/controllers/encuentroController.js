@@ -1,4 +1,3 @@
-const { PrismaClient } = require('@prisma/client');
 const prisma = require('../utils/database');
 const { logActivity } = require('../utils/auditLogger');
 const { getUserNetwork } = require('../utils/networkUtils');
@@ -16,7 +15,6 @@ const checkEncuentroAccess = async (user, encuentroId) => {
     if (encuentro.coordinatorId === parseInt(user.id)) return true;
 
     if (!user.moduleCoordinations || !user.moduleSubCoordinations || !user.moduleTreasurers) {
-        const prisma = require('../utils/database');
         const [coordinations, subCoordinations, treasurers] = await Promise.all([
             prisma.moduleCoordinator.findMany({ where: { userId: user.id, isDeleted: false }, select: { moduleName: true } }),
             prisma.moduleSubCoordinator.findMany({ where: { userId: user.id, isDeleted: false }, select: { moduleName: true } }),

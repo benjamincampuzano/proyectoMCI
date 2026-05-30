@@ -1,4 +1,4 @@
-const { Prisma } = require('@prisma/client');
+const { Prisma } = require('../generated/prisma/client');
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 

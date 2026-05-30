@@ -23,7 +23,7 @@ Este script permite importar usuarios desde el archivo `BBDD_Prueba.md` a la bas
 Asegúrate de tener las dependencias necesarias:
 
 ```bash
-npm install @prisma/client bcrypt
+pnpm install
 ```
 
 ## Uso

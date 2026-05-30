@@ -5,9 +5,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js",
-    "migrate": "npx prisma migrate deploy",
-    "start": "npx prisma migrate deploy && node index.js"
+    "generate": "prisma generate",
+    "dev": "prisma generate && nodemon index.js",
+    "migrate": "prisma generate && prisma migrate deploy",
+    "start": "prisma generate && prisma migrate deploy && node index.js",
+    "postinstall": "prisma generate"
   },
   "keywords": [
     "iglesia",
@@ -28,7 +30,7 @@
   "license": "ISC",
   "type": "commonjs",
   "engines": {
-    "node": ">=18"
+    "node": ">=20.19.0"
   },
   "dependencies": {
     "axios": "^1.16.1",
@@ -38,8 +40,10 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
-    "@prisma/client": "^6.19.3",
-    "prisma": "^6.19.3",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@prisma/client-runtime-utils": "^7.8.0",
+    "prisma": "^7.8.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",

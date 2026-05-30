@@ -1,4 +1,3 @@
-const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const axios = require('axios');
 const { randomInt } = require('crypto');
