@@ -1,53 +1,42 @@
 const { Prisma } = require('../generated/prisma/client');
 const prisma = require('../utils/database');
-const { getUserNetwork } = require('../utils/networkUtils');
 
 const getGeneralStats = async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
-        const userRoles = req.user.roles || [];
-        const currentUserId = req.user.id ? parseInt(req.user.id) : null;
-
-        let networkIds = [];
-        const isAdmin = userRoles.includes('ADMIN');
-        const isCoordinator = userRoles.includes('COORDINADOR');
-        const isModuleCoordinator = req.user.isModuleCoordinator || false;
-        const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
-
-        if (isLeader && currentUserId && !isAdmin && !isCoordinator && !isModuleCoordinator) {
-            networkIds = await getUserNetwork(currentUserId);
-            networkIds.push(currentUserId);
-        }
-
-        const end = endDate ? new Date(endDate) : new Date();
-        if (endDate) end.setUTCHours(23, 59, 59, 999);
-
-        const start = startDate ? new Date(startDate) : new Date(new Date().setFullYear(new Date().getFullYear() - 1));
-        if (startDate) start.setUTCHours(0, 0, 0, 0);
+        const start = new Date('1970-01-01T00:00:00.000Z');
+        const end = new Date('2999-12-31T23:59:59.999Z');
 
         // 1. GUESTS — ✅ SQL GROUP BY y agregación en PostgreSQL
-        const networkFilterGuests = networkIds.length > 0
-            ? Prisma.sql`AND u.id = ANY(${networkIds})`
-            : Prisma.empty;
-
-        const networkFilterCells = networkIds.length > 0
-            ? Prisma.sql`AND c."leaderId" = ANY(${networkIds})`
-            : Prisma.empty;
-
         const guestRaw = await prisma.$queryRaw`
+            WITH guest_base AS (
+                SELECT
+                    g.id,
+                    g.status,
+                    COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
+                    EXISTS (
+                        SELECT 1
+                        FROM "GuestCall" gc2
+                        WHERE gc2."guestId" = g.id
+                    ) AS has_call,
+                    EXISTS (
+                        SELECT 1
+                        FROM "GuestVisit" gv2
+                        WHERE gv2."guestId" = g.id
+                    ) AS has_visit
+                FROM "Guest" g
+                JOIN "User" u ON u.id = g."invitedById"
+                LEFT JOIN "UserHierarchy" uh ON uh."childId" = u.id AND uh.role IN ('LIDER_DOCE', 'PASTOR', 'LIDER_CELULA')
+                LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
+                WHERE g."createdAt" BETWEEN ${start} AND ${end}
+                  AND g."isDeleted" = false
+            )
             SELECT
-                COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
-                COUNT(DISTINCT g.id)::int AS total_guests,
-                COUNT(DISTINCT CASE WHEN g.status = 'GANADO' THEN g.id END)::int AS total_conversions,
-                (SELECT COUNT(*) FROM "GuestCall" gc2 WHERE gc2."guestId" = g.id LIMIT 1)::int AS with_call,
-                (SELECT COUNT(*) FROM "GuestVisit" gv2 WHERE gv2."guestId" = g.id LIMIT 1)::int AS with_visit
-            FROM "Guest" g
-            JOIN "User" u ON u.id = g."invitedById"
-            LEFT JOIN "UserHierarchy" uh ON uh."childId" = u.id AND uh.role IN ('LIDER_DOCE', 'PASTOR', 'LIDER_CELULA')
-            LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
-            WHERE g."createdAt" BETWEEN ${start} AND ${end}
-              AND g."isDeleted" = false
-              ${networkFilterGuests}
+                leader_name,
+                COUNT(*)::int AS total_guests,
+                COUNT(*) FILTER (WHERE status = 'GANADO')::int AS total_conversions,
+                COUNT(*) FILTER (WHERE has_call)::int AS with_call,
+                COUNT(*) FILTER (WHERE has_visit)::int AS with_visit
+            FROM guest_base
             GROUP BY leader_name
             ORDER BY total_guests DESC
         `;
@@ -73,10 +62,6 @@ const getGeneralStats = async (req, res) => {
         // 2. CHURCH ATTENDANCE — ✅ Usar SQL GROUP BY en lugar de cargar todos los registros
         // La query original traía cada asistencia con user+roles+parents anidados (muy costoso).
         // Ahora delegamos la agrupación a PostgreSQL directamente.
-        const networkFilter_sql = networkIds.length > 0
-            ? Prisma.sql`AND u.id = ANY(${networkIds})`
-            : Prisma.empty;
-
         const attendanceRaw = await prisma.$queryRaw`
             SELECT
                 TO_CHAR(ca.date, 'YYYY-MM') AS month_key,
@@ -88,7 +73,6 @@ const getGeneralStats = async (req, res) => {
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             WHERE ca.date BETWEEN ${start} AND ${end}
               AND ca.status = 'PRESENTE'
-              ${networkFilter_sql}
             GROUP BY month_key, leader_name
             ORDER BY month_key ASC
         `;
@@ -158,7 +142,6 @@ const getGeneralStats = async (req, res) => {
             LEFT JOIN "UserHierarchy" uh ON uh."childId" = c."leaderId" AND uh.role = 'LIDER_DOCE'
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             WHERE c."isDeleted" = false
-              ${networkFilterCells}
             GROUP BY leader_name
             ORDER BY cell_count DESC
         `;
@@ -189,11 +172,6 @@ const getGeneralStats = async (req, res) => {
             LEFT JOIN "EncuentroPayment" ep ON ep."registrationId" = er.id
             WHERE er.status != 'CANCELLED'
               AND e."startDate" >= ${start}
-              ${isAdmin ? Prisma.empty : Prisma.sql`AND (
-                  g."invitedById" = ANY(${networkIds})
-                  OR g."assignedToId" = ANY(${networkIds})
-                  OR er."userId" = ANY(${networkIds})
-              )`}
             GROUP BY leader_name
             ORDER BY reg_count DESC
         `;
@@ -226,10 +204,6 @@ const getGeneralStats = async (req, res) => {
             LEFT JOIN "ConventionPayment" cp ON cp."registrationId" = cr.id
             WHERE cr.status != 'CANCELLED'
               AND conv."startDate" >= ${start}
-              ${isAdmin ? Prisma.empty : Prisma.sql`AND (
-                  cr."userId" = ANY(${networkIds})
-                  OR cr."registeredById" = ANY(${networkIds})
-              )`}
             GROUP BY leader_name
             ORDER BY reg_count DESC
         `;
@@ -271,14 +245,12 @@ const getGeneralStats = async (req, res) => {
                             none: {
                                 role: { name: 'ADMIN' }
                             }
-                        },
-                        ...(networkIds.length > 0 ? { id: { in: networkIds } } : {})
+                        }
                     }
                 }),
                 activeStudents: await prisma.seminarEnrollment.count({
                     where: {
                         status: 'EN_PROGRESO',
-                        ...(networkIds.length > 0 ? { userId: { in: networkIds } } : {})
                     }
                 }),
                 graduatedInPeriod: 0

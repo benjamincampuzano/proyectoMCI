@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "generate": "prisma generate",
     "dev": "prisma generate && nodemon index.js",
-    "migrate": "prisma generate && prisma migrate deploy",
-    "start": "prisma generate && prisma migrate deploy && node index.js",
+    "migrate": "prisma generate && prisma migrate deploy --schema=prisma/schema.prisma",
+    "start": "prisma generate && prisma migrate deploy --schema=prisma/schema.prisma && node index.js",
     "postinstall": "prisma generate"
   },
   "keywords": [

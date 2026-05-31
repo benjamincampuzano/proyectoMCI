@@ -1,6 +1,6 @@
 // components/tree/CoupleCard.jsx
 import React from 'react';
-import { CaretDown, CaretRight, Users, UserPlus, UserMinus, Crown, Star } from '@phosphor-icons/react';
+import { CaretDown, CaretRight, Users, UserPlus, UserMinus } from '@phosphor-icons/react';
 
 function generateUserColors(userId) {
   if (!userId) return { primary: '#374151', secondary: '#4B5563' };

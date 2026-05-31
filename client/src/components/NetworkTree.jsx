@@ -1,13 +1,12 @@
 
 // NetworkTree.jsx
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { FlowArrow, CardsThree, UsersThree, UserPlus, UserMinus, Users, CaretDown, CaretRight, CaretLeft } from '@phosphor-icons/react';
+import { FlowArrow, CardsThree, UsersThree, Users } from '@phosphor-icons/react';
 import CoupleNodeTree from './tree/CoupleNodeTree';
 import UnassignedUsersModal from './unassigned/UnassignedUsersModal';
 import AssignConfirmDialog from './common/AssignConfirmDialog';
 import RadialView from './radial/RadialView';
 import { buildCoupleNetwork } from '../utils/transformCouples';
-import { getRootNodeForRole } from '../utils/buildHierarchy';
 import { getUnassignedUsers } from '../utils/unassigned';
 import api from '../utils/api';
 import CardsView from './cards/CardsView';
@@ -27,14 +26,11 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   const [expandedNodes, setExpandedNodes] = useState(new Set());
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [partnerToRemove, setPartnerToRemove] = useState(null);
-  const [networkData, setNetworkData] = useState(network);
-  const PAGE_SIZE = 50;
   const allUsersFetched = useRef(false);
 
   const coupleRoot = useMemo(() => {
-    const fullNetwork = buildCoupleNetwork(network);
-    return getRootNodeForRole(fullNetwork, currentUser);
-  }, [network, currentUser]);
+    return buildCoupleNetwork(network);
+  }, [network]);
 
   const unassigned = useMemo(() => {
     if (!coupleRoot) return [];
@@ -44,8 +40,20 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   }, [allUsers, coupleRoot, currentUser]);
 
   useEffect(() => {
-    setNetworkData(network);
-  }, [network]);
+    if (!coupleRoot?.id) return;
+
+    const defaultExpanded = new Set();
+
+    const seedExpandedNodes = (node, level = 0) => {
+      if (!node || level > 1) return;
+
+      defaultExpanded.add(node.id);
+      (node.disciples || []).forEach((child) => seedExpandedNodes(child, level + 1));
+    };
+
+    seedExpandedNodes(coupleRoot);
+    setExpandedNodes(defaultExpanded);
+  }, [coupleRoot]);
 
   useEffect(() => {
     if (allUsersFetched.current) return;
@@ -66,7 +74,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
         setAllUsers([]);
       }
     })();
-  });
+  }, []);
 
 
   const confirmAssign = async () => {
@@ -145,6 +153,121 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
       return newSet;
     });
   }, []);
+
+  const getPrimaryNetworkRole = (roles = []) => {
+    const priority = ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'ADMIN'];
+    return priority.find((role) => roles.includes(role)) || roles[0] || 'DISCIPULO';
+  };
+
+  const getAuthorityCards = useCallback(() => {
+    const pairs = Array.isArray(network?.partners) ? network.partners : [];
+    const role = getPrimaryNetworkRole(network?.roles || []);
+    const currentUserId = currentUser?.id != null ? String(currentUser.id) : null;
+
+    const cards = [];
+    const addCards = (labelBase, tone, iconClass, items, limit = 2) => {
+      items.slice(0, limit).forEach((person, index) => {
+        cards.push({
+          label: `${labelBase} ${index + 1}`,
+          tone,
+          iconClass,
+          person,
+        });
+      });
+    };
+
+    const partnerDisplayName = (() => {
+      if (pairs.length === 0) return null;
+
+      const partnerNames = pairs
+        .filter((partner) => {
+          if (currentUserId === null) return true;
+          return String(partner.id) !== currentUserId;
+        })
+        .map((partner) => partner.fullName)
+        .filter(Boolean);
+
+      if (partnerNames.length > 0) {
+        return partnerNames.join(' y ');
+      }
+
+      return pairs
+        .map((partner) => partner.fullName)
+        .filter(Boolean)
+        .join(' y ') || null;
+    })();
+
+    if (partnerDisplayName) {
+      cards.push({
+        label: 'Pareja',
+        tone: 'text-pink-500',
+        iconClass: 'bg-pink-500/10 border-pink-500/20',
+        displayName: partnerDisplayName,
+        person: {
+          id: `${network.id}-pair`,
+          fullName: partnerDisplayName,
+        },
+      });
+    }
+
+    const authorityByRole = {
+      LIDER_DOCE: ['pastores'],
+      LIDER_CELULA: ['pastores', 'lideresDoce'],
+      DISCIPULO: ['pastores', 'lideresDoce', 'lideresCelula'],
+    };
+
+    const tierConfig = {
+      pastores: {
+        labelBase: 'Pastor',
+        tone: 'text-emerald-500',
+        iconClass: 'bg-emerald-500/10 border-emerald-500/20',
+      },
+      lideresDoce: {
+        labelBase: 'Líder Doce',
+        tone: 'text-purple-500',
+        iconClass: 'bg-purple-500/10 border-purple-500/20',
+      },
+      lideresCelula: {
+        labelBase: 'Líder Célula',
+        tone: 'text-[var(--ln-brand-indigo)]',
+        iconClass: 'bg-[var(--ln-brand-indigo)]/10 border-[var(--ln-brand-indigo)]/20',
+      },
+    };
+
+    const tiersToShow = authorityByRole[role] || [];
+    tiersToShow.forEach((tierKey) => {
+      const items = Array.isArray(network?.[tierKey]) ? network[tierKey] : [];
+      const config = tierConfig[tierKey];
+      addCards(config.labelBase, config.tone, config.iconClass, items, 2);
+    });
+
+    return cards;
+  }, [network]);
+
+  const renderAuthorityCard = (label, iconClass, toneClass, person, index, displayName) => {
+    if (!person) return null;
+
+    return (
+      <div
+        key={`${label}-${person.id ?? index}`}
+        className="flex-1 min-w-[220px] bg-white/5 dark:bg-black/20 rounded-[14px] p-3 border border-[var(--ln-border-standard)] hover:border-[var(--ln-text-primary)]/20 transition-all group"
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${iconClass}`}>
+            <Users size={14} weight="bold" />
+          </div>
+          <span className={`text-[9px] weight-590 uppercase tracking-widest ${toneClass}`}>
+            {label}
+          </span>
+        </div>
+        <div className="text-[var(--ln-text-primary)] weight-510 text-sm">
+          {displayName || person.fullName}
+        </div>
+      </div>
+    );
+  };
+
+  const authorityCards = getAuthorityCards();
 
   if (!network) {
     return (
@@ -236,6 +359,30 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
 
       {/* Main content container */}
       <div className="bg-white/[0.02] rounded-[32px] border border-[var(--ln-border-standard)] overflow-hidden">
+        {authorityCards.length > 0 && (
+          <div className="p-6 border-b border-[var(--ln-border-standard)] bg-[var(--ln-bg-panel)]/40">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-[var(--ln-brand-indigo)]/10 rounded-xl flex items-center justify-center text-[var(--ln-brand-indigo)] border border-[var(--ln-brand-indigo)]/20">
+                <Users size={20} weight="bold" />
+              </div>
+              <div>
+                <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] tracking-tight">
+                  Línea de Autoridad
+                </h3>
+                <p className="text-[12px] text-[var(--ln-text-tertiary)] opacity-70">
+                  Cobertura directa sobre esta red.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-row gap-4 overflow-x-auto">
+              {authorityCards.map((card, idx) =>
+                renderAuthorityCard(card.label, card.iconClass, card.tone, card.person, idx, card.displayName)
+              )}
+            </div>
+          </div>
+        )}
+
         {view === VIEW_TREE && (
           <div className="p-6">
             <div className="mb-4 flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">

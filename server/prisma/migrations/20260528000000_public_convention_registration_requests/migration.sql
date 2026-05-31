@@ -1,9 +1,4 @@
-INSERT INTO pg_enum (enumtypid, enumlabel, enumsortorder)
-SELECT
-  'RegistrationStatus'::regtype,
-  'PENDING',
-  (SELECT MAX(enumsortorder) + 1 FROM pg_enum WHERE enumtypid = 'RegistrationStatus'::regtype)
-ON CONFLICT (enumtypid, enumlabel) DO NOTHING;
+ALTER TYPE "RegistrationStatus" ADD VALUE IF NOT EXISTS 'PENDING';
 
 ALTER TABLE "ConventionRegistration"
 ADD COLUMN IF NOT EXISTS "fullName" TEXT,

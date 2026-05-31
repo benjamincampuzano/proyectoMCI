@@ -16,6 +16,11 @@ export default function CardsView({ root, currentUser, onAddUser, onRemoveUser }
               const canRemove = canRemoveFromNode({ node, ancestors: [], currentUser, level: depth });
               const guestsCount = (node.guests?.assigned?.length || 0) + (node.guests?.invited?.length || 0);
               const disciplesCount = node.disciples?.length || 0;
+              const authority = [
+                ...(node.pastores || []).map(p => `Pastor: ${p.fullName}`),
+                ...(node.lideresDoce || []).map(p => `L12: ${p.fullName}`),
+                ...(node.lideresCelula || []).map(p => `LC: ${p.fullName}`),
+              ];
               return (
                 <div key={node.id} className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm transition-colors">
                   <div className="flex items-start gap-2">
@@ -34,6 +39,18 @@ export default function CardsView({ root, currentUser, onAddUser, onRemoveUser }
                           </span>
                         ))}
                       </div>
+                      {authority.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {authority.map((item) => (
+                            <span
+                              key={item}
+                              className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 text-gray-600 dark:text-gray-300"
+                            >
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="ml-auto text-right">
                       <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center justify-end gap-1">

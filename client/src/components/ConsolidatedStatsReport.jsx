@@ -1,21 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth';
 import api from '../utils/api';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend} from 'recharts';
 import toast from 'react-hot-toast';
-import { Lock, Medal, TrendUp, Users, PrinterIcon, MapPin, BookOpenIcon } from '@phosphor-icons/react';
+import { Medal, TrendUp, Users, PrinterIcon, MapPin, BookOpenIcon } from '@phosphor-icons/react';
 
 const LN_COLORS = ['var(--ln-brand-indigo)', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
 
 const ConsolidatedStatsReport = ({ simpleMode = false }) => {
-    const { user, hasAnyRole } = useAuth();
     const [stats, setStats] = useState(null);
-    const [startDate, setStartDate] = useState(() => {
-        const date = new Date();
-        date.setFullYear(date.getFullYear() - 5);
-        return date.toISOString().split('T')[0];
-    });
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(false);
     const [mounted, setMounted] = useState(false);
 
@@ -23,28 +15,21 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
         setMounted(true);
     }, []);
 
-    const ALLOWED_ROLES = ['PASTOR', 'LIDER_DOCE', 'ADMIN'];
-    const hasAccess = hasAnyRole(ALLOWED_ROLES);
-
-    useEffect(() => {
-        if (hasAccess) {
-            fetchStats();
-        }
-    }, [startDate, endDate, hasAccess, fetchStats]);
-
     const fetchStats = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await api.get('/consolidar/stats/general', {
-                params: { startDate, endDate }
-            });
+            const response = await api.get('/consolidar/stats/general');
             setStats(response.data);
         } catch (error) {
             toast.error('Error al cargar estadísticas consolidadas.');
         } finally {
             setLoading(false);
         }
-    }, [startDate, endDate]);
+    }, []);
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
 
     const handlePrint = () => {
         window.print();
@@ -53,20 +38,6 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
     };
-
-    if (!hasAccess) {
-        return (
-            <div className="flex flex-col items-center justify-center p-16 bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[32px] border border-[var(--ln-border-standard)] text-center animate-in fade-in zoom-in duration-500">
-                <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-3xl mb-6">
-                    <Lock className="w-12 h-12 text-red-500" weight="bold" />
-                </div>
-                <h2 className="text-2xl weight-590 text-[var(--ln-text-primary)] mb-3 tracking-tight">Acceso Reservado</h2>
-                <p className="text-[var(--ln-text-tertiary)] max-w-sm weight-510 leading-relaxed opacity-70">
-                    Este panel contiene información estratégica disponible únicamente para la línea de liderazgo principal.
-                </p>
-            </div>
-        );
-    }
 
     if (!stats && loading) return <div className="text-center py-20 text-[var(--ln-text-tertiary)] weight-590 animate-pulse">Analizando registros históricos...</div>;
     if (!stats) return <div className="text-center py-20 text-[var(--ln-text-tertiary)] weight-590">No hay información para este intervalo.</div>;
@@ -105,27 +76,6 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
         <div className={`space-y-10 animate-in fade-in duration-700 ${simpleMode ? 'p-0' : 'p-4'} print:p-0`}>
             {/* Control Bar */}
             <div className={`flex flex-col md:flex-row justify-between items-center gap-6 print:hidden ${simpleMode ? '' : 'bg-[var(--ln-bg-panel)]/30 backdrop-blur-md p-6 rounded-[24px] border border-[var(--ln-border-standard)]'}`}>
-                <div className="flex flex-wrap items-center gap-6">
-                    <div className="flex items-center gap-3">
-                        <span className="text-[10px] weight-590 text-[var(--ln-text-primary)] uppercase tracking-widest opacity-60">Desde:</span>
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 outline-none text-[var(--ln-text-primary)] transition-all"
-                        />
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <span className="text-[10px] weight-590 text-[var(--ln-text-primary)] uppercase tracking-widest opacity-60">Hasta:</span>
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 outline-none text-[var(--ln-text-primary)] transition-all"
-                        />
-                    </div>
-                </div>
-
                 {!simpleMode && (
                     <button
                         onClick={handlePrint}

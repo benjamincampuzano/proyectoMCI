@@ -66,7 +66,14 @@ const getNetwork = async (req, res) => {
             include: {
                 profile: true,
                 roles: { include: { role: true } },
-                parents: { include: { parent: { include: { profile: true, roles: { include: { role: true } } } } } }
+                parents: {
+                    select: {
+                        parentId: true,
+                        childId: true,
+                        role: true,
+                        parent: { include: { profile: true, roles: { include: { role: true } } } }
+                    }
+                }
             }
         });
 
@@ -106,7 +113,11 @@ const getNetwork = async (req, res) => {
                     id: true,
                     parents: {
                         where: { role: 'PASTOR' },
-                        select: { parentId: true, role: true }
+                        select: {
+                            parentId: true,
+                            childId: true,
+                            role: true
+                        }
                     }
                 }
             });
@@ -116,6 +127,24 @@ const getNetwork = async (req, res) => {
                         allIds.push(p.parentId);
                     }
                 }
+            }
+        }
+
+        // Include spouses for every user already detected in the network scope.
+        // This allows couples to be rebuilt consistently even when the spouse is not
+        // part of the direct descendant chain returned by the CTE.
+        const networkSpouses = await prisma.user.findMany({
+            where: {
+                id: { in: allIds }
+            },
+            select: {
+                spouseId: true
+            }
+        });
+
+        for (const user of networkSpouses) {
+            if (user.spouseId && !allIds.includes(user.spouseId)) {
+                allIds.push(user.spouseId);
             }
         }
 
@@ -131,6 +160,9 @@ const getNetwork = async (req, res) => {
                 roles: { select: { role: { select: { id: true, name: true } } } },
                 children: {
                     select: {
+                        parentId: true,
+                        childId: true,
+                        role: true,
                         child: {
                             select: {
                                 id: true, email: true, spouseId: true, cellId: true,
@@ -145,6 +177,9 @@ const getNetwork = async (req, res) => {
                 },
                 parents: {
                     select: {
+                        parentId: true,
+                        childId: true,
+                        role: true,
                         parent: {
                             select: {
                                 id: true, email: true, spouseId: true, cellId: true,

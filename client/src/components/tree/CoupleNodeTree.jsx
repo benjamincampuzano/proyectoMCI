@@ -20,14 +20,20 @@ export default memo(function CoupleNodeTree({
   if (!node) return null;
 
   const [localExpanded, setLocalExpanded] = useState(level < 2);
-  
-  const isExpanded = expandedNodes?.has(node.id) ?? localExpanded;
+
+  const hasControlledExpansion = expandedNodes instanceof Set;
+  const isExpanded = hasControlledExpansion ? expandedNodes.has(node.id) : localExpanded;
   const canAdd = canAddToNode({ node, ancestors, currentUser });
   const canRemove = canRemoveFromNode({ node, ancestors, currentUser, level });
   const canManage = canManageAssignments(currentUser);
 
-  // For PASTOR users, filter to show couples and single individuals (nodes with at least one partner)
   const disciplesToShow = node.disciples || [];
+  const assignedGuests = Array.from(
+    new Map((node.guests?.assigned || []).map((guest) => [String(guest.id), guest])).values()
+  );
+  const invitedGuests = Array.from(
+    new Map((node.guests?.invited || []).map((guest) => [String(guest.id), guest])).values()
+  );
 
   const handleToggle = () => {
     if (onToggleNode) {
@@ -67,7 +73,7 @@ export default memo(function CoupleNodeTree({
       </div>
 
       {/* Children section */}
-      {isExpanded && (disciplesToShow.length > 0 || (node.guests?.assigned?.length > 0 || node.guests?.invited?.length > 0)) && (
+      {isExpanded && (disciplesToShow.length > 0 || assignedGuests.length > 0 || invitedGuests.length > 0) && (
         <div className="relative mt-2 pl-3">
           {/* Vertical line for children */}
           <div className="absolute left-1.5 top-0 bottom-0 w-0.5 bg-gray-400 dark:bg-gray-600" />
@@ -95,8 +101,8 @@ export default memo(function CoupleNodeTree({
             ))}
 
             {/* Guests (Assigned) */}
-            {node.guests?.assigned?.map((guest) => (
-              <div key={`assigned-${guest.id}`} className="relative">
+            {assignedGuests.map((guest) => (
+              <div key={`assigned-${node.id}-${guest.id}`} className="relative">
                 <div className="absolute left-0 top-6 w-1.5 h-0.5 bg-gray-400 dark:bg-gray-600" />
                 <div className="ml-1 min-w-[280px] flex-1">
                   <GuestNode guest={guest} />
@@ -105,8 +111,8 @@ export default memo(function CoupleNodeTree({
             ))}
 
             {/* Guests (Invited by) */}
-            {node.guests?.invited?.map((guest) => (
-              <div key={`invited-${guest.id}`} className="relative">
+            {invitedGuests.map((guest) => (
+              <div key={`invited-${node.id}-${guest.id}`} className="relative">
                 <div className="absolute left-0 top-6 w-1.5 h-0.5 bg-gray-400 dark:bg-gray-600" />
                 <div className="ml-1 min-w-[280px] flex-1">
                   <GuestNode guest={guest} />
