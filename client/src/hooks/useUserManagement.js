@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import ExcelJS from 'exceljs';
@@ -28,6 +28,11 @@ const useUserManagement = () => {
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorDetails, setErrorDetails] = useState({ title: '', message: '', type: '' });
     const auth = useAuth();
+    const mounted = useRef(true);
+
+    useEffect(() => {
+        return () => { mounted.current = false; };
+    }, []);
     const currentUser = auth.user;
 
     // Use isAdmin from AuthContext but also fall back to property check
