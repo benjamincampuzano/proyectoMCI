@@ -265,7 +265,7 @@ const GuestList = ({ refreshTrigger }) => {
                     address: guest.address || 'N/A',
                     prayerRequest: guest.prayerRequest || 'N/A',
                     status: getStatusLabel(guest.status) || 'N/A',
-                    liderDoce: guest.invitedBy?.liderDoce?.fullName || 'N/A',
+                    liderDoce: guest.invitedBy?.liderDoce?.fullName || guest.assignedTo?.liderDoce?.fullName || 'N/A',
                     invitedBy: guest.invitedBy?.fullName || 'N/A',
                     assignedTo: guest.assignedTo?.fullName || 'Pendiente',
                     cell: guest.cell?.name || 'No asignado',
@@ -856,8 +856,10 @@ const GuestList = ({ refreshTrigger }) => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
-                                        {guest.invitedBy?.liderDoce ? (
-                                            <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.invitedBy.liderDoce.fullName}</p>
+                                        {(guest.invitedBy?.liderDoce || guest.assignedTo?.liderDoce) ? (
+                                            <p className="text-[#1d1d1f] dark:text-white text-sm">
+                                                {guest.invitedBy?.liderDoce?.fullName || guest.assignedTo?.liderDoce?.fullName}
+                                            </p>
                                         ) : (
                                             <span className="text-gray-400 dark:text-gray-500 text-sm">N/A</span>
                                         )}
@@ -876,10 +878,14 @@ const GuestList = ({ refreshTrigger }) => {
                                                     labelKey="fullName"
                                                 />
                                             ) : (
-                                                <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
+                                                <p className="text-[#1d1d1f] dark:text-white text-sm">
+                                                    {guest.invitedBy?.fullName || (guest.invitedBy?.liderDoce ? `Invitado por: ${guest.invitedBy.liderDoce.fullName}` : 'N/A')}
+                                                </p>
                                             )
                                         ) : (
-                                            <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.invitedBy?.fullName || 'N/A'}</p>
+                                            <p className="text-[#1d1d1f] dark:text-white text-sm">
+                                                {guest.invitedBy?.fullName || (guest.invitedBy?.liderDoce ? `Invitado por: ${guest.invitedBy.liderDoce.fullName}` : 'N/A')}
+                                            </p>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -895,7 +901,9 @@ const GuestList = ({ refreshTrigger }) => {
                                                 labelKey="fullName"
                                             />
                                         ) : (
-                                            <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.assignedTo?.fullName || 'Pendiente'}</p>
+                                            <p className="text-[#1d1d1f] dark:text-white text-sm">
+                                                {guest.assignedTo?.fullName || (guest.assignedTo?.liderDoce ? `Asignado por: ${guest.assignedTo.liderDoce.fullName}` : 'Pendiente')}
+                                            </p>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">

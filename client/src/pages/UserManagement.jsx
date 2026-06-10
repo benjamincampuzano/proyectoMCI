@@ -30,6 +30,8 @@ const UserManagement = () => {
         setRolFilter,
         asignacionesFilter,
         setAsignacionesFilter,
+        unassignedFilter,
+        setUnassignedFilter,
         editingUser,
         setEditingUser,
         showCreateForm,
@@ -150,6 +152,8 @@ const UserManagement = () => {
                         setRolFilter={setRolFilter}
                         asignacionesFilter={asignacionesFilter}
                         setAsignacionesFilter={setAsignacionesFilter}
+                        unassignedFilter={unassignedFilter}
+                        setUnassignedFilter={setUnassignedFilter}
                         lideresDoce={lideresDoce}
                         totalCount={totalUsers}
                         filteredCount={users.length}

@@ -109,10 +109,9 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         setCurrentPage(prev => Math.max(1, prev - 1));
     }, []);
 
-    // ✅ Un solo efecto para filtros NO-search: fetch inmediato con reset a página 1
+    // ✅ Un solo efecto para filtros NO-search: reset a página 1
     useEffect(() => {
         setCurrentPage(1);
-        fetchGuests(1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [statusFilter, invitedByFilter, liderDoceFilter, startDate, endDate, pendingCalls, pendingVisits, refreshTrigger]);
 
@@ -124,7 +123,6 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
 
         searchDebounceTimeoutRef.current = setTimeout(() => {
             setCurrentPage(1);
-            fetchGuests(1);
         }, 500);
 
         return () => {
@@ -134,6 +132,12 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchTerm]);
+
+    // ✅ Efecto para cambios de página: fetch con la página actual
+    useEffect(() => {
+        fetchGuests(currentPage);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage]);
 
     const updateGuest = useCallback(async (guestId, updates) => {
         try {

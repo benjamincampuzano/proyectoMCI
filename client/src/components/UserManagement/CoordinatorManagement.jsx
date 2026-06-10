@@ -342,7 +342,7 @@ const CoordinatorManagement = () => {
                         data={moduleData.subCoordinator}
                         type="subCoordinator"
                         placeholder="Buscar usuario..."
-                        role="LIDER_DOCE,LIDER_CELULA,DISCIPULO"
+                        role=""
                     />
                     <AssignmentCard
                         title="Tesorero"
@@ -351,7 +351,7 @@ const CoordinatorManagement = () => {
                         data={moduleData.treasurer}
                         type="treasurer"
                         placeholder="Buscar usuario..."
-                        role="LIDER_DOCE,LIDER_CELULA,DISCIPULO"
+                        role=""
                     />
                 </div>
             )}

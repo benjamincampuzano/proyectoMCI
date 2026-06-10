@@ -17,14 +17,16 @@ const UserFilters = ({
     setRolFilter,
     asignacionesFilter,
     setAsignacionesFilter,
+    unassignedFilter,
+    setUnassignedFilter,
     lideresDoce,
     totalCount,
     filteredCount,
     currentUser,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    const hasActiveFilters = nombreFilter || liderDoceFilter || redFilter || sexoFilter || rolFilter || asignacionesFilter;
-    const activeCount = [nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter].filter(Boolean).length;
+    const hasActiveFilters = nombreFilter || liderDoceFilter || redFilter || sexoFilter || rolFilter || asignacionesFilter || unassignedFilter;
+    const activeCount = [nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, unassignedFilter].filter(Boolean).length;
 
     const clearAll = () => {
         setNombreFilter('');
@@ -33,6 +35,7 @@ const UserFilters = ({
         setSexoFilter('');
         setRolFilter('');
         setAsignacionesFilter('');
+        setUnassignedFilter(false);
     };
 
     const getInputClass = () => {
@@ -235,6 +238,30 @@ const UserFilters = ({
                                 )}
                             </div>
                         </div>
+
+                        {/* Filtro de Sin Asignar - Ámbar */}
+                        <div className="relative flex-1 min-w-[160px] group">
+                            <label className={getLabelClass()}>
+                                Estado
+                            </label>
+                            <div className="relative">
+                                <UserCircleDashed className={getIconClass()} size={18} />
+                                <select
+                                    className={`${getInputClass()} appearance-none cursor-pointer`}
+                                    value={unassignedFilter ? 'sin-asignar' : ''}
+                                    onChange={(e) => setUnassignedFilter(e.target.value === 'sin-asignar')}
+                                >
+                                    <option value="">Todos</option>
+                                    <option value="sin-asignar">Sin Líder</option>
+                                </select>
+                                <CaretCircleDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            </div>
+                            {unassignedFilter && (
+                                <FilterBadge color="bg-amber-500">
+                                    Sin Líder
+                                </FilterBadge>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -259,6 +286,7 @@ const UserFilters = ({
                                     {sexoFilter && <FilterBadge color="bg-pink-500">Sexo</FilterBadge>}
                                     {rolFilter && <FilterBadge color="bg-emerald-500">Rol</FilterBadge>}
                                     {asignacionesFilter && <FilterBadge color="bg-cyan-500">Asignación</FilterBadge>}
+                                    {unassignedFilter && <FilterBadge color="bg-amber-500">Sin Líder</FilterBadge>}
                                 </div>
                             )}
                         </div>
@@ -298,6 +326,8 @@ UserFilters.propTypes = {
     setRolFilter: PropTypes.func.isRequired,
     asignacionesFilter: PropTypes.string.isRequired,
     setAsignacionesFilter: PropTypes.func.isRequired,
+    unassignedFilter: PropTypes.bool,
+    setUnassignedFilter: PropTypes.func,
     lideresDoce: PropTypes.array.isRequired,
     totalCount: PropTypes.number,
     filteredCount: PropTypes.number,
@@ -305,4 +335,3 @@ UserFilters.propTypes = {
 };
 
 export default UserFilters;
-

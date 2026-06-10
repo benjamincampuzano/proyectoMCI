@@ -286,7 +286,17 @@ const getAllGuests = async (req, res) => {
                     }
                 },
                 assignedTo: {
-                    include: { profile: true }
+                    include: {
+                        profile: true,
+                        parents: {
+                            where: { role: 'LIDER_DOCE' },
+                            include: {
+                                parent: {
+                                    include: { profile: true }
+                                }
+                            }
+                        }
+                    }
                 },
                 registeredBy: {
                     include: { profile: true }
@@ -329,6 +339,7 @@ const getAllGuests = async (req, res) => {
         // Format for frontend
         const formattedGuests = guests.map(g => {
             const invitedByLiderDoce = g.invitedBy?.parents?.[0]?.parent || null;
+            const assignedToLiderDoce = g.assignedTo?.parents?.[0]?.parent || null;
             return {
                 ...g,
                 invitedBy: g.invitedBy ? {
@@ -340,7 +351,15 @@ const getAllGuests = async (req, res) => {
                         fullName: invitedByLiderDoce.profile?.fullName
                     } : null
                 } : null,
-                assignedTo: g.assignedTo ? { id: g.assignedTo.id, fullName: g.assignedTo.profile?.fullName, email: g.assignedTo.email } : null,
+                assignedTo: g.assignedTo ? {
+                    id: g.assignedTo.id,
+                    fullName: g.assignedTo.profile?.fullName,
+                    email: g.assignedTo.email,
+                    liderDoce: assignedToLiderDoce ? {
+                        id: assignedToLiderDoce.id,
+                        fullName: assignedToLiderDoce.profile?.fullName
+                    } : null
+                } : null,
                 registeredBy: g.registeredBy ? { id: g.registeredBy.id, fullName: g.registeredBy.profile?.fullName, email: g.registeredBy.email } : null,
                 cell: g.cell ? {
                     id: g.cell.id,
@@ -394,10 +413,30 @@ const getGuestById = async (req, res) => {
             where: { id: parseInt(id) },
             include: {
                 invitedBy: {
-                    include: { profile: true }
+                    include: {
+                        profile: true,
+                        parents: {
+                            where: { role: 'LIDER_DOCE' },
+                            include: {
+                                parent: {
+                                    include: { profile: true }
+                                }
+                            }
+                        }
+                    }
                 },
                 assignedTo: {
-                    include: { profile: true }
+                    include: {
+                        profile: true,
+                        parents: {
+                            where: { role: 'LIDER_DOCE' },
+                            include: {
+                                parent: {
+                                    include: { profile: true }
+                                }
+                            }
+                        }
+                    }
                 },
                 calls: {
                     include: {
@@ -420,8 +459,24 @@ const getGuestById = async (req, res) => {
 
         const formattedGuest = {
             ...guest,
-            invitedBy: guest.invitedBy ? { id: guest.invitedBy.id, fullName: guest.invitedBy.profile?.fullName, email: guest.invitedBy.email } : null,
-            assignedTo: guest.assignedTo ? { id: guest.assignedTo.id, fullName: guest.assignedTo.profile?.fullName, email: guest.assignedTo.email } : null,
+            invitedBy: guest.invitedBy ? {
+                id: guest.invitedBy.id,
+                fullName: guest.invitedBy.profile?.fullName,
+                email: guest.invitedBy.email,
+                liderDoce: guest.invitedBy.parents?.[0]?.parent ? {
+                    id: guest.invitedBy.parents[0].parent.id,
+                    fullName: guest.invitedBy.parents[0].parent.profile?.fullName
+                } : null
+            } : null,
+            assignedTo: guest.assignedTo ? {
+                id: guest.assignedTo.id,
+                fullName: guest.assignedTo.profile?.fullName,
+                email: guest.assignedTo.email,
+                liderDoce: guest.assignedTo.parents?.[0]?.parent ? {
+                    id: guest.assignedTo.parents[0].parent.id,
+                    fullName: guest.assignedTo.parents[0].parent.profile?.fullName
+                } : null
+            } : null,
             calls: guest.calls.map(c => ({ ...c, caller: c.caller ? { fullName: c.caller.profile?.fullName } : null })),
             visits: guest.visits.map(v => ({ ...v, visitor: v.visitor ? { fullName: v.visitor.profile?.fullName } : null }))
         };
@@ -553,8 +608,24 @@ const updateGuest = async (req, res) => {
 
         const formattedGuest = {
             ...guest,
-            invitedBy: guest.invitedBy ? { id: guest.invitedBy.id, fullName: guest.invitedBy.profile?.fullName, email: guest.invitedBy.email } : null,
-            assignedTo: guest.assignedTo ? { id: guest.assignedTo.id, fullName: guest.assignedTo.profile?.fullName, email: guest.assignedTo.email } : null
+            invitedBy: guest.invitedBy ? {
+                id: guest.invitedBy.id,
+                fullName: guest.invitedBy.profile?.fullName,
+                email: guest.invitedBy.email,
+                liderDoce: guest.invitedBy.parents?.[0]?.parent ? {
+                    id: guest.invitedBy.parents[0].parent.id,
+                    fullName: guest.invitedBy.parents[0].parent.profile?.fullName
+                } : null
+            } : null,
+            assignedTo: guest.assignedTo ? {
+                id: guest.assignedTo.id,
+                fullName: guest.assignedTo.profile?.fullName,
+                email: guest.assignedTo.email,
+                liderDoce: guest.assignedTo.parents?.[0]?.parent ? {
+                    id: guest.assignedTo.parents[0].parent.id,
+                    fullName: guest.assignedTo.parents[0].parent.profile?.fullName
+                } : null
+            } : null
         };
 
         res.status(200).json({ guest: formattedGuest });
@@ -651,8 +722,24 @@ const assignGuest = async (req, res) => {
 
         const formattedGuest = {
             ...guest,
-            invitedBy: guest.invitedBy ? { id: guest.invitedBy.id, fullName: guest.invitedBy.profile?.fullName, email: guest.invitedBy.email } : null,
-            assignedTo: guest.assignedTo ? { id: guest.assignedTo.id, fullName: guest.assignedTo.profile?.fullName, email: guest.assignedTo.email } : null
+            invitedBy: guest.invitedBy ? {
+                id: guest.invitedBy.id,
+                fullName: guest.invitedBy.profile?.fullName,
+                email: guest.invitedBy.email,
+                liderDoce: guest.invitedBy.parents?.[0]?.parent ? {
+                    id: guest.invitedBy.parents[0].parent.id,
+                    fullName: guest.invitedBy.parents[0].parent.profile?.fullName
+                } : null
+            } : null,
+            assignedTo: guest.assignedTo ? {
+                id: guest.assignedTo.id,
+                fullName: guest.assignedTo.profile?.fullName,
+                email: guest.assignedTo.email,
+                liderDoce: guest.assignedTo.parents?.[0]?.parent ? {
+                    id: guest.assignedTo.parents[0].parent.id,
+                    fullName: guest.assignedTo.parents[0].parent.profile?.fullName
+                } : null
+            } : null
         };
 
         res.status(200).json({ guest: formattedGuest });

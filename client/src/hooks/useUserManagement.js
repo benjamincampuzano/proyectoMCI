@@ -17,6 +17,7 @@ const useUserManagement = () => {
     const [sexoFilter, setSexoFilter] = useState('');
     const [rolFilter, setRolFilter] = useState('');
     const [asignacionesFilter, setAsignacionesFilter] = useState('');
+    const [unassignedFilter, setUnassignedFilter] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalUsers, setTotalUsers] = useState(0);
     const [usersPerPage] = useState(50); // Límite para no ADMIN
@@ -186,6 +187,7 @@ const useUserManagement = () => {
             if (sexoFilter) params.append('sex', sexoFilter);
             if (rolFilter) params.append('role', rolFilter);
             if (asignacionesFilter) params.append('asignaciones', asignacionesFilter);
+            if (unassignedFilter) params.append('unassignedOnly', 'true');
 
             const response = await api.get(`/users?${params.toString()}`);
 
@@ -445,7 +447,7 @@ const useUserManagement = () => {
     // Resetear página cuando cambian los filtros
     useEffect(() => {
         setCurrentPage(1);
-    }, [nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter]);
+    }, [nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, unassignedFilter]);
 
     const validatePasswordRealTime = useCallback((password, fullName = '') => {
         const result = validatePassword(password, { fullName });
@@ -600,6 +602,8 @@ const useUserManagement = () => {
         setRolFilter,
         asignacionesFilter,
         setAsignacionesFilter,
+        unassignedFilter,
+        setUnassignedFilter,
         editingUser,
         setEditingUser,
         showCreateForm,
