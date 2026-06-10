@@ -194,30 +194,22 @@ const useUserManagement = () => {
             // El backend ahora devuelve { users: [...], pagination: {...} }
             const { users: usersData, pagination } = response.data;
 
-            // Check hierarchy assignment for all users
-            if (usersData && usersData.length > 0) {
-                const userIds = usersData.map(u => u.id);
-                try {
-                    const hierarchyResponse = await api.post('/users/check-hierarchy-assignment', { userIds });
-                    const assignmentStatus = hierarchyResponse.data.assignmentStatus;
-                    
-                    // Add isUnassignedInHierarchy flag to each user
-                    const usersWithStatus = usersData.map(user => {
-                        const status = assignmentStatus.find(s => s.userId === user.id);
+            // We compute isUnassignedInHierarchy based on the user's hierarchy arrays
+            if (mounted.current) {
+                if (Array.isArray(usersData)) {
+                    setUsers(usersData.map(user => {
+                        const hasLeader = (user.hierarchy && user.hierarchy.length > 0) || 
+                                          (user.pastorIds && user.pastorIds.length > 0) || 
+                                          (user.liderDoceIds && user.liderDoceIds.length > 0) || 
+                                          (user.liderCelulaIds && user.liderCelulaIds.length > 0);
                         return {
                             ...user,
-                            isUnassignedInHierarchy: status ? !status.isAssigned : true
+                            isUnassignedInHierarchy: !hasLeader
                         };
-                    });
-
-                    setUsers(usersWithStatus || []);
-                } catch (hierarchyError) {
-                    console.error('Error checking hierarchy assignment:', hierarchyError);
-                    // Fallback: mark all as unassigned if hierarchy check fails
-                    setUsers(usersData.map(user => ({ ...user, isUnassignedInHierarchy: true })) || []);
+                    }));
+                } else {
+                    setUsers([]);
                 }
-            } else {
-                setUsers([]);
             }
 
             setTotalUsers(pagination?.total || 0);
@@ -280,6 +272,12 @@ const useUserManagement = () => {
 
             await api.post('/users', payload);
             setSuccess('Usuario creado exitosamente');
+            
+            // Notificar a otras ventanas/componentes que la red ha cambiado
+            const channel = new BroadcastChannel('network_updates');
+            channel.postMessage('network_changed');
+            channel.close();
+
             setShowCreateForm(false);
             setFormData({
                 documentType: '', documentNumber: '', fullName: '', birthDate: '',
@@ -341,6 +339,9 @@ const useUserManagement = () => {
             await api.put(`/users/${userId}`, payload);
             setSuccess('Usuario actualizado');
             setEditingUser(null);
+            const channel = new BroadcastChannel('network_updates');
+            channel.postMessage('network_changed');
+            channel.close();
             fetchUsers();
         } catch (err) {
             handleError(err, 'update');
@@ -362,6 +363,9 @@ const useUserManagement = () => {
         try {
             await api.delete(`/users/${userId}`);
             setSuccess('Usuario eliminado');
+            const channel = new BroadcastChannel('network_updates');
+            channel.postMessage('network_changed');
+            channel.close();
             fetchUsers();
         } catch (err) {
             handleError(err, 'delete');

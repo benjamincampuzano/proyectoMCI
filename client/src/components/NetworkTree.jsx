@@ -56,15 +56,13 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   }, [coupleRoot]);
 
   useEffect(() => {
-    if (allUsersFetched.current) return;
-    allUsersFetched.current = true;
-
-    (async () => {
+    const fetchAllUsers = async () => {
       try {
         const response = await api.get('/users', {
           params: {
             limit: 10000,
-            includeUnassigned: true
+            includeUnassigned: true,
+            _t: Date.now()
           }
         });
         const usersData = response.data?.users || response.data || [];
@@ -73,9 +71,21 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
         console.error('Error loading users:', error);
         setAllUsers([]);
       }
-    })();
-  }, []);
+    };
 
+    fetchAllUsers();
+
+    const channel = new BroadcastChannel('network_updates');
+    channel.onmessage = (event) => {
+      if (event.data === 'network_changed') {
+        fetchAllUsers();
+      }
+    };
+
+    return () => {
+      channel.close();
+    };
+  }, [network]);
 
   const confirmAssign = async () => {
     if (!pendingAssign) return;

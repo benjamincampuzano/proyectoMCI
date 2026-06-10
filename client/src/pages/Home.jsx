@@ -129,6 +129,22 @@ const Home = () => {
     const canViewNetwork = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO']);
     const canViewReport = true;
 
+    useEffect(() => {
+        const channel = new BroadcastChannel('network_updates');
+        channel.onmessage = (event) => {
+            if (event.data === 'network_changed') {
+                if (selectedLeader) {
+                    handleSelectLeader(selectedLeader);
+                } else if (hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) {
+                    handleSelectLeader(user);
+                }
+            }
+        };
+        return () => {
+            channel.close();
+        };
+    }, [selectedLeader, user]);
+
     const renderTabContent = () => {
         if (activeTab === 'red') {
             return (
