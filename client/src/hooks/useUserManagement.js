@@ -298,12 +298,13 @@ const useUserManagement = () => {
                 dataPolicyAccepted: false, dataTreatmentAuthorized: false, minorConsentAuthorized: false
             });
             fetchUsers();
+            fetchAllLeaders();
         } catch (err) {
             handleError(err, 'create');
         } finally {
             setSubmitting(false);
         }
-    }, [fetchUsers, formData]);
+    }, [fetchUsers, fetchAllLeaders, formData]);
 
     const handleUpdateUser = useCallback(async (userId) => {
         if (!editingUser) return;
@@ -348,12 +349,13 @@ const useUserManagement = () => {
             channel.postMessage('network_changed');
             channel.close();
             fetchUsers();
+            fetchAllLeaders();
         } catch (err) {
             handleError(err, 'update');
         } finally {
             setSubmitting(false);
         }
-    }, [editingUser, fetchUsers]);
+    }, [editingUser, fetchUsers, fetchAllLeaders]);
 
     const handleDeleteUser = useCallback(async (userId, confirmCallback) => {
         // If confirmCallback is provided, call it to trigger confirmation

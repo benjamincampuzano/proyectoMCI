@@ -213,16 +213,32 @@ const StudentMatrix = () => {
                                         );
                                         const status = getClassStatus(enrollment, level);
 
+                                        // Fallback: check discipular* profile booleans when no enrollment exists
+                                        const DISCIPULAR_FIELD_MAP = {
+                                            1: 'discipular1A',
+                                            2: 'discipular1B',
+                                            3: 'discipular2A',
+                                            4: 'discipular2B',
+                                            5: 'discipular3A',
+                                            6: 'discipular3B',
+                                        };
+                                        const profileField = DISCIPULAR_FIELD_MAP[level.moduleNumber];
+                                        const profileCompleted = profileField && student[profileField] === true;
+
+                                        const isCompleted = status ? status.completed : profileCompleted;
+                                        const grade = status?.grade ?? null;
+                                        const hasData = status !== null || profileCompleted;
+
                                         return (
                                             <td key={`${level.nivel}${level.seccion}`} className="px-4 py-4 whitespace-nowrap text-center">
-                                                {status ? (
-                                                    status.completed ? (
+                                                {hasData ? (
+                                                    isCompleted ? (
                                                         <div className="flex justify-center">
-                                                            <CheckCircle className="text-green-500" size={20} title={`Completado - Nota: ${status.grade}`} />
+                                                            <CheckCircle className="text-green-500" size={20} title={grade !== null ? `Completado - Nota: ${grade}` : 'Completado (perfil)'} />
                                                         </div>
                                                     ) : (
                                                         <div className="flex justify-center">
-                                                            <XCircle className="text-red-500" size={20} title={`No completado - Nota: ${status.grade}`} />
+                                                            <XCircle className="text-red-500" size={20} title={grade !== null ? `No completado - Nota: ${grade}` : 'No completado'} />
                                                         </div>
                                                     )
                                                 ) : (

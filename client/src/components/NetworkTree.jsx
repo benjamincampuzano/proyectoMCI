@@ -32,6 +32,27 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     return buildCoupleNetwork(network);
   }, [network]);
 
+  // Transform backend network data to match UserFormFields structure
+  // Keep original object arrays for display, add ID arrays for consistency with form
+  const normalizedNetwork = useMemo(() => {
+    if (!network) return null;
+
+    return {
+      ...network,
+      // Keep original object arrays for display (getAuthorityCards needs fullName)
+      pastores: network.pastores || [],
+      lideresDoce: network.lideresDoce || [],
+      lideresCelula: network.lideresCelula || [],
+      // Add ID arrays to match UserFormFields structure
+      pastorIds: network.pastores?.map(p => p.id) || [],
+      pastorSpouseIds: network.pastores?.map(p => p.spouseId).filter(Boolean) || [],
+      liderDoceIds: network.lideresDoce?.map(ld => ld.id) || [],
+      liderDoceSpouseIds: network.lideresDoce?.map(ld => ld.spouseId).filter(Boolean) || [],
+      liderCelulaIds: network.lideresCelula?.map(lc => lc.id) || [],
+      liderCelulaSpouseIds: network.lideresCelula?.map(lc => lc.spouseId).filter(Boolean) || []
+    };
+  }, [network]);
+
   const unassigned = useMemo(() => {
     if (!coupleRoot) return [];
     const isAdmin = currentUser?.roles?.includes('ADMIN');
@@ -170,8 +191,8 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   };
 
   const getAuthorityCards = useCallback(() => {
-    const pairs = Array.isArray(network?.partners) ? network.partners : [];
-    const role = getPrimaryNetworkRole(network?.roles || []);
+    const pairs = Array.isArray(normalizedNetwork?.partners) ? normalizedNetwork.partners : [];
+    const role = getPrimaryNetworkRole(normalizedNetwork?.roles || []);
     const currentUserId = currentUser?.id != null ? String(currentUser.id) : null;
 
     const cards = [];
@@ -214,7 +235,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
         iconClass: 'bg-pink-500/10 border-pink-500/20',
         displayName: partnerDisplayName,
         person: {
-          id: `${network.id}-pair`,
+          id: `${normalizedNetwork.id}-pair`,
           fullName: partnerDisplayName,
         },
       });
@@ -246,13 +267,13 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
 
     const tiersToShow = authorityByRole[role] || [];
     tiersToShow.forEach((tierKey) => {
-      const items = Array.isArray(network?.[tierKey]) ? network[tierKey] : [];
+      const items = Array.isArray(normalizedNetwork?.[tierKey]) ? normalizedNetwork[tierKey] : [];
       const config = tierConfig[tierKey];
       addCards(config.labelBase, config.tone, config.iconClass, items, 2);
     });
 
     return cards;
-  }, [network]);
+  }, [normalizedNetwork, currentUser]);
 
   const renderAuthorityCard = (label, iconClass, toneClass, person, index, displayName) => {
     if (!person) return null;
@@ -301,9 +322,9 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
             </h2>
             <div className="flex items-center gap-3 mt-1.5">
               <p className="text-[13px] text-[var(--ln-text-tertiary)] opacity-70">
-                {network.partners && network.partners.length > 1
-                  ? `${network.partners[0].fullName} & ${network.partners[1].fullName}`
-                  : network.fullName}
+                {normalizedNetwork.partners && normalizedNetwork.partners.length > 1
+                  ? `${normalizedNetwork.partners[0].fullName} & ${normalizedNetwork.partners[1].fullName}`
+                  : normalizedNetwork.fullName}
               </p>
               <span className="w-1 h-1 rounded-full bg-[var(--ln-border-standard)]" />
               <p className="text-[11px] weight-510 text-amber-500 uppercase tracking-widest">

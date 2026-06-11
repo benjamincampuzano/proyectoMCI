@@ -28,11 +28,33 @@ export default memo(function CoupleNodeTree({
   const canManage = canManageAssignments(currentUser);
 
   const disciplesToShow = node.disciples || [];
+
+  // Get guests assigned to either partner in the couple
+  const getPartnerGuests = (partner) => {
+    return partner?.guests?.assigned || [];
+  };
+
   const assignedGuests = Array.from(
-    new Map((node.guests?.assigned || []).map((guest) => [String(guest.id), guest])).values()
+    new Map(
+      [
+        ...(node.partners?.[0] ? getPartnerGuests(node.partners[0]) : []),
+        ...(node.partners?.[1] ? getPartnerGuests(node.partners[1]) : [])
+      ].map((guest) => [String(guest.id), guest])
+    ).values()
   );
+
+  // Get guests invited by either partner in the couple
+  const getPartnerInvitedGuests = (partner) => {
+    return partner?.guests?.invited || [];
+  };
+
   const invitedGuests = Array.from(
-    new Map((node.guests?.invited || []).map((guest) => [String(guest.id), guest])).values()
+    new Map(
+      [
+        ...(node.partners?.[0] ? getPartnerInvitedGuests(node.partners[0]) : []),
+        ...(node.partners?.[1] ? getPartnerInvitedGuests(node.partners[1]) : [])
+      ].map((guest) => [String(guest.id), guest])
+    ).values()
   );
 
   const handleToggle = () => {

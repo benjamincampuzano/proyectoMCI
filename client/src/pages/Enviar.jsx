@@ -74,8 +74,7 @@ const Enviar = () => {
     };
 
     const hasUnassignedAccess = () => {
-        const hasRoleAccess = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
-        return hasRoleAccess || hasFullEnviarAccess;
+        return hasFullEnviarAccess;
     };
 
     const tabs = [

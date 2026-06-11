@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import LosDoceGrid from '../components/LosDoceGrid';
 import api from '../utils/api';
@@ -28,18 +28,8 @@ const Home = () => {
     const [networkLoading, setNetworkLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        if (isAdmin()) {
-            fetchPastores();
-        } else if (hasAnyRole(['PASTOR'])) {
-            fetchLideresDoce();
-        } else if (hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) {
-            handleSelectLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
-            setLoading(false);
-        } else {
-            setLoading(false);
-        }
-    }, [user]);
+    // Refs so BroadcastChannel effect can always access latest functions/state
+    const liveRefs = useRef({});
 
     const fetchPastores = async () => {
         try {
@@ -102,6 +92,9 @@ const Home = () => {
         try {
             setNetworkLoading(true);
             setSelectedLeader(leader);
+            if (isAdmin()) {
+                sessionStorage.setItem('home_selected_leader', JSON.stringify(leader));
+            }
             setError(null);
             const response = await api.get(`/network/${leader.id}`);
             setNetwork(response.data);
@@ -115,6 +108,36 @@ const Home = () => {
             setNetworkLoading(false);
         }
     };
+
+    // Keep refs in sync so BroadcastChannel handler has latest values
+    useEffect(() => {
+        liveRefs.current = {
+            handleSelectLeader, fetchPastores, fetchLideresDoce,
+            hasAnyRole, isAdmin, user, selectedLeader
+        };
+    }, [user, selectedLeader]);
+
+    useEffect(() => {
+        if (isAdmin()) {
+            fetchPastores();
+            const stored = sessionStorage.getItem('home_selected_leader');
+            if (stored) {
+                try {
+                    const leader = JSON.parse(stored);
+                    if (leader?.id) {
+                        handleSelectLeader(leader);
+                    }
+                } catch { /* ignore parse errors */ }
+            }
+        } else if (hasAnyRole(['PASTOR'])) {
+            fetchLideresDoce();
+        } else if (hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) {
+            handleSelectLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
+            setLoading(false);
+        } else {
+            setLoading(false);
+        }
+    }, [user]);
 
     const refreshNetwork = () => {
         if (selectedLeader) {
@@ -133,17 +156,24 @@ const Home = () => {
         const channel = new BroadcastChannel('network_updates');
         channel.onmessage = (event) => {
             if (event.data === 'network_changed') {
-                if (selectedLeader) {
-                    handleSelectLeader(selectedLeader);
-                } else if (hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) {
-                    handleSelectLeader(user);
+                const refs = liveRefs.current;
+                if (refs.selectedLeader) {
+                    refs.handleSelectLeader(refs.selectedLeader);
+                } else if (refs.hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) {
+                    refs.handleSelectLeader(refs.user);
+                }
+                // Refresh leader lists so LosDoceGrid/sidebar are up-to-date
+                if (refs.isAdmin()) {
+                    refs.fetchPastores();
+                } else if (refs.hasAnyRole(['PASTOR'])) {
+                    refs.fetchLideresDoce();
                 }
             }
         };
         return () => {
             channel.close();
         };
-    }, [selectedLeader, user]);
+    }, []);
 
     const renderTabContent = () => {
         if (activeTab === 'red') {

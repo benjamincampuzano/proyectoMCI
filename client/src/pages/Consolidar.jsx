@@ -4,7 +4,7 @@ import ChurchAttendance from '../components/ChurchAttendance';
 import ChurchAttendanceChart from '../components/ChurchAttendanceChart';
 import GuestTracking from '../components/GuestTracking';
 import GuestTrackingStats from '../components/GuestTrackingStats';
-import { ROLE_GROUPS } from '../constants/roles';
+import { ROLE_GROUPS, ROLES } from '../constants/roles';
 import { PageHeader, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
@@ -13,7 +13,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 
 const Consolidar = () => {
-    const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
+    const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer, user } = useAuth();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
@@ -46,10 +46,17 @@ const Consolidar = () => {
         };
     }, [refreshTrigger]);
     const tabs = [
-        { id: 'attendance', label: 'Asistencia a la Iglesia', component: ChurchAttendance },
-        { 
-            id: 'stats', 
-            label: 'Estadísticas de Asistencia', 
+        { id: 'attendance', label: 'Asistencia a la Iglesia', component: ChurchAttendance,
+          customCheck: () => {
+              const isLoggedIn = !!user;
+              const isModuleCoord = isCoordinator('consolidar');
+              const isModuleSubCoord = isSubCoordinator('consolidar');
+              const isModuleTreasurer = isTreasurer('consolidar');
+              return isLoggedIn || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
+          } },
+        {
+            id: 'stats',
+            label: 'Estadísticas de Asistencia',
             component: ChurchAttendanceChart,
             customCheck: () => {
                 const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
