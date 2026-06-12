@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { SpinnerIcon, Funnel, PencilIcon, Trash, X, FloppyDiskIcon, UserCheckIcon, Users, CheckCircle, FileXls } from '@phosphor-icons/react';
+import { useState, useEffect, useCallback } from 'react';
+import { SpinnerIcon, Funnel, PencilIcon, Trash, X, UserCheckIcon, Users, CheckCircle, FileXls } from '@phosphor-icons/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import PropTypes from 'prop-types';
@@ -11,7 +11,6 @@ import { DATA_POLICY_URL } from '../constants/policies';
 import api from '../utils/api';
 import GuestEditModal from './GuestEditModal';
 import ConfirmationModal from './ConfirmationModal';
-
 
 const GuestList = ({ refreshTrigger }) => {
     const { isCoordinator, isDoceLeader, user } = useAuth();
@@ -44,108 +43,117 @@ const GuestList = ({ refreshTrigger }) => {
         currentUser,
         fetchGuests,
         fetchAllGuests,
-        updateGuest,
         deleteGuest,
         convertGuestToMember,
         // Paginación
-        currentPage,
         setCurrentPage,
         guestsPerPage,
         pagination,
     } = useGuestManagement({ refreshTrigger });
 
-    const [editingGuest, setEditingGuest] = useState(null);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedGuestForEdit, setSelectedGuestForEdit] = useState(null);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [guestToDelete, setGuestToDelete] = useState(null);
-    const [convertingGuest, setConvertingGuest] = useState(null);
-    const [conversionEmail, setConversionEmail] = useState('');
-    const [conversionPassword, setConversionPassword] = useState('');
-    const [conversionConsent, setConversionConsent] = useState({
-        dataPolicyAccepted: false,
-        dataTreatmentAuthorized: false,
-        minorConsentAuthorized: false
+    // Modal unificado: { type, guest, data }
+    // type: 'edit' | 'delete' | 'convert' | 'inline'
+    // data: { email, password, ...} para 'convert' e 'inline'
+    const [activeModal, setActiveModal] = useState(null);
+
+    // Estado para exportación
+    const [isExporting, setIsExporting] = useState(false);
+
+    // Estado para filtros avanzados
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 768;
+        }
+        return false;
     });
-    const [exporting, setExporting] = useState(false);
 
     // Auto-apply filter for LIDER_DOCE who are not coordinators
+    // Extraemos propiedades primitivas de user para evitar re-renders innecesarios
+    const userId = user?.id;
+    const userRoles = user?.roles || [];
+    const userFullName = user?.profile?.fullName;
+    const userEmail = user?.email;
+
     useEffect(() => {
-        if (isDoceLeader() && !isModuleCoordinator && user) {
-            // Automatically set filter to current user
+        const isDoceLeaderRole = userRoles.includes('LIDER_DOCE');
+
+        if (isDoceLeaderRole && !isModuleCoordinator && userId) {
             setLiderDoceFilter({
-                id: user.id,
-                fullName: user.profile?.fullName || user.email
+                id: userId,
+                fullName: userFullName || userEmail
             });
         }
-    }, [isDoceLeader, isModuleCoordinator, user, setLiderDoceFilter]);
+    }, [userId, userRoles, isModuleCoordinator, userFullName, userEmail]);
 
-    const handleSearch = () => {
+    const handleSearch = useCallback(() => {
         fetchGuests(1);
-    };
+    }, [fetchGuests]);
 
-    const handleUpdateGuest = async (guestId, updates) => {
-        const res = await updateGuest(guestId, updates);
-        if (res.success) {
-            setEditingGuest(null);
-            setIsEditModalOpen(false);
-            setSelectedGuestForEdit(null);
+    const canModify = useCallback(() => {
+        const roles = currentUser?.roles || [];
+        return roles.includes('ADMIN') || roles.includes('LIDER_DOCE');
+    }, [currentUser]);
+
+    const openModal = useCallback((type, guest) => {
+        const data = {};
+        if (type === 'convert') {
+            data.email = '';
+            data.password = '';
+            data.dataPolicyAccepted = false;
+            data.dataTreatmentAuthorized = false;
+        } else if (type === 'inline') {
+            // Copiar los datos del guest para edición
+            Object.assign(data, guest);
         }
-    };
+        setActiveModal({ type, guest, data });
+    }, []);
 
-    const handleOpenEditModal = (guest) => {
-        setSelectedGuestForEdit(guest);
-        setIsEditModalOpen(true);
-    };
+    // Función helper para actualizar datos dentro del modal
+    const updateModalData = useCallback((updates) => {
+        setActiveModal((prev) => ({
+            ...prev,
+            data: { ...prev.data, ...updates }
+        }));
+    }, []);
 
-    const handleCloseEditModal = () => {
-        setIsEditModalOpen(false);
-        setSelectedGuestForEdit(null);
-    };
-
-    const handleGuestUpdated = (updatedGuest) => {
+    const handleGuestUpdated = useCallback(() => {
         fetchGuests(1);
-    };
+        setActiveModal(null);
+    }, [fetchGuests]);
 
-    const handleOpenDeleteModal = (guest) => {
-        setGuestToDelete(guest);
-        setIsDeleteModalOpen(true);
-    };
+    const handleConfirmDelete = useCallback(async () => {
+        if (!activeModal?.guest) return;
+        await deleteGuest(activeModal.guest.id);
+        setActiveModal(null);
+    }, [activeModal, deleteGuest]);
 
-    const handleCloseDeleteModal = () => {
-        setIsDeleteModalOpen(false);
-        setGuestToDelete(null);
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!guestToDelete) return;
-        await deleteGuest(guestToDelete.id);
-        setGuestToDelete(null);
-    };
-
-    const handleConvertToMember = async () => {
-        if (!conversionEmail || !conversionPassword) {
+    const handleConvertToMember = useCallback(async () => {
+        if (!activeModal?.data?.email || !activeModal?.data?.password) {
             setError('Email y contraseña son requeridos');
             return;
         }
+        if (!activeModal?.guest) return;
 
-        const res = await convertGuestToMember(convertingGuest.id, {
-            email: conversionEmail,
-            password: conversionPassword,
-            ...conversionConsent
-        });
-        if (!res.success) return;
+        try {
+            const res = await convertGuestToMember(activeModal.guest.id, {
+                email: activeModal.data.email,
+                password: activeModal.data.password,
+                dataPolicyAccepted: activeModal.data.dataPolicyAccepted,
+                dataTreatmentAuthorized: activeModal.data.dataTreatmentAuthorized,
+            });
 
-        setConvertingGuest(null);
-        setConversionEmail('');
-        setConversionPassword('');
-        setConversionConsent({
-            dataPolicyAccepted: false,
-            dataTreatmentAuthorized: false,
-            minorConsentAuthorized: false
-        });
-        toast.success('Invitado consolidado a Discípulo exitosamente');
-    };
+            if (!res.success) return;
+            toast.success('Invitado consolidado a Discípulo exitosamente');
+            setActiveModal(null);
+        } catch (err) {
+            setError(err.message || 'Error al convertir invitado');
+        }
+    }, [activeModal, convertGuestToMember, setError]);
+
+    // Handlers para edición inline
+    const handleInlineEditStart = useCallback((guest) => {
+        openModal('inline', guest);
+    }, [openModal]);
 
     const getStatusBadgeColor = (status) => {
         const colors = {
@@ -167,8 +175,7 @@ const GuestList = ({ refreshTrigger }) => {
         return labels[status] || status;
     };
 
-    // Calcular edad a partir de la fecha de nacimiento
-    const calculateAge = (birthDate) => {
+    const calculateAge = useCallback((birthDate) => {
         if (!birthDate) return null;
         const today = new Date();
         const birth = new Date(birthDate);
@@ -178,38 +185,20 @@ const GuestList = ({ refreshTrigger }) => {
             age--;
         }
         return age;
-    };
+    }, []);
 
-    // Estado para mostrar/ocultar filtros avanzados (ocultos por defecto en móvil)
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
-    // Funciones auxiliares de permisos
-    const canEditAllFields = (guest) => {
+    const canExport = useCallback(() => {
         const roles = currentUser?.roles || [];
-        return roles.includes('ADMIN') || roles.includes('LIDER_DOCE');
-    };
-
-    const canDelete = (guest) => {
-        const roles = currentUser?.roles || [];
-        // Solo ADMIN y LIDER_DOCE pueden eliminar invitados
-        // DISCIPULO no tiene permiso para eliminar
-        return roles.includes('ADMIN') || roles.includes('LIDER_DOCE');
-    };
-
-    const canExport = () => {
-        const roles = currentUser?.roles || [];
-        // Solo ADMIN, PASTOR y LIDER_DOCE (coordinador del módulo) pueden exportar
         return roles.includes('ADMIN') || roles.includes('PASTOR') || roles.includes('LIDER_DOCE');
-    };
-
+    }, [currentUser]);
 
     // Check if liderDoceFilter is auto-applied (for non-coordinator LIDER_DOCE)
     const isLiderDoceFilterAutoApplied = isDoceLeader() && !isModuleCoordinator && liderDoceFilter?.id === user?.id;
-    
+
     const hasAdvancedFilters = searchTerm || statusFilter || invitedByFilter || (liderDoceFilter && !isLiderDoceFilterAutoApplied) || startDate || endDate || pendingCalls || pendingVisits;
     const activeAdvancedCount = [searchTerm, statusFilter, invitedByFilter, (liderDoceFilter && !isLiderDoceFilterAutoApplied), startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited].filter(Boolean).length;
 
-    const clearAdvancedFilters = () => {
+    const clearAdvancedFilters = useCallback(() => {
         setSearchTerm('');
         setStatusFilter('');
         setInvitedByFilter(null);
@@ -218,13 +207,13 @@ const GuestList = ({ refreshTrigger }) => {
         setEndDate('');
         setPendingCalls(false);
         setPendingVisits(false);
-        setTimeout(() => fetchGuests(), 0);
-    };
+        setAlreadyCalled(false);
+        setAlreadyVisited(false);
+    }, [setSearchTerm, setStatusFilter, setInvitedByFilter, setLiderDoceFilter, setStartDate, setEndDate, setPendingCalls, setPendingVisits, setAlreadyCalled, setAlreadyVisited]);
 
-    const exportToExcel = async () => {
-        setExporting(true);
+    const exportToExcel = useCallback(async () => {
+        setIsExporting(true);
         try {
-            // Obtener todos los invitados filtrados (sin paginación)
             const allGuests = await fetchAllGuests();
 
             if (allGuests.length === 0) {
@@ -232,11 +221,9 @@ const GuestList = ({ refreshTrigger }) => {
                 return;
             }
 
-            // Crear libro de trabajo
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Invitados');
 
-            // Definir columnas
             worksheet.columns = [
                 { header: 'Fecha Creación', key: 'createdAt', width: 15 },
                 { header: 'Registrado Por', key: 'registeredBy', width: 20 },
@@ -254,7 +241,6 @@ const GuestList = ({ refreshTrigger }) => {
                 { header: 'Encuentro', key: 'encuentro', width: 30 }
             ];
 
-            // Añadir datos
             allGuests.forEach(guest => {
                 worksheet.addRow({
                     createdAt: guest.createdAt ? new Date(guest.createdAt).toLocaleDateString('es-ES') : 'N/A',
@@ -274,32 +260,28 @@ const GuestList = ({ refreshTrigger }) => {
                 });
             });
 
-            // Estilar encabezados
             const headerRow = worksheet.getRow(1);
             headerRow.eachCell((cell) => {
                 cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
                 cell.fill = {
                     type: 'pattern',
                     pattern: 'solid',
-                    fgColor: { argb: 'FF10B981' } // Green-500
+                    fgColor: { argb: 'FF10B981' }
                 };
                 cell.alignment = { horizontal: 'center', vertical: 'middle' };
             });
 
-            // Generar archivo Excel
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            
-            // Descargar archivo
             saveAs(blob, `invitados_${new Date().toISOString().split('T')[0]}.xlsx`);
 
             toast.success(`Exportados ${allGuests.length} invitados a Excel`);
         } catch (err) {
             toast.error(err.message || 'Error al exportar invitados');
         } finally {
-            setExporting(false);
+            setIsExporting(false);
         }
-    };
+    }, [fetchAllGuests, calculateAge, getStatusLabel]);
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
@@ -311,9 +293,8 @@ const GuestList = ({ refreshTrigger }) => {
                 </div>
             )}
 
-            {/* Sección de Filtros - Estilo Guía */}
+            {/* Sección de Filtros */}
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
-                {/* Header con botón de filtros */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Filtros</h3>
@@ -323,7 +304,7 @@ const GuestList = ({ refreshTrigger }) => {
                             </span>
                         )}
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                         {hasAdvancedFilters && (
                             <button
@@ -357,7 +338,6 @@ const GuestList = ({ refreshTrigger }) => {
                     <div className="p-4 space-y-4">
                         {/* Fila 1: Búsqueda y Estado */}
                         <div className="flex flex-wrap gap-4 items-end">
-                            {/* Búsqueda por nombre */}
                             <div className="flex-[2] min-w-[200px]">
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
                                     Buscar por nombre
@@ -375,11 +355,11 @@ const GuestList = ({ refreshTrigger }) => {
                                         className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
                                     />
                                     {searchTerm && (
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 setSearchTerm('');
                                                 setCurrentPage(1);
-                                            }} 
+                                            }}
                                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                         >
                                             <X size={14} />
@@ -388,7 +368,6 @@ const GuestList = ({ refreshTrigger }) => {
                                 </div>
                             </div>
 
-                            {/* Filtro de Estado */}
                             <div className="flex-1 min-w-[160px]">
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
                                     Estado
@@ -409,7 +388,6 @@ const GuestList = ({ refreshTrigger }) => {
                                 </select>
                             </div>
 
-                            {/* Filtro de Invitado por */}
                             <div className="flex-[2] min-w-[200px]">
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
                                     Invitado por
@@ -433,7 +411,6 @@ const GuestList = ({ refreshTrigger }) => {
 
                         {/* Fila 2: Fechas y Líder */}
                         <div className="flex flex-wrap gap-4 items-end">
-                            {/* Fecha inicio */}
                             <div className="flex-1 min-w-[160px]">
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
                                     Fecha desde
@@ -449,7 +426,6 @@ const GuestList = ({ refreshTrigger }) => {
                                 />
                             </div>
 
-                            {/* Fecha fin */}
                             <div className="flex-1 min-w-[160px]">
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
                                     Fecha hasta
@@ -465,7 +441,6 @@ const GuestList = ({ refreshTrigger }) => {
                                 />
                             </div>
 
-                            {/* Filtro de Líder Doce */}
                             {(!isDoceLeader() || isModuleCoordinator) && (
                                 <div className="flex-[2] min-w-[250px]">
                                     <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
@@ -491,102 +466,34 @@ const GuestList = ({ refreshTrigger }) => {
                             )}
                         </div>
 
-                        {/* Fila 2: Checkboxes de pendientes */}
+                        {/* Fila 3: Checkboxes de pendientes */}
                         <div className="flex flex-wrap gap-6 pt-2">
-                            {/* Checkbox Pendientes por llamar */}
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
-                                    pendingCalls
-                                        ? 'bg-green-500 border-green-500'
-                                        : 'border-gray-300 dark:border-gray-600 group-hover:border-green-400'
-                                }`}>
-                                    <input
-                                        type="checkbox"
-                                        checked={pendingCalls}
-                                        onChange={(e) => {
-                                            setPendingCalls(e.target.checked);
-                                            setCurrentPage(1);
-                                        }}
-                                        className="absolute opacity-0 w-full h-full cursor-pointer"
-                                    />
-                                    {pendingCalls && <CheckCircle size={14} className="text-white" weight="fill" />}
-                                </div>
-                                <span className={`text-sm font-medium ${pendingCalls ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                    Pendientes por llamar
-                                </span>
-                            </label>
-
-                            {/* Checkbox Pendientes por visitar */}
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
-                                    pendingVisits
-                                        ? 'bg-green-500 border-green-500'
-                                        : 'border-gray-300 dark:border-gray-600 group-hover:border-green-400'
-                                }`}>
-                                    <input
-                                        type="checkbox"
-                                        checked={pendingVisits}
-                                        onChange={(e) => {
-                                            setPendingVisits(e.target.checked);
-                                            setCurrentPage(1);
-                                        }}
-                                        className="absolute opacity-0 w-full h-full cursor-pointer"
-                                    />
-                                    {pendingVisits && <CheckCircle size={14} className="text-white" weight="fill" />}
-                                </div>
-                                <span className={`text-sm font-medium ${pendingVisits ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                    Pendientes por visitar
-                                </span>
-                            </label>
-
-                            {/* Checkbox Ya llamados */}
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
-                                    alreadyCalled
-                                        ? 'bg-blue-500 border-blue-500'
-                                        : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
-                                }`}>
-                                    <input
-                                        type="checkbox"
-                                        checked={alreadyCalled}
-                                        onChange={(e) => {
-                                            setAlreadyCalled(e.target.checked);
-                                            setCurrentPage(1);
-                                        }}
-                                        className="absolute opacity-0 w-full h-full cursor-pointer"
-                                    />
-                                    {alreadyCalled && <CheckCircle size={14} className="text-white" weight="fill" />}
-                                </div>
-                                <span className={`text-sm font-medium ${alreadyCalled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                    Ya fueron llamados
-                                </span>
-                            </label>
-
-                            {/* Checkbox Ya visitados */}
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
-                                    alreadyVisited
-                                        ? 'bg-blue-500 border-blue-500'
-                                        : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
-                                }`}>
-                                    <input
-                                        type="checkbox"
-                                        checked={alreadyVisited}
-                                        onChange={(e) => {
-                                            setAlreadyVisited(e.target.checked);
-                                            setCurrentPage(1);
-                                        }}
-                                        className="absolute opacity-0 w-full h-full cursor-pointer"
-                                    />
-                                    {alreadyVisited && <CheckCircle size={14} className="text-white" weight="fill" />}
-                                </div>
-                                <span className={`text-sm font-medium ${alreadyVisited ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                    Ya fueron visitados
-                                </span>
-                            </label>
+                            <FilterCheckbox
+                                checked={pendingCalls}
+                                onChange={(val) => { setPendingCalls(val); setCurrentPage(1); }}
+                                activeColor="green"
+                                label="Pendientes por llamar"
+                            />
+                            <FilterCheckbox
+                                checked={pendingVisits}
+                                onChange={(val) => { setPendingVisits(val); setCurrentPage(1); }}
+                                activeColor="green"
+                                label="Pendientes por visitar"
+                            />
+                            <FilterCheckbox
+                                checked={alreadyCalled}
+                                onChange={(val) => { setAlreadyCalled(val); setCurrentPage(1); }}
+                                activeColor="blue"
+                                label="Ya fueron llamados"
+                            />
+                            <FilterCheckbox
+                                checked={alreadyVisited}
+                                onChange={(val) => { setAlreadyVisited(val); setCurrentPage(1); }}
+                                activeColor="blue"
+                                label="Ya fueron visitados"
+                            />
                         </div>
 
-                        {/* Botón Aplicar */}
                         <div className="flex items-center gap-3 pt-2">
                             <Button
                                 onClick={handleSearch}
@@ -609,8 +516,7 @@ const GuestList = ({ refreshTrigger }) => {
                                     {pagination?.total || guests.length} invitados
                                 </span>
                             </div>
-                            
-                            {/* Badges de filtros activos */}
+
                             {hasAdvancedFilters && (
                                 <div className="flex flex-wrap gap-1.5">
                                     {startDate && (
@@ -656,20 +562,20 @@ const GuestList = ({ refreshTrigger }) => {
                                 </div>
                             )}
                         </div>
-                        
+
                         {canExport() && (
                             <button
                                 onClick={exportToExcel}
-                                disabled={loading || exporting || guests.length === 0}
+                                disabled={loading || isExporting || guests.length === 0}
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors"
                                 title="Exportar a Excel"
                             >
-                                {exporting ? (
+                                {isExporting ? (
                                     <SpinnerIcon size={14} className="animate-spin" />
                                 ) : (
                                     <FileXls size={16} />
                                 )}
-                                {exporting ? 'Exportando...' : 'Exportar Excel'}
+                                {isExporting ? 'Exportando...' : 'Exportar Excel'}
                             </button>
                         )}
                     </div>
@@ -677,63 +583,13 @@ const GuestList = ({ refreshTrigger }) => {
             </div>
 
             {/* Tabla de Invitados */}
-            {/* Paginación numérica - Superior */}
-            {pagination.pages > 1 && (
-                <div className="mb-4 flex items-center justify-between bg-white dark:bg-gray-800 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <div className="text-sm text-gray-700 dark:text-gray-300">
-                        Mostrando {(pagination.page - 1) * guestsPerPage + 1} - {Math.min(pagination.page * guestsPerPage, pagination.total)} de {pagination.total} invitados
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={pagination.onPrev}
-                            disabled={!pagination.hasPrev || loading}
-                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Anterior
-                        </button>
+            <PaginationBar
+                pagination={pagination}
+                guestsPerPage={guestsPerPage}
+                loading={loading}
+                onPageChange={setCurrentPage}
+            />
 
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                                let pageNum;
-                                if (pagination.pages <= 5) {
-                                    pageNum = i + 1;
-                                } else if (pagination.page <= 3) {
-                                    pageNum = i + 1;
-                                } else if (pagination.page >= pagination.pages - 2) {
-                                    pageNum = pagination.pages - 4 + i;
-                                } else {
-                                    pageNum = pagination.page - 2 + i;
-                                }
-
-                                const isActive = pagination.page === pageNum;
-
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        disabled={loading}
-                                        className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
-                                            isActive
-                                                ? 'bg-blue-600 text-white shadow-md'
-                                                : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        <button
-                            onClick={pagination.onNext}
-                            disabled={!pagination.hasNext || loading}
-                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                </div>
-            )}
             <div className="overflow-x-auto">
                 <table className="w-full">
                     <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
@@ -779,14 +635,14 @@ const GuestList = ({ refreshTrigger }) => {
                                         <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.registeredBy?.fullName || 'N/A'}</p>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {editingGuest?.id === guest.id ? (
+                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
                                             <input
                                                 type="text"
-                                                value={editingGuest.name}
+                                                value={activeModal?.data?.name}
                                                 onChange={(e) =>
-                                                    setEditingGuest({ ...editingGuest, name: e.target.value })
+                                                    updateModalData({ name: e.target.value })
                                                 }
-                                                disabled={!canEditAllFields(guest)}
+                                                disabled={!canModify()}
                                                 className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                                 placeholder="Nombre"
                                             />
@@ -800,14 +656,14 @@ const GuestList = ({ refreshTrigger }) => {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {editingGuest?.id === guest.id ? (
+                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
                                             <input
                                                 type="text"
-                                                value={editingGuest.phone}
+                                                value={activeModal?.data?.phone}
                                                 onChange={(e) =>
-                                                    setEditingGuest({ ...editingGuest, phone: e.target.value })
+                                                    updateModalData({ phone: e.target.value })
                                                 }
-                                                disabled={!canEditAllFields(guest)}
+                                                disabled={!canModify()}
                                                 className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                         ) : (
@@ -815,14 +671,14 @@ const GuestList = ({ refreshTrigger }) => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
-                                        {editingGuest?.id === guest.id ? (
+                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
                                             <input
                                                 type="text"
-                                                value={editingGuest.address || ''}
+                                                value={activeModal?.data?.address || ''}
                                                 onChange={(e) =>
-                                                    setEditingGuest({ ...editingGuest, address: e.target.value })
+                                                    updateModalData({ address: e.target.value })
                                                 }
-                                                disabled={!canEditAllFields(guest)}
+                                                disabled={!canModify()}
                                                 className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                                 placeholder="Dirección"
                                             />
@@ -836,11 +692,11 @@ const GuestList = ({ refreshTrigger }) => {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {editingGuest?.id === guest.id ? (
+                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
                                             <select
-                                                value={editingGuest.status}
+                                                value={activeModal?.data?.status}
                                                 onChange={(e) =>
-                                                    setEditingGuest({ ...editingGuest, status: e.target.value })
+                                                    updateModalData({ status: e.target.value })
                                                 }
                                                 className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm"
                                             >
@@ -865,15 +721,15 @@ const GuestList = ({ refreshTrigger }) => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
-                                        {editingGuest?.id === guest.id ? (
-                                            canEditAllFields(guest) ? (
+                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
+                                            canModify() ? (
                                                 <AsyncSearchSelect
                                                     fetchItems={(term) =>
                                                         api.get('/users/search', { params: { search: term } })
                                                             .then(res => res.data)
                                                     }
-                                                    selectedValue={editingGuest.invitedBy}
-                                                    onSelect={(user) => setEditingGuest({ ...editingGuest, invitedById: user?.id, invitedBy: user })}
+                                                    selectedValue={activeModal?.data?.invitedBy}
+                                                    onSelect={(user) => updateModalData({ invitedById: user?.id, invitedBy: user })}
                                                     placeholder="Invitado por..."
                                                     labelKey="fullName"
                                                 />
@@ -889,14 +745,14 @@ const GuestList = ({ refreshTrigger }) => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
-                                        {editingGuest?.id === guest.id ? (
+                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
                                             <AsyncSearchSelect
                                                 fetchItems={(term) =>
                                                     api.get('/users/search', { params: { search: term } })
                                                         .then(res => res.data)
                                                 }
-                                                selectedValue={editingGuest.assignedTo}
-                                                onSelect={(user) => setEditingGuest({ ...editingGuest, assignedToId: user?.id, assignedTo: user })}
+                                                selectedValue={activeModal?.data?.assignedTo}
+                                                onSelect={(user) => updateModalData({ assignedToId: user?.id, assignedTo: user })}
                                                 placeholder="Asignar a..."
                                                 labelKey="fullName"
                                             />
@@ -939,30 +795,30 @@ const GuestList = ({ refreshTrigger }) => {
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-end space-x-2">
                                             <button
-                                                onClick={() => handleOpenEditModal(guest)}
+                                                onClick={() => handleInlineEditStart(guest)}
                                                 className="p-1 text-blue-400 hover:text-blue-300"
                                                 title="Editar"
                                             >
                                                 <PencilIcon size={18} />
                                             </button>
-                                                    {canDelete(guest) && (
-                                                        <button
-                                                            onClick={() => handleOpenDeleteModal(guest)}
-                                                            className="p-1 text-red-400 hover:text-red-300"
-                                                            title="Eliminar"
-                                                        >
-                                                            <Trash size={18} />
-                                                        </button>
-                                                    )}
-                                                    {!currentUser?.roles?.includes('PASTOR') && (
-                                                        <button
-                                                            onClick={() => setConvertingGuest(guest)}
-                                                            className="p-1 text-green-400 hover:text-green-300"
-                                                            title="Convertir a Discípulo"
-                                                        >
-                                                            <UserCheckIcon size={18} />
-                                                        </button>
-                                                    )}
+                                            {canModify() && (
+                                                <button
+                                                    onClick={() => openModal('delete', guest)}
+                                                    className="p-1 text-red-400 hover:text-red-300"
+                                                    title="Eliminar"
+                                                >
+                                                    <Trash size={18} />
+                                                </button>
+                                            )}
+                                            {!currentUser?.roles?.includes('PASTOR') && (
+                                                <button
+                                                    onClick={() => openModal('convert', guest)}
+                                                    className="p-1 text-green-400 hover:text-green-300"
+                                                    title="Convertir a Discípulo"
+                                                >
+                                                    <UserCheckIcon size={18} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -972,180 +828,112 @@ const GuestList = ({ refreshTrigger }) => {
                 </table>
             </div>
 
-            {/* Paginación numérica */}
-            {pagination.pages > 1 && (
-                <div className="mt-6 flex items-center justify-between bg-white dark:bg-gray-800 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <div className="text-sm text-gray-700 dark:text-gray-300">
-                        Mostrando {(pagination.page - 1) * guestsPerPage + 1} - {Math.min(pagination.page * guestsPerPage, pagination.total)} de {pagination.total} invitados
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={pagination.onPrev}
-                            disabled={!pagination.hasPrev || loading}
-                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Anterior
-                        </button>
-
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                                let pageNum;
-                                if (pagination.pages <= 5) {
-                                    pageNum = i + 1;
-                                } else if (pagination.page <= 3) {
-                                    pageNum = i + 1;
-                                } else if (pagination.page >= pagination.pages - 2) {
-                                    pageNum = pagination.pages - 4 + i;
-                                } else {
-                                    pageNum = pagination.page - 2 + i;
-                                }
-
-                                const isActive = pagination.page === pageNum;
-
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        disabled={loading}
-                                        className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
-                                            isActive
-                                                ? 'bg-blue-600 text-white shadow-md'
-                                                : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        <button
-                            onClick={pagination.onNext}
-                            disabled={!pagination.hasNext || loading}
-                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Información de paginación */}
-            {pagination.total > 0 && (
-                <div className="mt-4 text-center text-sm text-[#86868b] dark:text-gray-400">
-                    Página {pagination.page} de {pagination.pages} - {pagination.total} invitados en total
-                </div>
-            )}
+            <PaginationBar
+                pagination={pagination}
+                guestsPerPage={guestsPerPage}
+                loading={loading}
+                onPageChange={setCurrentPage}
+                className="mt-6"
+            />
 
             {/* Modal para convertir a Discípulo */}
-            {
-                convertingGuest && (
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700 shadow-xl">
-                            <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white mb-4">
-                                Convertir a Discípulo: {convertingGuest.name}
-                            </h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-1">
-                                        Email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={conversionEmail}
-                                        onChange={(e) => setConversionEmail(e.target.value)}
-                                        className="w-full px-3 py-2 bg-white dark:bg-[#272729] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                                        placeholder="correo@ejemplo.com"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-1">
-                                        Contraseña
-                                    </label>
-                                    <input
-                                        type="password"
-                                        value={conversionPassword}
-                                        onChange={(e) => setConversionPassword(e.target.value)}
-                                        className="w-full px-3 py-2 bg-white dark:bg-[#272729] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
-                                        placeholder="Contraseña"
-                                    />
-                                </div>
+            {activeModal?.type === 'convert' && activeModal.guest && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700 shadow-xl">
+                        <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white mb-4">
+                            Convertir a Discípulo: {activeModal.guest.name}
+                        </h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-1">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    value={activeModal?.data?.email}
+                                    onChange={(e) => updateModalData({ email: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-[#272729] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
+                                    placeholder="correo@ejemplo.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-1">
+                                    Contraseña
+                                </label>
+                                <input
+                                    type="password"
+                                    value={activeModal?.data?.password}
+                                    onChange={(e) => updateModalData({ password: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-[#272729] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
+                                    placeholder="Contraseña"
+                                />
+                            </div>
 
-                                {/* Data Authorization Checks */}
-                                <div className="bg-[#f5f5f7] dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2">
-                                    <label className="flex items-start gap-2 cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            required
-                                            className="mt-1 w-3.5 h-3.5 rounded border-[#d1d1d6] dark:border-[#3a3a3c] text-blue-600 focus:ring-blue-500"
-                                            checked={conversionConsent.dataPolicyAccepted}
-                                            onChange={e => setConversionConsent({ ...conversionConsent, dataPolicyAccepted: e.target.checked })}
-                                        />
-                                        <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-[#1d1d1f] dark:group-hover:text-white transition-colors">
-                                            Acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos</a>.
-                                        </span>
-                                    </label>
-                                    <label className="flex items-start gap-2 cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            required
-                                            className="mt-1 w-3.5 h-3.5 rounded border-[#d1d1d6] dark:border-[#3a3a3c] text-blue-600 focus:ring-blue-500"
-                                            checked={conversionConsent.dataTreatmentAuthorized}
-                                            onChange={e => setConversionConsent({ ...conversionConsent, dataTreatmentAuthorized: e.target.checked })}
-                                        />
-                                        <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-[#1d1d1f] dark:group-hover:text-white transition-colors">
-                                            Autorizo el tratamiento de mis datos personales.
-                                        </span>
-                                    </label>
-                                </div>
-                                <div className="flex justify-end space-x-2 mt-6">
-                                    <Button
-                                        variant="secondary"
-                                        onClick={() => {
-                                            setConvertingGuest(null);
-                                            setConversionEmail('');
-                                            setConversionPassword('');
-                                            setConversionConsent({
-                                                dataPolicyAccepted: false,
-                                                dataTreatmentAuthorized: false,
-                                                minorConsentAuthorized: false
-                                            });
-                                        }}
-                                    >
-                                        Cancelar
-                                    </Button>
-                                    <Button
-                                        variant="success"
-                                        onClick={handleConvertToMember}
-                                    >
-                                        Convertir
-                                    </Button>
-                                </div>
+                            <div className="bg-[#f5f5f7] dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2">
+                                <label className="flex items-start gap-2 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        required
+                                        className="mt-1 w-3.5 h-3.5 rounded border-[#d1d1d6] dark:border-[#3a3a3c] text-blue-600 focus:ring-blue-500"
+                                        checked={activeModal?.data?.dataPolicyAccepted}
+                                        onChange={(e) => updateModalData({ dataPolicyAccepted: e.target.checked })}
+                                    />
+                                    <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-[#1d1d1f] dark:group-hover:text-white transition-colors">
+                                        Acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos</a>.
+                                    </span>
+                                </label>
+                                <label className="flex items-start gap-2 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        required
+                                        className="mt-1 w-3.5 h-3.5 rounded border-[#d1d1d6] dark:border-[#3a3a3c] text-blue-600 focus:ring-blue-500"
+                                        checked={activeModal?.data?.dataTreatmentAuthorized}
+                                        onChange={(e) => updateModalData({ dataTreatmentAuthorized: e.target.checked })}
+                                    />
+                                    <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-[#1d1d1f] dark:group-hover:text-white transition-colors">
+                                        Autorizo el tratamiento de mis datos personales.
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div className="flex justify-end space-x-2 mt-6">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setActiveModal(null)}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    variant="success"
+                                    onClick={handleConvertToMember}
+                                >
+                                    Convertir
+                                </Button>
                             </div>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
 
             {/* Modal de Edición */}
             <GuestEditModal
-                isOpen={isEditModalOpen}
-                onClose={handleCloseEditModal}
-                guest={selectedGuestForEdit}
+                isOpen={activeModal?.type === 'edit'}
+                onClose={() => setActiveModal(null)}
+                guest={activeModal?.guest}
                 onGuestUpdated={handleGuestUpdated}
             />
 
             {/* Modal de Confirmación para Eliminar */}
             <ConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={handleCloseDeleteModal}
+                isOpen={activeModal?.type === 'delete'}
+                onClose={() => setActiveModal(null)}
                 onConfirm={handleConfirmDelete}
                 title="Eliminar Invitado"
-                message={`¿Estás seguro de que deseas eliminar a "${guestToDelete?.name}"? Esta acción no se puede deshacer.`}
+                message={`¿Estás seguro de que deseas eliminar a "${activeModal?.guest?.name}"? Esta acción no se puede deshacer.`}
                 confirmText="Eliminar"
                 cancelText="Cancelar"
             />
-        </div >
+        </div>
     );
 };
 
@@ -1154,3 +942,101 @@ export default GuestList;
 GuestList.propTypes = {
     refreshTrigger: PropTypes.any,
 };
+
+const COLOR_MAP = {
+    green: {
+        active: 'bg-green-500 border-green-500',
+        hover: 'group-hover:border-green-400',
+        text: 'text-green-600 dark:text-green-400',
+    },
+    blue: {
+        active: 'bg-blue-500 border-blue-500',
+        hover: 'group-hover:border-blue-400',
+        text: 'text-blue-600 dark:text-blue-400',
+    },
+};
+
+function FilterCheckbox({ checked, onChange, activeColor = 'green', label }) {
+    const colors = COLOR_MAP[activeColor];
+    return (
+        <label className="flex items-center gap-2 cursor-pointer group">
+            <div
+                className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
+                    checked ? colors.active : `border-gray-300 dark:border-gray-600 ${colors.hover}`
+                }`}
+            >
+                <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => onChange(e.target.checked)}
+                    className="absolute opacity-0 w-full h-full cursor-pointer"
+                />
+                {checked && <CheckCircle size={14} className="text-white" weight="fill" />}
+            </div>
+            <span className={`text-sm font-medium ${checked ? colors.text : 'text-gray-700 dark:text-gray-300'}`}>
+                {label}
+            </span>
+        </label>
+    );
+}
+
+function PaginationBar({ pagination, guestsPerPage, loading, onPageChange, className = '' }) {
+    if (pagination.pages <= 1) return null;
+
+    return (
+        <div className={`flex items-center justify-between bg-white dark:bg-gray-800 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg ${className}`}>
+            <div className="text-sm text-gray-700 dark:text-gray-300">
+                Mostrando {(pagination.page - 1) * guestsPerPage + 1} - {Math.min(pagination.page * guestsPerPage, pagination.total)} de {pagination.total} invitados
+            </div>
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={pagination.onPrev}
+                    disabled={!pagination.hasPrev || loading}
+                    className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    Anterior
+                </button>
+
+                <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.pages <= 5) {
+                            pageNum = i + 1;
+                        } else if (pagination.page <= 3) {
+                            pageNum = i + 1;
+                        } else if (pagination.page >= pagination.pages - 2) {
+                            pageNum = pagination.pages - 4 + i;
+                        } else {
+                            pageNum = pagination.page - 2 + i;
+                        }
+
+                        const isActive = pagination.page === pageNum;
+
+                        return (
+                            <button
+                                key={pageNum}
+                                onClick={() => onPageChange(pageNum)}
+                                disabled={loading}
+                                className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
+                                    isActive
+                                        ? 'bg-blue-600 text-white shadow-md'
+                                        : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                                {pageNum}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <button
+                    onClick={pagination.onNext}
+                    disabled={!pagination.hasNext || loading}
+                    className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    Siguiente
+                </button>
+            </div>
+        </div>
+    );
+}

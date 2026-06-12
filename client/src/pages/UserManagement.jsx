@@ -10,6 +10,44 @@ import PasswordResetModal from '../components/UserManagement/PasswordResetModal'
 import ErrorModal from '../components/ErrorModal';
 import CoordinatorManagement from '../components/UserManagement/CoordinatorManagement';
 
+const VALID_ROLES = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'];
+
+const ALERT_STYLES = {
+    error: {
+        container: 'bg-red-500/10 border border-red-500/20 text-red-500',
+        dot: 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]',
+    },
+    success: {
+        container: 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500',
+        dot: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]',
+    },
+};
+
+const AlertBanner = ({ type, message }) => {
+    if (!message) return null;
+    const styles = ALERT_STYLES[type];
+    return (
+        <div className={`${styles.container} p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
+            <span className="text-[13px] weight-510">{message}</span>
+        </div>
+    );
+};
+
+const TabButton = ({ active, onClick, icon: Icon, label, activeColor }) => (
+    <button
+        onClick={onClick}
+        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+            active
+                ? `${activeColor} text-white shadow-lg`
+                : 'text-[var(--ln-text-secondary)] hover:bg-white/5'
+        }`}
+    >
+        <Icon size={18} />
+        {label}
+    </button>
+);
+
 const UserManagement = () => {
     const [activeTab, setActiveTab] = useState('users');
     const { user: currentUser } = useAuth();
@@ -64,10 +102,56 @@ const UserManagement = () => {
         fetchRelatedUsers
     } = useUserManagement();
 
+    const handleEditUser = (user) => {
+        setEditingUser({
+            ...user,
+            birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : '',
+            pastorIds: user.pastorIds || (user.pastorId ? [user.pastorId] : []),
+            pastorSpouseIds: user.pastorSpouseIds || [],
+            liderDoceIds: user.liderDoceIds || (user.liderDoceId ? [user.liderDoceId] : []),
+            liderDoceSpouseIds: user.liderDoceSpouseIds || [],
+            liderCelulaIds: user.liderCelulaIds || (user.liderCelulaId ? [user.liderCelulaId] : []),
+            liderCelulaSpouseIds: user.liderCelulaSpouseIds || [],
+            spouseId: user.spouseId || '',
+            neighborhood: user.neighborhood || '',
+            role: user.roles?.find((r) => VALID_ROLES.includes(r)) || user.roles?.[0] || 'DISCIPULO',
+            sex: user.sex || '',
+            documentType: user.documentType || '',
+            encuentro: user.encuentro || false,
+            discipular1A: user.discipular1A || false,
+            discipular1B: user.discipular1B || false,
+            discipular2A: user.discipular2A || false,
+            discipular2B: user.discipular2B || false,
+            discipular3A: user.discipular3A || false,
+            discipular3B: user.discipular3B || false,
+        });
+    };
+
+    const modalSharedProps = {
+        submitting,
+        pastores,
+        lideresDoce,
+        lideresCelula,
+        users,
+        isAdmin,
+        validatePasswordRealTime,
+        calculateAge,
+        getAssignableRoles,
+        relatedUsersCache,
+        fetchRelatedUsers,
+    };
+
+    const headerTitle = (
+        <div className="flex items-center gap-4">
+            <Users className="text-[var(--ln-brand-indigo)]" size={32} weight="bold" />
+            Gestión de Usuarios
+        </div>
+    );
+
     return (
         <div className="space-y-10 pb-32 animate-in fade-in duration-700">
             <PageHeader
-                title={<div className="flex items-center gap-4"><Users className="text-[var(--ln-brand-indigo)]" size={32} weight="bold" />Gestión de Usuarios</div>}
+                title={headerTitle}
                 description="Panel administrativo para el control de perfiles, roles y permisos de la red ministerial."
                 action={
                     <div className="flex gap-3">
@@ -95,49 +179,29 @@ const UserManagement = () => {
                 }
             />
 
-            {/* Tabs */}
             <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[24px] border border-[var(--ln-border-standard)] p-2 shadow-lg">
                 <div className="flex gap-2">
-                    <button
+                    <TabButton
+                        active={activeTab === 'users'}
                         onClick={() => setActiveTab('users')}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                            activeTab === 'users'
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg'
-                                : 'text-[var(--ln-text-secondary)] hover:bg-white/5'
-                        }`}
-                    >
-                        <UserList size={18} />
-                        Usuarios
-                    </button>
-                    <button
+                        icon={UserList}
+                        label="Usuarios"
+                        activeColor="bg-[var(--ln-brand-indigo)]"
+                    />
+                    <TabButton
+                        active={activeTab === 'coordinators'}
                         onClick={() => setActiveTab('coordinators')}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                            activeTab === 'coordinators'
-                                ? 'bg-purple-500 text-white shadow-lg'
-                                : 'text-[var(--ln-text-secondary)] hover:bg-white/5'
-                        }`}
-                    >
-                        <Shield size={18} />
-                        Coordinadores de Módulos
-                    </button>
+                        icon={Shield}
+                        label="Coordinadores de Módulos"
+                        activeColor="bg-purple-500"
+                    />
                 </div>
             </div>
 
-            {/* Tab Content */}
             {activeTab === 'users' && (
                 <div className="space-y-8 animate-in fade-in duration-300">
-                    {error && (
-                        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
-                            <span className="text-[13px] weight-510">{error}</span>
-                        </div>
-                    )}
-                    {success && (
-                        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-                            <span className="text-[13px] weight-510">{success}</span>
-                        </div>
-                    )}
+                    <AlertBanner type="error" message={error} />
+                    <AlertBanner type="success" message={success} />
 
                     <UserFilters
                         nombreFilter={nombreFilter}
@@ -185,33 +249,11 @@ const UserManagement = () => {
                             loading={loading}
                             canEdit={canEdit}
                             pagination={pagination}
-                            onEdit={(user) => setEditingUser({
-                                ...user,
-                                birthDate: user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : '',
-                                pastorIds: user.pastorIds || (user.pastorId ? [user.pastorId] : []),
-                                pastorSpouseIds: user.pastorSpouseIds || [],
-                                liderDoceIds: user.liderDoceIds || (user.liderDoceId ? [user.liderDoceId] : []),
-                                liderDoceSpouseIds: user.liderDoceSpouseIds || [],
-                                liderCelulaIds: user.liderCelulaIds || (user.liderCelulaId ? [user.liderCelulaId] : []),
-                                liderCelulaSpouseIds: user.liderCelulaSpouseIds || [],
-                                spouseId: user.spouseId || '',
-                                neighborhood: user.neighborhood || '',
-                                role: user.roles?.find(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'].includes(r)) || user.roles?.[0] || 'DISCIPULO',
-                                sex: user.sex || '',
-                                documentType: user.documentType || '',
-                                encuentro: user.encuentro || false,
-                                discipular1A: user.discipular1A || false,
-                                discipular1B: user.discipular1B || false,
-                                discipular2A: user.discipular2A || false,
-                                discipular2B: user.discipular2B || false,
-                                discipular3A: user.discipular3A || false,
-                                discipular3B: user.discipular3B || false
-                            })}
+                            onEdit={handleEditUser}
                             onDelete={handleDeleteUser}
                             onResetPassword={setPasswordResetUser}
                         />
                         
-                        {/* Environmental Decoration */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--ln-brand-indigo)] opacity-[0.02] blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
                 </div>
@@ -232,17 +274,7 @@ const UserManagement = () => {
                 setFormData={setFormData}
                 mode="create"
                 onSubmit={handleCreateUser}
-                submitting={submitting}
-                pastores={pastores}
-                lideresDoce={lideresDoce}
-                lideresCelula={lideresCelula}
-                users={users}
-                isAdmin={isAdmin}
-                validatePasswordRealTime={validatePasswordRealTime}
-                calculateAge={calculateAge}
-                getAssignableRoles={getAssignableRoles}
-                relatedUsersCache={relatedUsersCache}
-                fetchRelatedUsers={fetchRelatedUsers}
+                {...modalSharedProps}
             />
 
             {editingUser && (
@@ -254,17 +286,7 @@ const UserManagement = () => {
                     setFormData={setEditingUser}
                     mode="edit"
                     onSubmit={() => handleUpdateUser(editingUser.id)}
-                    submitting={submitting}
-                    pastores={pastores}
-                    lideresDoce={lideresDoce}
-                    lideresCelula={lideresCelula}
-                    users={users}
-                    isAdmin={isAdmin}
-                    validatePasswordRealTime={validatePasswordRealTime}
-                    calculateAge={calculateAge}
-                    getAssignableRoles={getAssignableRoles}
-                    relatedUsersCache={relatedUsersCache}
-                    fetchRelatedUsers={fetchRelatedUsers}
+                    {...modalSharedProps}
                 />
             )}
 

@@ -12,7 +12,7 @@ const {
 router.use(authenticate);
 
 // Get schedules for a specific course/module
-// Visible para: ADMIN, PASTOR, Coordinador del módulo, Profesores y Auxiliares asignados
+// Visible para: ADMIN, PASTOR, LIDER_DOCE (su propia red), Coordinador del módulo, Profesores y Auxiliares asignados
 router.get('/module/:moduleId', authorizeKidsScheduleAccess, kidsScheduleController.getSchedulesByModule);
 
 // Create a new schedule

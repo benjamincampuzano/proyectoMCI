@@ -96,7 +96,8 @@ const KidsSchedule = ({ moduleCoordinator }) => {
         (moduleCoordinator && user?.id === moduleCoordinator.id);
 
     // Check if user can view Kids schedule (same as hasFullKidsAccess from KidsModule)
-    const canViewSchedule = hasAnyRole(['ADMIN', 'PASTOR']) ||
+    // LIDER_DOCE can view their own network's information
+    const canViewSchedule = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) ||
         isCoordinator('kids') ||
         isSubCoordinator('kids') ||
         isTreasurer('kids');

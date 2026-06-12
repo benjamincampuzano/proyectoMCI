@@ -29,7 +29,7 @@ const calculateAge = (birthDate) => {
 const KidsClassMatrix = ({ courseId }) => {
     const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const isModuleCoordinator = isCoordinator('kids');
-    const hasFullKidsAccess = hasAnyRole(['ADMIN', 'PASTOR']) ||
+    const hasFullKidsAccess = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) ||
         isModuleCoordinator ||
         isSubCoordinator('kids') ||
         isTreasurer('kids');
