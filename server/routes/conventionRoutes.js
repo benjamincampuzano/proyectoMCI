@@ -11,6 +11,7 @@ const {
     approveConventionRegistration,
     rejectConventionRegistration,
     addPayment,
+    updateRegistration,
     deleteRegistration,
     deleteConvention,
     getConventionBalanceReport
@@ -34,6 +35,7 @@ router.post('/:conventionId/register', registerUser);
 router.patch('/registrations/:registrationId/approve', approveConventionRegistration);
 router.patch('/registrations/:registrationId/reject', rejectConventionRegistration);
 router.post('/registrations/:registrationId/payments', canManageConventionPayments, addPayment);
+router.put('/registrations/:registrationId', updateRegistration);
 router.delete('/registrations/:registrationId', deleteRegistration);
 
 module.exports = router;

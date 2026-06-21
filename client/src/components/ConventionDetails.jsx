@@ -57,12 +57,30 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         coordinatorId: null
     });
 
+    // Approve Pending Registration Modal State
+    const [showApproveModal, setShowApproveModal] = useState(false);
+    const [pendingRegToApprove, setPendingRegToApprove] = useState(null);
+    const [approveMode, setApproveMode] = useState('link'); // 'link' | 'create'
+    const [approveUserId, setApproveUserId] = useState(null);
+    const [approveLeaderId, setApproveLeaderId] = useState(null);
+
     // Registration Form State
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [discount, setDiscount] = useState(0);
     const [ticketType, setTicketType] = useState('GENERAL');
     const [needsTransport, setNeedsTransport] = useState(false);
     const [needsAccommodation, setNeedsAccommodation] = useState(false);
+
+    // Edit Registration Modal State
+    const [showEditRegModal, setShowEditRegModal] = useState(false);
+    const [editRegData, setEditRegData] = useState({
+        id: null,
+        fullName: '',
+        discountPercentage: 0,
+        ticketType: 'GENERAL',
+        needsTransport: false,
+        needsAccommodation: false
+    });
 
     // Payment Form State
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -117,15 +135,33 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         }
     };
 
-    const handleApprovePendingRegistration = async (registrationId) => {
+    const handleOpenApproveModal = (reg) => {
+        setPendingRegToApprove(reg);
+        setApproveMode('link');
+        setApproveUserId(null);
+        setApproveLeaderId(null);
+        setShowApproveModal(true);
+    };
+
+    const handleConfirmApprove = async () => {
+        if (!pendingRegToApprove) return;
         setLoading(true);
         try {
-            await api.patch(`/convenciones/registrations/${registrationId}/approve`);
+            const body = {};
+            if (approveMode === 'link' && approveUserId) {
+                body.userId = approveUserId;
+            } else if (approveMode === 'create') {
+                body.createUser = true;
+                if (approveLeaderId) body.leaderId = approveLeaderId;
+            }
+            await api.patch(`/convenciones/registrations/${pendingRegToApprove.id}/approve`, body);
+            setShowApproveModal(false);
+            setPendingRegToApprove(null);
             toast.success('Solicitud aprobada');
             onRefresh();
         } catch (error) {
             console.error('Error approving registration:', error);
-            toast.error('Error al aprobar la solicitud');
+            toast.error('Error al aprobar la solicitud: ' + (error.response?.data?.error || error.message));
         } finally {
             setLoading(false);
         }
@@ -294,6 +330,40 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         } catch (error) {
             console.error('Error deleting registration:', error);
             toast.error('Error al eliminar el registro: ' + (error.response?.data?.error || error.message));
+        }
+    };
+
+    const openEditRegModal = (registration) => {
+        setEditRegData({
+            id: registration.id,
+            fullName: registration.fullName || registration.user?.fullName || '',
+            discountPercentage: registration.discountPercentage || 0,
+            ticketType: registration.ticketType || 'GENERAL',
+            needsTransport: registration.needsTransport || false,
+            needsAccommodation: registration.needsAccommodation || false
+        });
+        setShowEditRegModal(true);
+    };
+
+    const handleUpdateRegistration = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            await api.put(`/convenciones/registrations/${editRegData.id}`, {
+                fullName: editRegData.fullName,
+                discountPercentage: parseFloat(editRegData.discountPercentage),
+                ticketType: editRegData.ticketType,
+                needsTransport: editRegData.needsTransport,
+                needsAccommodation: editRegData.needsAccommodation
+            });
+            setShowEditRegModal(false);
+            toast.success('Registro actualizado');
+            onRefresh();
+        } catch (error) {
+            console.error('Error updating registration:', error);
+            toast.error('Error al actualizar: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -543,6 +613,15 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                 )}
                                                 {canModify && (
                                                     <button
+                                                        onClick={() => openEditRegModal(reg)}
+                                                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 inline-flex items-center"
+                                                        title="Editar Registro"
+                                                    >
+                                                        <Pen size={16} />
+                                                    </button>
+                                                )}
+                                                {canModify && (
+                                                    <button
                                                         onClick={() => handleDelete(reg.id)}
                                                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center"
                                                         title="Eliminar Registro"
@@ -588,6 +667,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nombre</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contacto</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Entrada</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Transporte</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hospedaje</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                                     </tr>
@@ -616,12 +697,18 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.needsTransport ? 'Sí' : 'No'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.needsAccommodation ? 'Sí' : 'No'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {reg.createdAt ? new Date(reg.createdAt).toLocaleString() : 'N/A'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex items-center justify-end gap-3">
                                                     <button
-                                                        onClick={() => handleApprovePendingRegistration(reg.id)}
+                                                        onClick={() => handleOpenApproveModal(reg)}
                                                         className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-white transition-colors hover:bg-emerald-700"
                                                         disabled={loading}
                                                     >
@@ -641,7 +728,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                     ))}
                                     {pendingRegistrations.length === 0 && (
                                         <tr>
-                                            <td colSpan="5" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                            <td colSpan="7" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                                 No hay solicitudes pendientes.
                                             </td>
                                         </tr>
@@ -832,6 +919,226 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Registration Modal */}
+            {showEditRegModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Editar Registro</h3>
+                            <button onClick={() => setShowEditRegModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdateRegistration} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Nombre
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editRegData.fullName}
+                                    onChange={(e) => setEditRegData({ ...editRegData, fullName: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Tipo de Entrada
+                                </label>
+                                <select
+                                    value={editRegData.ticketType}
+                                    onChange={(e) => setEditRegData({ ...editRegData, ticketType: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="VIP_PLATEA">VIP Platea</option>
+                                    <option value="GENERAL">General</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Porcentaje de Descuento (%)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={editRegData.discountPercentage}
+                                    onChange={(e) => setEditRegData({ ...editRegData, discountPercentage: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div className="flex items-center space-x-2 pt-2">
+                                <input
+                                    type="checkbox"
+                                    id="editNeedsTransport"
+                                    checked={editRegData.needsTransport}
+                                    onChange={(e) => setEditRegData({ ...editRegData, needsTransport: e.target.checked })}
+                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="editNeedsTransport" className="text-sm text-gray-700 dark:text-gray-300">
+                                    Necesita Transporte
+                                </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id="editNeedsAccommodation"
+                                    checked={editRegData.needsAccommodation}
+                                    onChange={(e) => setEditRegData({ ...editRegData, needsAccommodation: e.target.checked })}
+                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="editNeedsAccommodation" className="text-sm text-gray-700 dark:text-gray-300">
+                                    Necesita Hospedaje
+                                </label>
+                            </div>
+                            <div className="pt-4">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full py-2 px-4 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+                                >
+                                    {loading ? 'Guardando...' : 'Guardar Cambios'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Approve Pending Registration Modal */}
+            {showApproveModal && pendingRegToApprove && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Aprobar Solicitud</h3>
+                            <button onClick={() => setShowApproveModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+
+                        {/* Registration Info */}
+                        <div className="mx-6 mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500 dark:text-gray-400">Nombre:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{pendingRegToApprove.fullName}</span>
+                            </div>
+                            {pendingRegToApprove.phone && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500 dark:text-gray-400">Contacto:</span>
+                                    <span className="font-medium text-gray-900 dark:text-white">{pendingRegToApprove.phone}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500 dark:text-gray-400">Transporte:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{pendingRegToApprove.needsTransport ? 'Sí' : 'No'}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500 dark:text-gray-400">Hospedaje:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{pendingRegToApprove.needsAccommodation ? 'Sí' : 'No'}</span>
+                            </div>
+                        </div>
+
+                        {/* Mode Selector */}
+                        <div className="mx-6 mt-4">
+                            <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                                                <button
+                                                    onClick={() => { setApproveMode('link'); setApproveLeaderId(null); }}
+                                                    className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${approveMode === 'link'
+                                                        ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                                    }`}
+                                                >
+                                                    Vincular existente
+                                                </button>
+                                                <button
+                                                    onClick={() => { setApproveMode('create'); setApproveUserId(null); }}
+                                                    className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${approveMode === 'create'
+                                                        ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                                                    }`}
+                                                >
+                                                    Crear nuevo usuario
+                                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            {approveMode === 'link' ? (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Buscar usuario existente
+                                    </label>
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) => {
+                                            const params = { search: term };
+                                            if (convention.type === 'HOMBRES') params.sex = 'HOMBRE';
+                                            if (convention.type === 'MUJERES') params.sex = 'MUJER';
+                                            return api.get('/users/search', { params })
+                                                .then(res => res.data);
+                                        }}
+                                        selectedValue={approveUserId}
+                                        onSelect={(user) => setApproveUserId(user?.id || null)}
+                                        placeholder="Buscar por nombre..."
+                                        labelKey="fullName"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Nombre completo
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={pendingRegToApprove.fullName || ''}
+                                            disabled
+                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white opacity-70 cursor-not-allowed"
+                                        />
+                                        <p className="text-xs text-gray-400 mt-1">Se creará con el nombre registrado en la solicitud.</p>
+                                    </div>
+                                    {pendingRegToApprove.phone && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                Teléfono
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={pendingRegToApprove.phone}
+                                                disabled
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white opacity-70 cursor-not-allowed"
+                                            />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Asignar líder (opcional)
+                                        </label>
+                                        <AsyncSearchSelect
+                                            fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => res.data)}
+                                            selectedValue={approveLeaderId}
+                                            onSelect={(user) => setApproveLeaderId(user?.id || null)}
+                                            placeholder="Buscar líder..."
+                                            labelKey="fullName"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="pt-2">
+                                <button
+                                    onClick={handleConfirmApprove}
+                                    disabled={loading || (approveMode === 'link' && !approveUserId)}
+                                    className="w-full py-2 px-4 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+                                >
+                                    {loading ? 'Aprobando...' : 'Confirmar Aprobación'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

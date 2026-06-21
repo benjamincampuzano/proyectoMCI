@@ -1,6 +1,7 @@
 const prisma = require('../utils/database');
 const { logActivity } = require('../utils/auditLogger');
 const { getUserNetwork } = require('../utils/networkUtils');
+const bcrypt = require('bcryptjs');
 
 const ACTIVE_REGISTRATION_STATUSES = ['REGISTERED', 'ATTENDED'];
 const PENDING_REGISTRATION_STATUS = 'PENDING';
@@ -702,14 +703,33 @@ const getPendingConventionRegistrations = async (req, res) => {
     }
 };
 
+const generateTempPassword = (length = 12) => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+};
+
 const approveConventionRegistration = async (req, res) => {
     try {
         const { registrationId } = req.params;
-        const userId = req.user?.id;
+        const { userId, createUser, leaderId } = req.body;
+        const currentUserId = req.user?.id;
 
         const registration = await prisma.conventionRegistration.findUnique({
             where: { id: parseInt(registrationId) },
-            select: { id: true, conventionId: true, status: true, fullName: true }
+            select: {
+                id: true,
+                conventionId: true,
+                status: true,
+                fullName: true,
+                phone: true,
+                ticketType: true,
+                needsTransport: true,
+                needsAccommodation: true
+            }
         });
 
         if (!registration) {
@@ -725,22 +745,122 @@ const approveConventionRegistration = async (req, res) => {
             return res.status(400).json({ error: 'Solo se pueden aprobar registros pendientes.' });
         }
 
+        let targetUserId = userId ? parseInt(userId) : null;
+
+        // Create new user from registration data
+        if (createUser) {
+            const cleanPhone = (registration.phone || '').trim();
+            const emailLocalPart = cleanPhone
+                ? cleanPhone.replace(/[^a-zA-Z0-9]/g, '_')
+                : `invitado_${registration.id}_${Date.now()}`;
+            let email = `${emailLocalPart}@invitado.iglesia.app`;
+
+            const existingEmail = await prisma.user.findUnique({ where: { email } });
+            if (existingEmail) {
+                email = `invitado_${registration.id}_${Date.now()}@invitado.iglesia.app`;
+            }
+
+            const tempPassword = generateTempPassword();
+            const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+            const newUser = await prisma.$transaction(async (tx) => {
+                const user = await tx.user.create({
+                    data: {
+                        email,
+                        password: hashedPassword,
+                        phone: cleanPhone || null,
+                        mustChangePassword: true,
+                        profile: {
+                            create: {
+                                fullName: registration.fullName || 'Invitado'
+                            }
+                        }
+                    },
+                    include: { profile: true }
+                });
+
+                const targetRole = await tx.role.upsert({
+                    where: { name: 'DISCIPULO' },
+                    update: {},
+                    create: { name: 'DISCIPULO' }
+                });
+
+                await tx.userRole.create({
+                    data: { userId: user.id, roleId: targetRole.id }
+                });
+
+                if (leaderId) {
+                    await tx.userHierarchy.create({
+                        data: {
+                            parentId: parseInt(leaderId),
+                            childId: user.id,
+                            role: 'DISCIPULO'
+                        }
+                    });
+                }
+
+                return user;
+            });
+
+            targetUserId = newUser.id;
+        }
+
+        // Check for duplicate registration if linking a user
+        if (targetUserId) {
+            const existingReg = await prisma.conventionRegistration.findUnique({
+                where: {
+                    userId_conventionId: {
+                        userId: targetUserId,
+                        conventionId: registration.conventionId
+                    }
+                },
+                select: { id: true }
+            });
+
+            if (existingReg && existingReg.id !== parseInt(registrationId)) {
+                return res.status(400).json({ error: 'El usuario ya está registrado en esta convención.' });
+            }
+        }
+
+        const updateData = {
+            status: 'REGISTERED',
+            registeredById: currentUserId ? parseInt(currentUserId) : null
+        };
+
+        if (targetUserId) {
+            updateData.userId = targetUserId;
+
+            // Populate fullName from user profile if not set
+            if (!registration.fullName) {
+                const userProfile = await prisma.userProfile.findUnique({
+                    where: { userId: targetUserId },
+                    select: { fullName: true }
+                });
+                if (userProfile?.fullName) {
+                    updateData.fullName = userProfile.fullName;
+                }
+            }
+        }
+
         const updated = await prisma.conventionRegistration.update({
             where: { id: parseInt(registrationId) },
-            data: {
-                status: 'REGISTERED',
-                registeredById: userId ? parseInt(userId) : null
-            }
+            data: updateData
         });
 
-        if (userId) {
-            await logActivity(userId, 'UPDATE', 'CONVENTION_REGISTRATION', updated.id, {
+        if (currentUserId) {
+            await logActivity(currentUserId, 'UPDATE', 'CONVENTION_REGISTRATION', updated.id, {
                 action: 'APPROVE_PUBLIC_REGISTRATION',
-                fullName: registration.fullName
+                fullName: registration.fullName,
+                linkedUserId: targetUserId,
+                createdUser: createUser || false
             }, req.ip, req.headers['user-agent']);
         }
 
-        res.json({ message: 'Registro aprobado correctamente.' });
+        const message = createUser
+            ? 'Registro aprobado y usuario creado correctamente.'
+            : 'Registro aprobado correctamente.';
+
+        res.json({ message });
     } catch (error) {
         console.error('Error approving convention registration:', error);
         res.status(500).json({ error: 'Error approving registration' });
@@ -867,6 +987,52 @@ const deleteRegistration = async (req, res) => {
     } catch (error) {
         console.error('Error deleting registration:', error);
         res.status(500).json({ error: 'Error deleting registration' });
+    }
+};
+
+const updateRegistration = async (req, res) => {
+    try {
+        const { registrationId } = req.params;
+        const { fullName, discountPercentage, ticketType, needsTransport, needsAccommodation } = req.body;
+        const userId = req.user?.id;
+
+        const found = await prisma.conventionRegistration.findUnique({
+            where: { id: parseInt(registrationId) },
+            select: { id: true, conventionId: true, status: true }
+        });
+
+        if (!found) {
+            return res.status(404).json({ error: 'Registro no encontrado.' });
+        }
+
+        const hasAccess = await checkConventionAccess(req.user, found.conventionId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para editar este registro.' });
+        }
+
+        const data = {};
+        if (fullName !== undefined) data.fullName = fullName;
+        if (discountPercentage !== undefined) data.discountPercentage = parseFloat(discountPercentage);
+        if (ticketType !== undefined) data.ticketType = ticketType;
+        if (needsTransport !== undefined) data.needsTransport = Boolean(needsTransport);
+        if (needsAccommodation !== undefined) data.needsAccommodation = Boolean(needsAccommodation);
+
+        const updated = await prisma.conventionRegistration.update({
+            where: { id: parseInt(registrationId) },
+            data
+        });
+
+        if (userId) {
+            await logActivity(userId, 'UPDATE', 'CONVENTION_REGISTRATION', updated.id, {
+                action: 'UPDATE_REGISTRATION_DETAILS',
+                changes: Object.keys(data)
+            }, req.ip, req.headers['user-agent']);
+        }
+
+        res.json({ message: 'Registro actualizado correctamente.' });
+    } catch (error) {
+        console.error('Error updating registration:', error);
+        res.status(500).json({ error: 'Error updating registration' });
     }
 };
 
@@ -1029,6 +1195,7 @@ module.exports = {
     approveConventionRegistration,
     rejectConventionRegistration,
     addPayment,
+    updateRegistration,
     deleteRegistration,
     deleteConvention,
     getConventionBalanceReport

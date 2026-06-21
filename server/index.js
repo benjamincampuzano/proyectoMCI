@@ -71,7 +71,7 @@ app.use(
         callback(new Error(msg));
       }
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "X-Restore-Password"],
     exposedHeaders: ["Content-Disposition"]
