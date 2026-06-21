@@ -6,7 +6,7 @@ const prisma = require('./utils/database');
 async function main() {
   try {
     const user = await prisma.user.findFirst({
-        where: { isDeleted: false },
+        where: { roles: { some: { role: { name: 'ADMIN' } } } },
         include: { roles: { include: { role: true } } }
     });
 

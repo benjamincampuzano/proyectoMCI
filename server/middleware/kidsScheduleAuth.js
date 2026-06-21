@@ -3,7 +3,11 @@ const { hasAdminAccessOnModule } = require('./coordinatorAuth');
 
 /**
  * Middleware para verificar si el usuario tiene permiso para acceder al cronograma de kids
- * Permisos válidos para: ADMIN, PASTOR, LIDER_DOCE, Coordinador del módulo, Profesores y Auxiliares asignados
+ * Permisos válidos para:
+ * - ADMIN, PASTOR (global)
+ * - Coordinador/Subcoordinador/Tesorero del módulo KIDS específico (NO otros módulos)
+ * - LIDER_DOCE (su propia red)
+ * - Profesores y Auxiliares asignados
  */
 const authorizeKidsScheduleAccess = async (req, res, next) => {
     try {
@@ -65,7 +69,8 @@ const authorizeKidsScheduleAccess = async (req, res, next) => {
 
 /**
  * Middleware para verificar si el usuario puede modificar el cronograma
- * Solo ADMIN, PASTOR y Coordinadores del módulo pueden modificar
+ * Solo ADMIN, PASTOR y Coordinadores/Subcoordinadores/Tesoreros del módulo KIDS pueden modificar
+ * (NOT coordinators of other modules)
  */
 const authorizeKidsScheduleModification = async (req, res, next) => {
     try {

@@ -21,7 +21,7 @@ const RemoveUserDialog = ({ isOpen, onClose, user, onUserRemoved }) => {
             }
             handleClose();
         } catch (err) {
-            setError(err.message);
+            setError(err.response?.data?.error || err.response?.data?.message || err.message);
         } finally {
             setSubmitting(false);
         }

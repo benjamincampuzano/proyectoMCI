@@ -112,7 +112,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
     // ✅ Un solo efecto para filtros NO-search: reset a página 1
     useEffect(() => {
         setCurrentPage(1);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [statusFilter, invitedByFilter, liderDoceFilter, startDate, endDate, pendingCalls, pendingVisits, refreshTrigger]);
 
     // ✅ Solo searchTerm usa debounce para evitar doble fetch por tecleo
@@ -130,7 +130,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
                 clearTimeout(searchDebounceTimeoutRef.current);
             }
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [searchTerm]);
 
     // ✅ Efecto para cambios de página: fetch con la página actual

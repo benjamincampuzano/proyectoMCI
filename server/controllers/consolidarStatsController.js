@@ -1,10 +1,78 @@
 const { Prisma } = require('../generated/prisma/client');
 const prisma = require('../utils/database');
+const { getUserNetwork } = require('../utils/networkUtils');
+
+function parseMonthRange(monthValue) {
+    const now = new Date();
+    let year = now.getFullYear();
+    let monthIndex = now.getMonth();
+
+    if (typeof monthValue === 'string' && /^\d{4}-\d{2}$/.test(monthValue)) {
+        const [rawYear, rawMonth] = monthValue.split('-').map(Number);
+        if (rawMonth >= 1 && rawMonth <= 12) {
+            year = rawYear;
+            monthIndex = rawMonth - 1;
+        }
+    }
+
+    const start = new Date(year, monthIndex, 1, 0, 0, 0, 0);
+    const end = new Date(year, monthIndex + 1, 1, 0, 0, 0, 0);
+    const monthKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+
+    return { start, end, monthKey };
+}
+
+async function getReportScope(req) {
+    const roles = req.user?.roles || [];
+    const isAdmin = roles.includes('ADMIN');
+
+    if (isAdmin) {
+        return {
+            isAdmin: true,
+            userIds: null,
+        };
+    }
+
+    const currentUserId = req.user?.id ? Number(req.user.id) : null;
+    if (!currentUserId) {
+        return {
+            isAdmin: false,
+            userIds: [],
+        };
+    }
+
+    const currentUser = await prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: { spouseId: true },
+    });
+
+    const networkIds = await getUserNetwork(currentUserId);
+    const spouseId = currentUser?.spouseId ? Number(currentUser.spouseId) : null;
+    const spouseNetworkIds = spouseId ? await getUserNetwork(spouseId) : [];
+    const userIds = Array.from(
+        new Set(
+            [
+                currentUserId,
+                spouseId,
+                ...networkIds,
+                ...spouseNetworkIds,
+            ].filter(Boolean),
+        ),
+    );
+
+    return {
+        isAdmin: false,
+        userIds,
+    };
+}
 
 const getGeneralStats = async (req, res) => {
     try {
         const start = new Date('1970-01-01T00:00:00.000Z');
         const end = new Date('2999-12-31T23:59:59.999Z');
+        const scope = await getReportScope(req);
+        const scopeIds = scope.userIds;
+        const scoped = Array.isArray(scopeIds) && scopeIds.length > 0;
 
         // 1. GUESTS — ✅ SQL GROUP BY y agregación en PostgreSQL
         const guestRaw = await prisma.$queryRaw`
@@ -29,6 +97,7 @@ const getGeneralStats = async (req, res) => {
                 LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
                 WHERE g."createdAt" BETWEEN ${start} AND ${end}
                   AND g."isDeleted" = false
+                  ${scoped ? Prisma.sql`AND u.id = ANY(${scopeIds})` : Prisma.empty}
             )
             SELECT
                 leader_name,
@@ -73,6 +142,7 @@ const getGeneralStats = async (req, res) => {
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             WHERE ca.date BETWEEN ${start} AND ${end}
               AND ca.status = 'PRESENTE'
+              ${scoped ? Prisma.sql`AND u.id = ANY(${scopeIds})` : Prisma.empty}
             GROUP BY month_key, leader_name
             ORDER BY month_key ASC
         `;
@@ -104,6 +174,7 @@ const getGeneralStats = async (req, res) => {
             LEFT JOIN "SeminarEnrollment" se ON se."moduleId" = sm.id
                 AND se."createdAt" BETWEEN ${start} AND ${end}
             LEFT JOIN "ClassAttendance" ca ON ca."enrollmentId" = se.id
+            ${scoped ? Prisma.sql`WHERE se."userId" = ANY(${scopeIds})` : Prisma.empty}
             GROUP BY sm.id, sm.name
             HAVING COUNT(DISTINCT se.id) > 0
             ORDER BY sm.name
@@ -142,6 +213,7 @@ const getGeneralStats = async (req, res) => {
             LEFT JOIN "UserHierarchy" uh ON uh."childId" = c."leaderId" AND uh.role = 'LIDER_DOCE'
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             WHERE c."isDeleted" = false
+              ${scoped ? Prisma.sql`AND c."leaderId" = ANY(${scopeIds})` : Prisma.empty}
             GROUP BY leader_name
             ORDER BY cell_count DESC
         `;
@@ -172,6 +244,7 @@ const getGeneralStats = async (req, res) => {
             LEFT JOIN "EncuentroPayment" ep ON ep."registrationId" = er.id
             WHERE er.status != 'CANCELLED'
               AND e."startDate" >= ${start}
+              ${scoped ? Prisma.sql`AND COALESCE(er."userId", g."assignedToId") = ANY(${scopeIds})` : Prisma.empty}
             GROUP BY leader_name
             ORDER BY reg_count DESC
         `;
@@ -204,6 +277,7 @@ const getGeneralStats = async (req, res) => {
             LEFT JOIN "ConventionPayment" cp ON cp."registrationId" = cr.id
             WHERE cr.status != 'CANCELLED'
               AND conv."startDate" >= ${start}
+              ${scoped ? Prisma.sql`AND cr."userId" = ANY(${scopeIds})` : Prisma.empty}
             GROUP BY leader_name
             ORDER BY reg_count DESC
         `;
@@ -241,6 +315,7 @@ const getGeneralStats = async (req, res) => {
                 totalMembers: await prisma.user.count({
                     where: {
                         isDeleted: false,
+                        ...(scoped ? { id: { in: scopeIds } } : {}),
                         roles: {
                             none: {
                                 role: { name: 'ADMIN' }
@@ -251,6 +326,7 @@ const getGeneralStats = async (req, res) => {
                 activeStudents: await prisma.seminarEnrollment.count({
                     where: {
                         status: 'EN_PROGRESO',
+                        ...(scoped ? { userId: { in: scopeIds } } : {}),
                     }
                 }),
                 graduatedInPeriod: 0
@@ -259,6 +335,92 @@ const getGeneralStats = async (req, res) => {
     } catch (error) {
         console.error('Error fetching general consolidated stats:', error);
         res.status(500).json({ error: 'Error fetching general statistics: ' + error.message });
+    }
+};
+
+const getChurchAttendanceLeadersStats = async (req, res) => {
+    try {
+        const { month } = req.query;
+        const { start, end, monthKey } = parseMonthRange(month);
+        const scope = await getReportScope(req);
+        const scopeIds = scope.userIds;
+        const scoped = Array.isArray(scopeIds) && scopeIds.length > 0;
+
+        const rawRows = await prisma.$queryRaw`
+            SELECT
+                uh."parentId" AS leader_id,
+                COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
+                COUNT(*)::int AS total_records,
+                COUNT(*) FILTER (WHERE ca.status = 'PRESENTE')::int AS present_count,
+                COUNT(*) FILTER (WHERE ca.status = 'AUSENTE')::int AS absent_count,
+                COUNT(*) FILTER (WHERE ca.status = 'VIRTUAL')::int AS virtual_count
+            FROM "ChurchAttendance" ca
+            JOIN "User" u ON u.id = ca."userId"
+            JOIN "UserHierarchy" uh ON uh."childId" = u.id AND uh.role = 'LIDER_DOCE'
+            LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
+            WHERE ca.date >= ${start}
+              AND ca.date < ${end}
+              AND ca.status IN ('PRESENTE', 'AUSENTE', 'VIRTUAL')
+              ${scoped ? Prisma.sql`AND u.id = ANY(${scopeIds})` : Prisma.empty}
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM "UserRole" ur
+                  JOIN "Role" r ON r.id = ur."roleId"
+                  WHERE ur."userId" = u.id
+                    AND r.name = 'ADMIN'
+              )
+            GROUP BY uh."parentId", up."fullName"
+            ORDER BY present_count DESC, total_records DESC, leader_name ASC
+        `;
+
+        const leaders = rawRows.map((row) => {
+            const present = Number(row.present_count);
+            const absent = Number(row.absent_count);
+            const virtual = Number(row.virtual_count);
+            const total = Number(row.total_records);
+
+            return {
+                leaderId: row.leader_id,
+                leaderName: row.leader_name,
+                present,
+                absent,
+                virtual,
+                total,
+                attendanceRate: total > 0 ? Number(((present / total) * 100).toFixed(1)) : 0,
+            };
+        });
+
+        const rankings = {
+            present: [...leaders]
+                .sort((a, b) => b.present - a.present || b.total - a.total || a.leaderName.localeCompare(b.leaderName)),
+            absent: [...leaders]
+                .sort((a, b) => b.absent - a.absent || b.total - a.total || a.leaderName.localeCompare(b.leaderName)),
+            virtual: [...leaders]
+                .sort((a, b) => b.virtual - a.virtual || b.total - a.total || a.leaderName.localeCompare(b.leaderName)),
+        };
+
+        const summary = leaders.reduce((acc, row) => {
+            acc.totalPresent += row.present;
+            acc.totalAbsent += row.absent;
+            acc.totalVirtual += row.virtual;
+            acc.totalRecords += row.total;
+            return acc;
+        }, {
+            totalPresent: 0,
+            totalAbsent: 0,
+            totalVirtual: 0,
+            totalRecords: 0,
+        });
+
+        res.json({
+            period: { month: monthKey, start, end },
+            leaders,
+            rankings,
+            summary,
+        });
+    } catch (error) {
+        console.error('Error fetching church attendance leaders stats:', error);
+        res.status(500).json({ error: 'Error fetching church attendance leaders statistics: ' + error.message });
     }
 };
 
@@ -318,4 +480,4 @@ const getSeminarStatsByLeader = async (req, res) => {
     }
 };
 
-module.exports = { getGeneralStats, getSeminarStatsByLeader };
+module.exports = { getGeneralStats, getChurchAttendanceLeadersStats, getSeminarStatsByLeader };

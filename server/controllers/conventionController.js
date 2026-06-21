@@ -120,9 +120,6 @@ const getConventions = async (req, res) => {
                     include: { profile: true }
                 },
                 registrations: {
-                    where: {
-                        status: { in: ACTIVE_REGISTRATION_STATUSES }
-                    },
                     select: {
                         id: true,
                         status: true,
@@ -139,14 +136,6 @@ const getConventions = async (req, res) => {
                         payments: {
                             select: { amount: true }
                         }
-                    }
-                },
-                pendingRegistrations: {
-                    where: {
-                        status: PENDING_REGISTRATION_STATUS
-                    },
-                    select: {
-                        id: true
                     }
                 }
             },
@@ -189,9 +178,10 @@ const getConventions = async (req, res) => {
             return {
                 ...conv,
                 coordinator: conv.coordinator ? { id: conv.coordinator.id, fullName: conv.coordinator.profile?.fullName } : null,
+                pendingRegistrations: conv.registrations?.filter(r => r.status === PENDING_REGISTRATION_STATUS) || [],
                 stats: {
-                    registeredCount: conv.registrations?.length || 0,
-                    pendingCount: conv.pendingRegistrations?.length || 0,
+                    registeredCount: conv.registrations?.filter(r => ACTIVE_REGISTRATION_STATUSES.includes(r.status)).length || 0,
+                    pendingCount: conv.registrations?.filter(r => r.status === PENDING_REGISTRATION_STATUS).length || 0,
                     totalCollected,
                     expectedIncome
                 }

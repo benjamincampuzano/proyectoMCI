@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { SpinnerIcon, Funnel, PencilIcon, Trash, X, UserCheckIcon, Users, CheckCircle, FileXls } from '@phosphor-icons/react';
+import { SpinnerIcon, Funnel, PencilIcon, Trash, X, UserCheckIcon, Users, CheckCircle, FileXls, FloppyDiskIcon, XCircle } from '@phosphor-icons/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import PropTypes from 'prop-types';
@@ -43,6 +43,7 @@ const GuestList = ({ refreshTrigger }) => {
         currentUser,
         fetchGuests,
         fetchAllGuests,
+        updateGuest,
         deleteGuest,
         convertGuestToMember,
         // Paginación
@@ -58,6 +59,9 @@ const GuestList = ({ refreshTrigger }) => {
 
     // Estado para exportación
     const [isExporting, setIsExporting] = useState(false);
+
+    // Estado para guardado inline
+    const [inlineSaving, setInlineSaving] = useState(false);
 
     // Estado para filtros avanzados
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(() => {
@@ -154,6 +158,41 @@ const GuestList = ({ refreshTrigger }) => {
     const handleInlineEditStart = useCallback((guest) => {
         openModal('inline', guest);
     }, [openModal]);
+
+    const handleInlineEditCancel = useCallback(() => {
+        setActiveModal(null);
+    }, []);
+
+    const handleInlineEditSave = useCallback(async () => {
+        if (!activeModal?.guest || !activeModal?.data) return;
+
+        const { data } = activeModal;
+        if (!data.name || !data.phone) {
+            setError('Nombre y teléfono son requeridos');
+            return;
+        }
+
+        setInlineSaving(true);
+        try {
+            const res = await updateGuest(activeModal.guest.id, {
+                name: data.name,
+                phone: data.phone,
+                address: data.address,
+                status: data.status,
+                invitedById: data.invitedById,
+                assignedToId: data.assignedToId,
+            });
+
+            if (res?.success) {
+                toast.success('Invitado actualizado exitosamente');
+                setActiveModal(null);
+            }
+        } catch (err) {
+            setError(err.message || 'Error al actualizar invitado');
+        } finally {
+            setInlineSaving(false);
+        }
+    }, [activeModal, updateGuest, setError]);
 
     const getStatusBadgeColor = (status) => {
         const colors = {
@@ -793,33 +832,60 @@ const GuestList = ({ refreshTrigger }) => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
-                                        <div className="flex items-center justify-end space-x-2">
-                                            <button
-                                                onClick={() => handleInlineEditStart(guest)}
-                                                className="p-1 text-blue-400 hover:text-blue-300"
-                                                title="Editar"
-                                            >
-                                                <PencilIcon size={18} />
-                                            </button>
-                                            {canModify() && (
+                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
+                                            <div className="flex items-center justify-end space-x-2">
                                                 <button
-                                                    onClick={() => openModal('delete', guest)}
-                                                    className="p-1 text-red-400 hover:text-red-300"
-                                                    title="Eliminar"
+                                                    onClick={handleInlineEditSave}
+                                                    disabled={inlineSaving}
+                                                    className="flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors"
+                                                    title="Guardar cambios"
                                                 >
-                                                    <Trash size={18} />
+                                                    {inlineSaving ? (
+                                                        <SpinnerIcon size={14} className="animate-spin" />
+                                                    ) : (
+                                                        <FloppyDiskIcon size={14} weight="bold" />
+                                                    )}
+                                                    <span>Guardar</span>
                                                 </button>
-                                            )}
-                                            {!currentUser?.roles?.includes('PASTOR') && (
                                                 <button
-                                                    onClick={() => openModal('convert', guest)}
-                                                    className="p-1 text-green-400 hover:text-green-300"
-                                                    title="Convertir a Discípulo"
+                                                    onClick={handleInlineEditCancel}
+                                                    disabled={inlineSaving}
+                                                    className="flex items-center gap-1 px-2 py-1 bg-gray-500 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors"
+                                                    title="Cancelar edición"
                                                 >
-                                                    <UserCheckIcon size={18} />
+                                                    <XCircle size={14} weight="bold" />
+                                                    <span>Cancelar</span>
                                                 </button>
-                                            )}
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-end space-x-2">
+                                                <button
+                                                    onClick={() => handleInlineEditStart(guest)}
+                                                    className="p-1 text-blue-400 hover:text-blue-300"
+                                                    title="Editar"
+                                                >
+                                                    <PencilIcon size={18} />
+                                                </button>
+                                                {canModify() && (
+                                                    <button
+                                                        onClick={() => openModal('delete', guest)}
+                                                        className="p-1 text-red-400 hover:text-red-300"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash size={18} />
+                                                    </button>
+                                                )}
+                                                {!currentUser?.roles?.includes('PASTOR') && (
+                                                    <button
+                                                        onClick={() => openModal('convert', guest)}
+                                                        className="p-1 text-green-400 hover:text-green-300"
+                                                        title="Convertir a Discípulo"
+                                                    >
+                                                        <UserCheckIcon size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             ))

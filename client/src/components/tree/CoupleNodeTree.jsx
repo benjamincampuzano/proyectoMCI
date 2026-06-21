@@ -19,7 +19,9 @@ export default memo(function CoupleNodeTree({
 }) {
   if (!node) return null;
 
-  const [localExpanded, setLocalExpanded] = useState(level < 2);
+  // Inicia siempre contraído; el padre (NetworkTree) controla la expansión
+  // cuando lo necesita. Esto evita renders costosos en redes grandes.
+  const [localExpanded, setLocalExpanded] = useState(false);
 
   const hasControlledExpansion = expandedNodes instanceof Set;
   const isExpanded = hasControlledExpansion ? expandedNodes.has(node.id) : localExpanded;
@@ -29,30 +31,20 @@ export default memo(function CoupleNodeTree({
 
   const disciplesToShow = node.disciples || [];
 
-  // Get guests assigned to either partner in the couple
-  const getPartnerGuests = (partner) => {
-    return partner?.guests?.assigned || [];
-  };
-
   const assignedGuests = Array.from(
     new Map(
       [
-        ...(node.partners?.[0] ? getPartnerGuests(node.partners[0]) : []),
-        ...(node.partners?.[1] ? getPartnerGuests(node.partners[1]) : [])
+        ...(node.guests?.assigned || []),
+        ...(node.partners?.flatMap((partner) => partner?.guests?.assigned || []) || []),
       ].map((guest) => [String(guest.id), guest])
     ).values()
   );
 
-  // Get guests invited by either partner in the couple
-  const getPartnerInvitedGuests = (partner) => {
-    return partner?.guests?.invited || [];
-  };
-
   const invitedGuests = Array.from(
     new Map(
       [
-        ...(node.partners?.[0] ? getPartnerInvitedGuests(node.partners[0]) : []),
-        ...(node.partners?.[1] ? getPartnerInvitedGuests(node.partners[1]) : [])
+        ...(node.guests?.invited || []),
+        ...(node.partners?.flatMap((partner) => partner?.guests?.invited || []) || []),
       ].map((guest) => [String(guest.id), guest])
     ).values()
   );

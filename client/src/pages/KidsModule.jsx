@@ -56,7 +56,9 @@ const KidsModule = () => {
         setRefreshTrigger(prev => prev + 1);
     };
 
-    // Function to check if user has full access to Kids module (ADMIN, PASTOR, LIDER_DOCE, Coordinator, Subcoordinator, Treasurer)
+    // Function to check if user has full access to Kids module
+    // Only ADMIN, PASTOR, LIDER_DOCE, or Kids-module-specific Coordinator/Subcoordinator/Treasurer
+    // Note: Coordinators/Subcoordinators/Treasurers of OTHER modules DO NOT have access
     const hasFullKidsAccess = () => {
         return hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) ||
                isCoordinator('kids') ||

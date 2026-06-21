@@ -13,20 +13,22 @@ async function createsHierarchyCycle(parentId, childId) {
     try {
         const ancestors = await prisma.$queryRaw`
             WITH RECURSIVE ancestors AS (
-                SELECT "parentId", "childId"
+                SELECT "parentId", "childId", 1 AS depth, ARRAY["childId"] AS visited
                 FROM "UserHierarchy"
                 WHERE "childId" = ${parentId}
 
                 UNION ALL
 
-                SELECT uh."parentId", uh."childId"
+                SELECT uh."parentId", uh."childId", a.depth + 1, a.visited || uh."childId"
                 FROM "UserHierarchy" uh
                 JOIN ancestors a ON uh."childId" = a."parentId"
+                WHERE a.depth < 50
+                  AND NOT uh."parentId" = ANY(a.visited)
             )
             SELECT "parentId" FROM ancestors;
         `;
 
-        return ancestors.some(a => a.parentId === childId);
+        return ancestors.some(a => Number(a.parentId) === Number(childId));
     } catch (error) {
         console.error('Error detecting hierarchy cycle:', error);
         throw new Error('Error validating hierarchy structure');

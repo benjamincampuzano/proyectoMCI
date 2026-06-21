@@ -1,5 +1,6 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { FlowArrow, CardsThree, UsersThree, Users } from '@phosphor-icons/react';
+import toast from 'react-hot-toast';
 import CoupleNodeTree from './tree/CoupleNodeTree';
 import UnassignedUsersModal from './unassigned/UnassignedUsersModal';
 import AssignConfirmDialog from './common/AssignConfirmDialog';
@@ -54,6 +55,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
   const [pendingAssign, setPendingAssign] = useState(null);
   const [loading, setLoading] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState(new Set());
+  const initialLoad = useRef(true);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [partnerToRemove, setPartnerToRemove] = useState(null);
 
@@ -84,18 +86,12 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
 
   useEffect(() => {
     if (!coupleRoot?.id) return;
-
-    const defaultExpanded = new Set();
-
-    const seedExpandedNodes = (node, level = 0) => {
-      if (!node || level > 1) return;
-
-      defaultExpanded.add(node.id);
-      (node.disciples || []).forEach((child) => seedExpandedNodes(child, level + 1));
-    };
-
-    seedExpandedNodes(coupleRoot);
-    setExpandedNodes(defaultExpanded);
+    if (initialLoad.current) {
+      // Arranca con todos los nodos contraídos para que el informe no se demore
+      // en renderizar grandes redes de discipulado. El usuario expande manualmente.
+      setExpandedNodes(new Set());
+      initialLoad.current = false;
+    }
   }, [coupleRoot]);
 
   useEffect(() => {
@@ -124,15 +120,17 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
 
   const assignUser = async (userId, leaderId) => {
     try {
-      setLoading(true);
       await api.post('/network/assign', { userId, leaderId });
       setAllUsers((prev) => (Array.isArray(prev) ? prev.filter((u) => u.id !== userId) : []));
-      onNetworkChange?.();
+      try {
+        await onNetworkChange?.();
+      } catch (refreshError) {
+        console.error('Error refreshing network after assignment:', refreshError);
+      }
+      toast.success('Usuario asignado exitosamente');
     } catch (error) {
       console.error('Error assigning user:', error);
-      alert('Error al asignar usuario: ' + (error.message || 'Error desconocido'));
-    } finally {
-      setLoading(false);
+      throw error;
     }
   };
 
@@ -167,6 +165,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
       setPartnerToRemove(null);
     } catch (error) {
       console.error('Error removing user:', error);
+      toast.error(error.response?.data?.error || error.response?.data?.message || 'Error al remover usuario');
     } finally {
       setLoading(false);
     }

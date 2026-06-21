@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { Lock, Eye, EyeClosedIcon, ArrowsClockwiseIcon, Sun, Moon } from '@phosphor-icons/react';
+import { Lock, Eye, EyeClosedIcon, ArrowsClockwiseIcon, Sun, Moon, UserPlus, Users, CalendarDots } from '@phosphor-icons/react';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import logo from '../assets/logo.jpg';
 
@@ -85,7 +85,7 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-[100dvh] bg-[var(--ln-bg-marketing)] flex items-center justify-center p-6 relative transition-colors duration-500 overflow-hidden antialiased">
+        <div className="min-h-[100dvh] bg-[var(--ln-bg-marketing)] flex items-center justify-center px-4 sm:px-6 py-8 sm:py-0 relative transition-colors duration-500 overflow-hidden antialiased">
             {/* Dynamic Background Elements */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--ln-brand-indigo)] opacity-[0.03] blur-[120px] rounded-full"></div>
@@ -94,7 +94,7 @@ const Login = () => {
             
             <button
                 onClick={toggleTheme}
-                className="fixed top-8 right-8 p-3 rounded-xl z-50 transition-all duration-300 bg-white/[0.05] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.1] shadow-sm backdrop-blur-md group"
+                className="fixed top-4 sm:top-8 right-4 sm:right-8 p-2.5 sm:p-3 rounded-xl z-50 transition-all duration-300 bg-white/[0.05] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.1] shadow-sm backdrop-blur-md group"
                 aria-label="Toggle theme"
             >
                 <div className="group-hover:rotate-12 transition-transform">
@@ -102,22 +102,22 @@ const Login = () => {
                 </div>
             </button>
 
-            <div className="w-full max-w-[420px] relative z-10 animate-in fade-in zoom-in-95 duration-500">
-                <div className="text-center mb-10">
-                    <div className="w-16 h-16 mx-auto mb-6 rounded-[20px] overflow-hidden border border-[var(--ln-border-standard)] bg-white/5 shadow-2xl p-0.5">
+            <div className="w-full max-w-[600px] relative z-10 animate-in fade-in zoom-in-95 duration-500">
+                <div className="text-center mb-8 sm:mb-10">
+                    <div className="w-14 sm:w-16 h-14 sm:h-16 mx-auto mb-4 sm:mb-6 rounded-[20px] overflow-hidden border border-[var(--ln-border-standard)] bg-white/5 shadow-2xl p-0.5">
                         <img src={logo} alt="MCI Logo" className="w-full h-full object-cover rounded-[18px]" />
                     </div>
-                    <h1 className="text-3xl weight-590 text-[var(--ln-text-primary)] tracking-[-0.7px] mb-2">Bienvenido</h1>
-                    <p className="text-[14px] text-[var(--ln-text-secondary)] font-medium opacity-80">Ingresa a tu cuenta para continuar</p>
+                    <h1 className="text-2xl sm:text-3xl weight-590 text-[var(--ln-text-primary)] tracking-[-0.7px] mb-2">Bienvenido</h1>
+                    <p className="text-[12px] sm:text-[14px] text-[var(--ln-text-secondary)] font-medium opacity-80">Ingresa a tu cuenta para continuar</p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl mb-6 text-[13px] font-medium animate-in slide-in-from-top-2 duration-300">
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 sm:p-4 rounded-xl mb-6 text-[12px] sm:text-[13px] font-medium animate-in slide-in-from-top-2 duration-300">
                         {error}
                     </div>
                 )}
 
-                <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-sm border border-[var(--ln-border-standard)] rounded-2xl shadow-2xl p-8 transition-all">
+                <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-sm border border-[var(--ln-border-standard)] rounded-2xl shadow-2xl p-6 sm:p-8 transition-all">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
                             <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Email</label>
@@ -126,7 +126,7 @@ const Login = () => {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
+                                    className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
                                     placeholder="tu@email.com"
                                     required
                                 />
@@ -140,7 +140,7 @@ const Login = () => {
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all pr-12 placeholder:text-[var(--ln-text-tertiary)]/50"
+                                    className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all pr-12 placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
                                     placeholder="••••••••"
                                     required
                                 />
@@ -156,8 +156,8 @@ const Login = () => {
 
                         <div className="bg-white/[0.02] p-4 rounded-xl border border-[var(--ln-border-standard)]">
                             <label className="block text-[10px] weight-590 uppercase tracking-widest mb-3 text-[var(--ln-text-tertiary)]">Verificación de Seguridad</label>
-                            <div className="flex items-center gap-3">
-                                <div className="bg-[var(--ln-bg-panel)] px-4 py-2.5 rounded-lg border border-[var(--ln-border-standard)]">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                                <div className="bg-[var(--ln-bg-panel)] px-4 py-2.5 rounded-lg border border-[var(--ln-border-standard)] flex-1 sm:flex-none">
                                     <span className="text-[14px] weight-510 text-[var(--ln-text-primary)] whitespace-nowrap">
                                         {captcha.num1} {captcha.operator} {captcha.num2} = ?
                                     </span>
@@ -173,7 +173,7 @@ const Login = () => {
                                     type="text"
                                     value={captchaAnswer}
                                     onChange={(e) => setCaptchaAnswer(e.target.value.slice(0, 3))}
-                                    className="w-20 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-3 py-2.5 rounded-lg focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm text-center"
+                                    className="w-full sm:w-20 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-3 py-2.5 rounded-lg focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm text-center"
                                     required
                                     maxLength={3}
                                 />
@@ -182,49 +182,56 @@ const Login = () => {
 
                         <button
                             type="submit"
-                            className="w-full bg-[var(--ln-brand-indigo)] text-white font-medium py-3.5 rounded-xl hover:bg-[var(--ln-accent-hover)] active:scale-[0.98] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 text-[14px]"
+                            className="w-full bg-[var(--ln-brand-indigo)] text-white font-medium py-3 sm:py-3.5 rounded-xl hover:bg-[var(--ln-accent-hover)] active:scale-[0.98] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 text-[13px] sm:text-[14px]"
                         >
                             Iniciar Sesión
                         </button>
                     </form>
 
-                    <div className="mt-8 pt-6 border-t border-[var(--ln-border-standard)] text-center">
-                        <p className="text-[13px] text-[var(--ln-text-secondary)] mb-4">
-                            No tienes cuenta?
-                        </p>
-                        <button
-                            onClick={() => navigate('/register')}
-                            className="w-full bg-[var(--ln-brand-indigo)] text-white font-medium py-3.5 rounded-xl hover:bg-[var(--ln-accent-hover)] active:scale-[0.98] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 text-[14px]"
-                        >
-                            Registrate aquí
-                        </button>
-                    </div>
-                    <div className="mt-8 pt-6 border-t border-[var(--ln-border-standard)] text-center">
-                        <p className="text-[13px] text-[var(--ln-text-secondary)] mb-4">
-                            Quieres registrar a un Invitado?
-                        </p>
-                        <button
-                            onClick={() => navigate('/public-guest-registration')}
-                            className="w-full bg-[var(--ln-brand-indigo)] text-white font-medium py-3.5 rounded-xl hover:bg-[var(--ln-accent-hover)] active:scale-[0.98] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 text-[14px]"
-                        >
-                            Registrar Nuevo Invitado
-                        </button>
-                    </div>
-                    <div className="mt-4 pt-6 border-t border-[var(--ln-border-standard)] text-center">
-                        <p className="text-[13px] text-[var(--ln-text-secondary)] mb-4">
-                            Quieres registrarte a una Convención?
-                        </p>
-                        <button
-                            onClick={() => navigate('/public-convention-registration')}
-                            className="w-full bg-[var(--ln-brand-indigo)] text-white font-medium py-3.5 rounded-xl hover:bg-[var(--ln-accent-hover)] active:scale-[0.98] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 text-[14px]"
-                        >
-                            Registrar Convención
-                        </button>
+                    {/* Registration Options Section */}
+                    <div className="mt-8 pt-6 border-t border-[var(--ln-border-standard)]">
+                        {/* Standard Registration */}
+                        <div className="mb-4">
+                            <p className="text-[12px] sm:text-[13px] text-[var(--ln-text-secondary)] mb-3 text-center">
+                                ¿No tienes cuenta?
+                            </p>
+                            <button
+                                onClick={() => navigate('/register')}
+                                className="w-full bg-[var(--ln-brand-indigo)] text-white font-medium py-3 sm:py-3.5 rounded-xl hover:bg-[var(--ln-accent-hover)] active:scale-[0.98] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 text-[13px] sm:text-[14px] flex items-center justify-center gap-2"
+                            >
+                                <UserPlus size={18} weight="regular" />
+                                Crear Cuenta
+                            </button>
+                        </div>
+
+                        {/* Guest and Convention Registration - Grid on Desktop */}
+                        <div className="mt-6 pt-6 border-t border-[var(--ln-border-standard)]">
+                            <p className="text-[11px] sm:text-[12px] text-[var(--ln-text-tertiary)] uppercase tracking-widest mb-4 text-center opacity-70">Otros tipos de registro</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* Guest Registration */}
+                                <button
+                                    onClick={() => navigate('/public-guest-registration')}
+                                    className="group bg-gradient-to-br from-[#7170ff]/10 to-transparent border border-[#7170ff]/30 hover:border-[#7170ff]/60 text-[var(--ln-text-primary)] font-medium py-3 sm:py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-[#7170ff]/10 text-[12px] sm:text-[13px] flex items-center justify-center gap-2"
+                                >
+                                    <Users size={18} weight="regular" className="group-hover:scale-110 transition-transform" />
+                                    <span>Registrar Invitado</span>
+                                </button>
+
+                                {/* Convention Registration */}
+                                <button
+                                    onClick={() => navigate('/public-convention-registration')}
+                                    className="group bg-gradient-to-br from-[#5e6ad2]/10 to-transparent border border-[#5e6ad2]/30 hover:border-[#5e6ad2]/60 text-[var(--ln-text-primary)] font-medium py-3 sm:py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-[#5e6ad2]/10 text-[12px] sm:text-[13px] flex items-center justify-center gap-2"
+                                >
+                                    <CalendarDots size={18} weight="regular" className="group-hover:scale-110 transition-transform" />
+                                    <span>Registrar Convención</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     
                 </div>
-                <div className="pt-6 text-center">
-                    <p className="text-[11px] text-[var(--ln-text-tertiary)] opacity-60">© 2026 MCI. Todos los derechos reservados.</p>
+                <div className="pt-4 sm:pt-6 text-center">
+                    <p className="text-[10px] sm:text-[11px] text-[var(--ln-text-tertiary)] opacity-60">© 2026 MCI. Todos los derechos reservados.</p>
                 </div>
             </div>
 

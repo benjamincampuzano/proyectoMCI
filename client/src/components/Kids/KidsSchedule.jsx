@@ -87,8 +87,8 @@ const KidsSchedule = ({ moduleCoordinator }) => {
         category: 'KIDS1'
     });
 
-    // Check if user can manage Kids schedule (ADMIN, COORDINADOR, SUBCOORDINADOR, TESORERO)
-    // or is the specific module coordinator, subcoordinator, or treasurer
+    // Check if user can manage Kids schedule (ADMIN, PASTOR, or Kids module-specific Coordinator/Subcoordinator/Treasurer)
+    // Coordinators/Subcoordinators/Treasurers of OTHER modules do NOT have access to Kids management
     const canManageSchedule = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_KIDS_SCHEDULE) ||
         isCoordinator('kids') ||
         isSubCoordinator('kids') ||

@@ -30,7 +30,14 @@ const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify })
                             </tr>
                         ) : (
                             conventions.map((conv) => (
-                                <tr key={conv.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+                                <tr
+                                    key={conv.id}
+                                    onClick={() => onSelect(conv.id)}
+                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect(conv.id)}
+                                    role="button"
+                                    tabIndex={0}
+                                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group cursor-pointer"
+                                >
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2">
                                             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">

@@ -210,7 +210,9 @@ function AnimatedLine({ x1, y1, x2, y2, strokeWidth, opacity = 1, lineKey }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function RadialView({ root, currentUser, onAddUser, onRemoveUser, size = 1000 }) {
-  const [expandedNodes, setExpandedNodes] = useState(new Set([root.id]));
+  // Inicia sin nodos expandidos: el usuario debe pulsar para ver los hijos.
+  // Así el primer render solo dibuja el nodo raíz y no todos los descendientes.
+  const [expandedNodes, setExpandedNodes] = useState(new Set());
   const [focusedNodeId, setFocusedNodeId] = useState(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isDragging, setIsDragging] = useState(false);

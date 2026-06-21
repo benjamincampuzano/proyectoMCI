@@ -233,14 +233,6 @@ const getNetwork = async (req, res) => {
         const userMap = new Map();
         allUsers.forEach(u => userMap.set(u.id, u));
 
-        // Role specificity ranking (higher is more specific)
-        const ROLE_RANK = {
-            'LIDER_CELULA': 3,
-            'LIDER_DOCE': 2,
-            'PASTOR': 1,
-            'DISCIPULO': 0
-        };
-
         // Collect indirect pastors from leaders' parents via userMap
         const indirectPastors = [];
         const leaderParents = rootUser.parents?.filter(p => ['LIDER_CELULA', 'LIDER_DOCE'].includes(p.role)) || [];
@@ -259,7 +251,6 @@ const getNetwork = async (req, res) => {
         }
 
         const processedIds = new Set();
-        const processedSpouseIds = new Set(); // Track spouses that are already included in a couple node
 
         // Function to build node
         const buildNode = (currentUserId) => {
@@ -304,35 +295,12 @@ const getNetwork = async (req, res) => {
             allChildrenEdges.forEach(edge => uniqueChildrenEdgesMap.set(`${edge.childId}-${edge.role}`, edge));
             const directChildrenEdges = Array.from(uniqueChildrenEdgesMap.values());
 
-            // Filter children so they only appear under their MOST SPECIFIC leader
+            // Build direct descendants from all hierarchy edges that belong to this node.
+            // `processedIds` already prevents duplicate rendering of the same user/couple
+            // in another branch, so we avoid filtering spouses here and losing descendants.
             const discipleNodes = directChildrenEdges
-                .filter(edge => {
-                    // Skip if this child was already processed as part of a couple
-                    if (processedSpouseIds.has(edge.childId)) return false;
-
-                    const child = userMap.get(edge.childId);
-                    if (!child) return false;
-
-                    const childParents = (child.parents || [])
-                        .filter(p => userMap.has(p.parentId));
-
-                    if (childParents.length <= 1) return true;
-
-                    const maxRank = Math.max(...childParents.map(p => ROLE_RANK[p.role] || 0));
-                    return ROLE_RANK[edge.role] === maxRank;
-                })
-                .map(edge => {
-                    const childNode = buildNode(edge.childId);
-                    // If this node has a spouse, mark all partners as processed (except the current edge)
-                    if (childNode && childNode.partners && childNode.partners.length > 1) {
-                        childNode.partners.forEach(p => {
-                            if (p.id !== edge.childId) {
-                                processedSpouseIds.add(p.id);
-                            }
-                        });
-                    }
-                    return childNode;
-                });
+                .map(edge => buildNode(edge.childId))
+                .filter(Boolean);
 
             // Combine guests
             const assignedGuests = [...(currentUser.assignedGuests || []), ...(spouseNode?.assignedGuests || [])];
@@ -473,8 +441,15 @@ const assignUserToLeader = async (req, res) => {
     try {
         const { userId, leaderId } = req.body;
 
+        const parentId = parseInt(leaderId);
+        const childId = parseInt(userId);
+
+        if (isNaN(parentId) || isNaN(childId)) {
+            return res.status(400).json({ error: 'ID de líder o usuario inválido' });
+        }
+
         const leader = await prisma.user.findUnique({
-            where: { id: parseInt(leaderId) },
+            where: { id: parentId },
             include: { roles: { include: { role: true } } }
         });
 
@@ -489,8 +464,8 @@ const assignUserToLeader = async (req, res) => {
 
         // Use Service for centralized logic
         await assignHierarchy({
-            parentId: parseInt(leaderId),
-            childId: parseInt(userId),
+            parentId,
+            childId,
             role: hierarchyRole
         });
 
@@ -507,33 +482,31 @@ const assignUserToLeader = async (req, res) => {
 const removeUserFromNetwork = async (req, res) => {
     try {
         const { userId } = req.params;
-        // In hierarchical system, "removing from network" means removing the link to the parent.
-        // But which parent? The request implies context.
-        // For simplicity, we remove *all* hierarchical links? No, that orphans them.
-        // Usually UI allows identifying which link.
-        // If we don't have that info, we might check requester permissions.
-        // If requester is LIDER_CELULA, remove LIDER_CELULA link.
-
+        const targetUserId = parseInt(userId);
+        const requesterId = Number(req.user?.id);
         const requesterRoles = req.user.roles || [];
-        let targetRole = 'DISCIPULO';
-        if (requesterRoles.includes('LIDER_CELULA')) targetRole = 'LIDER_CELULA';
-        else if (requesterRoles.includes('LIDER_DOCE')) targetRole = 'LIDER_DOCE';
-        else if (requesterRoles.includes('PASTOR')) targetRole = 'PASTOR';
-        else if (requesterRoles.includes('ADMIN')) {
-            // Admin can remove anything, maybe pass as query param?
-            // For now, remove all? Dangerous.
-            // Let's assume we remove all parents for now to "reset" assignment.
-            await prisma.userHierarchy.deleteMany({
-                where: { childId: parseInt(userId) }
-            });
-            return res.json({ message: 'Usuario removido de toda red' });
+        const isAdmin = requesterRoles.includes('ADMIN');
+
+        if (Number.isNaN(targetUserId) || Number.isNaN(requesterId)) {
+            return res.status(400).json({ error: 'Invalid user id' });
+        }
+
+        const requester = await prisma.user.findUnique({
+            where: { id: requesterId },
+            select: { spouseId: true },
+        });
+
+        const requesterNetworkIds = isAdmin ? [] : await getUserNetwork(requesterId);
+        const isSameUser = targetUserId === requesterId;
+        const isSpouse = requester?.spouseId ? Number(requester.spouseId) === targetUserId : false;
+        const isInRequesterNetwork = requesterNetworkIds.includes(targetUserId);
+
+        if (!isAdmin && !isSameUser && !isSpouse && !isInRequesterNetwork) {
+            return res.status(403).json({ error: 'No tienes permisos para remover este usuario de la red' });
         }
 
         await prisma.userHierarchy.deleteMany({
-            where: {
-                childId: parseInt(userId),
-                role: targetRole
-            }
+            where: { childId: targetUserId }
         });
 
         res.json({ message: 'Usuario removido exitosamente de la red' });

@@ -196,7 +196,7 @@ const PublicGuestRegistration = () => {
     const isMinor = formData.birthDate ? calculateAge(formData.birthDate) < 18 : false;
 
     return (
-        <div className="min-h-[100dvh] bg-[var(--ln-bg-marketing)] flex items-center justify-center p-4 relative transition-colors duration-300">
+        <div className="min-h-[100dvh] bg-[var(--ln-bg-marketing)] flex items-center justify-center px-4 sm:px-6 py-8 sm:py-0 relative transition-colors duration-300">
             {/* Linear-style subtle static elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--ln-brand-indigo)] opacity-[0.03] rounded-full blur-[120px]"></div>
@@ -205,7 +205,7 @@ const PublicGuestRegistration = () => {
 
             <button
                 onClick={toggleTheme}
-                className="fixed top-8 right-8 p-3 rounded-xl z-50 transition-all duration-300 bg-white/[0.05] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.1] shadow-sm backdrop-blur-md group"
+                className="fixed top-4 sm:top-8 right-4 sm:right-8 p-2.5 sm:p-3 rounded-xl z-50 transition-all duration-300 bg-white/[0.05] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.1] shadow-sm backdrop-blur-md group"
                 aria-label="Toggle theme"
             >
                 <div className="group-hover:rotate-12 transition-transform">
@@ -213,35 +213,35 @@ const PublicGuestRegistration = () => {
                 </div>
             </button>
 
-            <div className="ln-card p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-10">
+            <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-sm border border-[var(--ln-border-standard)] rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-10">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 sm:gap-4 mb-8 sm:mb-10">
                     <button
                         onClick={() => navigate('/login')}
-                        className="text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] flex items-center gap-2 transition-colors text-sm font-medium"
+                        className="text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] flex items-center gap-2 transition-colors text-xs sm:text-sm font-medium self-start"
                         type="button"
                     >
                         <ArrowLeft size={18} />
                         <span>Volver</span>
                     </button>
-                    <div className="text-right">
-                        <h1 className="text-3xl weight-590 text-[var(--ln-text-primary)] tracking-[-0.7px] mb-2">Registro de Invitado</h1>
-                        <p className="text-[14px] text-[var(--ln-text-secondary)] italic">¡Es un gusto tenerte aquí!</p>
+                    <div className="text-left sm:text-right flex-1">
+                        <h1 className="text-2xl sm:text-3xl weight-590 text-[var(--ln-text-primary)] tracking-[-0.7px] mb-2">Registro de Invitado</h1>
+                        <p className="text-[12px] sm:text-[14px] text-[var(--ln-text-secondary)] italic">¡Es un gusto tenerte aquí!</p>
                     </div>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-sm font-medium" role="alert">
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 sm:p-4 rounded-xl mb-6 text-[12px] sm:text-sm font-medium" role="alert">
                         {error}
                     </div>
                 )}
                 {success && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl mb-6 text-sm font-medium" role="status">
+                    <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 sm:p-4 rounded-xl mb-6 text-[12px] sm:text-sm font-medium" role="status">
                         {success}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div>
                             <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Nombre Completo *</label>
                             <input
@@ -251,7 +251,7 @@ const PublicGuestRegistration = () => {
                                 value={formData.name}
                                 onChange={handleChange}
                                 placeholder="Nombre completo"
-                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
                                 required
                             />
                         </div>
@@ -264,28 +264,34 @@ const PublicGuestRegistration = () => {
                                 value={formData.phone}
                                 onChange={handleChange}
                                 placeholder="Teléfono"
-                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
                                 required
                             />
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Sexo *</label>
-                            <select
-                                id="sex"
-                                name="sex"
-                                value={formData.sex}
-                                onChange={handleChange}
-                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all"
-                                required
-                            >
-                                <option value="">Seleccionar...</option>
-                                <option value="HOMBRE">Hombre</option>
-                                <option value="MUJER">Mujer</option>
-                            </select>
+                            <div className="relative">
+                                <select
+                                    id="sex"
+                                    name="sex"
+                                    value={formData.sex}
+                                    onChange={handleChange}
+                                    className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all text-sm appearance-none cursor-pointer pr-10"
+                                    required
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    <option value="HOMBRE">Hombre</option>
+                                    <option value="MUJER">Mujer</option>
+                                </select>
+                                <CaretDownIcon
+                                    size={16}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ln-text-tertiary)] pointer-events-none"
+                                />
+                            </div>
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div>
                             <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Fecha de Nacimiento</label>
                             <input
@@ -294,12 +300,9 @@ const PublicGuestRegistration = () => {
                                 name="birthDate"
                                 value={formData.birthDate}
                                 onChange={handleChange}
-                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all"
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all text-sm"
                             />
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Dirección</label>
                             <input
@@ -308,7 +311,7 @@ const PublicGuestRegistration = () => {
                                 name="address"
                                 value={formData.address}
                                 onChange={handleChange}
-                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
                                 placeholder="Dirección"
                             />
                         </div>
@@ -320,27 +323,30 @@ const PublicGuestRegistration = () => {
                                 name="city"
                                 value={formData.city}
                                 onChange={handleChange}
-                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
                                 placeholder="Ciudad"
                             />
                         </div>
                     </div>
-                    <div>
-                        <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Barrio</label>
-                        <input
-                            id="neighborhood"
-                            type="text"
-                            name="neighborhood"
-                            value={formData.neighborhood}
-                            onChange={handleChange}
-                            className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50"
-                            placeholder="Nombre del barrio"
-                        />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                            <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Barrio</label>
+                            <input
+                                id="neighborhood"
+                                type="text"
+                                name="neighborhood"
+                                value={formData.neighborhood}
+                                onChange={handleChange}
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
+                                placeholder="Nombre del barrio"
+                            />
+                        </div>
                     </div>
                     <div className="relative" ref={dropdownRef}>
                         <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">¿Quién te invitó? *</label>
                         <div
-                            className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl flex items-center justify-between cursor-pointer hover:border-[var(--ln-brand-indigo)]/50 transition-all"
+                            className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl flex items-center justify-between cursor-pointer hover:border-[var(--ln-brand-indigo)]/50 transition-all text-sm"
                             onClick={() => dispatch({ type: 'SET_DROPDOWN_OPEN', payload: !isDropdownOpen })}
                             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && dispatch({ type: 'SET_DROPDOWN_OPEN', payload: !isDropdownOpen })}
                             role="combobox"
@@ -393,9 +399,9 @@ const PublicGuestRegistration = () => {
                                 </div>
                                 <div className="overflow-y-auto">
                                     {searchLoading ? (
-                                        <div className="p-4 text-center text-[var(--ln-text-tertiary)]">Buscando...</div>
+                                        <div className="p-4 text-center text-[var(--ln-text-tertiary)] text-sm">Buscando...</div>
                                     ) : foundUsers.length === 0 ? (
-                                        <div className="p-4 text-center text-[var(--ln-text-tertiary)]">
+                                        <div className="p-4 text-center text-[var(--ln-text-tertiary)] text-sm">
                                             {searchTerm.length < 3 ? 'Escribe para buscar' : 'No se encontraron resultados'}
                                         </div>
                                     ) : (
@@ -408,11 +414,11 @@ const PublicGuestRegistration = () => {
                                                         handleSelectInviter(user);
                                                     }
                                                 }}
-                                                className="px-4 py-3 cursor-pointer border-b last:border-b-0 border-[var(--ln-border-standard)] transition-colors hover:bg-white/[0.05]"
+                                                className="px-4 py-3 cursor-pointer border-b last:border-b-0 border-[var(--ln-border-standard)] transition-colors hover:bg-white/[0.05] text-sm"
                                                 role="option"
                                                 tabIndex={0}
                                             >
-                                                <p className="text-sm font-medium text-[var(--ln-text-primary)]">{user.fullName}</p>
+                                                <p className="font-medium text-[var(--ln-text-primary)]">{user.fullName}</p>
                                             </div>
                                         ))
                                     )}
@@ -423,43 +429,45 @@ const PublicGuestRegistration = () => {
 
                     
 
-                    <div>
-                        <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Petición de Oración (Opcional)</label>
-                        <textarea
-                            id="prayerRequest"
-                            name="prayerRequest"
-                            value={formData.prayerRequest}
-                            onChange={handleChange}
-                            rows="3"
-                            className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all resize-none placeholder:text-[var(--ln-text-tertiary)]/50"
-                            placeholder="¿Cómo podemos orar por ti?"
-                        />
-                    </div>
-                    
-                    {/* Código de Servidor - Campo Obligatorio */}
-                    <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <label className="block text-[11px] weight-590 uppercase tracking-widest mb-1 text-[var(--ln-text-tertiary)] ml-1">
-                            Código de Servidor *
-                        </label>
-                        <input
-                            id="servidorCode"
-                            type="text"
-                            name="servidorCode"
-                            value={formData.servidorCode}
-                            onChange={handleChange}
-                            placeholder="000000"
-                            maxLength={6}
-                            className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-center tracking-widest font-mono text-base"
-                            required
-                        />
-                        <p className="text-[10px] text-gray-400 mt-1 ml-1">
-                            Código proporcionado por el coordinador del módulo Ganar
-                        </p>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">Petición de Oración (Opcional)</label>
+                            <textarea
+                                id="prayerRequest"
+                                name="prayerRequest"
+                                value={formData.prayerRequest}
+                                onChange={handleChange}
+                                rows="4"
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all resize-none placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
+                                placeholder="¿Cómo podemos orar por ti?"
+                            />
+                        </div>
+                        
+                        {/* Código de Servidor - Campo Obligatorio */}
+                        <div className="p-4 rounded-lg border border-[var(--ln-border-standard)] bg-white/[0.02]">
+                            <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">
+                                Código de Servidor *
+                            </label>
+                            <input
+                                id="servidorCode"
+                                type="text"
+                                name="servidorCode"
+                                value={formData.servidorCode}
+                                onChange={handleChange}
+                                placeholder="000000"
+                                maxLength={6}
+                                className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-3 py-2.5 rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-center tracking-widest font-mono text-sm mb-3"
+                                required
+                            />
+                            <p className="text-[10px] text-[var(--ln-text-tertiary)] ml-1 opacity-70">
+                                Código proporcionado por el coordinador del módulo Ganar
+                            </p>
+                        </div>
                     </div>
                     
                     {/* Data Authorization Checks */}
-                    <div className="bg-white/[0.02] p-6 rounded-xl border border-[var(--ln-border-standard)] space-y-4">
-                        <label className="flex items-start gap-4 cursor-pointer group">
+                    <div className="bg-white/[0.02] p-4 sm:p-6 rounded-xl border border-[var(--ln-border-standard)] space-y-4">
+                        <label className="flex items-start gap-3 sm:gap-4 cursor-pointer group">
                             <input
                                 type="checkbox"
                                 name="dataPolicyAccepted"
@@ -468,11 +476,11 @@ const PublicGuestRegistration = () => {
                                 checked={formData.dataPolicyAccepted}
                                 onChange={handleChange}
                             />
-                            <span className="text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
+                            <span className="text-[12px] sm:text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
                                 Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-hover)] hover:underline font-semibold">Política de Tratamiento de Datos Personales</a> de MCI.
                             </span>
                         </label>
-                        <label className="flex items-start gap-4 cursor-pointer group">
+                        <label className="flex items-start gap-3 sm:gap-4 cursor-pointer group">
                             <input
                                 type="checkbox"
                                 name="dataTreatmentAuthorized"
@@ -481,11 +489,11 @@ const PublicGuestRegistration = () => {
                                 checked={formData.dataTreatmentAuthorized}
                                 onChange={handleChange}
                             />
-                            <span className="text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
+                            <span className="text-[12px] sm:text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
                                 Autorizo de manera expresa el tratamiento de mis datos personales conforme a la Ley 1581 de 2012.
                             </span>
                         </label>
-                        <label className="flex items-start gap-4 cursor-pointer group">
+                        <label className="flex items-start gap-3 sm:gap-4 cursor-pointer group">
                             <input
                                 type="checkbox"
                                 name="minorConsentAuthorized"
@@ -494,7 +502,7 @@ const PublicGuestRegistration = () => {
                                 checked={formData.minorConsentAuthorized}
                                 onChange={handleChange}
                             />
-                            <span className="text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
+                            <span className="text-[12px] sm:text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
                                 {isMinor ? (
                                     <a href="/login" className="font-semibold text-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-hover)] transition-colors">Inicia sesión aquí</a>
                                 ) : (
@@ -507,7 +515,7 @@ const PublicGuestRegistration = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-[#5e6ad2] hover:bg-[#828fff] text-white font-medium py-3 px-4 rounded-md transition-all shadow-lg shadow-[#5e6ad2]/20 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                        className="w-full bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] text-white font-medium py-3 sm:py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-[13px] sm:text-[14px]"
                     >
                         {loading ? (
                             <Spinner size={20} className="animate-spin" aria-hidden="true" />

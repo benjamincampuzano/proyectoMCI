@@ -42,6 +42,8 @@ const GuestTracking = ({ refreshTrigger }) => {
     const [liderDoceFilter, setLiderDoceFilter] = useState(null);
     const [pendingCalls, setPendingCalls] = useState(false);
     const [pendingVisits, setPendingVisits] = useState(false);
+    const [alreadyCalled, setAlreadyCalled] = useState(false);
+    const [alreadyVisited, setAlreadyVisited] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
 
     // Auto-apply filter for LIDER_DOCE who are not coordinators
@@ -60,7 +62,7 @@ const GuestTracking = ({ refreshTrigger }) => {
 
     useEffect(() => {
         fetchGuests();
-    }, [currentPage, startDate, endDate, liderDoceFilter, pendingCalls, pendingVisits, refreshTrigger]);
+    }, [currentPage, startDate, endDate, liderDoceFilter, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, refreshTrigger]);
 
     const fetchGuests = async () => {
         try {
@@ -76,6 +78,8 @@ const GuestTracking = ({ refreshTrigger }) => {
             if (liderDoceFilter) params.liderDoceId = liderDoceFilter.id;
             if (pendingCalls) params.pendingCalls = 'true';
             if (pendingVisits) params.pendingVisits = 'true';
+            if (alreadyCalled) params.alreadyCalled = 'true';
+            if (alreadyVisited) params.alreadyVisited = 'true';
 
             const response = await api.get('/guests', { params });
 
@@ -105,10 +109,12 @@ const GuestTracking = ({ refreshTrigger }) => {
         }
         setPendingCalls(false);
         setPendingVisits(false);
+        setAlreadyCalled(false);
+        setAlreadyVisited(false);
         setCurrentPage(1);
     };
 
-    const hasActiveFilters = startDate || endDate || (liderDoceFilter && !isLiderDoceFilterAutoApplied) || pendingCalls || pendingVisits;
+    const hasActiveFilters = startDate || endDate || (liderDoceFilter && !isLiderDoceFilterAutoApplied) || pendingCalls || pendingVisits || alreadyCalled || alreadyVisited;
 
     const handleOpenModal = (guest, type) => {
         setSelectedGuest(guest);
@@ -347,7 +353,7 @@ const GuestTracking = ({ refreshTrigger }) => {
                     Filtros
                     {hasActiveFilters && (
                         <span className="ml-1 px-2 py-0.5 rounded-full bg-white/20 text-xs">
-                            {[startDate, endDate, (liderDoceFilter && !isLiderDoceFilterAutoApplied), pendingCalls, pendingVisits].filter(Boolean).length}
+                            {[startDate, endDate, (liderDoceFilter && !isLiderDoceFilterAutoApplied), pendingCalls, pendingVisits, alreadyCalled, alreadyVisited].filter(Boolean).length}
                         </span>
                     )}
                 </button>
@@ -463,6 +469,50 @@ const GuestTracking = ({ refreshTrigger }) => {
                             </div>
                             <span className={`text-sm font-medium ${pendingVisits ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                 Pendientes por visitas
+                            </span>
+                        </label>
+
+                        {/* Checkbox - Ya fueron llamados */}
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${alreadyCalled
+                                ? 'bg-emerald-500 border-emerald-500'
+                                : 'border-gray-300 dark:border-gray-600 group-hover:border-emerald-400'
+                                }`}>
+                                <input
+                                    type="checkbox"
+                                    checked={alreadyCalled}
+                                    onChange={(e) => {
+                                        setAlreadyCalled(e.target.checked);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="absolute opacity-0 w-full h-full cursor-pointer"
+                                />
+                                {alreadyCalled && <CheckCircle size={14} className="text-white" weight="fill" />}
+                            </div>
+                            <span className={`text-sm font-medium ${alreadyCalled ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                Ya fueron llamados
+                            </span>
+                        </label>
+
+                        {/* Checkbox - Ya fueron visitados */}
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${alreadyVisited
+                                ? 'bg-indigo-500 border-indigo-500'
+                                : 'border-gray-300 dark:border-gray-600 group-hover:border-indigo-400'
+                                }`}>
+                                <input
+                                    type="checkbox"
+                                    checked={alreadyVisited}
+                                    onChange={(e) => {
+                                        setAlreadyVisited(e.target.checked);
+                                        setCurrentPage(1);
+                                    }}
+                                    className="absolute opacity-0 w-full h-full cursor-pointer"
+                                />
+                                {alreadyVisited && <CheckCircle size={14} className="text-white" weight="fill" />}
+                            </div>
+                            <span className={`text-sm font-medium ${alreadyVisited ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                Ya fueron visitados
                             </span>
                         </label>
 

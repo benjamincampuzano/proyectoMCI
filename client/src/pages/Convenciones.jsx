@@ -42,7 +42,8 @@ const Convenciones = () => {
         accommodationCost: '',
         startDate: '',
         endDate: '',
-        coordinatorId: null
+        coordinatorId: null,
+        coordinator: null
     });
 
     useEffect(() => {
@@ -110,7 +111,7 @@ const Convenciones = () => {
         try {
             await api.post('/convenciones', {
                 ...formData,
-                cost: parseFloat(formData.cost),
+                cost: 0,
                 vipPlateaCost: parseFloat(formData.vipPlateaCost || 0),
                 generalCost: parseFloat(formData.generalCost || 0),
                 transportCost: parseFloat(formData.transportCost || 0),
@@ -129,7 +130,8 @@ const Convenciones = () => {
                 accommodationCost: '',
                 startDate: '',
                 endDate: '',
-                coordinatorId: null
+                coordinatorId: null,
+                coordinator: null
             });
         } catch (error) {
             console.error('Error creating convention:', error);
@@ -546,18 +548,6 @@ const Convenciones = () => {
                                 />
                             </div>
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Total Convención ($)</label>
-                            <input
-                                type="number"
-                                value={formData.cost}
-                                onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                                required
-                            />
-                        </div>
-
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Transporte ($)</label>
@@ -612,8 +602,8 @@ const Convenciones = () => {
                                     return api.get('/users/search', { params })
                                         .then(res => res.data);
                                 }}
-                                selectedValue={formData.coordinatorId}
-                                onSelect={(user) => setFormData({ ...formData, coordinatorId: user?.id || null })}
+                                selectedValue={formData.coordinator}
+                                onSelect={(user) => setFormData({ ...formData, coordinator: user || null, coordinatorId: user?.id || null })}
                                 placeholder="Seleccionar coordinador..."
                                 labelKey="fullName"
                             />

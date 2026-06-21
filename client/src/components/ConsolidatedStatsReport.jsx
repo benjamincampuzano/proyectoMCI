@@ -2,7 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend} from 'recharts';
 import toast from 'react-hot-toast';
-import { Medal, TrendUp, Users, PrinterIcon, MapPin, BookOpenIcon } from '@phosphor-icons/react';
+import {
+    Medal,
+    TrendUp,
+    Users,
+    PrinterIcon,
+    MapPin,
+    BookOpenIcon,
+    Calendar,
+    WhatsappLogo,
+    EnvelopeSimple,
+} from '@phosphor-icons/react';
 
 const LN_COLORS = ['var(--ln-brand-indigo)', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
 
@@ -10,6 +20,12 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [leaderStats, setLeaderStats] = useState(null);
+    const [leaderStatsLoading, setLeaderStatsLoading] = useState(false);
+    const [reportMonth, setReportMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
 
     useEffect(() => {
         setMounted(true);
@@ -27,9 +43,27 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
         }
     }, []);
 
+    const fetchLeaderStats = useCallback(async () => {
+        try {
+            setLeaderStatsLoading(true);
+            const response = await api.get('/consolidar/stats/church-attendance-leaders', {
+                params: { month: reportMonth },
+            });
+            setLeaderStats(response.data);
+        } catch (error) {
+            toast.error('Error al cargar el ranking mensual de líderes.');
+        } finally {
+            setLeaderStatsLoading(false);
+        }
+    }, [reportMonth]);
+
     useEffect(() => {
         fetchStats();
     }, [fetchStats]);
+
+    useEffect(() => {
+        fetchLeaderStats();
+    }, [fetchLeaderStats]);
 
     const handlePrint = () => {
         window.print();
@@ -37,6 +71,54 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+    };
+
+    const buildAttendanceShareText = () => {
+        if (!leaderStats) return '';
+
+        const monthLabel = leaderStats.period?.month
+            ? new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric' }).format(
+                new Date(`${leaderStats.period.month}-01T00:00:00`)
+            )
+            : 'este mes';
+
+        const topPresent = leaderStats.rankings?.present?.slice(0, 5) || [];
+        const topAbsent = leaderStats.rankings?.absent?.slice(0, 5) || [];
+        const topVirtual = leaderStats.rankings?.virtual?.slice(0, 5) || [];
+
+        const formatLines = (title, rows, keyLabel) => {
+            if (!rows.length) return [`${title}: sin datos`];
+            return [
+                title,
+                ...rows.map((row, index) => `${index + 1}. ${row.leaderName}: ${row[keyLabel]}`),
+            ];
+        };
+
+        return [
+            `Reporte mensual de asistencia - ${monthLabel}`,
+            '',
+            `Totales: ${leaderStats.summary.totalPresent} presentes, ${leaderStats.summary.totalAbsent} ausencias, ${leaderStats.summary.totalVirtual} virtuales`,
+            '',
+            ...formatLines('Top presentes', topPresent, 'present'),
+            '',
+            ...formatLines('Top ausencias', topAbsent, 'absent'),
+            '',
+            ...formatLines('Top virtuales', topVirtual, 'virtual'),
+        ].join('\n');
+    };
+
+    const handleShareWhatsApp = () => {
+        const text = buildAttendanceShareText();
+        if (!text) return;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    };
+
+    const handleShareEmail = () => {
+        const text = buildAttendanceShareText();
+        if (!text) return;
+        const monthLabel = leaderStats?.period?.month || reportMonth;
+        const subject = `Reporte mensual de asistencia - ${monthLabel}`;
+        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
     };
 
     if (!stats && loading) return <div className="text-center py-20 text-[var(--ln-text-tertiary)] weight-590 animate-pulse">Analizando registros históricos...</div>;
@@ -77,13 +159,40 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
             {/* Control Bar */}
             <div className={`flex flex-col md:flex-row justify-between items-center gap-6 print:hidden ${simpleMode ? '' : 'bg-[var(--ln-bg-panel)]/30 backdrop-blur-md p-6 rounded-[24px] border border-[var(--ln-border-standard)]'}`}>
                 {!simpleMode && (
-                    <button
-                        onClick={handlePrint}
-                        className="flex items-center gap-3 bg-[var(--ln-brand-indigo)] text-white px-6 py-2.5 rounded-xl weight-590 text-[13px] hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20"
-                    >
-                        <PrinterIcon size={18} weight="bold" />
-                        Imprimir Reporte
-                    </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--ln-border-standard)] bg-white/5">
+                            <Calendar size={16} className="text-[var(--ln-brand-indigo)]" weight="bold" />
+                            <input
+                                type="month"
+                                value={reportMonth}
+                                onChange={(e) => setReportMonth(e.target.value)}
+                                className="bg-transparent text-[13px] weight-590 text-[var(--ln-text-primary)] outline-none"
+                            />
+                        </div>
+                        <button
+                            onClick={handleShareWhatsApp}
+                            disabled={!leaderStats}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-green-500/20 bg-green-500/10 text-green-500 weight-590 text-[13px] hover:bg-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            <WhatsappLogo size={18} weight="bold" />
+                            WhatsApp
+                        </button>
+                        <button
+                            onClick={handleShareEmail}
+                            disabled={!leaderStats}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-500 weight-590 text-[13px] hover:bg-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            <EnvelopeSimple size={18} weight="bold" />
+                            Correo
+                        </button>
+                        <button
+                            onClick={handlePrint}
+                            className="flex items-center gap-3 bg-[var(--ln-brand-indigo)] text-white px-6 py-2.5 rounded-xl weight-590 text-[13px] hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20"
+                        >
+                            <PrinterIcon size={18} weight="bold" />
+                            Imprimir Reporte
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -153,6 +262,65 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                             <span className="text-[11px] text-[var(--ln-text-tertiary)] weight-510 mt-1">Alumnos Inscritos</span>
                         </div>
                     </div>
+                </div>
+
+                {/* Ranking mensual de líderes */}
+                <div className="p-8 bg-white/5 rounded-[32px] border border-[var(--ln-border-standard)] shadow-sm mb-16">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <h3 className="text-sm weight-590 text-[var(--ln-text-primary)] uppercase tracking-widest opacity-60 flex items-center gap-3">
+                                <Users className="text-[var(--ln-brand-indigo)]" size={18} weight="bold" />
+                                Ranking Mensual de LIDER_DOCE
+                            </h3>
+                            <p className="text-[12px] text-[var(--ln-text-tertiary)] mt-2 opacity-70">
+                                Asistencia, ausencias y virtuales del mes seleccionado.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-3 text-[12px] weight-590 text-[var(--ln-text-tertiary)]">
+                            <span className="px-3 py-1.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
+                                {leaderStats?.summary?.totalPresent ?? 0} presentes
+                            </span>
+                            <span className="px-3 py-1.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
+                                {leaderStats?.summary?.totalAbsent ?? 0} ausencias
+                            </span>
+                            <span className="px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                                {leaderStats?.summary?.totalVirtual ?? 0} virtuales
+                            </span>
+                        </div>
+                    </div>
+
+                    {leaderStatsLoading ? (
+                        <p className="text-[var(--ln-text-tertiary)] weight-510">Cargando ranking mensual...</p>
+                    ) : (leaderStats?.leaders?.length || 0) > 0 ? (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <LeaderRankingCard
+                                title="Más asistencias"
+                                toneClass="text-green-500"
+                                borderClass="border-green-500/20"
+                                bgClass="bg-green-500/10"
+                                rows={leaderStats.rankings?.present?.slice(0, 5) || []}
+                                metricLabel="present"
+                            />
+                            <LeaderRankingCard
+                                title="Más ausencias"
+                                toneClass="text-red-500"
+                                borderClass="border-red-500/20"
+                                bgClass="bg-red-500/10"
+                                rows={leaderStats.rankings?.absent?.slice(0, 5) || []}
+                                metricLabel="absent"
+                            />
+                            <LeaderRankingCard
+                                title="Más virtuales"
+                                toneClass="text-purple-500"
+                                borderClass="border-purple-500/20"
+                                bgClass="bg-purple-500/10"
+                                rows={leaderStats.rankings?.virtual?.slice(0, 5) || []}
+                                metricLabel="virtual"
+                            />
+                        </div>
+                    ) : (
+                        <p className="text-[var(--ln-text-tertiary)] weight-510">No hay registros para el mes seleccionado.</p>
+                    )}
                 </div>
 
                 {/* Main Content Grid */}
@@ -450,3 +618,44 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
 };
 
 export default ConsolidatedStatsReport;
+
+function LeaderRankingCard({ title, toneClass, borderClass, bgClass, rows, metricLabel }) {
+    const formatMetric = (row) => {
+        if (metricLabel === 'present') return `${row.present} asistencias`;
+        if (metricLabel === 'absent') return `${row.absent} ausencias`;
+        if (metricLabel === 'virtual') return `${row.virtual} virtuales`;
+        return `${row.total} registros`;
+    };
+
+    return (
+        <div className={`rounded-[24px] border ${borderClass} bg-white/5 p-5`}>
+            <div className="flex items-center justify-between mb-4">
+                <h4 className={`text-[13px] weight-590 uppercase tracking-widest ${toneClass}`}>
+                    {title}
+                </h4>
+                <span className={`px-2.5 py-1 rounded-full text-[10px] weight-700 uppercase ${bgClass} ${toneClass}`}>
+                    Top 5
+                </span>
+            </div>
+            <div className="space-y-3">
+                {rows.length > 0 ? rows.map((row, index) => (
+                    <div key={`${row.leaderId || row.leaderName}-${index}`} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[var(--ln-bg-panel)]/40 border border-[var(--ln-border-standard)]">
+                        <div className="min-w-0">
+                            <p className="text-[13px] weight-590 text-[var(--ln-text-primary)] truncate">
+                                {index + 1}. {row.leaderName}
+                            </p>
+                            <p className="text-[11px] text-[var(--ln-text-tertiary)]">
+                                {row.attendanceRate}% de asistencia
+                            </p>
+                        </div>
+                        <span className={`shrink-0 text-[12px] weight-700 ${toneClass}`}>
+                            {formatMetric(row)}
+                        </span>
+                    </div>
+                )) : (
+                    <p className="text-[12px] text-[var(--ln-text-tertiary)] italic">Sin datos.</p>
+                )}
+            </div>
+        </div>
+    );
+}

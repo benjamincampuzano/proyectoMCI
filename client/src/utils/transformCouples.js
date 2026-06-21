@@ -50,12 +50,10 @@ export function buildCoupleNetwork(root) {
     if (partnerIds.some((id) => visited.has(id))) return null;
 
     const partners = [];
-    const partnerSources = new Map();
-    const pushPartner = (p, source = person) => {
+    const pushPartner = (p) => {
       const normalized = normalizePartner(p);
       if (!normalized) return;
       partners.push(normalized);
-      partnerSources.set(String(normalized.id), source);
     };
 
     if (hasPartners(person)) {
@@ -63,19 +61,19 @@ export function buildCoupleNetwork(root) {
         const normalized = normalizePartner(partner);
         if (!normalized) return;
         visited.add(String(normalized.id));
-        pushPartner(normalized, index.get(String(normalized.id)) || person);
+        pushPartner(normalized);
       });
     }
     else {
       visited.add(String(person.id));
-      pushPartner(person, index.get(String(person.id)) || person);
+      pushPartner(person);
 
       const spouseId = spouseMap.get(String(person.id));
       if (spouseId) {
         const spouse = index.get(spouseId);
         if (spouse && !visited.has(String(spouse.id))) {
           visited.add(String(spouse.id));
-          pushPartner(spouse, spouse);
+          pushPartner(spouse);
         }
       }
     }
@@ -95,13 +93,21 @@ export function buildCoupleNetwork(root) {
       .map(child => toCoupleNode(child))
       .filter(Boolean);
 
-    const assigned = [];
-    const invited = [];
-    for (const partner of partners) {
-      const src = partnerSources.get(String(partner.id)) || index.get(String(partner.id)) || person;
-      if (Array.isArray(src.assignedGuests)) assigned.push(...src.assignedGuests);
-      if (Array.isArray(src.invitedGuests)) invited.push(...src.invitedGuests);
-    }
+    const collectGuests = (key) => {
+      const guests = [
+        ...(Array.isArray(person?.[key]) ? person[key] : []),
+      ];
+
+      for (const partner of partners) {
+        const src = index.get(String(partner.id)) || partner;
+        if (Array.isArray(src?.[key])) guests.push(...src[key]);
+      }
+
+      return Array.from(new Map(guests.map((guest) => [String(guest.id), guest])).values());
+    };
+
+    const assigned = collectGuests('assignedGuests');
+    const invited = collectGuests('invitedGuests');
 
     const result = {
       id: nodeId || person.id,

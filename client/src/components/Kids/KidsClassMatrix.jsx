@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningCircle, Upload, CameraIcon } from '@phosphor-icons/react';
@@ -36,7 +36,6 @@ const KidsClassMatrix = ({ courseId }) => {
     const [matrix, setMatrix] = useState([]);
     const [courseInfo, setCourseInfo] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
     const [showEnrollModal, setShowEnrollModal] = useState(false);
     const [selectedStudentId, setSelectedStudentId] = useState('');
     const [selectedStudent, setSelectedStudent] = useState(null);
@@ -87,22 +86,17 @@ const KidsClassMatrix = ({ courseId }) => {
         [hasFullKidsAccess, isModuleProfessor]
     );
 
-    useEffect(() => {
-        fetchMatrix();
-        fetchCourseInfo();
-    }, [courseId]);
-
-    const fetchCourseInfo = async () => {
+    const fetchCourseInfo = useCallback(async () => {
         try {
             const res = await api.get('/kids/modules');
             const course = res.data.find(c => c.id === courseId);
             setCourseInfo(course);
-        } catch (error) {
+        } catch {
             // Error fetching course info
         }
-    };
+    }, [courseId]);
 
-    const fetchMatrix = async () => {
+    const fetchMatrix = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get(`/kids/modules/${courseId}/matrix`);
@@ -110,15 +104,20 @@ const KidsClassMatrix = ({ courseId }) => {
             if (res.data.module) {
                 setCourseInfo(res.data.module);
             }
-        } catch (error) {
+        } catch {
             // Error fetching matrix
         } finally {
             setLoading(false);
         }
-    };
+    }, [courseId]);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchMatrix();
+        fetchCourseInfo();
+    }, [courseId, fetchMatrix, fetchCourseInfo]);
 
     const handleCellUpdate = async (enrollmentId, classNumber, field, value) => {
-        setSaving(true);
         try {
             await api.post('/kids/matrix/update', {
                 enrollmentId,
@@ -126,10 +125,8 @@ const KidsClassMatrix = ({ courseId }) => {
                 [field]: value
             });
             fetchMatrix();
-        } catch (error) {
+        } catch {
             toast.error('Error updating cell');
-        } finally {
-            setSaving(false);
         }
     };
 
@@ -187,7 +184,7 @@ const KidsClassMatrix = ({ courseId }) => {
             await api.delete(`/kids/enrollments/${enrollmentToUnenroll.enrollmentId}`);
             toast.success('Estudiante desinscrito');
             fetchMatrix();
-        } catch (error) {
+        } catch {
             toast.error('Error unenrolling student');
         }
     };
@@ -237,7 +234,7 @@ const KidsClassMatrix = ({ courseId }) => {
             
             toast.success('Evidencia de clase guardada exitosamente');
             closePhotoModal();
-        } catch (error) {
+        } catch {
             // Error uploading photo
             toast.error('Error al guardar la evidencia de clase');
         } finally {

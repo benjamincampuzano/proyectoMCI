@@ -1,6 +1,7 @@
 // components/unassigned/UnassignedUsersModal.jsx
 import React, { useMemo, useState } from 'react';
 import { X, MagnifyingGlass, UserPlus } from '@phosphor-icons/react';
+import toast from 'react-hot-toast';
 import { getUnassignedUsers } from '../../utils/unassigned';
 import { canManageAssignments } from '../../utils/permissions';
 
@@ -34,17 +35,17 @@ export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allU
 
   const handleAssign = async (userId) => {
     if (!hasAssignmentPermission) {
-      alert('No tienes permisos para realizar esta acción');
+      toast.error('No tienes permisos para realizar esta acción');
       return;
     }
     
     if (!onAssign) {
-      alert('Error: función de asignación no disponible');
+      toast.error('Error: función de asignación no disponible');
       return;
     }
     
     if (!defaultLeaderId) {
-      alert('Por favor selecciona un líder antes de asignar usuarios');
+      toast.error('Por favor selecciona un líder antes de asignar usuarios');
       return;
     }
     
@@ -52,7 +53,8 @@ export default function UnassignedUsersModal({ isOpen, onClose, coupleRoot, allU
       setBusyId(userId);
       await onAssign(userId, defaultLeaderId);
     } catch (error) {
-      alert('Error al asignar usuario: ' + (error.message || 'Error desconocido'));
+      console.error('Error assigning user:', error);
+      toast.error('Error al asignar usuario: ' + (error.response?.data?.error || error.message || 'Error desconocido'));
     } finally {
       setBusyId(null);
     }
