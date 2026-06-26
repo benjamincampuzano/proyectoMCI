@@ -210,7 +210,7 @@ const Login = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {/* Guest Registration */}
                                 <button
-                                    onClick={() => navigate('/public-guest-registration')}
+                                    onClick={() => navigate('/registro-invitados')}
                                     className="group bg-gradient-to-br from-[#7170ff]/10 to-transparent border border-[#7170ff]/30 hover:border-[#7170ff]/60 text-[var(--ln-text-primary)] font-medium py-3 sm:py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-[#7170ff]/10 text-[12px] sm:text-[13px] flex items-center justify-center gap-2"
                                 >
                                     <Users size={18} weight="regular" className="group-hover:scale-110 transition-transform" />
@@ -219,7 +219,7 @@ const Login = () => {
 
                                 {/* Convention Registration */}
                                 <button
-                                    onClick={() => navigate('/public-convention-registration')}
+                                    onClick={() => navigate('/registro-convenciones')}
                                     className="group bg-gradient-to-br from-[#5e6ad2]/10 to-transparent border border-[#5e6ad2]/30 hover:border-[#5e6ad2]/60 text-[var(--ln-text-primary)] font-medium py-3 sm:py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-[#5e6ad2]/10 text-[12px] sm:text-[13px] flex items-center justify-center gap-2"
                                 >
                                     <CalendarDots size={18} weight="regular" className="group-hover:scale-110 transition-transform" />

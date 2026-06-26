@@ -188,20 +188,13 @@ const getGeneralStats = async (req, res) => {
         }));
 
         // 4. CELLS — ✅ SQL GROUP BY
+        // La subconsulta de avg_attendance usa LATERAL para poder referenciar c.id
+        // (referenciar columnas no agrupadas de la consulta exterior provoca el error 42803).
         const cellsRaw = await prisma.$queryRaw`
             SELECT
                 COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
                 COUNT(DISTINCT c.id)::int AS cell_count,
-                COALESCE(
-                    (SELECT AVG(cnt) FROM (
-                        SELECT COUNT(*)::int AS cnt
-                        FROM "CellAttendance" ca2
-                        WHERE ca2."cellId" = c.id
-                          AND ca2.date BETWEEN ${start} AND ${end}
-                          AND ca2.status = 'PRESENTE'
-                        GROUP BY ca2.date
-                    ) sub), 0
-                )::float AS avg_attendance,
+                COALESCE(avg_attendance_sub.avg_cnt, 0)::float AS avg_attendance,
                 COALESCE(
                     json_agg(
                         json_build_object('address', c.address, 'city', c.city, 'lat', c.latitude, 'lng', c.longitude)
@@ -212,9 +205,20 @@ const getGeneralStats = async (req, res) => {
             FROM "Cell" c
             LEFT JOIN "UserHierarchy" uh ON uh."childId" = c."leaderId" AND uh.role = 'LIDER_DOCE'
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
+            LEFT JOIN LATERAL (
+                SELECT AVG(cnt)::float AS avg_cnt
+                FROM (
+                    SELECT COUNT(*)::int AS cnt
+                    FROM "CellAttendance" ca2
+                    WHERE ca2."cellId" = c.id
+                      AND ca2.date BETWEEN ${start} AND ${end}
+                      AND ca2.status = 'PRESENTE'
+                    GROUP BY ca2.date
+                ) per_date
+            ) avg_attendance_sub ON true
             WHERE c."isDeleted" = false
               ${scoped ? Prisma.sql`AND c."leaderId" = ANY(${scopeIds})` : Prisma.empty}
-            GROUP BY leader_name
+            GROUP BY leader_name, avg_attendance_sub.avg_cnt
             ORDER BY cell_count DESC
         `;
 

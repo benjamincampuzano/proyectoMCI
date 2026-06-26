@@ -248,8 +248,8 @@ function App() {
                 <Route path="/setup" element={<SetupWizard />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/public-guest-registration" element={<PublicGuestRegistration />} />
-                <Route path="/public-convention-registration" element={<PublicConventionRegistration />} />
+                <Route path="/registro-invitados" element={<PublicGuestRegistration />} />
+                <Route path="/registro-convenciones" element={<PublicConventionRegistration />} />
 
                 <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
                   <Route index element={<Home />} />
