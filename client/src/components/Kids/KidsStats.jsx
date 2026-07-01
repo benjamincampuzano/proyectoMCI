@@ -1,38 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useAuth } from "../../context/AuthContext";
 import { Users, BookOpen, UserCheck, TrendUp } from '@phosphor-icons/react';
 
 const KidsStats = () => {
-    const { hasAnyRole } = useAuth();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const safeNumber = (value) => {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : 0;
+    };
+
+    const fetchStats = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const res = await api.get('/kids/stats/leader');
+            setData(Array.isArray(res.data) ? res.data : []);
+        } catch (err) {
+            console.error('Error fetching stats:', err);
+            const status = err.response?.status;
+            setError(
+                status === 503
+                    ? 'No se pudo conectar a la base de datos para cargar el reporte estadístico.'
+                    : 'No fue posible cargar el reporte estadístico.'
+            );
+            setData([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         fetchStats();
-         
-    }, []);
-
-    const fetchStats = async () => {
-        try {
-            setLoading(true);
-            const res = await api.get('/kids/stats/leader');
-            setData(res.data);
-            setLoading(false);
-        } catch (error) {
-            console.error('Error fetching stats:', error);
-            setLoading(false);
-        }
-    };
+    }, [fetchStats]);
 
     if (loading) return <div className="text-center py-10">Cargando reporte...</div>;
+    if (error) return <div className="text-center py-10 text-red-600 dark:text-red-400">{error}</div>;
+    if (data.length === 0) {
+        return <div className="text-center py-10 text-gray-500 dark:text-gray-400">No hay datos estadísticos disponibles para mostrar.</div>;
+    }
 
-    const totalStudents = data.reduce((acc, curr) => acc + curr.students, 0);
-    const totalStudentsInCells = data.reduce((acc, curr) => acc + (curr.studentsInCells || 0), 0);
+    const totalStudents = data.reduce((acc, curr) => acc + safeNumber(curr.students), 0);
+    const totalStudentsInCells = data.reduce((acc, curr) => acc + safeNumber(curr.studentsInCells), 0);
     const cellPercentage = totalStudents > 0 ? ((totalStudentsInCells / totalStudents) * 100).toFixed(1) : 0;
-    const avgAttendance = data.length > 0 ? (data.reduce((acc, curr) => acc + parseFloat(curr.avgAttendance), 0) / data.length).toFixed(1) : 0;
-    const avgCellAttendance = data.length > 0 ? (data.reduce((acc, curr) => acc + parseFloat(curr.cellAttendance || 0), 0) / data.length).toFixed(1) : 0;
+    const avgAttendance = data.length > 0 ? (data.reduce((acc, curr) => acc + safeNumber(curr.avgAttendance), 0) / data.length).toFixed(1) : 0;
+    const avgCellAttendance = data.length > 0 ? (data.reduce((acc, curr) => acc + safeNumber(curr.cellAttendance), 0) / data.length).toFixed(1) : 0;
 
     return (
         <div className="space-y-8 animate-fade-in">
@@ -166,36 +181,36 @@ const KidsStats = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
                                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                            (item.studentsInCells || 0) > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                            safeNumber(item.studentsInCells) > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                                         }`}>
-                                            {item.studentsInCells || 0}
+                                            {safeNumber(item.studentsInCells)}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
                                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                            parseFloat(item.cellPercentage || 0) >= 70 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                            parseFloat(item.cellPercentage || 0) >= 40 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                            safeNumber(item.cellPercentage) >= 70 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                            safeNumber(item.cellPercentage) >= 40 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
                                             'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                                         }`}>
-                                            {item.cellPercentage || 0}%
+                                            {safeNumber(item.cellPercentage).toFixed(1)}%
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
                                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                            parseFloat(item.avgAttendance) >= 70 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                            parseFloat(item.avgAttendance) >= 40 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                            safeNumber(item.avgAttendance) >= 70 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                            safeNumber(item.avgAttendance) >= 40 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
                                             'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                                         }`}>
-                                            {item.avgAttendance}%
+                                            {safeNumber(item.avgAttendance).toFixed(1)}%
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
                                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                            parseFloat(item.cellAttendance || 0) >= 70 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                            parseFloat(item.cellAttendance || 0) >= 40 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                            safeNumber(item.cellAttendance) >= 70 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                            safeNumber(item.cellAttendance) >= 40 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
                                             'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                                         }`}>
-                                            {item.cellAttendance || 0}%
+                                            {safeNumber(item.cellAttendance).toFixed(1)}%
                                         </span>
                                     </td>
                                 </tr>

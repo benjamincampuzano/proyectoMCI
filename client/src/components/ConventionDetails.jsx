@@ -453,7 +453,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                             <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Inscritos</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{convention.registrations ? convention.registrations.length : 0}</span>
+                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{convention.stats?.registeredCount || 0}</span>
                             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad Inscritos</span>
                         </div>
                     </div>

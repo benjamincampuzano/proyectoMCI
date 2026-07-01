@@ -5,14 +5,12 @@ import KidsSchedule from '../components/Kids/KidsSchedule';
 import KidsStudentMatrix from '../components/Kids/KidsStudentMatrix';
 import KidsStats from '../components/Kids/KidsStats';
 import { PageHeader, Button } from '../components/ui';
-import { ROLES, ROLE_GROUPS } from '../constants/roles';
 import { useAuth } from '../context/AuthContext';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const KidsModule = () => {
-    const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
@@ -56,44 +54,26 @@ const KidsModule = () => {
         setRefreshTrigger(prev => prev + 1);
     };
 
-    // Function to check if user has full access to Kids module
-    // Only ADMIN, PASTOR, LIDER_DOCE, or Kids-module-specific Coordinator/Subcoordinator/Treasurer
-    // Note: Coordinators/Subcoordinators/Treasurers of OTHER modules DO NOT have access
-    const hasFullKidsAccess = () => {
-        return hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) ||
-               isCoordinator('kids') ||
-               isSubCoordinator('kids') ||
-               isTreasurer('kids');
-    };
-
-    const hasStatsAccess = () => {
-        return hasFullKidsAccess() || hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
-    };
-
     const tabs = [
         {
             id: 'schedule',
             label: 'Cronograma',
-            component: (props) => <KidsSchedule {...props} moduleCoordinator={moduleCoordinator} />,
-            customCheck: hasFullKidsAccess
+            component: (props) => <KidsSchedule {...props} moduleCoordinator={moduleCoordinator} />
         },
         {
             id: 'management',
             label: 'Clases y Notas',
-            component: KidsCourseManagement,
-            customCheck: hasFullKidsAccess
+            component: KidsCourseManagement
         },
         {
             id: 'matrix',
             label: 'Matriz de Estudiantes',
-            component: KidsStudentMatrix,
-            customCheck: hasFullKidsAccess
+            component: KidsStudentMatrix
         },
         {
             id: 'stats',
             label: 'Reporte Estadístico',
-            component: KidsStats,
-            customCheck: hasStatsAccess
+            component: KidsStats
         }
     ];
 

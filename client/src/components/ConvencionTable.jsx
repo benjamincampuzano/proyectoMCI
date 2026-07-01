@@ -71,18 +71,23 @@ const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify })
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
                                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
                                             <Users size={14} />
-                                            {conv.registrations?.length || 0}
+                                            {conv.stats?.registeredCount || 0}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => onSelect(conv.id)}
-                                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                                                title="Ver detalles"
-                                            >
-                                                <Pen size={16} />
-                                            </button>
+                                            {canModify && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onEdit(e, conv);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                                                    title="Editar Convención"
+                                                >
+                                                    <Pen size={16} />
+                                                </button>
+                                            )}
                                             {canModify && (
                                                 <button
                                                     onClick={(e) => onDelete(e, conv.id)}

@@ -210,10 +210,10 @@ exports.getClasses = async (req, res) => {
       user.moduleTreasurers = treasurers.map(t => t.moduleName);
     }
 
-    // Determine if user has full access (ADMIN, PASTOR, LIDER_DOCE, Coordinator, Subcoordinator, Treasurer)
+    // Determine if user has full access (ADMIN, PASTOR, Coordinator, Subcoordinator, Treasurer)
+    // LIDER_DOCE ve solo su propia red, no todas las redes
     const hasFullAccess = userRoles.includes('ADMIN') || 
                          userRoles.includes('PASTOR') ||
-                         userRoles.includes('LIDER_DOCE') ||
                          // Verificar si tiene roles de Escuela de Artes específicamente
                          (user.moduleCoordinations && user.moduleCoordinations.some(module => ['escuela-de-artes', 'arts'].includes(module))) ||
                          (user.moduleSubCoordinations && user.moduleSubCoordinations.some(module => ['escuela-de-artes', 'arts'].includes(module))) ||
@@ -285,18 +285,24 @@ exports.getClasses = async (req, res) => {
       })).filter(cls => cls.enrollments.length > 0); // Only show classes that have visible enrollments for non-admin users
     }
 
-    // Add totals to enrollments in each class
-    const classesWithTotals = classes.map(cls => ({
-      ...cls,
-      enrollments: (cls.enrollments || []).map(enr => {
+    // Add totals to enrollments in each class and fix _count after filtering
+    const classesWithTotals = classes.map(cls => {
+      const filteredEnrollments = (cls.enrollments || []).map(enr => {
         const totalPaid = enr.payments.reduce((sum, p) => sum + p.amount, 0);
         return {
           ...enr,
           totalPaid,
           balance: enr.finalCost - totalPaid
         };
-      })
-    }));
+      });
+      return {
+        ...cls,
+        enrollments: filteredEnrollments,
+        _count: {
+          enrollments: filteredEnrollments.length
+        }
+      };
+    });
 
     
     res.status(200).json(classesWithTotals);
@@ -336,10 +342,10 @@ exports.getClassById = async (req, res) => {
       user.moduleTreasurers = treasurers.map(t => t.moduleName);
     }
 
-    // Determine if user has full access (ADMIN, PASTOR, LIDER_DOCE, Coordinator, Subcoordinator, Treasurer)
+    // Determine if user has full access (ADMIN, PASTOR, Coordinator, Subcoordinator, Treasurer)
+    // LIDER_DOCE ve solo su propia red, no todas las redes
     const hasFullAccess = userRoles.includes('ADMIN') || 
                          userRoles.includes('PASTOR') ||
-                         userRoles.includes('LIDER_DOCE') ||
                          // Verificar si tiene roles de Escuela de Artes específicamente
                          (user.moduleCoordinations && user.moduleCoordinations.some(module => ['escuela-de-artes', 'arts'].includes(module))) ||
                          (user.moduleSubCoordinations && user.moduleSubCoordinations.some(module => ['escuela-de-artes', 'arts'].includes(module))) ||

@@ -387,7 +387,7 @@ const EscuelaDeArtes = () => {
                                             </div>
                                             <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                                                 <Users size={16} className="mr-2 text-purple-500" />
-                                                {cls._count?.enrollments || cls.enrollments?.length || 0} Inscritos
+                                                {cls.enrollments?.length || 0} Inscritos
                                             </div>
                                             <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                                                 <MoneyIcon size={16} className="mr-2 text-orange-500" />

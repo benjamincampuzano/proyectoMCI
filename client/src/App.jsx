@@ -77,8 +77,8 @@ const KidsModuleRoute = ({ children }) => {
   const { user, loading, hasAnyRole } = useAuth();
   if (loading) return <div>Loading...</div>;
 
-  // ADMIN and PASTOR always have access
-  if (hasAnyRole(['ADMIN', 'PASTOR'])) {
+  // ADMIN, PASTOR, and LIDER_DOCE always have access
+  if (hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE'])) {
     return children;
   }
 

@@ -387,10 +387,19 @@ const getAllUsers = async (req, res) => {
             return res.status(403).json({ message: 'Solo los administradores pueden exportar todos los usuarios' });
         }
 
-        // ✅ ADMIN tiene límite de 100 por página por defecto para evitar cargar toda la BD.
+        // ✅ ADMIN sin límite explícito obtiene todos los usuarios (paginación client-side).
         // Para exportar, se usará un select reducido (no USER_FULL_INCLUDE).
         const MAX_LIMIT = 500;
-        let limitNum = isExport ? Math.min(MAX_LIMIT, parseInt(limit) || MAX_LIMIT) : Math.min(MAX_LIMIT, parseInt(limit) || (req.user.roles.includes('ADMIN') ? 100 : 50));
+        let limitNum;
+        if (isExport) {
+            limitNum = Math.min(MAX_LIMIT, parseInt(limit) || MAX_LIMIT);
+        } else if (limit !== undefined) {
+            limitNum = Math.min(MAX_LIMIT, parseInt(limit));
+        } else if (req.user.roles.includes('ADMIN')) {
+            limitNum = undefined;
+        } else {
+            limitNum = 50;
+        }
 
         if (req.user.roles.includes('ADMIN') || req.user.roles.includes('PASTOR')) {
             let rolesFilter = undefined;

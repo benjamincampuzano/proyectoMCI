@@ -8,6 +8,80 @@ const CATEGORY_CONFIG = {
     'JOVENES': { label: 'Jóvenes (14 años en adelante)', minAge: 14, maxAge: 99 }
 };
 
+const KIDS_MODULE_TYPES = ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES'];
+
+/**
+ * Roles con visibilidad total en el módulo Kids (no necesitan filtro por red).
+ */
+const KIDS_FULL_ACCESS_ROLES = ['ADMIN', 'PASTOR'];
+
+/**
+ * Normaliza el nombre de un módulo para comparar contra los registros de coordinación.
+ */
+const normalizeKidsModuleName = (name) => String(name || '').toLowerCase().trim().replace(/\s+/g, '-');
+
+/**
+ * Determina si el usuario tiene acceso completo al módulo Kids (sin restricción por red)
+ * y, en caso contrario, devuelve la lista de IDs permitidos (su red o él mismo).
+ *
+ * - ADMIN, PASTOR  -> acceso completo
+ * - Coordinador/Subcoordinador/Tesorero del módulo Kids -> acceso completo
+ * - LIDER_DOCE / LIDER_CELULA -> su red + él mismo
+ * - DISCIPULO -> solo él mismo
+ * - Otros roles -> lista vacía (no ve nada)
+ */
+const getRequesterKidsAccess = async (req) => {
+    const user = req.user;
+    const userRoles = user.roles || [];
+    const userId = user.id;
+
+    // Asegurar que los datos de coordinación estén cargados (pueden venir del token)
+    if (!user.moduleCoordinations || !user.moduleSubCoordinations || !user.moduleTreasurers) {
+        const [coordinations, subCoordinations, treasurers] = await Promise.all([
+            prisma.moduleCoordinator.findMany({
+                where: { userId, isDeleted: false },
+                select: { moduleName: true }
+            }),
+            prisma.moduleSubCoordinator.findMany({
+                where: { userId, isDeleted: false },
+                select: { moduleName: true }
+            }),
+            prisma.moduleTreasurer.findMany({
+                where: { userId, isDeleted: false },
+                select: { moduleName: true }
+            })
+        ]);
+
+        user.moduleCoordinations = coordinations.map(c => normalizeKidsModuleName(c.moduleName));
+        user.moduleSubCoordinations = subCoordinations.map(sc => normalizeKidsModuleName(sc.moduleName));
+        user.moduleTreasurers = treasurers.map(t => normalizeKidsModuleName(t.moduleName));
+    }
+
+    const isKidsCoord = (arr) => (arr || []).some(m => normalizeKidsModuleName(m) === 'kids');
+
+    const hasFullKidsAccess =
+        KIDS_FULL_ACCESS_ROLES.some(r => userRoles.includes(r)) ||
+        isKidsCoord(user.moduleCoordinations) ||
+        isKidsCoord(user.moduleSubCoordinations) ||
+        isKidsCoord(user.moduleTreasurers);
+
+    if (hasFullKidsAccess) {
+        return { hasFullAccess: true, allowedUserIds: null };
+    }
+
+    let allowedUserIds = [];
+    if (userRoles.includes('LIDER_DOCE') || userRoles.includes('LIDER_CELULA')) {
+        const networkIds = await getUserNetwork(userId);
+        allowedUserIds = [...new Set([parseInt(userId), ...networkIds.map(id => parseInt(id))])];
+    } else if (userRoles.includes('DISCIPULO')) {
+        allowedUserIds = [parseInt(userId)];
+    } else {
+        allowedUserIds = [];
+    }
+
+    return { hasFullAccess: false, allowedUserIds };
+};
+
 const calculateAge = (birthDate) => {
     if (!birthDate) return null;
     const today = new Date();
@@ -229,6 +303,8 @@ const getModuleMatrix = async (req, res) => {
     try {
         const { id } = req.params;
 
+        const access = await getRequesterKidsAccess(req);
+
         const module = await prisma.seminarModule.findUnique({
             where: { id: parseInt(id) },
             include: {
@@ -249,8 +325,13 @@ const getModuleMatrix = async (req, res) => {
             }
         });
 
+        const whereClause = { moduleId: parseInt(id) };
+        if (!access.hasFullAccess) {
+            whereClause.userId = { in: access.allowedUserIds.length > 0 ? access.allowedUserIds : [-1] };
+        }
+
         const enrollments = await prisma.seminarEnrollment.findMany({
-            where: { moduleId: parseInt(id) },
+            where: whereClause,
             include: {
                 user: {
                     select: {
@@ -449,19 +530,29 @@ const updateMatrixCell = async (req, res) => {
 
 const getStudentMatrix = async (req, res) => {
     try {
-        const users = await prisma.user.findMany({
-            where: {
-                isDeleted: false,
-                seminarEnrollments: {
-                    some: {
-                        module: { 
-                            type: {
-                                in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
-                            }
+        const access = await getRequesterKidsAccess(req);
+
+        const whereClause = {
+            isDeleted: false,
+            seminarEnrollments: {
+                some: {
+                    module: {
+                        type: {
+                            in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
                         }
                     }
                 }
-            },
+            }
+        };
+
+        if (!access.hasFullAccess) {
+            // Si el solicitante no tiene acceso completo, limitar a su red (o a sí mismo).
+            // Usamos [-1] como placeholder para que la consulta no devuelva nada si allowedUserIds está vacío.
+            whereClause.id = { in: access.allowedUserIds.length > 0 ? access.allowedUserIds : [-1] };
+        }
+
+        const users = await prisma.user.findMany({
+            where: whereClause,
             select: {
                 id: true,
                 email: true,
@@ -579,6 +670,8 @@ const getEligibleStudents = async (req, res) => {
         const { moduleId } = req.params;
         const { search = '' } = req.query;
 
+        const access = await getRequesterKidsAccess(req);
+
         const module = await prisma.seminarModule.findUnique({
             where: { id: parseInt(moduleId) }
         });
@@ -601,6 +694,14 @@ const getEligibleStudents = async (req, res) => {
             isDeleted: false,
             id: { notIn: enrolledIds.length > 0 ? enrolledIds : [-1] }
         };
+
+        if (!access.hasFullAccess) {
+            // Restringir a los usuarios de la red del solicitante (o a sí mismo).
+            where.id = {
+                ...(where.id || {}),
+                in: access.allowedUserIds.length > 0 ? access.allowedUserIds : [-1]
+            };
+        }
 
         if (search) {
             where.OR = [
@@ -706,69 +807,93 @@ const getKidsStatsByLeader = async (req, res) => {
                     select: {
                         role: { select: { name: true } }
                     }
-                },
-                children: {
-                    where: {
-                        child: {
-                            seminarEnrollments: {
-                                some: {
-                                    module: { 
-                                        type: {
-                                            in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
-                                        }
-                                    }
+                }
+            }
+        });
+
+        const stats = (await Promise.all(leaders.map(async (leader) => {
+            const networkIds = await getUserNetwork(leader.id);
+            const uniqueNetworkIds = [...new Set([leader.id, ...networkIds.map(id => parseInt(id))])];
+
+            const networkStudents = await prisma.user.findMany({
+                where: {
+                    id: { in: uniqueNetworkIds },
+                    isDeleted: false,
+                    seminarEnrollments: {
+                        some: {
+                            module: {
+                                type: {
+                                    in: KIDS_MODULE_TYPES
                                 }
-                            },
-                            isDeleted: false
+                            }
+                        }
+                    }
+                },
+                select: {
+                    id: true,
+                    cellId: true,
+                    cellAttendances: {
+                        select: {
+                            status: true
                         },
-                        role: 'DISCIPULO'
+                        orderBy: {
+                            date: 'desc'
+                        }
                     },
-                    select: {
-                        role: true,
-                        child: {
-                            select: {
-                                id: true,
-                                seminarEnrollments: {
-                                    where: { 
-                                        module: { 
-                                            type: {
-                                                in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
-                                            }
-                                        }
-                                    },
-                                    include: { classAttendances: true }
+                    seminarEnrollments: {
+                        where: {
+                            module: {
+                                type: {
+                                    in: KIDS_MODULE_TYPES
+                                }
+                            }
+                        },
+                        select: {
+                            finalGrade: true,
+                            classAttendances: {
+                                select: {
+                                    status: true
                                 }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
 
-        const stats = leaders.map(leader => {
-            const kids = leader.children.map(c => c.child);
-            const totalStudents = kids.length;
+            const totalStudents = networkStudents.length;
+            const studentsInCells = networkStudents.filter(student => student.cellId).length;
 
             let totalGrades = 0;
             let gradeCount = 0;
             let totalAttendance = 0;
             let attendanceCount = 0;
+            let totalCellAttendance = 0;
+            let cellAttendanceCount = 0;
             let passed = 0;
 
-            kids.forEach(kid => {
-                kid.seminarEnrollments.forEach(e => {
-                    if (e.finalGrade !== null) {
-                        totalGrades += e.finalGrade;
+            networkStudents.forEach(student => {
+                if (student.cellId) {
+                    const cellAttendanceRecords = student.cellAttendances || [];
+                    if (cellAttendanceRecords.length > 0) {
+                        const presentCount = cellAttendanceRecords.filter(a => a.status === 'PRESENTE').length;
+                        totalCellAttendance += (presentCount / cellAttendanceRecords.length) * 100;
+                        cellAttendanceCount++;
+                    }
+                }
+
+                student.seminarEnrollments.forEach(enrollment => {
+                    if (enrollment.finalGrade !== null) {
+                        totalGrades += enrollment.finalGrade;
                         gradeCount++;
                     }
 
-                    if (e.classAttendances.length > 0) {
-                        const rate = (e.classAttendances.filter(a => a.status === 'ASISTE').length / e.classAttendances.length) * 100;
+                    if (enrollment.classAttendances.length > 0) {
+                        const rate = (enrollment.classAttendances.filter(a => a.status === 'ASISTE').length / enrollment.classAttendances.length) * 100;
                         totalAttendance += rate;
                         attendanceCount++;
                     }
 
-                    if (e.finalGrade !== null && e.finalGrade >= 7) {
+                    if (enrollment.finalGrade !== null && enrollment.finalGrade >= 7) {
                         passed++;
                     }
                 });
@@ -783,15 +908,24 @@ const getKidsStatsByLeader = async (req, res) => {
             return {
                 leaderName: `${leader.profile?.fullName || 'Sin nombre'} (${roleDisplay})`,
                 students: totalStudents,
+                studentsInCells,
+                cellPercentage: totalStudents > 0 ? (studentsInCells / totalStudents) * 100 : 0,
                 avgGrade: gradeCount > 0 ? (totalGrades / gradeCount) : 0,
                 avgAttendance: attendanceCount > 0 ? (totalAttendance / attendanceCount) : 0,
+                cellAttendance: cellAttendanceCount > 0 ? (totalCellAttendance / cellAttendanceCount) : 0,
                 passed
             };
-        }).filter(l => l.students > 0);
+        }))).filter(l => l.students > 0);
 
         res.json(stats);
     } catch (error) {
         console.error('Error fetching kids stats:', error);
+        if (error?.code === 'P1001') {
+            return res.status(503).json({
+                message: 'No se pudo conectar a la base de datos para generar el reporte estadístico'
+            });
+        }
+
         res.status(500).json({ message: 'Error fetching kids stats' });
     }
 };

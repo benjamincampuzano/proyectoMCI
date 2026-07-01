@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, Users,UserIcon, MoneyIcon, CaretRight, Trash, UserCheck, SquaresFour, List, FileTextIcon, TrendUpIcon, ArrowsClockwise, Clock } from '@phosphor-icons/react';
+import { Plus, Calendar, Users, UserIcon, MoneyIcon, CaretRight, Trash, Pen, UserCheck, SquaresFour, List, FileTextIcon, TrendUpIcon, ArrowsClockwise, Clock } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import ConventionDetails from '../components/ConventionDetails';
@@ -29,6 +29,24 @@ const Convenciones = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [conventionToDelete, setConventionToDelete] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+
+    // Edit State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingConvention, setEditingConvention] = useState(null);
+    const [editFormData, setEditFormData] = useState({
+        type: 'FAMILIAS',
+        year: new Date().getFullYear(),
+        theme: '',
+        vipPlateaCost: '',
+        generalCost: '',
+        transportCost: '',
+        accommodationCost: '',
+        startDate: '',
+        endDate: '',
+        coordinatorId: null,
+        coordinator: null
+    });
+    const [editSubmitting, setEditSubmitting] = useState(false);
 
     // Create Form State
     const [formData, setFormData] = useState({
@@ -111,7 +129,7 @@ const Convenciones = () => {
         try {
             await api.post('/convenciones', {
                 ...formData,
-                cost: 0,
+                cost: parseFloat(formData.generalCost || 0),
                 vipPlateaCost: parseFloat(formData.vipPlateaCost || 0),
                 generalCost: parseFloat(formData.generalCost || 0),
                 transportCost: parseFloat(formData.transportCost || 0),
@@ -161,6 +179,48 @@ const Convenciones = () => {
         }
     };
 
+    const handleEdit = (e, convention) => {
+        e.stopPropagation();
+        setEditFormData({
+            type: convention.type,
+            year: convention.year,
+            theme: convention.theme || '',
+            vipPlateaCost: convention.vipPlateaCost || '',
+            generalCost: convention.generalCost || '',
+            transportCost: convention.transportCost || '',
+            accommodationCost: convention.accommodationCost || '',
+            startDate: convention.startDate ? new Date(convention.startDate).toISOString().split('T')[0] : '',
+            endDate: convention.endDate ? new Date(convention.endDate).toISOString().split('T')[0] : '',
+            coordinatorId: convention.coordinatorId || null,
+            coordinator: convention.coordinator || null
+        });
+        setEditingConvention(convention);
+        setShowEditModal(true);
+    };
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        setEditSubmitting(true);
+        try {
+            await api.put(`/convenciones/${editingConvention.id}`, {
+                ...editFormData,
+                vipPlateaCost: parseFloat(editFormData.vipPlateaCost || 0),
+                generalCost: parseFloat(editFormData.generalCost || 0),
+                transportCost: parseFloat(editFormData.transportCost || 0),
+                accommodationCost: parseFloat(editFormData.accommodationCost || 0)
+            });
+            toast.success('Convención actualizada exitosamente!');
+            setShowEditModal(false);
+            setEditingConvention(null);
+            fetchConventions();
+        } catch (error) {
+            console.error('Error updating convention:', error);
+            toast.error('Error al actualizar: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setEditSubmitting(false);
+        }
+    };
+
     const canModify = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE]) 
         || isCoordinator('convenciones') 
         || isSubCoordinator('convenciones');
@@ -188,7 +248,7 @@ const Convenciones = () => {
         let totalPendientes = 0;
 
         conventions.forEach(conv => {
-            totalInscritos += conv.registrations?.length || 0;
+            totalInscritos += Number(conv.stats?.registeredCount || 0);
             totalPendientes += Number(conv.stats?.pendingCount || 0);
             conv.registrations?.forEach(reg => {
                 totalRecaudado += Number(reg.totalPaid) || 0;
@@ -256,15 +316,24 @@ const Convenciones = () => {
                                             <CaretRight className="text-gray-400 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" size={24} />
                                         </div>
 
-                                        <div className="absolute top-4 right-12 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="absolute top-4 right-12 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
                                             {canModify && (
-                                                <button
-                                                    onClick={(e) => handleDelete(e, conv.id)}
-                                                    className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"
-                                                    title="Eliminar Convención"
-                                                >
-                                                    <Trash size={16} />
-                                                </button>
+                                                <>
+                                                    <button
+                                                        onClick={(e) => handleEdit(e, conv)}
+                                                        className="p-2 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
+                                                        title="Editar Convención"
+                                                    >
+                                                        <Pen size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => handleDelete(e, conv.id)}
+                                                        className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"
+                                                        title="Eliminar Convención"
+                                                    >
+                                                        <Trash size={16} />
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
 
@@ -281,7 +350,10 @@ const Convenciones = () => {
                                             </div>
                                             <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                                                 <MoneyIcon size={16} className="mr-2 text-orange-500" />
-                                                {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(conv.cost)}
+                                                {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(conv.generalCost || conv.cost)}
+                                                {conv.vipPlateaCost > 0 && (
+                                                    <span className="ml-1 text-xs text-gray-400">/ VIP: {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(conv.vipPlateaCost)}</span>
+                                                )}
                                             </div>
                                             <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                                                 <UserCheck size={16} className="mr-2 text-blue-500" />
@@ -310,6 +382,7 @@ const Convenciones = () => {
                     conventions={conventions}
                     onSelect={fetchConventionDetails}
                     canModify={canModify}
+                    onEdit={handleEdit}
                     onDelete={handleDelete}
                 />
             </div>
@@ -633,7 +706,165 @@ const Convenciones = () => {
                     </Modal.Footer>
                 </form>
             </Modal>
-            
+
+            {/* Edit Modal */}
+            <Modal
+                isOpen={showEditModal}
+                title="Editar Convención"
+                onClose={() => {
+                    setShowEditModal(false);
+                    setEditingConvention(null);
+                }}
+                size="lg"
+            >
+                <form onSubmit={handleUpdate} className="flex flex-col min-h-0">
+                    <Modal.Content className="space-y-4 overflow-y-auto">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
+                                <select
+                                    value={editFormData.type}
+                                    onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="FAMILIAS">FAMILIAS</option>
+                                    <option value="MUJERES">MUJERES</option>
+                                    <option value="JOVENES">JOVENES</option>
+                                    <option value="HOMBRES">HOMBRES</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Año</label>
+                                <input
+                                    type="number"
+                                    value={editFormData.year}
+                                    onChange={(e) => setEditFormData({ ...editFormData, year: parseInt(e.target.value) })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lema / Tema</label>
+                            <input
+                                type="text"
+                                value={editFormData.theme}
+                                onChange={(e) => setEditFormData({ ...editFormData, theme: e.target.value })}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo VIP Platea ($)</label>
+                                <input
+                                    type="number"
+                                    value={editFormData.vipPlateaCost}
+                                    onChange={(e) => setEditFormData({ ...editFormData, vipPlateaCost: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo General ($)</label>
+                                <input
+                                    type="number"
+                                    value={editFormData.generalCost}
+                                    onChange={(e) => setEditFormData({ ...editFormData, generalCost: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Transporte ($)</label>
+                                <input
+                                    type="number"
+                                    value={editFormData.transportCost}
+                                    onChange={(e) => setEditFormData({ ...editFormData, transportCost: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Hospedaje ($)</label>
+                                <input
+                                    type="number"
+                                    value={editFormData.accommodationCost}
+                                    onChange={(e) => setEditFormData({ ...editFormData, accommodationCost: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Inicio</label>
+                                <input
+                                    type="date"
+                                    value={editFormData.startDate}
+                                    onChange={(e) => setEditFormData({ ...editFormData, startDate: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Fin</label>
+                                <input
+                                    type="date"
+                                    value={editFormData.endDate}
+                                    onChange={(e) => setEditFormData({ ...editFormData, endDate: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Coordinador de la Convención</label>
+                            <AsyncSearchSelect
+                                fetchItems={(term) => {
+                                    const params = { search: term, role: 'LIDER_DOCE' };
+                                    return api.get('/users/search', { params })
+                                        .then(res => res.data);
+                                }}
+                                selectedValue={editFormData.coordinator}
+                                onSelect={(user) => setEditFormData({ ...editFormData, coordinator: user || null, coordinatorId: user?.id || null })}
+                                placeholder="Seleccionar coordinador..."
+                                labelKey="fullName"
+                            />
+                        </div>
+                    </Modal.Content>
+
+                    <Modal.Footer>
+                        <div className="flex gap-2 sm:gap-3">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => {
+                                    setShowEditModal(false);
+                                    setEditingConvention(null);
+                                }}
+                                className="flex-1 text-sm"
+                                size="sm"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="submit"
+                                loading={editSubmitting}
+                                className="flex-1 text-sm"
+                                size="sm"
+                            >
+                                Actualizar
+                            </Button>
+                        </div>
+                    </Modal.Footer>
+                </form>
+            </Modal>
+
             {/* Delete Confirmation Modal */}
             <ConfirmationModal
                 isOpen={showDeleteConfirm}
