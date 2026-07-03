@@ -208,6 +208,11 @@ const GuestTracking = ({ refreshTrigger }) => {
         const diffDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
         const hasCalls = guest.calls && guest.calls.length > 0;
         const hasVisits = guest.visits && guest.visits.length > 0;
+        
+        // Asistencia a la iglesia
+        const lastChurchAttendance = guest.churchAttendances && guest.churchAttendances.length > 0 ? new Date(guest.churchAttendances[0].date) : null;
+        const daysSinceLastChurch = lastChurchAttendance ? Math.floor((now - lastChurchAttendance) / (1000 * 60 * 60 * 24)) : diffDays;
+
         const alerts = [];
 
         if (diffDays >= 1 && !hasCalls) {
@@ -215,6 +220,11 @@ const GuestTracking = ({ refreshTrigger }) => {
         }
         if (diffDays >= 2 && !hasVisits) {
             alerts.push({ type: 'visit', message: 'Visita pendiente (2+ días)' });
+        }
+        
+        // Alerta de más de un mes sin asistir
+        if (daysSinceLastChurch > 30) {
+            alerts.push({ type: 'attendance', message: 'Inasistencia a iglesia/célula (+1 mes)' });
         }
 
         return alerts;
@@ -642,7 +652,7 @@ const GuestTracking = ({ refreshTrigger }) => {
                                                     <Phone className="w-4 h-4 mr-2 text-gray-400" />
                                                     {guest.phone}
                                                 </div>
-                                                {(isAdmin() || hasRole('PASTOR') || isModuleCoordinator) && guest.phone && (
+                                                {(isAdmin() || hasRole('PASTOR') || isModuleCoordinator || hasRole('LIDER_DOCE')) && guest.phone && (
                                                     <button
                                                         onClick={() => handleOpenModal(guest, 'whatsapp')}
                                                         className="ml-2 p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
@@ -660,8 +670,14 @@ const GuestTracking = ({ refreshTrigger }) => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                                                 <User className="w-4 h-4 mr-2 text-gray-400" />
-                                                {guest.invitedBy?.fullName}
+                                                Invitó: {guest.invitedBy?.fullName}
                                             </div>
+                                            {guest.assignedTo && guest.assignedTo.id !== guest.invitedBy?.id && (
+                                                <div className="flex items-center mt-1 text-sm text-blue-600 dark:text-blue-400">
+                                                    <User className="w-4 h-4 mr-2 text-blue-400" />
+                                                    Asignado a: {guest.assignedTo.fullName || guest.assignedTo.profile?.fullName || guest.assignedTo.email}
+                                                </div>
+                                            )}
                                             <div className="flex items-start mt-1 text-sm text-gray-500 dark:text-gray-400 italic">
                                                 <HandsPrayingIcon className="w-4 h-4 mr-2 mt-0.5 text-gray-400" />
                                                 {guest.prayerRequest || 'Sin petición'}
@@ -694,7 +710,7 @@ const GuestTracking = ({ refreshTrigger }) => {
                                                 {/* Last Cell Attendance */}
                                                 {guest.cell && (
                                                     <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                                                        Ult. asistencia: Pendiente
+                                                        Ult. iglesia: {guest.churchAttendances && guest.churchAttendances.length > 0 ? new Date(guest.churchAttendances[0].date).toLocaleDateString() : 'Pendiente'}
                                                     </span>
                                                 )}
                                             </div>

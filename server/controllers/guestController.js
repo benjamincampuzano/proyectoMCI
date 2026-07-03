@@ -208,7 +208,13 @@ const getAllGuests = async (req, res) => {
                     queryFilters.invitedById = parseInt(invitedById);
                 }
             } else {
-                queryFilters.invitedById = { in: idsToCheck };
+                queryFilters.AND = queryFilters.AND || [];
+                queryFilters.AND.push({
+                    OR: [
+                        { invitedById: { in: idsToCheck } },
+                        { assignedToId: { in: idsToCheck } }
+                    ]
+                });
             }
         } else if (invitedById) {
             queryFilters.invitedById = parseInt(invitedById);
@@ -328,6 +334,10 @@ const getAllGuests = async (req, res) => {
                         encuentro: true
                     },
                     orderBy: { createdAt: 'desc' },
+                    take: 1
+                },
+                churchAttendances: {
+                    orderBy: { date: 'desc' },
                     take: 1
                 }
             },

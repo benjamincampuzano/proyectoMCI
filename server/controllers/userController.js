@@ -165,6 +165,8 @@ const formatUser = (user) => {
         moduleTreasurers: user.moduleTreasurers?.map(mt => mt.moduleName) || [],
         mustChangePassword: user.mustChangePassword,
         spouseId: user.spouseId,
+        lastWhatsAppDate: user.lastWhatsAppDate,
+        lastWhatsAppMessage: user.lastWhatsAppMessage,
         hierarchy: parents.map(p => ({
             parentId: p.parentId,
             parentName: p.parent?.profile?.fullName || '(sin nombre)',
@@ -1837,6 +1839,30 @@ const checkUserHierarchyAssignment = async (req, res) => {
     }
 };
 
+const logWhatsApp = async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        const { message } = req.body;
+
+        if (!message || !message.trim()) {
+            return res.status(400).json({ message: 'El mensaje no puede estar vacío' });
+        }
+
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                lastWhatsAppDate: new Date(),
+                lastWhatsAppMessage: message.trim()
+            }
+        });
+
+        res.json({ message: 'WhatsApp registrado exitosamente' });
+    } catch (error) {
+        console.error('Error logging WhatsApp:', error);
+        res.status(500).json({ message: 'Error al registrar el mensaje de WhatsApp' });
+    }
+};
+
 module.exports = {
     getProfile,
     updateProfile,
@@ -1852,5 +1878,6 @@ module.exports = {
     searchUsers,
     getUsersByIds,
     getUsersWithoutCell,
-    checkUserHierarchyAssignment
+    checkUserHierarchyAssignment,
+    logWhatsApp
 };

@@ -1,7 +1,6 @@
 import { EnvelopeOpen, Phone, MapPin, Pencil, Trash, Key, IdentificationCard, GenderMale, GenderFemale, Cake, CheckCircle, Warning, UserCircle, WhatsappLogo } from '@phosphor-icons/react';
 import DataTable from '../ui/DataTable';
 import PropTypes from 'prop-types';
-import { getWhatsAppPhone } from '../../utils/phone';
 
 const calculateAge = (birthDate) => {
     if (!birthDate) return null;
@@ -34,7 +33,7 @@ const labelMap = (role) => {
     return role.replace(/_/g, ' ');
 };
 
-const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onResetPassword }) => {
+const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onResetPassword, onWhatsApp }) => {
     const columns = [
         {
             key: 'fullName',
@@ -91,6 +90,7 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
             title: 'Contacto',
             render: (_, user) => {
                 const age = calculateAge(user.birthDate);
+                const hasWhatsAppLog = user.lastWhatsAppDate && user.lastWhatsAppMessage;
                 return (
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-[12px] weight-510 text-[var(--ln-text-secondary)] hover:text-[var(--ln-brand-indigo)] transition-colors truncate max-w-[220px]" title={user.email}>
@@ -102,15 +102,13 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
                                 <div className="flex items-center gap-1.5 text-[11px] weight-510 text-[var(--ln-text-tertiary)] opacity-80">
                                     <Phone size={13} className="text-[var(--ln-text-quaternary)]" weight="bold" />
                                     <span>{user.phone}</span>
-                                    <a
-                                        href={`https://wa.me/${getWhatsAppPhone(user.phone)}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    <button
+                                        onClick={() => onWhatsApp(user)}
                                         className="ml-1 p-1 rounded-md bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 hover:text-emerald-700 transition-colors"
                                         title="Enviar WhatsApp"
                                     >
                                         <WhatsappLogo size={14} weight="bold" />
-                                    </a>
+                                    </button>
                                 </div>
                             )}
                             {age !== null && (
@@ -120,6 +118,17 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
                                 </div>
                             )}
                         </div>
+                        {hasWhatsAppLog && (
+                            <div className="flex items-start gap-1.5 mt-1 text-[10px] text-emerald-600 dark:text-emerald-400 max-w-[260px]" title={user.lastWhatsAppMessage}>
+                                <WhatsappLogo size={11} weight="fill" className="mt-0.5 shrink-0" />
+                                <div className="truncate">
+                                    <span className="font-medium opacity-70">
+                                        {new Date(user.lastWhatsAppDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                    <span className="opacity-50 ml-1">- {user.lastWhatsAppMessage}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             }
@@ -242,6 +251,7 @@ UserTable.propTypes = {
     onEdit: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
     onResetPassword: PropTypes.func.isRequired,
+    onWhatsApp: PropTypes.func.isRequired,
 };
 
 export default UserTable;

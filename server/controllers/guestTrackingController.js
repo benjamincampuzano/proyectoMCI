@@ -32,17 +32,17 @@ const getGuestTrackingStats = async (req, res) => {
 
         // ✅ SQL GROUP BY directo — no más carga masiva a Node.js
         const networkFilter = networkIds.length > 0
-            ? Prisma.sql`AND g."invitedById" = ANY(${networkIds})`
+            ? Prisma.sql`AND (g."invitedById" = ANY(${networkIds}) OR g."assignedToId" = ANY(${networkIds}))`
             : Prisma.empty;
 
         const statsRaw = await prisma.$queryRaw`
             SELECT
                 COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
-                COUNT(g.id)::int AS total,
-                COUNT(CASE WHEN gc.id IS NOT NULL THEN 1 END)::int AS with_call,
-                COUNT(CASE WHEN gv.id IS NOT NULL THEN 1 END)::int AS with_visit
+                COUNT(DISTINCT g.id)::int AS total,
+                COUNT(DISTINCT CASE WHEN gc.id IS NOT NULL THEN g.id END)::int AS with_call,
+                COUNT(DISTINCT CASE WHEN gv.id IS NOT NULL THEN g.id END)::int AS with_visit
             FROM "Guest" g
-            LEFT JOIN "UserHierarchy" uh ON uh."childId" = g."invitedById" AND uh.role IN ('LIDER_DOCE', 'PASTOR', 'LIDER_CELULA')
+            LEFT JOIN "UserHierarchy" uh ON (uh."childId" = g."invitedById" OR uh."childId" = g."assignedToId") AND uh.role IN ('LIDER_DOCE', 'PASTOR', 'LIDER_CELULA')
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             LEFT JOIN "GuestCall" gc ON gc."guestId" = g.id
             LEFT JOIN "GuestVisit" gv ON gv."guestId" = g.id

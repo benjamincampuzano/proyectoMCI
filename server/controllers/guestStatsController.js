@@ -13,25 +13,13 @@ const resolveLiderDoce = (userWithParents) => {
         return userWithParents.profile?.fullName || 'Sin Nombre';
     }
 
-    // Traverse up (assuming parents are populated to some depth)
-    // Note: detailed recursion requires DB calls, but here we depend on what's passed.
-    // To do this strictly without N+1, we should probably fetch the hierarchy fully or
-    // accept that we only check immediate parent/grandparent if populated.
-    // For this controller, we will implement a batch fetch strategy instead of deep nested include if possible.
-    // But for now, let's try to find a parent with LIDER_DOCE role in the `parents` array.
-
     if (userWithParents.parents && userWithParents.parents.length > 0) {
         for (const p of userWithParents.parents) {
-            // p is UserHierarchy entry. p.parent is the User.
-            // We need to check p.parent's role.
             if (!p.parent) continue;
             const pRoles = p.parent.roles?.map(r => r.role.name) || [];
             if (pRoles.includes('LIDER_DOCE')) {
                 return p.parent.profile?.fullName || 'Sin Nombre';
             }
-            // Recursive check if parent has parents populated?
-            // Since we can't easily recurse infinitely in findMany include,
-            // we rely on the specific query structure we use below.
             if (p.parent.parents && p.parent.parents.length > 0) {
                 return resolveLiderDoce(p.parent);
             }
@@ -51,7 +39,7 @@ const resolveLiderDoce = (userWithParents) => {
 // Get guest statistics with date filtering
 const getGuestStats = async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
+        const { startDate, endDate, liderDoceId } = req.query;
         const currentUserId = parseInt(req.user.id);
         const userRoles = req.user.roles || [];
         const isAdmin = userRoles.includes('ADMIN');
@@ -80,18 +68,37 @@ const getGuestStats = async (req, res) => {
         } else if (isLiderDoce) {
             networkIds = await getUserNetwork(currentUserId);
             securityFilter = {
-                invitedById: { in: [...networkIds, currentUserId] }
+                OR: [
+                    { invitedById: { in: [...networkIds, currentUserId] } },
+                    { assignedToId: { in: [...networkIds, currentUserId] } }
+                ]
             };
         } else {
             securityFilter = {
-                invitedById: currentUserId
+                OR: [
+                    { invitedById: currentUserId },
+                    { assignedToId: currentUserId }
+                ]
             };
         }
 
-        // Combine filters
-        const whereClause = {
+        let whereClause = {
             AND: [securityFilter, dateFilter]
         };
+
+        if (liderDoceId && canSeeAllGuests) {
+            const lId = parseInt(liderDoceId);
+            whereClause.AND.push({
+                OR: [
+                    { invitedBy: { liderDoceId: lId } },
+                    { assignedTo: { liderDoceId: lId } },
+                    { invitedBy: { id: lId } },
+                    { assignedTo: { id: lId } }
+                ]
+            });
+            networkIds = await getUserNetwork(lId);
+            networkIds.push(lId);
+        }
 
         // Get total guests
         const totalGuests = await prisma.guest.count({ where: whereClause });
@@ -143,10 +150,12 @@ const getGuestStats = async (req, res) => {
             count: item._count
         }));
 
-        // Calculate invitations by LIDER_DOCE — ✅ SQL GROUP BY directo
-        const networkFilterStats = networkIds.length > 0
-            ? Prisma.sql`AND g."invitedById" = ANY(${networkIds})`
-            : Prisma.empty;
+        // Calculate invitations by LIDER_DOCE
+        // Note: We use networkIds if filtering by a leader network or if they are a leader
+        // otherwise we check all
+        const networkFilterStats = (networkIds.length > 0)
+            ? Prisma.sql`AND (g."invitedById" = ANY(${networkIds}) OR g."assignedToId" = ANY(${networkIds}))`
+            : (canSeeAllGuests && !liderDoceId ? Prisma.empty : Prisma.sql`AND (g."invitedById" = ${currentUserId} OR g."assignedToId" = ${currentUserId})`);
 
         const guestLeaderRaw = await prisma.$queryRaw`
             SELECT
@@ -154,7 +163,7 @@ const getGuestStats = async (req, res) => {
                 COUNT(g.id)::int AS count,
                 TO_CHAR(g."createdAt", 'YYYY-MM') AS month_key
             FROM "Guest" g
-            LEFT JOIN "UserHierarchy" uh ON uh."childId" = g."invitedById" AND uh.role IN ('LIDER_DOCE', 'PASTOR', 'LIDER_CELULA')
+            LEFT JOIN "UserHierarchy" uh ON uh."childId" = g."invitedById" AND uh.role = 'LIDER_DOCE'
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             WHERE g."isDeleted" = false
               ${networkFilterStats}

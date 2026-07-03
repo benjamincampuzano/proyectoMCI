@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import TabNavigator from '../components/TabNavigator';
 import ChurchAttendance from '../components/ChurchAttendance';
 import ChurchAttendanceChart from '../components/ChurchAttendanceChart';
-import GuestTracking from '../components/GuestTracking';
-import GuestTrackingStats from '../components/GuestTrackingStats';
 import { ROLE_GROUPS, ROLES } from '../constants/roles';
 import { PageHeader, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';

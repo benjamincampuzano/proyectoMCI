@@ -101,6 +101,8 @@ model User {
   mustChangePassword       Boolean                  @default(false)
   isCoordinator            Boolean                  @default(false)
   spouseId                 Int?                     @unique
+  lastWhatsAppDate         DateTime?                @db.Timestamptz(6)
+  lastWhatsAppMessage      String?
   artClassesCoordinated    ArtClass[]               @relation("ArtCoordinator")
   artClassesTaught         ArtClass[]               @relation("ArtProfessor")
   artEnrollments           ArtEnrollment[]

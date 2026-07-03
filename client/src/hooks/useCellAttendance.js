@@ -91,7 +91,8 @@ const useCellAttendance = () => {
     const toggleAttendance = useCallback((userId, status) => {
         setAttendances(prev => {
             const currentStatus = prev[userId];
-            if (currentStatus === status) {
+
+            if (currentStatus === status || status === null) {
                 const newState = { ...prev };
                 delete newState[userId];
                 return newState;
@@ -111,10 +112,6 @@ const useCellAttendance = () => {
             userId: parseInt(userId),
             status
         }));
-
-        if (attendanceData.length === 0) {
-            return { success: false, message: 'No hay registros de asistencia para guardar' };
-        }
 
         try {
             setSaving(true);

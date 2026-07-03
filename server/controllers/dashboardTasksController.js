@@ -39,13 +39,61 @@ const getPendingTasks = async (req, res) => {
             ]
         } : {};
 
-        // 1. Invitados que no se han contactado (0 llamadas y 0 Visitas)
-        const uncontactedGuestsCount = await prisma.guest.count({
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+        
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+        // 1. Invitados con llamada pendiente (creados hace > 1 día, sin llamadas)
+        const pendingCallGuestsCount = await prisma.guest.count({
             where: {
-                status: 'NUEVO',
-                called: false,
-                visited: false,
                 isDeleted: false,
+                createdAt: { lte: oneDayAgo },
+                calls: { none: {} },
+                ...guestNetworkFilter
+            }
+        });
+
+        // Invitados con visita pendiente (creados hace > 2 días, sin visitas)
+        const pendingVisitGuestsCount = await prisma.guest.count({
+            where: {
+                isDeleted: false,
+                createdAt: { lte: twoDaysAgo },
+                visits: { none: {} },
+                ...guestNetworkFilter
+            }
+        });
+
+        // Invitados con > 1 mes sin asistir a la iglesia
+        const unassistedChurchGuestsCount = await prisma.guest.count({
+            where: {
+                isDeleted: false,
+                OR: [
+                    {
+                        churchAttendances: { none: {} },
+                        createdAt: { lte: thirtyDaysAgo }
+                    },
+                    {
+                        churchAttendances: {
+                            some: {},
+                            none: { date: { gte: thirtyDaysAgo } }
+                        }
+                    }
+                ],
+                ...guestNetworkFilter
+            }
+        });
+
+        // Invitados con > 1 mes sin asistir a la Celula
+        // (Nota: Actualmente los invitados no se registran en CellAttendance directamente)
+        const unassistedCellGuestsCount = await prisma.guest.count({
+            where: {
+                isDeleted: false,
+                cellId: { not: null },
+                // Como no hay asistencias a célula para invitados, se cuentan todos los asignados 
+                // hace más de 30 días o se asume que no han asistido.
+                createdAt: { lte: thirtyDaysAgo },
                 ...guestNetworkFilter
             }
         });
@@ -120,7 +168,10 @@ const getPendingTasks = async (req, res) => {
         });
 
         res.json({
-            uncontactedGuestsCount,
+            pendingCallGuestsCount,
+            pendingVisitGuestsCount,
+            unassistedChurchGuestsCount,
+            unassistedCellGuestsCount,
             unassignedDisciplesCount,
             unassistedChurchCount,
             unassistedCellCount,

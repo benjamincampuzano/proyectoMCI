@@ -258,7 +258,7 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId, mod
         // Los ADMIN pueden gestionar todos los usuarios, incluyendo otros ADMIN
         // Los PASTOR no pueden gestionar ADMIN
         if (requester.roles.includes('PASTOR') && targetUserRole === 'ADMIN') {
-            return { canManage: false, reason: 'PASTOR cannot manage ADMIN users' };
+            return { canManage: false, reason: 'El usuario PASTOR no puede editar usuarios con rol ADMIN' };
         }
         return { canManage: true, level: 'admin' };
     }
@@ -271,7 +271,7 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId, mod
     if (currentModule && hasAdminAccessOnModule(requester, currentModule)) {
         // No puede gestionar roles globales protegidos (solo ADMIN global puede)
         if (GLOBAL_PROTECTED_ROLES.includes(targetUserRole)) {
-            return { canManage: false, reason: `Cannot manage ${targetUserRole} users` };
+            return { canManage: false, reason: `No tienes permisos para editar usuarios ${targetUserRole}` };
         }
 
         const normalizedModule = normalizeModuleName(currentModule);
@@ -282,7 +282,7 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId, mod
         // Coordinador principal puede gestionar LIDER_DOCE y roles menores
         if (isMainCoordinator) {
             if (!COORDINATOR_MANAGABLE_ROLES.includes(targetUserRole)) {
-                return { canManage: false, reason: `Cannot manage users with role: ${targetUserRole}` };
+                return { canManage: false, reason: `No tienes permisos para editar usuarios con rol: ${targetUserRole}` };
             }
             return { canManage: true, level: 'module_admin', module: currentModule };
         }
@@ -290,7 +290,7 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId, mod
         // Subcoordinador/Tesorero elevado solo puede gestionar roles menores
         if (isElevatedRole) {
             if (!ELEVATED_MODULE_ROLES.includes(targetUserRole)) {
-                return { canManage: false, reason: `Cannot manage users with role: ${targetUserRole}` };
+                return { canManage: false, reason: `No tienes permisos para editar usuarios: ${targetUserRole}` };
             }
             return { canManage: true, level: 'elevated_module_admin', module: currentModule };
         }
@@ -301,7 +301,7 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId, mod
     // ═══════════════════════════════════════════
     if (requester.roles.includes('LIDER_DOCE')) {
         if (PROTECTED_ROLES.includes(targetUserRole)) {
-            return { canManage: false, reason: `Cannot manage ${targetUserRole} users` };
+            return { canManage: false, reason: `No tienes permisos para editar usuarios ${targetUserRole}` };
         }
 
         // Restringir por red solo si ambos tienen red asignada Y son diferentes
@@ -335,13 +335,13 @@ const canManageTargetUser = (getTargetUser) => {
             const targetUserId = parseInt(req.params.id);
 
             if (req.user.id === targetUserId) {
-                return res.status(403).json({ message: 'Cannot modify your own account' });
+                return res.status(403).json({ message: 'No puedes editar a tu propio usuario' });
             }
 
             const targetUser = await getTargetUser(targetUserId);
 
             if (!targetUser) {
-                return res.status(404).json({ message: 'User not found' });
+                return res.status(404).json({ message: 'Usuario no encontrado' });
             }
 
             const targetUserRole = targetUser.roles?.[0]?.role?.name || targetUser.role;
@@ -351,14 +351,14 @@ const canManageTargetUser = (getTargetUser) => {
 
             if (!permission.canManage) {
                 return res.status(403).json({
-                    message: permission.reason || 'Access denied'
+                    message: permission.reason || 'Acceso denegado'
                 });
             }
 
             next();
         } catch (error) {
             console.error('Error in canManageTargetUser middleware:', error);
-            return res.status(500).json({ message: 'Error checking permissions' });
+            return res.status(500).json({ message: 'Error al verificar permisos' });
         }
     };
 };
@@ -435,7 +435,7 @@ const canManageTreasurerActions = (moduleName) => {
             });
         } catch (error) {
             console.error('Error in canManageTreasurerActions:', error);
-            return res.status(500).json({ message: 'Error checking treasurer permissions' });
+            return res.status(500).json({ message: 'Error al validar permisos de tesorero' });
         }
     };
 };

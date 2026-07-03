@@ -13,7 +13,8 @@ const {
     searchUsers,
     getUsersByIds,
     getUsersWithoutCell,
-    checkUserHierarchyAssignment
+    checkUserHierarchyAssignment,
+    logWhatsApp
 } = require('../controllers/userController');
 const { authenticate, isAdmin, authorize, checkCoordinatorStatus } = require('../middleware/auth');
 
@@ -48,6 +49,7 @@ router.post('/', authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), createUser);
 router.put('/:id', updateUser);
 router.delete('/:id', isAdmin, deleteUser);
 router.post('/assign-leader/:id', authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), assignLeader);
+router.post('/:id/whatsapp-log', logWhatsApp);
 
 router.get('/my-network/all', getMyNetwork);
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Check, X, Users, MapPin, Clock, Info, List, SquaresFour, User } from '@phosphor-icons/react';
+import { Calendar, Check, X, Users, MapPin, Clock, Info, List, SquaresFour, User, XCircle } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import useCellAttendance from '../hooks/useCellAttendance';
@@ -283,6 +283,15 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                                                     <X className="w-4 h-4" />
                                                     Ausente
                                                 </button>
+                                                {status && (
+                                                    <button
+                                                        onClick={() => toggleAttendance(member.id, null)}
+                                                        disabled={!canEdit}
+                                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                                    >
+                                                        <XCircle className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -348,6 +357,15 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                                         <X className="w-4 h-4" />
                                         Ausente
                                     </button>
+                                    {status && (
+                                        <button
+                                            onClick={() => toggleAttendance(member.id, null)}
+                                            disabled={!canEdit}
+                                            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );

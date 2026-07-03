@@ -108,9 +108,10 @@ const ChurchAttendance = (props) => {
         setAttendances(prev => {
             const currentStatus = prev[key];
             if (currentStatus === status) {
-                const newState = { ...prev };
-                delete newState[key];
-                return newState;
+                return {
+                    ...prev,
+                    [key]: null
+                };
             }
             return {
                 ...prev,
@@ -520,9 +521,21 @@ const ChurchAttendance = (props) => {
                                     </h3>
                                     <div className="flex flex-wrap gap-1 mt-1">
                                         {isGuest ? (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                                                INVITADO
-                                            </span>
+                                            <div className="flex flex-col gap-1 w-full">
+                                                <span className="inline-flex w-fit items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                                    INVITADO
+                                                </span>
+                                                {member.invitedByName && (
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        <span className="font-medium text-gray-600 dark:text-gray-300">Invitó:</span> {member.invitedByName}
+                                                    </div>
+                                                )}
+                                                {member.assignedToName && member.assignedToName !== member.invitedByName && (
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        <span className="font-medium text-gray-600 dark:text-gray-300">Asignado a:</span> {member.assignedToName}
+                                                    </div>
+                                                )}
+                                            </div>
                                         ) : (
                                             <>
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
@@ -642,9 +655,21 @@ const ChurchAttendance = (props) => {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="space-y-1.5">
                                             {isGuest ? (
-                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                                                    INVITADO
-                                                </span>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="inline-flex w-fit items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                                        INVITADO
+                                                    </span>
+                                                    {member.invitedByName && (
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                            <span className="font-medium text-gray-600 dark:text-gray-300">Invitó:</span> {member.invitedByName}
+                                                        </div>
+                                                    )}
+                                                    {member.assignedToName && member.assignedToName !== member.invitedByName && (
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                            <span className="font-medium text-gray-600 dark:text-gray-300">Asignado a:</span> {member.assignedToName}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <>
                                                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">

@@ -15,6 +15,8 @@ const GuestStats = ({ refreshTrigger }) => {
     const [error, setError] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [liderDoceId, setLiderDoceId] = useState('');
+    const [lideresDoce, setLideresDoce] = useState([]);
 
     useEffect(() => {
         // Set default date range (last 12 months) to avoid hiding older history by default
@@ -24,13 +26,26 @@ const GuestStats = ({ refreshTrigger }) => {
 
         setStartDate(start.toISOString().split('T')[0]);
         setEndDate(end.toISOString().split('T')[0]);
-    }, []);
+
+        // Fetch Lideres Doce if user has permission
+        if (currentUser?.roles?.some(r => ['ADMIN', 'PASTOR', 'COORDINADOR'].includes(r))) {
+            const fetchLideres = async () => {
+                try {
+                    const res = await api.get('/users/by-role/LIDER_DOCE');
+                    setLideresDoce(res.data);
+                } catch (err) {
+                    console.error('Error fetching lideres doce:', err);
+                }
+            };
+            fetchLideres();
+        }
+    }, [currentUser]);
 
     useEffect(() => {
         if (startDate && endDate) {
             fetchStats();
         }
-    }, [startDate, endDate, refreshTrigger]);
+    }, [startDate, endDate, liderDoceId, refreshTrigger]);
 
     const fetchStats = async () => {
         setLoading(true);
@@ -39,6 +54,7 @@ const GuestStats = ({ refreshTrigger }) => {
             const params = new URLSearchParams();
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
+            if (liderDoceId) params.append('liderDoceId', liderDoceId);
 
             const res = await api.get(`/guests/stats?${params.toString()}`);
 
@@ -185,6 +201,26 @@ const GuestStats = ({ refreshTrigger }) => {
                             className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm"
                         />
                     </div>
+                    {currentUser?.roles?.some(r => ['ADMIN', 'PASTOR', 'COORDINADOR'].includes(r)) && (
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="liderDoce" className="text-sm font-medium text-[#1d1d1f] dark:text-white/80">
+                                Red Líder 12
+                            </label>
+                            <select
+                                id="liderDoce"
+                                value={liderDoceId}
+                                onChange={(e) => setLiderDoceId(e.target.value)}
+                                className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm min-w-[200px]"
+                            >
+                                <option value="">Todas las Redes</option>
+                                {lideresDoce.map(lider => (
+                                    <option key={lider.id} value={lider.id}>
+                                        {lider.profile?.fullName || lider.email}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     {currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR', 'COORDINADOR'].includes(r)) && (
                         <button
                             onClick={exportToExcel}

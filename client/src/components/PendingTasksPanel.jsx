@@ -7,7 +7,10 @@ import api from '../utils/api';
 const PendingTasksPanel = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [tasksData, setTasksData] = useState({
-        uncontactedGuestsCount: 0,
+        pendingCallGuestsCount: 0,
+        pendingVisitGuestsCount: 0,
+        unassistedChurchGuestsCount: 0,
+        unassistedCellGuestsCount: 0,
         unassignedDisciplesCount: 0,
         unassistedChurchCount: 0,
         unassistedCellCount: 0,
@@ -61,9 +64,27 @@ const PendingTasksPanel = () => {
 
     const tasksList = [
         {
-            title: "Invitados sin contactar (0 llamadas, 0 visitas)",
-            count: tasksData.uncontactedGuestsCount,
+            title: "Invitados con llamada pendiente (1+ días)",
+            count: tasksData.pendingCallGuestsCount,
             link: "/ganar",
+            color: "text-red-500 bg-red-500/10"
+        },
+        {
+            title: "Invitados con visita pendiente (2+ días)",
+            count: tasksData.pendingVisitGuestsCount,
+            link: "/ganar",
+            color: "text-red-500 bg-red-500/10"
+        },
+        {
+            title: "Invitados > 1 mes sin asistir a la iglesia",
+            count: tasksData.unassistedChurchGuestsCount,
+            link: "/consolidar",
+            color: "text-red-500 bg-red-500/10"
+        },
+        {
+            title: "Invitados > 1 mes sin asistir a la Celula",
+            count: tasksData.unassistedCellGuestsCount,
+            link: "/enviar",
             color: "text-red-500 bg-red-500/10"
         },
         {

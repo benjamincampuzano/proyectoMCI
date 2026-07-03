@@ -56,28 +56,26 @@ const recordCellAttendance = async (req, res) => {
             }
         }
 
-        const results = await Promise.all(
-            attendances.map(({ userId, status }) =>
-                prisma.cellAttendance.upsert({
-                    where: {
-                        date_cellId_userId: {
-                            date: new Date(date),
-                            cellId: parseInt(cellId),
-                            userId: parseInt(userId)
-                        }
-                    },
-                    update: { status },
-                    create: {
-                        date: new Date(date),
-                        cellId: parseInt(cellId),
-                        userId: parseInt(userId),
-                        status
-                    }
-                })
-            )
-        );
+        // Clear existing records for this date+cell so the saved state exactly matches what was submitted
+        await prisma.cellAttendance.deleteMany({
+            where: {
+                date: new Date(date),
+                cellId: parseInt(cellId)
+            }
+        });
 
-        res.json({ message: 'Cell attendance recorded successfully', count: results.length });
+        if (attendances.length > 0) {
+            await prisma.cellAttendance.createMany({
+                data: attendances.map(({ userId, status }) => ({
+                    date: new Date(date),
+                    cellId: parseInt(cellId),
+                    userId: parseInt(userId),
+                    status
+                }))
+            });
+        }
+
+        res.json({ message: 'Cell attendance recorded successfully', count: attendances.length });
     } catch (error) {
         console.error('Error recording cell attendance:', error);
         res.status(500).json({ error: 'Error recording cell attendance' });
