@@ -34,7 +34,7 @@ const geocodeAddress = async (address, city) => {
     return { lat: null, lng: null };
 };
 
-const { getUserNetwork } = require('../utils/networkUtils');
+const { getUserNetwork, getUserAncestors } = require('../utils/networkUtils');
 const { getUserNetworkId } = require('../middleware/coordinatorAuth');
 
 /**
@@ -741,7 +741,7 @@ const updateUser = async (req, res) => {
         }
 
         const targetRole = targetUser.roles?.[0]?.role?.name;
-        const permission = await canManageUser(req.user, targetRole, targetUser.profile?.network);
+        const permission = await canManageUser(req.user, targetRole, targetUser.profile?.network, undefined, userId);
 
         if (!permission.canManage) {
             return res.status(403).json({ message: permission.reason });
@@ -1606,15 +1606,25 @@ const searchUsers = async (req, res) => {
         }
         else if (req.user.roles.includes('LIDER_DOCE')) {
             const requesterNetwork = await getUserNetwork(req.user.id);
-            if (!requesterNetwork || requesterNetwork.length === 0) {
+
+            // LIDER_DOCE can search PASTORs (ancestors) for tutor assignments
+            const requestedRoles = role ? role.split(',') : [];
+            const searchingForPastor = requestedRoles.includes('PASTOR');
+
+            let visibleUserIds = requesterNetwork || [];
+            if (searchingForPastor) {
+                const ancestors = await getUserAncestors(req.user.id);
+                visibleUserIds = [...new Set([...visibleUserIds, ...ancestors])];
+            }
+
+            if (!visibleUserIds || visibleUserIds.length === 0) {
                 return res.json([]);
             }
-            where['id'] = { in: requesterNetwork };
+            where['id'] = { in: visibleUserIds };
 
-            const allowedRoles = [...MANAGABLE_ROLES, 'LIDER_DOCE'];
+            const allowedRoles = [...MANAGABLE_ROLES, 'LIDER_DOCE', 'PASTOR'];
 
             if (role) {
-                const requestedRoles = role.split(',');
                 if (requestedRoles.some(r => !allowedRoles.includes(r))) {
                     return res.status(403).json({ message: `You cannot search for one or more requested roles: ${role}` });
                 }

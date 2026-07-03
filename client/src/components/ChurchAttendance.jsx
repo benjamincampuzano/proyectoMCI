@@ -76,7 +76,11 @@ const ChurchAttendance = (props) => {
 
             const attendanceMap = {};
             data.forEach(att => {
-                attendanceMap[att.userId] = att.status;
+                if (att.guestId) {
+                    attendanceMap[`guest_${att.guestId}`] = att.status;
+                } else if (att.userId) {
+                    attendanceMap[`member_${att.userId}`] = att.status;
+                }
             });
             setAttendances(attendanceMap);
         } catch {
@@ -99,18 +103,18 @@ const ChurchAttendance = (props) => {
         fetchMembers();
     }, [fetchMembers, currentPage, searchTerm, liderDoceFilter, liderCelulaFilter, rolFilter, redFilter]);
 
-    const handleAttendanceChange = (userId, status) => {
+    const handleAttendanceChange = (id, type, status) => {
+        const key = `${type}_${id}`;
         setAttendances(prev => {
-            const currentStatus = prev[userId];
-            // Si hace click en el mismo estado, lo desmarca (vuelve a vacío)
+            const currentStatus = prev[key];
             if (currentStatus === status) {
                 const newState = { ...prev };
-                delete newState[userId];
+                delete newState[key];
                 return newState;
             }
             return {
                 ...prev,
-                [userId]: status
+                [key]: status
             };
         });
     };
@@ -118,10 +122,13 @@ const ChurchAttendance = (props) => {
     const handleSubmit = async () => {
         try {
             setSaving(true);
-            const attendanceData = Object.entries(attendances).map(([userId, status]) => ({
-                userId: parseInt(userId),
-                status
-            }));
+            const attendanceData = Object.entries(attendances).map(([key, status]) => {
+                const [type, id] = key.split('_');
+                if (type === 'guest') {
+                    return { guestId: parseInt(id), status };
+                }
+                return { userId: parseInt(id), status };
+            });
 
             if (attendanceData.length === 0) {
                 toast.error('No hay registros de asistencia para guardar');
@@ -192,9 +199,9 @@ const ChurchAttendance = (props) => {
         let ausentes = 0;
         let virtuales = 0;
 
-        // Contar asistencias de miembros en la página actual
         members.forEach(member => {
-            const status = attendances[member.id];
+            const key = `${member.type}_${member.id}`;
+            const status = attendances[key];
             if (status === 'PRESENTE') presentes++;
             else if (status === 'AUSENTE') ausentes++;
             else if (status === 'VIRTUAL') virtuales++;
@@ -213,10 +220,10 @@ const ChurchAttendance = (props) => {
         );
     }
 
-    const renderActionButtons = (memberId, status) => (
+    const renderActionButtons = (memberId, memberType, status) => (
         <div className="flex flex-wrap justify-center gap-2">
             <button
-                onClick={() => handleAttendanceChange(memberId, 'PRESENTE')}
+                onClick={() => handleAttendanceChange(memberId, memberType, 'PRESENTE')}
                 className={`
                     inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm
                     ${status === 'PRESENTE'
@@ -229,7 +236,7 @@ const ChurchAttendance = (props) => {
                 <span className="md:hidden lg:inline">Presente</span>
             </button>
             <button
-                onClick={() => handleAttendanceChange(memberId, 'VIRTUAL')}
+                onClick={() => handleAttendanceChange(memberId, memberType, 'VIRTUAL')}
                 className={`
                     inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm
                     ${status === 'VIRTUAL'
@@ -242,7 +249,7 @@ const ChurchAttendance = (props) => {
                 <span className="md:hidden lg:inline">Virtual</span>
             </button>
             <button
-                onClick={() => handleAttendanceChange(memberId, 'AUSENTE')}
+                onClick={() => handleAttendanceChange(memberId, memberType, 'AUSENTE')}
                 className={`
                     inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all shadow-sm
                     ${status === 'AUSENTE'
@@ -494,10 +501,17 @@ const ChurchAttendance = (props) => {
 
                 {/* Mobile View (Cards) */}
                 <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
-                    {members.map(member => (
-                        <div key={member.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    {members.map(member => {
+                        const attendanceKey = `${member.type}_${member.id}`;
+                        const isGuest = member.type === 'GUEST';
+                        return (
+                        <div key={attendanceKey} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm shrink-0 border border-blue-200 dark:border-blue-800">
+                                <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border shadow-sm ${
+                                    isGuest
+                                        ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                                        : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                                }`}>
                                     {member.fullName.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="overflow-hidden flex-1">
@@ -505,19 +519,28 @@ const ChurchAttendance = (props) => {
                                         {member.fullName}
                                     </h3>
                                     <div className="flex flex-wrap gap-1 mt-1">
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                                            {member.roles?.join(', ') || member.role || 'NA'}
-                                        </span>
-                                        {member.red && (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
-                                                {getNetworkLabel(member.red)}
+                                        {isGuest ? (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                                INVITADO
                                             </span>
+                                        ) : (
+                                            <>
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                                {member.roles?.join(', ') || member.role || 'NA'}
+                                            </span>
+                                            {member.red && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                                                    {getNetworkLabel(member.red)}
+                                                </span>
+                                            )}
+                                            </>
                                         )}
                                     </div>
                                 </div>
                             </div>
                             
                             {/* Info jerárquica en móvil */}
+                            {!isGuest && (
                             <div className="mb-3 space-y-1">
                                 {member.liderDoceName && (
                                     <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -535,12 +558,14 @@ const ChurchAttendance = (props) => {
                                     </div>
                                 )}
                             </div>
+                            )}
                             
                             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-                                {renderActionButtons(member.id, attendances[member.id])}
+                                {renderActionButtons(member.id, member.type, attendances[attendanceKey])}
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                     {members.length === 0 && (
                         <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                             No se encontraron miembros con esa búsqueda.
@@ -552,7 +577,7 @@ const ChurchAttendance = (props) => {
                 {totalMembers > PAGE_SIZE && (
                     <div className="md:hidden flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
                         <div className="text-xs text-gray-600 dark:text-gray-400">
-                            {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalMembers)} de {totalMembers}
+                            {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalMembers)} de {totalMembers} registros
                         </div>
                         <div className="flex items-center gap-2">
                             <button
@@ -590,11 +615,18 @@ const ChurchAttendance = (props) => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                            {members.map((member) => (
-                                <tr key={member.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors group">
+                            {members.map((member) => {
+                                const attendanceKey = `${member.type}_${member.id}`;
+                                const isGuest = member.type === 'GUEST';
+                                return (
+                                <tr key={attendanceKey} className={`hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors group ${isGuest ? 'bg-amber-50/40 dark:bg-amber-900/10' : ''}`}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm shrink-0 border border-blue-200 dark:border-blue-800 shadow-sm">
+                                            <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border shadow-sm ${
+                                                isGuest
+                                                    ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                                                    : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                                            }`}>
                                                 {member.fullName.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
@@ -609,45 +641,49 @@ const ChurchAttendance = (props) => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="space-y-1.5">
-                                            {/* Rol del miembro */}
-                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                                                {member.roles?.join(', ') || member.role || 'NA'}
-                                            </span>
-                                            
-                                            {/* Red */}
-                                            {member.red && (
-                                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                    <span className="font-medium text-gray-600 dark:text-gray-400">Red:</span> {getNetworkLabel(member.red)}
-                                                </div>
-                                            )}
-                                            
-                                            {/* Líder de 12 */}
-                                            {member.liderDoceName && (
-                                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                    <span className="font-medium text-gray-600 dark:text-gray-400">L12:</span> {member.liderDoceName}
-                                                </div>
-                                            )}
-                                            
-                                            {/* Líder de Célula */}
-                                            {member.liderCelulaName && (
-                                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                    <span className="font-medium text-gray-600 dark:text-gray-400">LC:</span> {member.liderCelulaName}
-                                                </div>
-                                            )}
-                                            
-                                            {/* Celula */}
-                                            {member.cellName && (
-                                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                    <span className="font-medium text-gray-600 dark:text-gray-400">Célula:</span> {member.cellName}
-                                                </div>
+                                            {isGuest ? (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                                    INVITADO
+                                                </span>
+                                            ) : (
+                                                <>
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                                    {member.roles?.join(', ') || member.role || 'NA'}
+                                                </span>
+                                                
+                                                {member.red && (
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        <span className="font-medium text-gray-600 dark:text-gray-400">Red:</span> {getNetworkLabel(member.red)}
+                                                    </div>
+                                                )}
+                                                
+                                                {member.liderDoceName && (
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        <span className="font-medium text-gray-600 dark:text-gray-400">L12:</span> {member.liderDoceName}
+                                                    </div>
+                                                )}
+                                                
+                                                {member.liderCelulaName && (
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        <span className="font-medium text-gray-600 dark:text-gray-400">LC:</span> {member.liderCelulaName}
+                                                    </div>
+                                                )}
+                                                
+                                                {member.cellName && (
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        <span className="font-medium text-gray-600 dark:text-gray-400">Célula:</span> {member.cellName}
+                                                    </div>
+                                                )}
+                                                </>
                                             )}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        {renderActionButtons(member.id, attendances[member.id])}
+                                        {renderActionButtons(member.id, member.type, attendances[attendanceKey])}
                                     </td>
                                 </tr>
-                            ))}
+                                );
+                            })}
                             {members.length === 0 && (
                                 <tr>
                                     <td colSpan="3" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
@@ -663,7 +699,7 @@ const ChurchAttendance = (props) => {
                 {totalMembers > PAGE_SIZE && (
                     <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                            Mostrando {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, totalMembers)} de {totalMembers} miembros
+                            Mostrando {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, totalMembers)} de {totalMembers} registros
                         </div>
                         <div className="flex items-center gap-2">
                             <button

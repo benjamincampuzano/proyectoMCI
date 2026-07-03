@@ -1,4 +1,5 @@
 const prisma = require('../utils/database');
+const { isDescendant } = require('./hierarchyMiddleware');
 
 /**
  * Roles que un coordinador de módulo PUEDE gestionar
@@ -251,7 +252,7 @@ const hasAdminAccessOnModule = (user, moduleName) => {
  * @param {string} moduleName - Nombre del módulo (opcional)
  * @returns {Object} { canManage: boolean, reason?: string }
  */
-const canManageUser = async (requester, targetUserRole, targetUserNetworkId, moduleName) => {
+const canManageUser = async (requester, targetUserRole, targetUserNetworkId, moduleName, targetUserId) => {
     // ADMIN Y PASTOR tienen permisos completos en todos los módulos
     if (requester.roles.includes('ADMIN') || requester.roles.includes('PASTOR')) {
         // Los ADMIN pueden gestionar todos los usuarios, incluyendo otros ADMIN
@@ -303,16 +304,25 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId, mod
             return { canManage: false, reason: `Cannot manage ${targetUserRole} users` };
         }
 
+        // Restringir por red solo si ambos tienen red asignada Y son diferentes
+        // Si las redes no coinciden, verificar jerarquía como fallback
         const requesterNetworkId = await getUserNetworkId(requester.id);
-        if (targetUserNetworkId !== requesterNetworkId) {
-            return { canManage: false, reason: 'Cannot manage users outside your network' };
+        if (targetUserNetworkId && requesterNetworkId && targetUserNetworkId !== requesterNetworkId) {
+            // Si el usuario destino es descendiente en la jerarquía, permitir
+            if (targetUserId) {
+                const inHierarchy = await isDescendant(requester.id, targetUserId);
+                if (inHierarchy) {
+                    return { canManage: true, level: 'lider_doce' };
+                }
+            }
+            return { canManage: false, reason: 'Sin permisos para edicion de usuarios' };
         }
 
         return { canManage: true, level: 'lider_doce' };
     }
 
     //Sin permisos suficientes
-    return { canManage: false, reason: 'Insufficient permissions' };
+    return { canManage: false, reason: 'No tiene los permisos suficiente' };
 };
 
 /**
@@ -337,7 +347,7 @@ const canManageTargetUser = (getTargetUser) => {
             const targetUserRole = targetUser.roles?.[0]?.role?.name || targetUser.role;
             const targetUserNetworkId = targetUser.profile?.network;
 
-            const permission = await canManageUser(req.user, targetUserRole, targetUserNetworkId);
+            const permission = await canManageUser(req.user, targetUserRole, targetUserNetworkId, undefined, targetUserId);
 
             if (!permission.canManage) {
                 return res.status(403).json({

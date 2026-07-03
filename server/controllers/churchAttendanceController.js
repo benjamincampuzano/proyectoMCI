@@ -4,17 +4,32 @@ const { getUserNetwork } = require('../utils/networkUtils');
 // Create or update church attendance for a specific date
 const recordAttendance = async (req, res) => {
     try {
-        const { date, attendances } = req.body; // attendances: [{ userId, status }]
+        const { date, attendances } = req.body; // attendances: [{ userId?, guestId?, status }]
 
         if (!date || !attendances || !Array.isArray(attendances)) {
             return res.status(400).json({ error: 'Date and attendances array required' });
         }
 
-        // ✅ Batch upsert dentro de una transacción para reducir round-trips
         const parsedDate = new Date(date);
         const results = await prisma.$transaction(
-            attendances.map(({ userId, status }) =>
-                prisma.churchAttendance.upsert({
+            attendances.map(({ userId, guestId, status }) => {
+                if (guestId) {
+                    return prisma.churchAttendance.upsert({
+                        where: {
+                            date_guestId: {
+                                date: parsedDate,
+                                guestId: parseInt(guestId)
+                            }
+                        },
+                        update: { status },
+                        create: {
+                            date: parsedDate,
+                            guestId: parseInt(guestId),
+                            status
+                        }
+                    });
+                }
+                return prisma.churchAttendance.upsert({
                     where: {
                         date_userId: {
                             date: parsedDate,
@@ -27,8 +42,8 @@ const recordAttendance = async (req, res) => {
                         userId: parseInt(userId),
                         status
                     }
-                })
-            )
+                });
+            })
         );
 
         res.json({ message: 'Asistencia registrada', count: results.length });
@@ -63,6 +78,13 @@ const getAttendanceByDate = async (req, res) => {
                             include: { role: true }
                         }
                     }
+                },
+                guest: {
+                    select: {
+                        id: true,
+                        name: true,
+                        phone: true
+                    }
                 }
             },
             orderBy: {
@@ -72,18 +94,29 @@ const getAttendanceByDate = async (req, res) => {
             }
         });
 
-        // Format response to flatten structure for frontend if needed, 
-        // or frontend can handle it. Let's keep it close to previous but safe.
-        // Frontend likely expects `user.fullName` and `user.role`.
-        // We can map it.
-        const formattedAttendances = attendances.map(a => ({
-            ...a,
-            user: {
-                ...a.user,
-                fullName: a.user.profile?.fullName || 'Sin Nombre',
-                role: a.user.roles.map(r => r.role.name).join(', ') // Simple join for display
+        const formattedAttendances = attendances.map(a => {
+            if (a.guest) {
+                return {
+                    ...a,
+                    user: null,
+                    guest: {
+                        id: a.guest.id,
+                        fullName: a.guest.name,
+                        email: a.guest.phone,
+                        role: 'INVITADO'
+                    }
+                };
             }
-        }));
+            return {
+                ...a,
+                user: {
+                    ...a.user,
+                    fullName: a.user.profile?.fullName || 'Sin Nombre',
+                    role: a.user.roles.map(r => r.role.name).join(', ')
+                },
+                guest: null
+            };
+        });
 
         res.json(formattedAttendances);
     } catch (error) {
@@ -174,7 +207,43 @@ const getAllMembers = async (req, res) => {
             };
         }
 
-        const [members, total] = await Promise.all([
+        // Build guest where clause based on network permissions
+        let guestWhere = { isDeleted: false };
+
+        if (userRoles.includes('ADMIN')) {
+            // Admin sees all guests
+        } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR') || userRoles.includes('LIDER_CELULA')) {
+            const networkIds = await getUserNetwork(userId);
+            guestWhere.invitedById = { in: [...networkIds, userId] };
+        } else {
+            // Regular members only see guests they invited
+            guestWhere.invitedById = userId;
+        }
+
+        if (searchTerm) {
+            guestWhere.name = {
+                contains: searchTerm,
+                mode: 'insensitive'
+            };
+        }
+
+        if (liderDoceId) {
+            guestWhere = {
+                ...guestWhere,
+                invitedBy: { liderDoceId }
+            };
+        }
+
+        if (redFilter) {
+            guestWhere = {
+                ...guestWhere,
+                invitedBy: {
+                    profile: { network: redFilter }
+                }
+            };
+        }
+
+        const [members, total, guests, guestTotal] = await Promise.all([
             prisma.user.findMany({
                 where,
                 select: {
@@ -184,7 +253,6 @@ const getAllMembers = async (req, res) => {
                     roles: {
                         include: { role: true }
                     },
-                    // Get cell info for leader data
                     cell: {
                         select: {
                             id: true,
@@ -203,7 +271,6 @@ const getAllMembers = async (req, res) => {
                             }
                         }
                     },
-                    // Get hierarchy parents (liderDoce from hierarchy)
                     parents: {
                         where: {
                             role: 'LIDER_DOCE'
@@ -224,12 +291,17 @@ const getAllMembers = async (req, res) => {
                 skip,
                 take: limit
             }),
-            prisma.user.count({ where })
+            prisma.user.count({ where }),
+            prisma.guest.findMany({
+                where: guestWhere,
+                orderBy: { name: 'asc' },
+                skip,
+                take: limit
+            }),
+            prisma.guest.count({ where: guestWhere })
         ]);
 
-        // Format for frontend with hierarchy info
         const formattedMembers = members.map(m => {
-            // Get liderDoce from cell or from hierarchy
             const liderDoceFromCell = m.cell?.liderDoce;
             const liderDoceFromHierarchy = m.parents?.[0]?.parent;
             const liderDoce = liderDoceFromCell || liderDoceFromHierarchy;
@@ -240,27 +312,43 @@ const getAllMembers = async (req, res) => {
                 email: m.email,
                 role: m.roles.map(r => r.role.name).join(', '),
                 roles: m.roles.map(r => r.role.name),
-                // Lider de 12 info
                 liderDoceId: liderDoce?.id || null,
                 liderDoceName: liderDoce?.profile?.fullName || null,
-                // Lider de celula info
                 liderCelulaId: m.cell?.leader?.id || null,
                 liderCelulaName: m.cell?.leader?.profile?.fullName || null,
-                // Red info (from UserProfile)
                 red: m.profile?.network || null,
-                // Cell info
                 cellId: m.cell?.id || null,
-                cellName: m.cell?.name || null
+                cellName: m.cell?.name || null,
+                type: 'MEMBER'
             };
         });
 
+        const formattedGuests = guests.map(g => ({
+            id: g.id,
+            fullName: g.name,
+            email: g.phone,
+            role: 'INVITADO',
+            roles: ['INVITADO'],
+            liderDoceId: null,
+            liderDoceName: null,
+            liderCelulaId: null,
+            liderCelulaName: null,
+            red: null,
+            cellId: null,
+            cellName: null,
+            type: 'GUEST'
+        }));
+
+        const combined = [...formattedMembers, ...formattedGuests];
+        combined.sort((a, b) => a.fullName.localeCompare(b.fullName));
+
         res.json({
-            members: formattedMembers,
+            members: combined,
             pagination: {
                 page,
                 limit,
-                total,
-                totalPages: Math.ceil(total / limit)
+                total: total + guestTotal,
+                totalPages: Math.ceil((total + guestTotal) / limit)
             }
         });
     } catch (error) {
@@ -345,7 +433,10 @@ const deleteAttendanceByDate = async (req, res) => {
             // Leaders can delete their network's attendance
             const networkIds = await getUserNetwork(parseInt(id));
             networkIds.push(parseInt(id));
-            where.userId = { in: networkIds };
+            where.OR = [
+                { userId: { in: networkIds } },
+                { guestId: { not: null } }
+            ];
         } else {
             // Regular users can only delete their own attendance
             where.userId = parseInt(id);

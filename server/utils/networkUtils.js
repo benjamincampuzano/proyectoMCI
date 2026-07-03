@@ -78,8 +78,41 @@ const getLiderDoceName = async (userId) => {
     }
 };
 
+/**
+ * Get all ancestor user IDs for a given user (walk up the hierarchy tree).
+ * @param {number|string} userId
+ * @returns {Promise<number[]>} Array of user IDs
+ */
+const getUserAncestors = async (userId) => {
+    const id = parseInt(userId);
+    if (isNaN(id)) return [];
+
+    try {
+        const ancestors = await prisma.$queryRaw`
+            WITH RECURSIVE hierarchy AS (
+                SELECT "parentId", 1 AS depth, ARRAY["childId"] AS visited
+                FROM "UserHierarchy"
+                WHERE "childId" = ${id}
+                UNION ALL
+                SELECT uh."parentId", h.depth + 1, h.visited || uh."childId"
+                FROM "UserHierarchy" uh
+                INNER JOIN hierarchy h ON uh."childId" = h."parentId"
+                WHERE h.depth < 50
+                  AND NOT uh."parentId" = ANY(h.visited)
+            )
+            SELECT DISTINCT "parentId" FROM hierarchy;
+        `;
+
+        return ancestors.map(a => Number(a.parentId));
+    } catch (error) {
+        console.error('Error in getUserAncestors utils:', error);
+        return [];
+    }
+};
+
 module.exports = {
     getUserNetwork,
+    getUserAncestors,
     getLiderDoceName,
     checkCycle: async (childId, potentialParentId) => {
         // A cycle exists if potentialParentId is already a descendant of childId

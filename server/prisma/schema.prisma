@@ -254,6 +254,7 @@ model Guest {
   registeredBy            User?                   @relation("RegisteredBy", fields: [registeredById], references: [id])
   calls                   GuestCall[]
   visits                  GuestVisit[]
+  churchAttendances       ChurchAttendance[]
 
   @@index([status])
   @@index([createdAt])
@@ -323,17 +324,21 @@ model Cell {
 model ChurchAttendance {
   id        Int              @id @default(autoincrement())
   date      DateTime         @db.Timestamptz(6)
-  userId    Int
+  userId    Int?
+  guestId   Int?
   status    AttendanceStatus @default(PRESENTE)
   createdAt DateTime         @default(now()) @db.Timestamptz(6)
   updatedAt DateTime         @updatedAt @db.Timestamptz(6)
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guest     Guest?           @relation(fields: [guestId], references: [id], onDelete: Cascade)
 
   @@unique([date, userId])
+  @@unique([date, guestId])
   @@index([date])
   @@index([createdAt])
   @@index([status])
   @@index([userId, date])
+  @@index([guestId, date])
 }
 
 model CellAttendance {
