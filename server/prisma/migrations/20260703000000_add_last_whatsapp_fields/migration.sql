@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastWhatsAppDate" TIMESTAMPTZ(6);
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "lastWhatsAppMessage" TEXT;
