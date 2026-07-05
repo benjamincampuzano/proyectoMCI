@@ -56,24 +56,99 @@ const recordCellAttendance = async (req, res) => {
             }
         }
 
-        // Clear existing records for this date+cell so the saved state exactly matches what was submitted
-        await prisma.cellAttendance.deleteMany({
-            where: {
-                date: new Date(date),
-                cellId: parseInt(cellId)
-            }
-        });
+        // Separate USER and GUEST attendances
+        const userAttendances = attendances.filter(a => a.type === 'USER');
+        const guestAttendances = attendances.filter(a => a.type === 'GUEST');
 
-        if (attendances.length > 0) {
-            await prisma.cellAttendance.createMany({
-                data: attendances.map(({ userId, status }) => ({
+        // Validate USER ids
+        if (userAttendances.length > 0) {
+            const userIds = userAttendances.map(a => {
+                const id = parseInt(a.userId);
+                if (isNaN(id)) return null;
+                return id;
+            });
+
+            const validUserIds = userIds.filter(id => id !== null);
+
+            if (validUserIds.length !== userAttendances.length) {
+                return res.status(400).json({ error: 'Invalid userId value in attendances' });
+            }
+
+            const existingUsers = await prisma.user.findMany({
+                where: { id: { in: validUserIds } },
+                select: { id: true }
+            });
+            const existingUserIds = new Set(existingUsers.map(u => u.id));
+            const invalidUserIds = validUserIds.filter(id => !existingUserIds.has(id));
+
+            if (invalidUserIds.length > 0) {
+                return res.status(400).json({
+                    error: 'Some users do not exist',
+                    invalidUserIds
+                });
+            }
+        }
+
+        // Validate GUEST ids
+        if (guestAttendances.length > 0) {
+            const guestIds = guestAttendances.map(a => {
+                const id = parseInt(a.userId);
+                if (isNaN(id)) return null;
+                return id;
+            });
+
+            const validGuestIds = guestIds.filter(id => id !== null);
+
+            if (validGuestIds.length !== guestAttendances.length) {
+                return res.status(400).json({ error: 'Invalid guestId value in attendances' });
+            }
+
+            const existingGuests = await prisma.guest.findMany({
+                where: { id: { in: validGuestIds }, cellId: parseInt(cellId) },
+                select: { id: true }
+            });
+            const existingGuestIds = new Set(existingGuests.map(g => g.id));
+            const invalidGuestIds = validGuestIds.filter(id => !existingGuestIds.has(id));
+
+            if (invalidGuestIds.length > 0) {
+                return res.status(400).json({
+                    error: 'Some guests do not exist or are not assigned to this cell',
+                    invalidGuestIds
+                });
+            }
+        }
+
+        // Use a transaction to atomically clear and re-insert
+        await prisma.$transaction(async (tx) => {
+            await tx.cellAttendance.deleteMany({
+                where: {
+                    date: new Date(date),
+                    cellId: parseInt(cellId)
+                }
+            });
+
+            const createData = [];
+            userAttendances.forEach(({ userId, status }) => {
+                createData.push({
                     date: new Date(date),
                     cellId: parseInt(cellId),
                     userId: parseInt(userId),
                     status
-                }))
+                });
             });
-        }
+            guestAttendances.forEach(({ userId: guestId, status }) => {
+                createData.push({
+                    date: new Date(date),
+                    cellId: parseInt(cellId),
+                    guestId: parseInt(guestId),
+                    status
+                });
+            });
+
+            if (createData.length > 0) {
+                await tx.cellAttendance.createMany({ data: createData });
+            }
+        });
 
         res.json({ message: 'Cell attendance recorded successfully', count: attendances.length });
     } catch (error) {
@@ -139,25 +214,42 @@ const getCellAttendance = async (req, res) => {
                         },
                         roles: { include: { role: true } }
                     }
+                },
+                guest: {
+                    select: {
+                        id: true,
+                        name: true,
+                        phone: true
+                    }
                 }
             },
             orderBy: {
-                user: {
-                    profile: {
-                        fullName: 'asc'
-                    }
-                }
+                id: 'asc'
             }
         });
 
-        // Map roles to simple array for frontend consistency if needed
-        const formattedAttendances = attendances.map(a => ({
-            ...a,
-            user: {
-                ...a.user,
-                roles: a.user.roles.map(r => r.role.name) // transform UserRole[] to string[]
+        const formattedAttendances = attendances.map(a => {
+            if (a.user) {
+                return {
+                    ...a,
+                    userId: a.user.id,
+                    user: {
+                        ...a.user,
+                        roles: a.user.roles.map(r => r.role.name)
+                    }
+                };
             }
-        }));
+            return {
+                ...a,
+                userId: a.guest.id,
+                user: {
+                    id: a.guest.id,
+                    email: a.guest.phone,
+                    profile: { fullName: a.guest.name },
+                    roles: ['INVITADO']
+                }
+            };
+        });
 
         res.json(formattedAttendances);
     } catch (error) {
@@ -208,9 +300,11 @@ const getCells = async (req, res) => {
             where.leaderId = userId;
         } else {
             // Members/Discipulos can only see cells they belong to
-            where.members = {
-                some: { id: userId }
-            };
+            const userData = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { cellId: true }
+            });
+            where.id = userData?.cellId || -1;
         }
 
         const cells = await prisma.cell.findMany({
@@ -255,15 +349,11 @@ const getCells = async (req, res) => {
                         email: true
                     }
                 },
-                members: {
-                    select: { id: true }
-                },
                 guests: {
                     select: { id: true }
                 },
                 _count: {
                     select: {
-                        members: true,
                         guests: true
                     }
                 }
@@ -274,13 +364,32 @@ const getCells = async (req, res) => {
         });
 
         // Flatten nested objects for easier frontend consumption
-        const formattedCells = cells.map(cell => ({
+        let formattedCells = cells.map(cell => ({
             ...cell,
-            members: cell.members.map(m => m.id),
+            members: [],
             leader: cell.leader ? { ...cell.leader, fullName: cell.leader.profile?.fullName } : null,
             host: cell.host ? { ...cell.host, fullName: cell.host.profile?.fullName } : null,
             liderDoce: cell.liderDoce ? { ...cell.liderDoce, fullName: cell.liderDoce.profile?.fullName } : null,
         }));
+
+        // Populate members and counts from User.cellId (the actual relation used)
+        const cellIds = cells.map(c => c.id);
+        if (cellIds.length > 0) {
+            const memberUsers = await prisma.user.findMany({
+                where: { cellId: { in: cellIds }, isDeleted: false },
+                select: { id: true, cellId: true }
+            });
+            const membersByCell = {};
+            memberUsers.forEach(u => {
+                if (!membersByCell[u.cellId]) membersByCell[u.cellId] = [];
+                membersByCell[u.cellId].push(u.id);
+            });
+            formattedCells = formattedCells.map(cell => ({
+                ...cell,
+                members: membersByCell[cell.id] || [],
+                _count: { ...cell._count, members: (membersByCell[cell.id] || []).length }
+            }));
+        }
 
         res.json(formattedCells);
     } catch (error) {
@@ -303,14 +412,6 @@ const getCellMembers = async (req, res) => {
             where: { id: parseInt(cellId) },
             select: {
                 leaderId: true,
-                members: {
-                    select: {
-                        id: true,
-                        profile: { select: { fullName: true } },
-                        email: true,
-                        roles: { include: { role: true } }
-                    }
-                },
                 guests: {
                     select: {
                         id: true,
@@ -325,14 +426,31 @@ const getCellMembers = async (req, res) => {
             return res.status(404).json({ error: 'Cell not found' });
         }
 
-        const isMember = cell.members.some(m => m.id === userId);
+        // Query members via User.cellId (the relation that is actually populated)
+        const cellUsers = await prisma.user.findMany({
+            where: {
+                OR: [
+                    { cellId: parseInt(cellId) },
+                    { ledCells: { some: { id: parseInt(cellId) } } }
+                ],
+                isDeleted: false
+            },
+            select: {
+                id: true,
+                profile: { select: { fullName: true } },
+                email: true,
+                roles: { include: { role: true } }
+            }
+        });
+
+        const isMember = cellUsers.some(m => m.id === userId);
         const isAuthorized = userRoles.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR'].includes(r)) || isEnviarCoordinator;
 
         if (!isAuthorized && cell.leaderId !== userId && !isMember) {
             return res.status(403).json({ error: 'Not authorized to view this cell' });
         }
 
-        const formattedMembers = cell.members.map(m => ({
+        const formattedMembers = cellUsers.map(m => ({
             id: m.id,
             fullName: m.profile?.fullName,
             email: m.email,
@@ -352,13 +470,14 @@ const getCellMembers = async (req, res) => {
         const isDiscipulo = (userRoles.includes('DISCIPULO') || userRoles.includes('MIEMBRO')) &&
             !isAuthorized && cell.leaderId !== userId;
         if (isDiscipulo) {
-            const currentUser = cell.members.find(m => m.id === userId);
+            const currentUser = cellUsers.find(m => m.id === userId);
             if (currentUser) {
                 return res.json([{
                     id: currentUser.id,
                     fullName: currentUser.profile?.fullName,
                     email: currentUser.email,
-                    roles: currentUser.roles.map(r => r.role.name)
+                    roles: currentUser.roles.map(r => r.role.name),
+                    type: 'USER'
                 }]);
             } else {
                 return res.json([]);

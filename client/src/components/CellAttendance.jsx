@@ -240,11 +240,11 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {members.map((member) => {
-                                const status = attendances[member.id]; // undefined, 'PRESENTE', 'AUSENTE'
+{members.map((member) => {
+                        const status = attendances[member.id]; // undefined, 'PRESENTE', 'AUSENTE'
 
-                                return (
-                                    <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        return (
+                            <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                             {member.fullName}
                                         </td>

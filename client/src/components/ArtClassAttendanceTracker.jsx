@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { AsyncSearchSelect, ConfirmDialog } from './ui';
 
-const ArtClassAttendanceTracker = ({ classId, enrollments, onRefresh, onConvert, canModify }) => {
+const ArtClassAttendanceTracker = ({ classId, enrollments, canModify }) => {
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showSessionModal, setShowSessionModal] = useState(false);

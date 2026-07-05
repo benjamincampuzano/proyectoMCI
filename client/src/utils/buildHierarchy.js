@@ -40,7 +40,7 @@ export function buildCustomHierarchy(network, currentUser) {
     return null;
   }
 
-  function findPastor(node, root) {
+  function findPastor(node) {
     if (!node) return null;
     
     if (Array.isArray(node.pastores) && node.pastores.length > 0) {
@@ -50,7 +50,7 @@ export function buildCustomHierarchy(network, currentUser) {
     return null;
   }
   
-  function findLiderDoce(node, root) {
+  function findLiderDoce(node) {
     if (!node) return null;
     
     if (Array.isArray(node.lideresDoce) && node.lideresDoce.length > 0) {
@@ -93,30 +93,6 @@ export function buildCustomHierarchy(network, currentUser) {
     return path && path.length > 0 ? path[0] : null;
   }
 
-  function findLideresCelulaUnderLiderDoce(liderDoceNode) {
-    if (!liderDoceNode) return [];
-    
-    const lideresCelula = [];
-    
-    function searchInTree(node) {
-      if (!node) return;
-      
-      const isLiderCelula = node.partners 
-        ? node.partners.some(p => p.roles?.includes(ROLES.LIDER_CELULA))
-        : node.roles?.includes(ROLES.LIDER_CELULA);
-      
-      if (isLiderCelula) {
-        lideresCelula.push(node);
-      }
-      
-      for (const disciple of node.disciples || []) {
-        searchInTree(disciple);
-      }
-    }
-    
-    searchInTree(liderDoceNode);
-    return lideresCelula;
-  }
 
   function findDisciples(node) {
     if (!node) return [];
@@ -133,15 +109,16 @@ export function buildCustomHierarchy(network, currentUser) {
   if (!userNode) return network;
 
   switch (userRole) {
-    case ROLES.PASTOR:
+    case ROLES.PASTOR: {
       const pastorNode = findNodeById(network, userId);
       if (pastorNode) {
         return pastorNode;
       }
       return network;
+    }
       
-    case ROLES.LIDER_DOCE:
-      const pastor = findPastor(userNode, network);
+    case ROLES.LIDER_DOCE: {
+      const pastor = findPastor(userNode);
       const disciples = findDisciples(userNode);
       
       const customRoot = {
@@ -152,10 +129,11 @@ export function buildCustomHierarchy(network, currentUser) {
         ]
       };
       return customRoot;
+    }
       
-    case ROLES.LIDER_CELULA:
-      const pastorLC = findPastor(userNode, network);
-      const liderDoceLC = findLiderDoce(userNode, network);
+    case ROLES.LIDER_CELULA: {
+      const pastorLC = findPastor(userNode);
+      const liderDoceLC = findLiderDoce(userNode);
       const disciplesLC = findDisciples(userNode);
       
       const customRootLC = {
@@ -166,10 +144,11 @@ export function buildCustomHierarchy(network, currentUser) {
         disciples: disciplesLC
       };
       return customRootLC;
+    }
       
-    case ROLES.DISCIPULO:
-      const pastorD = findPastor(userNode, network);
-      const liderDoceD = findLiderDoce(userNode, network);
+    case ROLES.DISCIPULO: {
+      const pastorD = findPastor(userNode);
+      const liderDoceD = findLiderDoce(userNode);
       const liderCelulaD = findLiderCelula(userNode, network);
       
       const customRootD = {
@@ -180,6 +159,7 @@ export function buildCustomHierarchy(network, currentUser) {
         disciples: []
       };
       return customRootD;
+    }
       
     default:
       return network;

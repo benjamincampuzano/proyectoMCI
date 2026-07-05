@@ -28,14 +28,14 @@ const authenticate = (req, res, next) => {
 // Middleware para verificar si el usuario es administrador
 const isAdmin = (req, res, next) => {
     if (!req.user) {
-        return res.status(401).json({ message: 'Authentication required' });
+        return res.status(401).json({ message: 'Se requiere autenticación' });
     }
 
     const adminRoles = ['ADMIN'];
     const hasAdminRole = req.user.roles.some(role => adminRoles.includes(role));
 
     if (!hasAdminRole) {
-        return res.status(403).json({ message: 'Access denied. Admin or leadership privileges required.' });
+        return res.status(403).json({ message: 'Acceso denegado solo el Admin o lider puede realizar esta acción' });
     }
 
     next();
@@ -45,7 +45,7 @@ const isAdmin = (req, res, next) => {
 const authorize = (allowedRoles = []) => {
     return (req, res, next) => {
         if (!req.user) {
-            return res.status(401).json({ message: 'Authentication required' });
+            return res.status(401).json({ message: 'Se requiere autenticación' });
         }
 
         const hasAuthorizedRole = allowedRoles.length === 0 || req.user.roles.some(role => allowedRoles.includes(role));

@@ -48,20 +48,11 @@ const AttendanceTracker = () => {
             });
             toast.success('Asistencia actualizada');
             fetchClassData(selectedClassId); // refresh data
-        } catch (error) {
+        } catch (_error) {
             toast.error('Error al actualizar asistencia');
         }
     };
 
-    const getAttendanceStatus = (enrollment, classNumber) => {
-        // En schema.prisma, relations => enrollment.attendances (artAttendance)
-        // Check if there is a record for this classNumber and if attended is true
-        // But the current API doesn't populate attendances inside `arts/classes/:id` enrollment...
-        // Wait, the API for `/arts/classes/:id` doesn't include `attendances` in `enrollments`.
-        // Let's assume it does (we can update the controller if needed, but for now fallback).
-        const record = enrollment.attendances?.find(a => a.classNumber === classNumber);
-        return record ? record.attended : false;
-    };
 
     return (
         <Card title="Asistencia (8 Sesiones)">

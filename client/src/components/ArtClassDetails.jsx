@@ -11,7 +11,7 @@ import { DATA_POLICY_URL } from '../constants/policies';
 import ConfirmationModal from './ConfirmationModal';
 
 const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
-    const { user, isAdmin, hasAnyRole, isCoordinator } = useAuth();
+    const { user, hasAnyRole, isCoordinator } = useAuth();
     
     const [activeTab, setActiveTab] = useState('general'); // general | attendance | report
     const [reportData, setReportData] = useState([]);
@@ -163,7 +163,6 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const guestId = selectedEnrollment?.guest?.id;
 
             if (!guestId) {

@@ -1,5 +1,5 @@
 import { Eye, EyeClosed, MapPin } from '@phosphor-icons/react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { AsyncSearchSelect } from '../ui';
 import api from '../../utils/api';
@@ -14,6 +14,7 @@ const UserFormFields = ({
     lideresCelula,
     users = [],
     isAdmin,
+    currentUser,
     showPassword,
     setShowPassword,
     passwordErrors,
@@ -24,6 +25,7 @@ const UserFormFields = ({
     relatedUsersCache = {},
     fetchRelatedUsers
 }) => {
+    const autoFilledRole = useRef(null);
     // Fetch related users when editing to avoid "Cargando..." issue
     useEffect(() => {
         if (mode === 'edit' && fetchRelatedUsers) {
@@ -60,6 +62,57 @@ const UserFormFields = ({
             }
         }
     }, [mode, formData.spouseId, formData.pastorIds, formData.liderDoceIds, formData.liderCelulaIds, fetchRelatedUsers]);
+
+    // Auto-fill hierarchy when a LIDER_DOCE creates a DISCIPULO or LIDER_CELULA
+    useEffect(() => {
+        if (mode !== 'create') return;
+        if (!currentUser) return;
+        if (!currentUser.roles?.includes('LIDER_DOCE')) return;
+        if (autoFilledRole.current === formData.role) return;
+
+        if (formData.role === 'DISCIPULO') {
+            const newLiderDoceIds = [...(formData.liderDoceIds || [])];
+            const newLiderDoceSpouseIds = [...(formData.liderDoceSpouseIds || [])];
+
+            if (!newLiderDoceIds[0]) {
+                newLiderDoceIds[0] = currentUser.id?.toString() || currentUser.id;
+                newLiderDoceSpouseIds[0] = currentUser.spouseId?.toString() || '';
+
+                if (currentUser.spouseId) {
+                    newLiderDoceIds[1] = currentUser.spouseId?.toString() || currentUser.spouseId;
+                    newLiderDoceSpouseIds[1] = (currentUser.id?.toString() || currentUser.id);
+                }
+
+                setFormData(prev => ({ ...prev, liderDoceIds: newLiderDoceIds, liderDoceSpouseIds: newLiderDoceSpouseIds }));
+                autoFilledRole.current = 'DISCIPULO';
+            }
+        }
+
+        if (formData.role === 'LIDER_CELULA') {
+            const myPastorIds = currentUser.pastorIds || [];
+            const myPastorSpouseIds = currentUser.pastorSpouseIds || [];
+
+            if (myPastorIds.length > 0) {
+                const newPastorIds = [...(formData.pastorIds || [])];
+                const newPastorSpouseIds = [...(formData.pastorSpouseIds || [])];
+
+                if (!newPastorIds[0]) {
+                    newPastorIds[0] = myPastorIds[0]?.toString() || myPastorIds[0];
+                    newPastorSpouseIds[0] = myPastorSpouseIds[0]?.toString() || '';
+
+                    if (myPastorSpouseIds[0]) {
+                        newPastorIds[1] = myPastorSpouseIds[0]?.toString() || myPastorSpouseIds[0];
+                        newPastorSpouseIds[1] = (myPastorIds[0]?.toString() || myPastorIds[0]);
+                    }
+
+                    setFormData(prev => ({ ...prev, pastorIds: newPastorIds, pastorSpouseIds: newPastorSpouseIds }));
+                    autoFilledRole.current = 'LIDER_CELULA';
+                }
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.role, mode, currentUser, setFormData]);
+
     const inputGroup = (label, children, required = false) => (
         <div className="space-y-1.5 group">
             <label className="text-[11px] weight-700 text-[var(--ln-text-secondary)] uppercase tracking-wider flex items-center gap-1.5 px-1 group-focus-within:text-[var(--ln-brand-indigo)] transition-all">
@@ -529,6 +582,7 @@ UserFormFields.propTypes = {
     lideresCelula: PropTypes.array.isRequired,
     users: PropTypes.array,
     isAdmin: PropTypes.bool.isRequired,
+    currentUser: PropTypes.object,
     showPassword: PropTypes.bool,
     setShowPassword: PropTypes.func,
     passwordErrors: PropTypes.array,

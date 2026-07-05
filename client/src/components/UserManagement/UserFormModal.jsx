@@ -19,6 +19,7 @@ const UserFormModal = ({
     lideresCelula,
     users,
     isAdmin,
+    currentUser,
     validatePasswordRealTime,
     calculateAge,
     getAssignableRoles,
@@ -60,6 +61,7 @@ const UserFormModal = ({
                         lideresCelula={lideresCelula}
                         users={users}
                         isAdmin={isAdmin}
+                        currentUser={currentUser}
                         showPassword={showPassword}
                         setShowPassword={setShowPassword}
                         passwordErrors={passwordErrors}
@@ -115,6 +117,7 @@ UserFormModal.propTypes = {
     lideresCelula: PropTypes.array.isRequired,
     users: PropTypes.array,
     isAdmin: PropTypes.bool.isRequired,
+    currentUser: PropTypes.object,
     validatePasswordRealTime: PropTypes.func.isRequired,
     calculateAge: PropTypes.func.isRequired,
     getAssignableRoles: PropTypes.func,

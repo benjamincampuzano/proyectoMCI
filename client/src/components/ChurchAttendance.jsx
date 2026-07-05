@@ -77,9 +77,9 @@ const ChurchAttendance = (props) => {
             const attendanceMap = {};
             data.forEach(att => {
                 if (att.guestId) {
-                    attendanceMap[`guest_${att.guestId}`] = att.status;
+                    attendanceMap[`GUEST_${att.guestId}`] = att.status;
                 } else if (att.userId) {
-                    attendanceMap[`member_${att.userId}`] = att.status;
+                    attendanceMap[`MEMBER_${att.userId}`] = att.status;
                 }
             });
             setAttendances(attendanceMap);
@@ -125,7 +125,7 @@ const ChurchAttendance = (props) => {
             setSaving(true);
             const attendanceData = Object.entries(attendances).map(([key, status]) => {
                 const [type, id] = key.split('_');
-                if (type === 'guest') {
+                if (type === 'GUEST') {
                     return { guestId: parseInt(id), status };
                 }
                 return { userId: parseInt(id), status };

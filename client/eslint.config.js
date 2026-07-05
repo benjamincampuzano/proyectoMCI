@@ -26,4 +26,31 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    files: ['tests/**/*.{js,jsx}', 'tests/*.{js,jsx}', '**/*.cy.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.mocha,
+        ...globals.jest,
+        cy: 'readonly',
+        Cypress: 'readonly',
+        describe: 'readonly',
+        context: 'readonly',
+        it: 'readonly',
+        before: 'readonly',
+        beforeEach: 'readonly',
+        after: 'readonly',
+        afterEach: 'readonly',
+        expect: 'readonly',
+        assert: 'readonly',
+        global: 'readonly',
+        jest: 'readonly',
+        test: 'readonly',
+      },
+    },
+    rules: {
+      'no-unused-vars': 'off',
+    },
+  },
 ])

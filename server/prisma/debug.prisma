@@ -52,17 +52,21 @@ model CellAttendance {
   id        Int              @id @default(autoincrement())
   date      DateTime         @db.Timestamptz(6)
   cellId    Int
-  userId    Int
+  userId    Int?
+  guestId   Int?
   status    AttendanceStatus @default(PRESENTE)
   createdAt DateTime         @default(now()) @db.Timestamptz(6)
   updatedAt DateTime         @db.Timestamptz(6)
   Cell      Cell             @relation(fields: [cellId], references: [id])
-  User      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Guest     Guest?           @relation(fields: [guestId], references: [id], onDelete: Cascade)
 
   @@unique([date, cellId, userId])
+  @@unique([date, cellId, guestId])
   @@index([createdAt])
   @@index([date])
   @@index([status])
+  @@index([cellId, date])
 }
 
 model ChurchAttendance {

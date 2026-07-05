@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import TabNavigator from '../components/TabNavigator';
 import ChurchAttendance from '../components/ChurchAttendance';
 import ChurchAttendanceChart from '../components/ChurchAttendanceChart';
+import DiscipleTracking from '../components/DiscipleTracking';
 import { ROLE_GROUPS, ROLES } from '../constants/roles';
 import { PageHeader, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -53,6 +54,18 @@ const Consolidar = () => {
               return isLoggedIn || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
           } },
         {
+            id: 'disciple-tracking',
+            label: 'Seguimiento de Discípulos',
+            component: DiscipleTracking,
+            customCheck: () => {
+                const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_VIEW_STATS);
+                const isModuleCoord = isCoordinator('consolidar');
+                const isModuleSubCoord = isSubCoordinator('consolidar');
+                const isModuleTreasurer = isTreasurer('consolidar');
+                return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
+            }
+        },
+        {
             id: 'stats',
             label: 'Estadísticas de Asistencia',
             component: ChurchAttendanceChart,
@@ -63,7 +76,7 @@ const Consolidar = () => {
                 const isModuleTreasurer = isTreasurer('consolidar');
                 return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
             }
-        }
+        }        
     ];
 
         const handleAttendanceSaveSuccess = () => {

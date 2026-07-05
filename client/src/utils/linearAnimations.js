@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * Linear Animation Utilities - Transiciones consistentes
  * Utilidades para animaciones con timing functions y clases predefinidas
@@ -208,7 +210,7 @@ export const useAnimation = (animation, dependencies = []) => {
       cleanup();
       setIsAnimating(false);
     };
-  }, dependencies);
+  }, [animation, ...dependencies]);
   
   return { elementRef, isAnimating };
 };

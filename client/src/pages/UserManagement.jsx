@@ -226,6 +226,7 @@ const UserManagement = () => {
         lideresCelula,
         users,
         isAdmin,
+        currentUser,
         validatePasswordRealTime,
         calculateAge,
         getAssignableRoles,

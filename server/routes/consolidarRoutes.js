@@ -27,6 +27,7 @@ router.get('/stats/general', consolidarStatsController.getGeneralStats);
 router.get('/stats/church-attendance-leaders', consolidarStatsController.getChurchAttendanceLeadersStats);
 router.get('/stats/seminar-by-leader', consolidarStatsController.getSeminarStatsByLeader);
 router.get('/stats/guest-tracking', guestTrackingController.getGuestTrackingStats);
+router.get('/stats/disciple-users', consolidarStatsController.getDiscipleUsers);
 
 // Seminar Module Routes
 router.get('/seminar/modules', seminarController.getAllModules);

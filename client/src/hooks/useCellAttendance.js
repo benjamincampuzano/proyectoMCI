@@ -108,10 +108,14 @@ const useCellAttendance = () => {
     const saveAttendance = useCallback(async () => {
         if (!selectedCell) return { success: false, message: 'Célula no seleccionada' };
 
-        const attendanceData = Object.entries(attendances).map(([userId, status]) => ({
-            userId: parseInt(userId),
-            status
-        }));
+        const memberMap = new Map(members.map(m => [m.id, m]));
+        const attendanceData = Object.entries(attendances)
+            .filter(([userId]) => memberMap.has(parseInt(userId)))
+            .map(([userId, status]) => ({
+                userId: parseInt(userId),
+                status,
+                type: memberMap.get(parseInt(userId))?.type || 'USER'
+            }));
 
         try {
             setSaving(true);
@@ -128,7 +132,7 @@ const useCellAttendance = () => {
         } finally {
             setSaving(false);
         }
-    }, [attendances, date, selectedCell]);
+    }, [attendances, date, selectedCell, members]);
 
     return {
         date,

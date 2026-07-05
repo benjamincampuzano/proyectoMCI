@@ -912,7 +912,7 @@ const GuestTracking = ({ refreshTrigger }) => {
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Elige el tipo de mensaje</label>
+                                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Elige el tipo de mensaje</label>
                                 <select
                                     value={whatsappData.stage}
                                     onChange={(e) => handleWhatsappStageChange(e.target.value)}
@@ -928,7 +928,7 @@ const GuestTracking = ({ refreshTrigger }) => {
 
                             {whatsappData.stage && (
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Plantilla</label>
+                                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plantilla</label>
                                     <div className="flex gap-2">
                                         {Object.keys(WHATSAPP_TEMPLATES[whatsappData.stage]).map((key) => (
                                             <button
@@ -948,7 +948,7 @@ const GuestTracking = ({ refreshTrigger }) => {
 
                             {whatsappData.templateKey && (
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex justify-between">
+                                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex justify-between">
                                         <span>Previsualización (Puedes editarlo)</span>
                                     </label>
                                     <textarea

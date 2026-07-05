@@ -2,6 +2,55 @@ const { Prisma } = require('../generated/prisma/client');
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 
+const formatUser = (user) => {
+    if (!user) return null;
+
+    let pastorId = null;
+    let liderDoceId = null;
+    let liderCelulaId = null;
+    let pastorName = null;
+    let liderDoceName = null;
+
+    const parents = user.parents || [];
+    if (parents.length > 0) {
+        const pastorParent = parents.find(p => p.role === 'PASTOR');
+        const liderDoceParent = parents.find(p => p.role === 'LIDER_DOCE');
+        const liderCelulaParent = parents.find(p => p.role === 'LIDER_CELULA');
+
+        pastorId = pastorParent?.parentId || null;
+        liderDoceId = liderDoceParent?.parentId || null;
+        liderCelulaId = liderCelulaParent?.parentId || null;
+        pastorName = pastorParent?.parent?.profile?.fullName || null;
+        liderDoceName = liderDoceParent?.parent?.profile?.fullName || null;
+    }
+
+    return {
+        ...(user.profile || {}),
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        isActive: user.isActive,
+        roles: user.roles ? user.roles.map(r => r.role.name) : [],
+        pastorId,
+        liderDoceId,
+        liderCelulaId,
+        pastorName,
+        liderDoceName,
+        cellId: user.cellId,
+        cell: user.cell ? { id: user.cell.id, name: user.cell.name } : null,
+        lastWhatsAppDate: user.lastWhatsAppDate,
+        lastWhatsAppMessage: user.lastWhatsAppMessage,
+        spouseId: user.spouseId,
+        hierarchy: parents.map(p => ({
+            parentId: p.parentId,
+            parentName: p.parent?.profile?.fullName || '(sin nombre)',
+            role: p.role
+        })),
+        churchAttendances: user.churchAttendances || [],
+        cellAttendances: user.cellAttendances || [],
+    };
+};
+
 function parseMonthRange(monthValue) {
     const now = new Date();
     let year = now.getFullYear();
@@ -484,4 +533,103 @@ const getSeminarStatsByLeader = async (req, res) => {
     }
 };
 
-module.exports = { getGeneralStats, getChurchAttendanceLeadersStats, getSeminarStatsByLeader };
+const getDiscipleUsers = async (req, res) => {
+    try {
+        const { page = 1, limit = 15, search, role, liderDoceId } = req.query;
+        const pageNum = Math.max(1, parseInt(page));
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+        const skip = (pageNum - 1) * limitNum;
+
+        const scope = await getReportScope(req);
+        const scopeIds = scope.userIds;
+        const scoped = Array.isArray(scopeIds) && scopeIds.length > 0;
+
+        // Determine which roles to filter
+        let targetRoles = ['DISCIPULO', 'LIDER_CELULA'];
+        if (role) {
+            targetRoles = role.split(',').map(r => r.trim()).filter(Boolean);
+        }
+
+        const whereClause = {
+            isDeleted: false,
+            roles: {
+                some: {
+                    role: { name: { in: targetRoles } }
+                }
+            },
+            ...(scoped ? { id: { in: scopeIds } } : {}),
+        };
+
+        // Search filter
+        if (search && search.length >= 2) {
+            whereClause.OR = [
+                { email: { contains: search, mode: 'insensitive' } },
+                { profile: { fullName: { contains: search, mode: 'insensitive' } } },
+            ];
+        }
+
+        // Filter by LIDER_DOCE network
+        if (liderDoceId) {
+            const liderId = parseInt(liderDoceId);
+            if (!isNaN(liderId)) {
+                const networkIds = await getUserNetwork(liderId);
+                networkIds.push(liderId);
+                whereClause.parents = {
+                    some: {
+                        parentId: { in: networkIds },
+                        role: { in: ['LIDER_DOCE', 'LIDER_CELULA', 'PASTOR'] }
+                    }
+                };
+            }
+        }
+
+        const [total, users] = await Promise.all([
+            prisma.user.count({ where: whereClause }),
+            prisma.user.findMany({
+                where: whereClause,
+                skip,
+                take: limitNum,
+                orderBy: { profile: { fullName: 'asc' } },
+                include: {
+                    profile: true,
+                    roles: { include: { role: true } },
+                    parents: {
+                        include: {
+                            parent: { include: { profile: true } }
+                        }
+                    },
+                    cell: { select: { id: true, name: true } },
+                    churchAttendances: {
+                        where: { status: 'PRESENTE' },
+                        orderBy: { date: 'desc' },
+                        take: 5,
+                        select: { id: true, date: true }
+                    },
+                    cellAttendances: {
+                        where: { status: 'PRESENTE' },
+                        orderBy: { date: 'desc' },
+                        take: 5,
+                        select: { id: true, date: true }
+                    },
+                },
+            }),
+        ]);
+
+        const totalPages = Math.ceil(total / limitNum);
+
+        res.json({
+            users: users.map(formatUser),
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages,
+            },
+        });
+    } catch (error) {
+        console.error('Error fetching disciple users:', error);
+        res.status(500).json({ error: 'Error fetching disciple users: ' + error.message });
+    }
+};
+
+module.exports = { getGeneralStats, getChurchAttendanceLeadersStats, getSeminarStatsByLeader, getDiscipleUsers };

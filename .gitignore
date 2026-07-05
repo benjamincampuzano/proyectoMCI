@@ -161,3 +161,6 @@ Guia_Filtros.md
 server/prisma/schema.prisma.bak
 CLAUDE.md
 CLAUDE.md
+client/eslint.config.js
+client/lint-output.txt
+client/eslint.config.js
