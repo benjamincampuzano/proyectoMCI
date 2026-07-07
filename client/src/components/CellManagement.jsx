@@ -989,26 +989,46 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Líder de la Célula <span className="text-red-400">*</span>
                                             </label>
-                                                <AsyncSearchSelect
-                                                    fetchItems={(term) => api.get('/users/search', { params: { search: term, role: ['LIDER_DOCE', 'LIDER_CELULA'] } }).then(res => res.data)}
-                                                    selectedValue={selectedLeader}
-                                                    onSelect={(user) => {
-                                                        setFormData({ ...formData, leaderId: user?.id || '' });
-                                                        setSelectedLeader(user);
-                                                    }}
-                                                    placeholder="Seleccionar Líder"
-                                                    labelKey="fullName"
-                                                />
-                                            </div>
+                                            <AsyncSearchSelect
+                                                fetchItems={async (term) => {
+                                                    const liderDoceId = formData.liderDoceId;
+                                                    const params = {};
+                                                    if (liderDoceId) params.liderDoceId = liderDoceId;
+                                                    const res = await api.get('/enviar/eligible-leaders', { params });
+                                                    const data = res.data || [];
+                                                    if (!term) return data;
+                                                    return data.filter(l =>
+                                                        l.fullName?.toLowerCase().includes(term.toLowerCase()) ||
+                                                        (l.spouseName && l.spouseName.toLowerCase().includes(term.toLowerCase()))
+                                                    );
+                                                }}
+                                                selectedValue={selectedLeader}
+                                                onSelect={(user) => {
+                                                    setFormData({ ...formData, leaderId: user?.id || '' });
+                                                    setSelectedLeader(user);
+                                                }}
+                                                placeholder="Seleccionar Líder"
+                                                labelKey="fullName"
+                                            />
+                                        </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-2">
                                                 Anfitrión
                                             </label>
                                             <AsyncSearchSelect
-                                                fetchItems={(term) => {
-                                                    // Búsqueda de anfitriones (pueden ser discípulos o líderes)
-                                                    return api.get('/users/search', { params: { search: term } }).then(res => res.data);
+                                                fetchItems={async (term) => {
+                                                    const liderDoceId = formData.liderDoceId;
+                                                    if (!liderDoceId) {
+                                                        const res = await api.get('/users/search', { params: { search: term } });
+                                                        return res.data || [];
+                                                    }
+                                                    const res = await api.get('/enviar/eligible-hosts', { params: { liderDoceId } });
+                                                    const data = res.data || [];
+                                                    if (!term) return data;
+                                                    return data.filter(h =>
+                                                        h.fullName?.toLowerCase().includes(term.toLowerCase())
+                                                    );
                                                 }}
                                                 selectedValue={selectedHost}
                                                 onSelect={(user) => {
