@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import useUserManagement from '../hooks/useUserManagement';
 import { useAuth } from '../context/AuthContext';
-import { Users, UserPlus, Download, Shield, UserList, WhatsappLogo, X } from '@phosphor-icons/react';
+import { Users, UserPlus, Download, Upload, Shield, UserList, WhatsappLogo, X } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { getWhatsAppPhone } from '../utils/phone';
@@ -12,6 +12,7 @@ import UserFormModal from '../components/UserManagement/UserFormModal';
 import PasswordResetModal from '../components/UserManagement/PasswordResetModal';
 import ErrorModal from '../components/ErrorModal';
 import CoordinatorManagement from '../components/UserManagement/CoordinatorManagement';
+import BulkImportModal from '../components/BulkImportModal';
 
 const VALID_ROLES = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'];
 
@@ -53,6 +54,7 @@ const TabButton = ({ active, onClick, icon: Icon, label, activeColor }) => (
 
 const UserManagement = () => {
     const [activeTab, setActiveTab] = useState('users');
+    const [showBulkImport, setShowBulkImport] = useState(false);
     const [whatsappUser, setWhatsappUser] = useState(null);
     const [whatsappData, setWhatsappData] = useState({
         stage: '',
@@ -249,14 +251,24 @@ const UserManagement = () => {
                 action={
                     <div className="flex gap-3">
                         {isAdmin && (
-                            <Button
-                                onClick={exportToExcel}
-                                icon={Download}
-                                variant="secondary"
-                                className="shadow-lg"
-                            >
-                                Exportar
-                            </Button>
+                            <>
+                                <Button
+                                    onClick={exportToExcel}
+                                    icon={Download}
+                                    variant="secondary"
+                                    className="shadow-lg"
+                                >
+                                    Exportar
+                                </Button>
+                                <Button
+                                    onClick={() => setShowBulkImport(true)}
+                                    icon={Upload}
+                                    variant="secondary"
+                                    className="shadow-lg"
+                                >
+                                    Importar
+                                </Button>
+                            </>
                         )}
                         {canCreateUsers && (
                             <Button
@@ -398,6 +410,14 @@ const UserManagement = () => {
                 title={errorDetails.title}
                 message={errorDetails.message}
                 type={errorDetails.type}
+            />
+
+            <BulkImportModal
+                isOpen={showBulkImport}
+                onClose={() => {
+                    setShowBulkImport(false);
+                    fetchUsers();
+                }}
             />
 
             {whatsappUser && (

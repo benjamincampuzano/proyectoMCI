@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const kidsClassPhotosController = require('../controllers/kidsClassPhotosController');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, authorize, checkCoordinatorStatus } = require('../middleware/auth');
 const { hasAdminAccessOnModule } = require('../middleware/coordinatorAuth');
 
 // Protect all routes with authentication
 router.use(authenticate);
+router.use(checkCoordinatorStatus);
 
 const authorizeKidsModuleAccess = (req, res, next) => {
     if (hasAdminAccessOnModule(req.user, 'kids')) {

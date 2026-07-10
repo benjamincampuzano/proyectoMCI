@@ -195,13 +195,14 @@ const GuestList = ({ refreshTrigger }) => {
     }, [activeModal, updateGuest, setError]);
 
     const getStatusBadgeColor = (status) => {
+        // Token-based status pills: neutral translúcido, salvo GANADO (success Linear)
         const colors = {
-            NUEVO: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-            CONTACTADO: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-            CONSOLIDADO: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-            GANADO: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+            NUEVO: 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-secondary)] border border-[var(--ln-border-subtle)]',
+            CONTACTADO: 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-secondary)] border border-[var(--ln-border-subtle)]',
+            CONSOLIDADO: 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-secondary)] border border-[var(--ln-border-subtle)]',
+            GANADO: 'bg-[var(--ln-emerald)]/15 text-[var(--ln-success)] border border-[var(--ln-emerald)]/30',
         };
-        return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+        return colors[status] || 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-tertiary)] border border-[var(--ln-border-subtle)]';
     };
 
     const getStatusLabel = (status) => {
@@ -323,22 +324,22 @@ const GuestList = ({ refreshTrigger }) => {
     }, [fetchAllGuests, calculateAge, getStatusLabel]);
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold text-[#1d1d1f] dark:text-white mb-6">Lista de Invitados</h2>
+        <div className="bg-[var(--ln-bg-panel)] border border-[var(--ln-border-subtle)] rounded-xl p-6 transition-colors">
+            <h2 className="text-2xl font-[590] text-[var(--ln-text-primary)] tracking-[-0.288px] mb-6">Lista de Invitados</h2>
 
             {error && (
-                <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded mb-4">
+                <div className="bg-red-500/10 border border-red-500/30 text-[var(--ln-text-primary)] px-4 py-3 rounded-lg mb-4 text-sm">
                     {error}
                 </div>
             )}
 
             {/* Sección de Filtros */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="bg-[var(--ln-bg-panel)] border border-[var(--ln-border-subtle)] rounded-xl overflow-hidden mb-6 transition-colors">
+                <div className="flex items-center justify-between p-4 border-b border-[var(--ln-border-subtle)]">
                     <div className="flex items-center gap-3">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Filtros</h3>
+                        <h3 className="text-sm font-[510] text-[var(--ln-text-primary)] tracking-tight">Filtros</h3>
                         {activeAdvancedCount > 0 && (
-                            <span className="px-2 py-0.5 rounded-full bg-blue-500 text-white text-xs font-medium">
+                            <span className="px-2 py-0.5 rounded-full bg-[var(--ln-brand-indigo)]/15 text-[var(--ln-accent-violet)] text-xs font-[510]">
                                 {activeAdvancedCount}
                             </span>
                         )}
@@ -348,17 +349,17 @@ const GuestList = ({ refreshTrigger }) => {
                         {hasAdvancedFilters && (
                             <button
                                 onClick={clearAdvancedFilters}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-[510] text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] transition-colors"
                             >
                                 <X size={14} /> Limpiar
                             </button>
                         )}
                         <button
                             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-[510] transition-all ${
                                 hasAdvancedFilters
-                                    ? 'bg-blue-500 text-white shadow-sm'
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
+                                    : 'bg-[var(--ln-btn-ghost)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] border border-[var(--ln-border-subtle)]'
                             }`}
                         >
                             <Funnel size={16} weight={showAdvancedFilters ? "fill" : "bold"} />
@@ -378,7 +379,7 @@ const GuestList = ({ refreshTrigger }) => {
                         {/* Fila 1: Búsqueda y Estado */}
                         <div className="flex flex-wrap gap-4 items-end">
                             <div className="flex-[2] min-w-[200px]">
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                                <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Buscar por nombre
                                 </label>
                                 <div className="relative">
@@ -391,7 +392,7 @@ const GuestList = ({ refreshTrigger }) => {
                                         }}
                                         onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                                         placeholder="Escribe un nombre..."
-                                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                        className="w-full px-3.5 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-sm text-[var(--ln-text-primary)] placeholder:text-[var(--ln-text-tertiary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all"
                                     />
                                     {searchTerm && (
                                         <button
@@ -399,7 +400,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                 setSearchTerm('');
                                                 setCurrentPage(1);
                                             }}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] transition-colors"
                                         >
                                             <X size={14} />
                                         </button>
@@ -408,7 +409,7 @@ const GuestList = ({ refreshTrigger }) => {
                             </div>
 
                             <div className="flex-1 min-w-[160px]">
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                                <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Estado
                                 </label>
                                 <select
@@ -417,7 +418,7 @@ const GuestList = ({ refreshTrigger }) => {
                                         setStatusFilter(e.target.value);
                                         setCurrentPage(1);
                                     }}
-                                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                                    className="w-full px-3.5 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-sm text-[var(--ln-text-primary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] cursor-pointer transition-all"
                                 >
                                     <option value="">Todos los estados</option>
                                     <option value="NUEVO">Nuevo</option>
@@ -428,7 +429,7 @@ const GuestList = ({ refreshTrigger }) => {
                             </div>
 
                             <div className="flex-[2] min-w-[200px]">
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                                <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Invitado por
                                 </label>
                                 <AsyncSearchSelect
@@ -443,7 +444,6 @@ const GuestList = ({ refreshTrigger }) => {
                                     }}
                                     placeholder="Buscar invitador..."
                                     labelKey="fullName"
-                                    className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
                                 />
                             </div>
                         </div>
@@ -451,7 +451,7 @@ const GuestList = ({ refreshTrigger }) => {
                         {/* Fila 2: Fechas y Líder */}
                         <div className="flex flex-wrap gap-4 items-end">
                             <div className="flex-1 min-w-[160px]">
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                                <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Fecha desde
                                 </label>
                                 <input
@@ -461,12 +461,12 @@ const GuestList = ({ refreshTrigger }) => {
                                         setStartDate(e.target.value);
                                         setCurrentPage(1);
                                     }}
-                                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full px-3.5 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-sm text-[var(--ln-text-primary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all"
                                 />
                             </div>
 
                             <div className="flex-1 min-w-[160px]">
-                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                                <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Fecha hasta
                                 </label>
                                 <input
@@ -476,13 +476,13 @@ const GuestList = ({ refreshTrigger }) => {
                                         setEndDate(e.target.value);
                                         setCurrentPage(1);
                                     }}
-                                    className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-blue-500"
+                                    className="w-full px-3.5 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-sm text-[var(--ln-text-primary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all"
                                 />
                             </div>
 
                             {(!isDoceLeader() || isModuleCoordinator) && (
                                 <div className="flex-[2] min-w-[250px]">
-                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                                    <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                         Líder de 12
                                     </label>
                                     <AsyncSearchSelect
@@ -499,7 +499,6 @@ const GuestList = ({ refreshTrigger }) => {
                                         }}
                                         placeholder="Buscar líder de 12..."
                                         labelKey="fullName"
-                                        className="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
                                     />
                                 </div>
                             )}
@@ -510,25 +509,25 @@ const GuestList = ({ refreshTrigger }) => {
                             <FilterCheckbox
                                 checked={pendingCalls}
                                 onChange={(val) => { setPendingCalls(val); setCurrentPage(1); }}
-                                activeColor="green"
+                                activeColor="neutral"
                                 label="Pendientes por llamar"
                             />
                             <FilterCheckbox
                                 checked={pendingVisits}
                                 onChange={(val) => { setPendingVisits(val); setCurrentPage(1); }}
-                                activeColor="green"
+                                activeColor="neutral"
                                 label="Pendientes por visitar"
                             />
                             <FilterCheckbox
                                 checked={alreadyCalled}
                                 onChange={(val) => { setAlreadyCalled(val); setCurrentPage(1); }}
-                                activeColor="blue"
+                                activeColor="violet"
                                 label="Ya fueron llamados"
                             />
                             <FilterCheckbox
                                 checked={alreadyVisited}
                                 onChange={(val) => { setAlreadyVisited(val); setCurrentPage(1); }}
-                                activeColor="blue"
+                                activeColor="violet"
                                 label="Ya fueron visitados"
                             />
                         </div>
@@ -537,7 +536,6 @@ const GuestList = ({ refreshTrigger }) => {
                             <Button
                                 onClick={handleSearch}
                                 icon={Funnel}
-                                className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                             >
                                 Aplicar Filtros
                             </Button>
@@ -546,12 +544,12 @@ const GuestList = ({ refreshTrigger }) => {
                 </div>
 
                 {/* Barra de estado */}
-                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
+                <div className="px-4 py-3 bg-[var(--ln-btn-ghost)] border-t border-[var(--ln-border-subtle)]">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
-                                <Users size={16} className="text-gray-500" />
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                <Users size={16} className="text-[var(--ln-text-tertiary)]" />
+                                <span className="text-sm font-[510] text-[var(--ln-text-secondary)]">
                                     {pagination?.total || guests.length} invitados
                                 </span>
                             </div>
@@ -559,42 +557,42 @@ const GuestList = ({ refreshTrigger }) => {
                             {hasAdvancedFilters && (
                                 <div className="flex flex-wrap gap-1.5">
                                     {startDate && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--ln-bg-secondary)] border border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] text-xs font-[510]">
                                             Desde: {new Date(startDate).toLocaleDateString('es-ES')}
                                         </span>
                                     )}
                                     {endDate && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--ln-bg-secondary)] border border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] text-xs font-[510]">
                                             Hasta: {new Date(endDate).toLocaleDateString('es-ES')}
                                         </span>
                                     )}
                                     {liderDoceFilter && (!isDoceLeader() || isModuleCoordinator) && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--ln-bg-secondary)] border border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] text-xs font-[510]">
                                             Líder: {liderDoceFilter.fullName}
                                         </span>
                                     )}
                                     {pendingCalls && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--ln-bg-secondary)] border border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] text-xs font-[510]">
                                             Por llamar
                                         </span>
                                     )}
                                     {pendingVisits && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--ln-bg-secondary)] border border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] text-xs font-[510]">
                                             Por visitar
                                         </span>
                                     )}
                                     {searchTerm && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--ln-bg-secondary)] border border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] text-xs font-[510]">
                                             Búsqueda: {searchTerm}
                                         </span>
                                     )}
                                     {statusFilter && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--ln-bg-secondary)] border border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] text-xs font-[510]">
                                             Estado: {getStatusLabel(statusFilter)}
                                         </span>
                                     )}
                                     {invitedByFilter && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--ln-bg-secondary)] border border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] text-xs font-[510]">
                                             Invitado por: {invitedByFilter.fullName}
                                         </span>
                                     )}
@@ -606,7 +604,7 @@ const GuestList = ({ refreshTrigger }) => {
                             <button
                                 onClick={exportToExcel}
                                 disabled={loading || isExporting || guests.length === 0}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs font-medium transition-colors"
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-[var(--ln-emerald)]/15 hover:bg-[var(--ln-emerald)]/25 border border-[var(--ln-emerald)]/30 text-[var(--ln-success)] disabled:opacity-40 disabled:cursor-not-allowed text-xs font-[510] transition-colors"
                                 title="Exportar a Excel"
                             >
                                 {isExporting ? (
@@ -631,47 +629,47 @@ const GuestList = ({ refreshTrigger }) => {
 
             <div className="overflow-x-auto">
                 <table className="w-full">
-                    <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
+                    <thead className="bg-[var(--ln-btn-ghost)] border-b border-[var(--ln-border-subtle)]">
                         <tr>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Fecha Creación</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Registrado Por</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Nombre</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Edad</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Teléfono</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Dirección</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Petición de Oración</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Estado</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Líder Doce</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Invitado Por</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Asignado a</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Célula</th>
-                            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-200">Encuentro</th>
-                            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 dark:text-gray-200">Acciones</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Fecha Creación</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Registrado Por</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Nombre</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Edad</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Teléfono</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Dirección</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Petición de Oración</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Estado</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Líder Doce</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Invitado Por</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Asignado a</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Célula</th>
+                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Encuentro</th>
+                            <th className="px-4 py-3 text-right text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className="divide-y divide-[var(--ln-border-subtle)]">
                         {loading ? (
                             <tr>
-                                <td colSpan="14" className="px-4 py-8 text-center text-gray-400">
-                                    <SpinnerIcon size={24} className="animate-spin mx-auto" />
+                                <td colSpan="14" className="px-4 py-8 text-center text-[var(--ln-text-quaternary)]">
+                                    <SpinnerIcon size={24} className="animate-spin mx-auto text-[var(--ln-brand-indigo)]" />
                                 </td>
                             </tr>
                         ) : guests.length === 0 ? (
                             <tr>
-                                <td colSpan="14" className="px-4 py-8 text-center text-gray-400">
+                                <td colSpan="14" className="px-4 py-8 text-center text-[var(--ln-text-quaternary)]">
                                     No se encontraron invitados
                                 </td>
                             </tr>
                         ) : (
                             guests.map((guest) => (
-                                <tr key={guest.id} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700/50 transition-colors">
+                                <tr key={guest.id} className="hover:bg-[var(--ln-btn-ghost)] transition-colors">
                                     <td className="px-4 py-3">
-                                        <span className="text-gray-600 dark:text-white/80 text-sm">
+                                        <span className="text-[var(--ln-text-secondary)] text-sm">
                                             {guest.createdAt ? new Date(guest.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        <p className="text-[#1d1d1f] dark:text-white text-sm">{guest.registeredBy?.fullName || 'N/A'}</p>
+                                        <p className="text-[var(--ln-text-primary)] text-sm font-[510]">{guest.registeredBy?.fullName || 'N/A'}</p>
                                     </td>
                                     <td className="px-4 py-3">
                                         {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
@@ -682,15 +680,15 @@ const GuestList = ({ refreshTrigger }) => {
                                                     updateModalData({ name: e.target.value })
                                                 }
                                                 disabled={!canModify()}
-                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-2 py-1 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded text-[var(--ln-text-primary)] text-sm focus:outline-none focus:border-[var(--ln-accent-violet)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                                 placeholder="Nombre"
                                             />
                                         ) : (
-                                            <p className="text-[#1d1d1f] dark:text-white text-sm font-medium">{guest.name}</p>
+                                            <p className="text-[var(--ln-text-primary)] text-sm font-[510]">{guest.name}</p>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
-                                        <span className="text-gray-600 dark:text-white/80 text-sm">
+                                        <span className="text-[var(--ln-text-secondary)] text-sm">
                                             {calculateAge(guest.birthDate) || 'N/A'}
                                         </span>
                                     </td>
@@ -703,10 +701,10 @@ const GuestList = ({ refreshTrigger }) => {
                                                     updateModalData({ phone: e.target.value })
                                                 }
                                                 disabled={!canModify()}
-                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-2 py-1 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded text-[var(--ln-text-primary)] text-sm focus:outline-none focus:border-[var(--ln-accent-violet)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                             />
                                         ) : (
-                                            <span className="text-gray-600 dark:text-white/80 text-sm">{guest.phone}</span>
+                                            <span className="text-[var(--ln-text-secondary)] text-sm">{guest.phone}</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -718,15 +716,15 @@ const GuestList = ({ refreshTrigger }) => {
                                                     updateModalData({ address: e.target.value })
                                                 }
                                                 disabled={!canModify()}
-                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-2 py-1 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded text-[var(--ln-text-primary)] text-sm focus:outline-none focus:border-[var(--ln-accent-violet)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                                 placeholder="Dirección"
                                             />
                                         ) : (
-                                            <span className="text-gray-600 dark:text-white/80 text-sm">{guest.address || 'N/A'}</span>
+                                            <span className="text-[var(--ln-text-secondary)] text-sm">{guest.address || 'N/A'}</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
-                                        <span className="text-gray-600 dark:text-white/80 text-sm max-w-[150px] block truncate" title={guest.prayerRequest || ''}>
+                                        <span className="text-[var(--ln-text-secondary)] text-sm max-w-[150px] block truncate" title={guest.prayerRequest || ''}>
                                             {guest.prayerRequest || 'N/A'}
                                         </span>
                                     </td>
@@ -737,7 +735,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                 onChange={(e) =>
                                                     updateModalData({ status: e.target.value })
                                                 }
-                                                className="w-full px-2 py-1 bg-white dark:bg-gray-600 border border-[#d1d1d6] dark:border-gray-500 rounded text-[#1d1d1f] dark:text-white text-sm"
+                                                className="w-full px-2 py-1 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded text-[var(--ln-text-primary)] text-sm focus:outline-none focus:border-[var(--ln-accent-violet)] transition-all"
                                             >
                                                 <option value="NUEVO">Nuevo</option>
                                                 <option value="CONTACTADO">Llamado</option>
@@ -745,18 +743,18 @@ const GuestList = ({ refreshTrigger }) => {
                                                 <option value="GANADO">Consolidado</option>
                                             </select>
                                         ) : (
-                                            <span className={`inline-block px-2 py-1 rounded text-xs ${getStatusBadgeColor(guest.status)}`}>
+                                            <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-[510] ${getStatusBadgeColor(guest.status)}`}>
                                                 {getStatusLabel(guest.status)}
                                             </span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
                                         {(guest.invitedBy?.liderDoce || guest.assignedTo?.liderDoce) ? (
-                                            <p className="text-[#1d1d1f] dark:text-white text-sm">
+                                            <p className="text-[var(--ln-text-primary)] text-sm">
                                                 {guest.invitedBy?.liderDoce?.fullName || guest.assignedTo?.liderDoce?.fullName}
                                             </p>
                                         ) : (
-                                            <span className="text-gray-400 dark:text-gray-500 text-sm">N/A</span>
+                                            <span className="text-[var(--ln-text-quaternary)] text-sm">N/A</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -773,12 +771,12 @@ const GuestList = ({ refreshTrigger }) => {
                                                     labelKey="fullName"
                                                 />
                                             ) : (
-                                                <p className="text-[#1d1d1f] dark:text-white text-sm">
+                                                <p className="text-[var(--ln-text-primary)] text-sm">
                                                     {guest.invitedBy?.fullName || (guest.invitedBy?.liderDoce ? `Invitado por: ${guest.invitedBy.liderDoce.fullName}` : 'N/A')}
                                                 </p>
                                             )
                                         ) : (
-                                            <p className="text-[#1d1d1f] dark:text-white text-sm">
+                                            <p className="text-[var(--ln-text-primary)] text-sm">
                                                 {guest.invitedBy?.fullName || (guest.invitedBy?.liderDoce ? `Invitado por: ${guest.invitedBy.liderDoce.fullName}` : 'N/A')}
                                             </p>
                                         )}
@@ -796,7 +794,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                 labelKey="fullName"
                                             />
                                         ) : (
-                                            <p className="text-[#1d1d1f] dark:text-white text-sm">
+                                            <p className="text-[var(--ln-text-primary)] text-sm">
                                                 {guest.assignedTo?.fullName || (guest.assignedTo?.liderDoce ? `Asignado por: ${guest.assignedTo.liderDoce.fullName}` : 'Pendiente')}
                                             </p>
                                         )}
@@ -804,13 +802,13 @@ const GuestList = ({ refreshTrigger }) => {
                                     <td className="px-4 py-3">
                                         {guest.cell ? (
                                             <div>
-                                                <p className="text-[#1d1d1f] dark:text-white text-sm font-medium">{guest.cell.name}</p>
-                                                <p className="text-[#86868b] dark:text-gray-400 text-xs">
+                                                <p className="text-[var(--ln-text-primary)] text-sm font-[510]">{guest.cell.name}</p>
+                                                <p className="text-[var(--ln-text-tertiary)] text-xs">
                                                     Líder: {guest.cell.leader?.fullName || 'N/A'}
                                                 </p>
                                             </div>
                                         ) : (
-                                            <span className="text-gray-400 dark:text-gray-500 text-sm">No asignado</span>
+                                            <span className="text-[var(--ln-text-quaternary)] text-sm">No asignado</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -818,17 +816,17 @@ const GuestList = ({ refreshTrigger }) => {
                                             <div>
                                                 {guest.encuentroRegistrations.map((reg) => (
                                                     <div key={reg.id} className="text-sm">
-                                                        <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-[510] bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-accent-violet)] border border-[var(--ln-brand-indigo)]/20">
                                                             {reg.encuentro?.type || 'Encuentro'}
                                                         </span>
-                                                        <p className="text-[#86868b] dark:text-gray-400 text-xs mt-1">
+                                                        <p className="text-[var(--ln-text-tertiary)] text-xs mt-1">
                                                             {reg.encuentro?.name || 'Sin nombre'}
                                                         </p>
                                                     </div>
                                                 ))}
                                             </div>
                                         ) : (
-                                            <span className="text-gray-400 dark:text-gray-500 text-sm">No registrado</span>
+                                            <span className="text-[var(--ln-text-quaternary)] text-sm">No registrado</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
@@ -837,7 +835,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                 <button
                                                     onClick={handleInlineEditSave}
                                                     disabled={inlineSaving}
-                                                    className="flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors"
+                                                    className="flex items-center gap-1 px-2 py-1 bg-[var(--ln-emerald)]/15 hover:bg-[var(--ln-emerald)]/25 border border-[var(--ln-emerald)]/30 text-[var(--ln-success)] disabled:opacity-40 disabled:cursor-not-allowed text-xs font-[510] rounded transition-colors"
                                                     title="Guardar cambios"
                                                 >
                                                     {inlineSaving ? (
@@ -850,7 +848,7 @@ const GuestList = ({ refreshTrigger }) => {
                                                 <button
                                                     onClick={handleInlineEditCancel}
                                                     disabled={inlineSaving}
-                                                    className="flex items-center gap-1 px-2 py-1 bg-gray-500 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium rounded transition-colors"
+                                                    className="flex items-center gap-1 px-2 py-1 bg-[var(--ln-btn-ghost)] hover:bg-[var(--ln-btn-subtle)] border border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed text-xs font-[510] rounded transition-colors"
                                                     title="Cancelar edición"
                                                 >
                                                     <XCircle size={14} weight="bold" />
@@ -858,30 +856,30 @@ const GuestList = ({ refreshTrigger }) => {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <div className="flex items-center justify-end space-x-2">
+                                            <div className="flex items-center justify-end space-x-1">
                                                 <button
                                                     onClick={() => handleInlineEditStart(guest)}
-                                                    className="p-1 text-blue-400 hover:text-blue-300"
+                                                    className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-accent-violet)] hover:bg-[var(--ln-accent-violet)]/10 rounded-md transition-colors"
                                                     title="Editar"
                                                 >
-                                                    <PencilIcon size={18} />
+                                                    <PencilIcon size={16} />
                                                 </button>
                                                 {canModify() && (
                                                     <button
                                                         onClick={() => openModal('delete', guest)}
-                                                        className="p-1 text-red-400 hover:text-red-300"
+                                                        className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
                                                         title="Eliminar"
                                                     >
-                                                        <Trash size={18} />
+                                                        <Trash size={16} />
                                                     </button>
                                                 )}
                                                 {!currentUser?.roles?.includes('PASTOR') && (
                                                     <button
                                                         onClick={() => openModal('convert', guest)}
-                                                        className="p-1 text-green-400 hover:text-green-300"
+                                                        className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-success)] hover:bg-[var(--ln-emerald)]/10 rounded-md transition-colors"
                                                         title="Convertir a Discípulo"
                                                     >
-                                                        <UserCheckIcon size={18} />
+                                                        <UserCheckIcon size={16} />
                                                     </button>
                                                 )}
                                             </div>
@@ -904,59 +902,59 @@ const GuestList = ({ refreshTrigger }) => {
 
             {/* Modal para convertir a Discípulo */}
             {activeModal?.type === 'convert' && activeModal.guest && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700 shadow-xl">
-                        <h3 className="text-xl font-bold text-[#1d1d1f] dark:text-white mb-4">
+                <div className="fixed inset-0 bg-[rgba(0,0,0,0.85)] backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+                    <div className="bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] rounded-xl p-6 max-w-md w-full shadow-[rgba(0,0,0,0)_0px_8px_2px,rgba(0,0,0,0.01)_0px_5px_2px,rgba(0,0,0,0.04)_0px_3px_2px,rgba(0,0,0,0.07)_0px_1px_1px,rgba(0,0,0,0.08)_0px_0px_1px]">
+                        <h3 className="text-xl font-[590] text-[var(--ln-text-primary)] tracking-[-0.24px] mb-4">
                             Convertir a Discípulo: {activeModal.guest.name}
                         </h3>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-1">
+                                <label className="block text-[12px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Email
                                 </label>
                                 <input
                                     type="email"
                                     value={activeModal?.data?.email}
                                     onChange={(e) => updateModalData({ email: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white dark:bg-[#272729] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
+                                    className="w-full px-3.5 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-[var(--ln-text-primary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all"
                                     placeholder="correo@ejemplo.com"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-[#1d1d1f] dark:text-white/80 mb-1">
+                                <label className="block text-[12px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Contraseña
                                 </label>
                                 <input
                                     type="password"
                                     value={activeModal?.data?.password}
                                     onChange={(e) => updateModalData({ password: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white dark:bg-[#272729] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3]"
+                                    className="w-full px-3.5 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-[var(--ln-text-primary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all"
                                     placeholder="Contraseña"
                                 />
                             </div>
 
-                            <div className="bg-[#f5f5f7] dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2">
+                            <div className="bg-[var(--ln-bg-panel)]/50 border border-[var(--ln-border-subtle)] p-4 rounded-xl space-y-3">
                                 <label className="flex items-start gap-2 cursor-pointer group">
                                     <input
                                         type="checkbox"
                                         required
-                                        className="mt-1 w-3.5 h-3.5 rounded border-[#d1d1d6] dark:border-[#3a3a3c] text-blue-600 focus:ring-blue-500"
+                                        className="mt-1 w-3.5 h-3.5 rounded border-[var(--ln-border-standard)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-accent-violet)] accent-[var(--ln-brand-indigo)]"
                                         checked={activeModal?.data?.dataPolicyAccepted}
                                         onChange={(e) => updateModalData({ dataPolicyAccepted: e.target.checked })}
                                     />
-                                    <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-[#1d1d1f] dark:group-hover:text-white transition-colors">
-                                        Acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos</a>.
+                                    <span className="text-xs text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors">
+                                        Acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-hover)] underline font-[510]">Política de Tratamiento de Datos</a>.
                                     </span>
                                 </label>
                                 <label className="flex items-start gap-2 cursor-pointer group">
                                     <input
                                         type="checkbox"
                                         required
-                                        className="mt-1 w-3.5 h-3.5 rounded border-[#d1d1d6] dark:border-[#3a3a3c] text-blue-600 focus:ring-blue-500"
+                                        className="mt-1 w-3.5 h-3.5 rounded border-[var(--ln-border-standard)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-accent-violet)] accent-[var(--ln-brand-indigo)]"
                                         checked={activeModal?.data?.dataTreatmentAuthorized}
                                         onChange={(e) => updateModalData({ dataTreatmentAuthorized: e.target.checked })}
                                     />
-                                    <span className="text-xs text-gray-600 dark:text-gray-400 group-hover:text-[#1d1d1f] dark:group-hover:text-white transition-colors">
+                                    <span className="text-xs text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors">
                                         Autorizo el tratamiento de mis datos personales.
                                     </span>
                                 </label>
@@ -964,7 +962,7 @@ const GuestList = ({ refreshTrigger }) => {
 
                             <div className="flex justify-end space-x-2 mt-6">
                                 <Button
-                                    variant="secondary"
+                                    variant="ghost"
                                     onClick={() => setActiveModal(null)}
                                 >
                                     Cancelar
@@ -1010,25 +1008,25 @@ GuestList.propTypes = {
 };
 
 const COLOR_MAP = {
-    green: {
-        active: 'bg-green-500 border-green-500',
-        hover: 'group-hover:border-green-400',
-        text: 'text-green-600 dark:text-green-400',
+    neutral: {
+        active: 'bg-[var(--ln-btn-subtle)] border-[var(--ln-border-primary)]',
+        hover: 'group-hover:border-[var(--ln-text-quaternary)]',
+        text: 'text-[var(--ln-text-primary)]',
     },
-    blue: {
-        active: 'bg-blue-500 border-blue-500',
-        hover: 'group-hover:border-blue-400',
-        text: 'text-blue-600 dark:text-blue-400',
+    violet: {
+        active: 'bg-[var(--ln-brand-indigo)]/20 border-[var(--ln-brand-indigo)]/40',
+        hover: 'group-hover:border-[var(--ln-accent-violet)]',
+        text: 'text-[var(--ln-accent-violet)]',
     },
 };
 
-function FilterCheckbox({ checked, onChange, activeColor = 'green', label }) {
+function FilterCheckbox({ checked, onChange, activeColor = 'neutral', label }) {
     const colors = COLOR_MAP[activeColor];
     return (
         <label className="flex items-center gap-2 cursor-pointer group">
             <div
-                className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${
-                    checked ? colors.active : `border-gray-300 dark:border-gray-600 ${colors.hover}`
+                className={`relative flex items-center justify-center w-4 h-4 rounded border transition-all ${
+                    checked ? colors.active : `bg-[var(--ln-input-bg)] border-[var(--ln-border-standard)] ${colors.hover}`
                 }`}
             >
                 <input
@@ -1037,9 +1035,9 @@ function FilterCheckbox({ checked, onChange, activeColor = 'green', label }) {
                     onChange={(e) => onChange(e.target.checked)}
                     className="absolute opacity-0 w-full h-full cursor-pointer"
                 />
-                {checked && <CheckCircle size={14} className="text-white" weight="fill" />}
+                {checked && <CheckCircle size={12} className="text-[var(--ln-text-primary)]" weight="fill" />}
             </div>
-            <span className={`text-sm font-medium ${checked ? colors.text : 'text-gray-700 dark:text-gray-300'}`}>
+            <span className={`text-sm font-[510] ${checked ? colors.text : 'text-[var(--ln-text-secondary)]'}`}>
                 {label}
             </span>
         </label>
@@ -1050,15 +1048,15 @@ function PaginationBar({ pagination, guestsPerPage, loading, onPageChange, class
     if (pagination.pages <= 1) return null;
 
     return (
-        <div className={`flex items-center justify-between bg-white dark:bg-gray-800 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg ${className}`}>
-            <div className="text-sm text-gray-700 dark:text-gray-300">
+        <div className={`flex items-center justify-between bg-[var(--ln-bg-panel)] px-4 py-3 border border-[var(--ln-border-subtle)] rounded-md ${className}`}>
+            <div className="text-sm text-[var(--ln-text-secondary)]">
                 Mostrando {(pagination.page - 1) * guestsPerPage + 1} - {Math.min(pagination.page * guestsPerPage, pagination.total)} de {pagination.total} invitados
             </div>
             <div className="flex items-center gap-2">
                 <button
                     onClick={pagination.onPrev}
                     disabled={!pagination.hasPrev || loading}
-                    className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                     Anterior
                 </button>
@@ -1083,11 +1081,11 @@ function PaginationBar({ pagination, guestsPerPage, loading, onPageChange, class
                                 key={pageNum}
                                 onClick={() => onPageChange(pageNum)}
                                 disabled={loading}
-                                className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
+                                className={`min-w-[32px] h-8 px-2 text-sm font-[510] rounded-md transition-colors ${
                                     isActive
-                                        ? 'bg-blue-600 text-white shadow-md'
-                                        : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
+                                        : 'text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] hover:bg-[var(--ln-btn-subtle)]'
+                                } disabled:opacity-40 disabled:cursor-not-allowed`}
                             >
                                 {pageNum}
                             </button>
@@ -1098,7 +1096,7 @@ function PaginationBar({ pagination, guestsPerPage, loading, onPageChange, class
                 <button
                     onClick={pagination.onNext}
                     disabled={!pagination.hasNext || loading}
-                    className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                     Siguiente
                 </button>

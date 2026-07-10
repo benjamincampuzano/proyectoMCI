@@ -757,11 +757,9 @@ const getEligibleStudents = async (req, res) => {
 
 const getKidsStatsByLeader = async (req, res) => {
     try {
+        const { hasFullAccess, allowedUserIds } = await getRequesterKidsAccess(req);
         const userId = req.user.id;
         const userRoles = (req.user.roles || []).map(r => String(r).toUpperCase());
-        
-        const privilegeRoles = ['ADMIN', 'PASTOR', 'COORDINADOR', 'SUBCOORDINADOR', 'TESORERO'];
-        const hasFullAccess = userRoles.some(role => privilegeRoles.includes(role));
         const isLeaderRole = userRoles.some(role => ['LIDER_DOCE', 'LIDER_CELULA'].includes(role));
 
         let whereClause = {
@@ -774,10 +772,9 @@ const getKidsStatsByLeader = async (req, res) => {
         };
 
         if (!hasFullAccess) {
-            if (isLeaderRole) {
-                const networkIds = await getUserNetwork(userId);
+            if (allowedUserIds && allowedUserIds.length > 0) {
                 whereClause = {
-                    id: { in: [...new Set([userId, ...networkIds.map(id => parseInt(id))])] },
+                    id: { in: allowedUserIds },
                     roles: {
                         some: {
                             role: { name: { in: ['LIDER_DOCE', 'LIDER_CELULA'] } }
@@ -947,17 +944,25 @@ const checkKidsAccess = async (req, res) => {
             return res.json({ hasAccess: true });
         }
 
-        // Check if user is coordinator of KIDS module
-        const coordinatorRes = await prisma.moduleCoordinator.findFirst({
+        // Check if user is coordinator, subcoordinator or treasurer of KIDS module
+        const moduleAssignment = await prisma.moduleCoordinator.findFirst({
             where: {
                 userId: userId,
-                moduleName: {
-                    in: ['KIDS', 'kids'] // Buscar ambas variantes
-                }
+                moduleName: { in: ['KIDS', 'kids'] }
+            }
+        }) || await prisma.moduleSubCoordinator.findFirst({
+            where: {
+                userId: userId,
+                moduleName: { in: ['KIDS', 'kids'] }
+            }
+        }) || await prisma.moduleTreasurer.findFirst({
+            where: {
+                userId: userId,
+                moduleName: { in: ['KIDS', 'kids'] }
             }
         });
 
-        if (coordinatorRes) {
+        if (moduleAssignment) {
             return res.json({ hasAccess: true });
         }
 

@@ -60,11 +60,10 @@ const Layout = () => {
         { to: '/consolidar', icon: Heart, label: 'Consolidar' },
         { to: '/discipular', icon: BookOpen, label: 'Discipular' },
         { to: '/enviar', icon: PaperPlaneTilt, label: 'Enviar' },
-        ...(!hasAnyRole(['DISCIPULO']) ? [{ to: '/kids', icon: Baby, label: 'Kids' }] : []),
+        ...(hasKidsAccess ? [{ to: '/kids', icon: Baby, label: 'Kids' }] : []),
         { to: '/escuela-de-artes', icon: GuitarIcon, label: 'Artes' },
         { to: '/encuentros', icon: CrossIcon, label: 'Encuentros' },
         { to: '/convenciones', icon: Calendar, label: 'Convenciones' },
-        ...(!hasAnyRole(['DISCIPULO']) ? [{ to: '/documentos-legales', icon: BookOpen, label: 'Documentos' }] : []),
         ...(hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) ? [{ to: '/usuarios', icon: Users, label: 'Gestion de Usuarios' }] : []),
         ...(hasAnyRole(['ADMIN']) ? [{ to: '/auditoria', icon: TreeStructure, label: 'Auditoria' } ] : [])
     ];

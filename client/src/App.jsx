@@ -34,7 +34,6 @@ const SetupWizard = lazy(() => import('./pages/SetupWizard'));
 const Metas = lazy(() => import('./pages/Metas'));
 const PublicGuestRegistration = lazy(() => import('./pages/PublicGuestRegistration'));
 const PublicConventionRegistration = lazy(() => import('./pages/PublicConventionRegistration'));
-const LegalDocuments = lazy(() => import('./pages/LegalDocuments'));
 
 // 
 
@@ -126,57 +125,6 @@ const KidsModuleRoute = ({ children }) => {
   return user && hasKidsAccess ? children : <Navigate to="/" />;
 };
 
-const LegalDocumentsRoute = ({ children }) => {
-  const { user, loading, isAdmin } = useAuth();
-  if (loading) return <div>Loading...</div>;
-  
-  // Check if user is ADMIN (always has access)
-  if (isAdmin()) {
-    return children;
-  }
-  
-  // For non-admin users, we need to check if they have relationship with KIDS module
-  // This will be checked asynchronously
-  const [hasKidsAccess, setHasKidsAccess] = useState(null);
-  
-  useEffect(() => {
-    const checkKidsAccess = async () => {
-      try {
-        // Use consolidated endpoint to check if user is coordinator of KIDS module
-        const rolesRes = await api.get('/coordinators/module/kids/roles')
-          .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
-
-        if (rolesRes.data.coordinator && rolesRes.data.coordinator.id === user.id) {
-          setHasKidsAccess(true);
-          return;
-        }
-
-        // Check if user has students enrolled in KIDS
-        const studentsRes = await api.get('/kids/students/check-access');
-        if (studentsRes.data.hasAccess) {
-          setHasKidsAccess(true);
-          return;
-        }
-
-        setHasKidsAccess(false);
-      } catch (error) {
-        console.error('Error checking Legal Documents access:', error);
-        setHasKidsAccess(false);
-      }
-    };
-
-    if (user) {
-      checkKidsAccess();
-    }
-  }, [user]);
-  
-  if (hasKidsAccess === null) {
-    return <div>Loading...</div>;
-  }
-  
-  return user && hasKidsAccess ? children : <Navigate to="/" />;
-};
-
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[100dvh]">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -265,7 +213,6 @@ function App() {
                   <Route path="network" element={<NetworkAssignment />} />
                   <Route path="usuarios" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
                   <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
-                  <Route path="documentos-legales" element={<LegalDocumentsRoute><LegalDocuments /></LegalDocumentsRoute>} />
                 </Route>
               </Routes>
             </Suspense>

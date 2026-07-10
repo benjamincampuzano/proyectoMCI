@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../middleware/auth');
+const { authenticate, checkCoordinatorStatus } = require('../middleware/auth');
 const { hasAdminAccessOnModule } = require('../middleware/coordinatorAuth');
 const {
     createModule,
@@ -18,6 +18,7 @@ const {
 } = require('../controllers/kidsController');
 
 router.use(authenticate);
+router.use(checkCoordinatorStatus);
 
 const authorizeKidsModuleAccess = (req, res, next) => {
     if (hasAdminAccessOnModule(req.user, 'kids')) {

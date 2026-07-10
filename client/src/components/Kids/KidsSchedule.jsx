@@ -450,34 +450,30 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                                 >
                                                     Fila
                                                 </Button>
-                                                {hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.COORDINADOR, ROLES.SUBCOORDINADOR, ROLES.TESORERO]) && (
-                                                    <>
-                                                        <Button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleEditCourse(e, course);
-                                                            }}
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-amber-600 hover:text-amber-800 flex-1 sm:flex-none"
-                                                            icon={Pen}
-                                                        >
-                                                            Editar
-                                                        </Button>
-                                                        <Button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDeleteCourse(e, course);
-                                                            }}
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-red-500 hover:text-red-700 flex-1 sm:flex-none"
-                                                            icon={Trash}
-                                                        >
-                                                            Eliminar
-                                                        </Button>
-                                                    </>
-                                                )}
+                                                <Button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditCourse(e, course);
+                                                    }}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-amber-600 hover:text-amber-800 flex-1 sm:flex-none"
+                                                    icon={Pen}
+                                                >
+                                                    Editar
+                                                </Button>
+                                                <Button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteCourse(e, course);
+                                                    }}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700 flex-1 sm:flex-none"
+                                                    icon={Trash}
+                                                >
+                                                    Eliminar
+                                                </Button>
                                             </div>
                                         )}
                                         <div className="overflow-x-auto rounded-lg shadow-inner bg-white dark:bg-black border border-[#d1d1d6] dark:border-[#3a3a3c]">

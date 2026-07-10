@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { FileTextIcon, Plus, Trash, ArrowSquareOut, Spinner, ShieldCheck, LinkIcon } from '@phosphor-icons/react';
-import { PageHeader, Button } from '../components/ui';
+import { FileTextIcon, Plus, Trash, ArrowSquareOut, Spinner, LinkIcon } from '@phosphor-icons/react';
+import { Button } from '../components/ui';
 import ActionModal from '../components/ActionModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
-const LegalDocuments = () => {
+const LegalDocuments = ({ canEdit: canEditProp }) => {
     const { isAdmin } = useAuth();
+    const canEdit = canEditProp !== undefined ? canEditProp : isAdmin();
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -71,11 +72,8 @@ const LegalDocuments = () => {
 
     return (
         <div className="space-y-6">
-            <PageHeader
-                title="Documentos Legales"
-                description="Sección de políticas y autorizaciones para el tratamiento de datos personales."
-                icon={ShieldCheck}
-                action={isAdmin() && (
+            {canEdit && (
+                <div className="flex justify-end">
                     <Button
                         variant="primary"
                         icon={Plus}
@@ -83,8 +81,8 @@ const LegalDocuments = () => {
                     >
                         Agregar Documento
                     </Button>
-                )}
-            />
+                </div>
+            )}
 
             {error && (
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-center gap-3">
@@ -105,7 +103,7 @@ const LegalDocuments = () => {
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">No hay documentos cargados</h3>
                     <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                        Aún no se han compartido documentos legales. Los administradores pueden agregar nuevas políticas aquí.
+                        Aún no se han compartido documentos legales.                         Los coordinadores pueden agregar nuevas políticas aquí.
                     </p>
                 </div>
             ) : (
@@ -116,7 +114,7 @@ const LegalDocuments = () => {
                             className="group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 hover:shadow-xl hover:border-blue-500/50 transition-all duration-300 relative overflow-hidden shadow-sm"
                         >
                             <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {isAdmin() && (
+                                {canEdit && (
                                     <button
                                         onClick={() => handleDelete(doc.id)}
                                         className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"

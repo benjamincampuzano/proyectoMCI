@@ -506,14 +506,28 @@ const getAttendanceStats = async (req, res) => {
         const end = endDate ? new Date(endDate) : new Date();
         const start = startDate ? new Date(startDate) : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
+        // Get spouse for liderDoce conditions
+        const userData = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { spouseId: true }
+        });
+        const spouseId = userData?.spouseId;
+
+        // Build liderDoce conditions (shared across both paths)
+        const liderDoceConditions = [{ liderDoceId: userId }];
+        if (spouseId) {
+            liderDoceConditions.push({ liderDoceId: spouseId });
+        }
+
         // Build cell filter based on role
         let cellFilter = {};
+        let scopeCellIds = [];
 
         if (cellId) {
             // If specific cell requested, verify access
             const cell = await prisma.cell.findUnique({
                 where: { id: parseInt(cellId) },
-                select: { leaderId: true }
+                select: { leaderId: true, liderDoceId: true }
             });
 
             if (!cell) {
@@ -525,34 +539,78 @@ const getAttendanceStats = async (req, res) => {
                 return res.status(403).json({ error: 'Not authorized to view this cell' });
             } else if ((userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) && !isEnviarCoordinator) {
                 const networkUserIds = await getUserNetwork(userId);
-                if (!networkUserIds.includes(cell.leaderId)) {
+                const isLiderDoceOfCell = cell.liderDoceId === userId || cell.liderDoceId === spouseId;
+                const isLeaderInNetwork = networkUserIds.includes(cell.leaderId);
+                if (!isLeaderInNetwork && !isLiderDoceOfCell) {
                     return res.status(403).json({ error: 'Not authorized to view this cell' });
                 }
             }
             // ADMIN and enviar module coordinators have access
 
             cellFilter.cellId = parseInt(cellId);
+            scopeCellIds = [parseInt(cellId)];
         } else {
             // Filter all cells based on role
             if (isEnviarCoordinator || userRoles.includes('ADMIN')) {
                 // Module coordinators and ADMIN see all cells (no filter)
+                const allCells = await prisma.cell.findMany({
+                    where: { isDeleted: false },
+                    select: { id: true }
+                });
+                scopeCellIds = allCells.map(c => c.id);
+            } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
+                const networkUserIds = await getUserNetwork(userId);
+                const networkCells = await prisma.cell.findMany({
+                    where: {
+                        OR: [
+                            { leaderId: { in: networkUserIds } },
+                            ...liderDoceConditions
+                        ]
+                    },
+                    select: { id: true }
+                });
+                cellFilter.cellId = { in: networkCells.map(c => c.id) };
+                scopeCellIds = networkCells.map(c => c.id);
             } else if (userRoles.includes('LIDER_CELULA')) {
                 const userCells = await prisma.cell.findMany({
                     where: { leaderId: userId },
                     select: { id: true }
                 });
                 cellFilter.cellId = { in: userCells.map(c => c.id) };
-            } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
-                const networkUserIds = await getUserNetwork(userId);
-                const networkCells = await prisma.cell.findMany({
-                    where: { leaderId: { in: networkUserIds } },
-                    select: { id: true }
+                scopeCellIds = userCells.map(c => c.id);
+            } else {
+                // DISCIPULO / MIEMBRO / other roles: only see their own cell
+                const userData = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { cellId: true }
                 });
-                cellFilter.cellId = { in: networkCells.map(c => c.id) };
+                const userCellId = userData?.cellId;
+                if (userCellId) {
+                    cellFilter.cellId = userCellId;
+                    scopeCellIds = [userCellId];
+                } else {
+                    // No cell assigned — return empty results
+                    return res.json([]);
+                }
             }
         }
 
-        // Fetch attendance records within date range
+        // Fetch all cells in scope with their active member counts
+        const cellMemberCounts = {};
+        if (scopeCellIds.length > 0) {
+            const cellMembers = await prisma.user.findMany({
+                where: {
+                    cellId: { in: scopeCellIds },
+                    isDeleted: false
+                },
+                select: { cellId: true }
+            });
+            cellMembers.forEach(m => {
+                cellMemberCounts[m.cellId] = (cellMemberCounts[m.cellId] || 0) + 1;
+            });
+        }
+
+        // Fetch attendance records within date range (include cellId for member count lookup)
         const attendances = await prisma.cellAttendance.findMany({
             where: {
                 ...cellFilter,
@@ -563,22 +621,47 @@ const getAttendanceStats = async (req, res) => {
             },
             select: {
                 date: true,
+                cellId: true,
                 status: true
             }
         });
 
-        // Group by date and count present/absent
-        const statsMap = {};
+        // Group by date and cell, count present per cell-date
+        const cellDatePresentMap = {};
         attendances.forEach(att => {
             const dateKey = att.date.toISOString().split('T')[0];
-            if (!statsMap[dateKey]) {
-                statsMap[dateKey] = { date: dateKey, present: 0, absent: 0 };
+            if (!cellDatePresentMap[dateKey]) {
+                cellDatePresentMap[dateKey] = {};
+            }
+            if (!cellDatePresentMap[dateKey][att.cellId]) {
+                cellDatePresentMap[dateKey][att.cellId] = 0;
             }
             if (att.status === 'PRESENTE') {
-                statsMap[dateKey].present++;
-            } else {
-                statsMap[dateKey].absent++;
+                cellDatePresentMap[dateKey][att.cellId]++;
             }
+        });
+
+        // Build stats: for each date, present = sum of present across cells,
+        // absent = sum of (cellMemberCount - present) across cells that have records
+        const statsMap = {};
+        Object.keys(cellDatePresentMap).forEach(dateKey => {
+            let totalPresent = 0;
+            let totalAbsent = 0;
+
+            Object.keys(cellDatePresentMap[dateKey]).forEach(cellIdStr => {
+                const cid = parseInt(cellIdStr);
+                const presentCount = cellDatePresentMap[dateKey][cid];
+                const memberCount = cellMemberCounts[cid] || 0;
+
+                totalPresent += presentCount;
+                totalAbsent += Math.max(0, memberCount - presentCount);
+            });
+
+            statsMap[dateKey] = {
+                date: dateKey,
+                present: totalPresent,
+                absent: totalAbsent
+            };
         });
 
         // Convert to array and sort by date

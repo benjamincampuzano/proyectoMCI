@@ -10,6 +10,7 @@ import {
 import toast from 'react-hot-toast';
 import useAuditDashboard from '../hooks/useAuditDashboard';
 import DataTable from '../components/ui/DataTable';
+import Modal from '../components/ui/Modal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import api from '../utils/api';
 
@@ -25,7 +26,7 @@ const AuditDashboard = () => {
     const [restoreStatus, setRestoreStatus] = useState('');
     const [restorePassword, setRestorePassword] = useState('');
     const [passwordError, setPasswordError] = useState('');
-    const [requirePasswordConfirm, setRequirePasswordConfirm] = useState(true);
+    const [requirePasswordConfirm] = useState(true);
     const memoizedStats = useMemo(() => stats, [stats]);
 
     const performBackupDownload = async () => {
@@ -164,13 +165,14 @@ const AuditDashboard = () => {
         }
     };
 
-    const formatDate = (dateStr) => {
+    const formatDate = (dateStr, showSeconds = false) => {
         return new Date(dateStr).toLocaleString('es-ES', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            second: showSeconds ? '2-digit' : undefined
         });
     };
 
@@ -205,32 +207,57 @@ const AuditDashboard = () => {
         'status': 'Estado'
     };
 
-    const renderDetails = (detailsStr) => {
+    const renderDetails = (detailsStr, action) => {
         if (!detailsStr) return '-';
         try {
             const details = typeof detailsStr === 'object' ? detailsStr : JSON.parse(detailsStr);
+
             if (details.targetUser) {
+                const changeEntries = details.changes ? Object.entries(details.changes) : [];
                 return (
-                    <div className="flex flex-col">
-                        <span className="weight-590 text-[var(--ln-text-primary)]">{details.targetUser}</span>
-                        {details.changes && (
-                            <span className="text-[10px] text-[var(--ln-brand-indigo)] weight-590 uppercase tracking-widest mt-0.5">
-                                {Object.keys(details.changes).length} modificaciones
+                    <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2 mb-0.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--ln-brand-indigo)] flex-shrink-0" />
+                            <span className="weight-590 text-[13px] text-[var(--ln-text-primary)]">
+                                {details.targetUser}
                             </span>
-                        )}
+                        </div>
+                        {changeEntries.map(([field, change]) => (
+                            <div key={field} className="flex items-center gap-1 text-[11px]">
+                                <span className="weight-590 text-[var(--ln-text-primary)]/60 flex-shrink-0">{propertyMap[field] || field}:</span>
+                                <span className="text-[var(--ln-text-tertiary)] line-through">{String(change.old ?? '')}</span>
+                                <span className="text-[var(--ln-text-tertiary)] opacity-50">→</span>
+                                <span className="text-emerald-400 weight-510">{String(change.new ?? '')}</span>
+                            </div>
+                        ))}
                     </div>
                 );
             }
+
+            if (action === 'LOGIN') {
+                return (
+                    <div className="text-[12px] text-[var(--ln-text-tertiary)]">
+                        {details.method ? `Via ${details.method}` : 'Credenciales'}
+                        {details.ip && <span className="ml-2 font-mono opacity-60">{details.ip}</span>}
+                    </div>
+                );
+            }
+
+            const entries = Object.entries(details);
             return (
                 <div className="flex flex-col gap-0.5">
-                    {Object.entries(details).slice(0, 2).map(([key, val]) => (
-                        <span key={key} className="text-[11px] text-[var(--ln-text-tertiary)] truncate max-w-[200px]">
-                            <strong className="weight-590 text-[var(--ln-text-primary)]/60">{propertyMap[key] || key}:</strong> {String(val)}
-                        </span>
-                    ))}
+                    {entries.map(([key, val]) => {
+                        const displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                        return (
+                            <span key={key} className="text-[11px] text-[var(--ln-text-tertiary)]">
+                                <span className="weight-590 text-[var(--ln-text-primary)]/60">{propertyMap[key] || key}:</span>{' '}
+                                <span className="text-[var(--ln-text-primary)]/80">{displayVal}</span>
+                            </span>
+                        );
+                    })}
                 </div>
             );
-        } catch (e) {
+        } catch {
             return typeof detailsStr === 'string' ? detailsStr : JSON.stringify(detailsStr);
         }
     };
@@ -410,21 +437,19 @@ const AuditDashboard = () => {
                         {
                             key: 'details',
                             title: 'Cambios / Registros',
-                            render: (_, log) => renderDetails(log.details)
+                            render: (_, log) => renderDetails(log.details, log.action)
                         },
                         {
                             key: 'actions',
                             title: '',
                             render: (_, log) => (
                                 <div className="text-right">
-                                    {log.details && (
-                                        <button
-                                            onClick={() => setSelectedLog(log)}
-                                            className="text-[12px] weight-590 text-[var(--ln-brand-indigo)] hover:underline transition-all"
-                                        >
-                                            Auditar
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={() => setSelectedLog(log)}
+                                        className="text-[12px] weight-590 text-[var(--ln-brand-indigo)] hover:text-[var(--ln-brand-indigo)]/80 bg-[var(--ln-brand-indigo)]/10 hover:bg-[var(--ln-brand-indigo)]/20 px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                                    >
+                                        Auditar
+                                    </button>
                                 </div>
                             )
                         }
@@ -435,8 +460,11 @@ const AuditDashboard = () => {
                     pagination={{
                         page: pagination.currentPage,
                         pages: pagination.pages,
+                        total: pagination.total,
+                        pageSize: 50,
                         onPrev: () => setFilters(f => ({ ...f, page: f.page - 1 })),
                         onNext: () => setFilters(f => ({ ...f, page: f.page + 1 })),
+                        onPageChange: (pageNum) => setFilters(f => ({ ...f, page: pageNum })),
                     }}
                 />
             </div>
@@ -545,6 +573,147 @@ const AuditDashboard = () => {
                     </div>
                 )}
             </ConfirmationModal>
+
+            {/* Log Detail Modal */}
+            {selectedLog && (
+                <Modal isOpen={!!selectedLog} onClose={() => setSelectedLog(null)} title="Detalle de Auditoría" size="lg">
+                    <Modal.Content>
+                        {/* User Info */}
+                        <div className="flex items-center gap-4 mb-8 p-4 bg-white/[0.03] rounded-2xl border border-[var(--ln-border-standard)]">
+                            <div className="w-12 h-12 rounded-xl bg-[var(--ln-brand-indigo)]/10 border border-[var(--ln-brand-indigo)]/20 flex items-center justify-center text-[var(--ln-brand-indigo)] weight-590 text-lg flex-shrink-0">
+                                {selectedLog.user?.fullName?.charAt(0) || 'S'}
+                            </div>
+                            <div>
+                                <p className="text-[16px] weight-590 text-[var(--ln-text-primary)]">
+                                    {selectedLog.user?.fullName || 'Sistema MCU'}
+                                </p>
+                                <p className="text-[12px] text-[var(--ln-text-tertiary)]">
+                                    {selectedLog.user?.email || ''}
+                                    {selectedLog.user?.roles?.length > 0 && ` \u00B7 ${selectedLog.user.roles.join(', ')}`}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Metadata Grid */}
+                        <div className="grid grid-cols-2 gap-6 mb-8">
+                            <div className="space-y-4">
+                                <div>
+                                    <span className="text-[10px] weight-590 uppercase tracking-widest text-[var(--ln-text-tertiary)] opacity-60">Acci\u00F3n</span>
+                                    <div className="flex items-center gap-2 mt-1.5">
+                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-[var(--ln-border-standard)]">
+                                            {getActionIcon(selectedLog.action)}
+                                        </div>
+                                        <span className="text-[14px] weight-590 text-[var(--ln-text-primary)]">{selectedLog.action}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] weight-590 uppercase tracking-widest text-[var(--ln-text-tertiary)] opacity-60">Entidad</span>
+                                    <div className="flex items-center gap-2 mt-1.5">
+                                        <span className={`inline-flex px-2.5 py-0.5 rounded-md text-[10px] weight-590 uppercase tracking-widest border ${getEntityColor(selectedLog.entityType)}`}>
+                                            {selectedLog.entityType}
+                                        </span>
+                                        {selectedLog.entityId && (
+                                            <span className="text-[12px] font-mono text-[var(--ln-text-tertiary)]">#{selectedLog.entityId}</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <span className="text-[10px] weight-590 uppercase tracking-widest text-[var(--ln-text-tertiary)] opacity-60">Fecha y Hora</span>
+                                    <p className="text-[13px] weight-510 text-[var(--ln-text-primary)] mt-1.5 font-mono">
+                                        {formatDate(selectedLog.createdAt, true)}
+                                    </p>
+                                </div>
+                                {selectedLog.ipAddress && (
+                                    <div>
+                                        <span className="text-[10px] weight-590 uppercase tracking-widest text-[var(--ln-text-tertiary)] opacity-60">Direcci\u00F3n IP</span>
+                                        <p className="text-[13px] weight-510 text-[var(--ln-text-primary)] mt-1.5 font-mono">
+                                            {selectedLog.ipAddress}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* User Agent */}
+                        {selectedLog.userAgent && (
+                            <div className="mb-8 p-3 bg-white/[0.03] rounded-xl border border-[var(--ln-border-standard)]">
+                                <span className="text-[10px] weight-590 uppercase tracking-widest text-[var(--ln-text-tertiary)] opacity-60">User Agent</span>
+                                <p className="text-[11px] text-[var(--ln-text-tertiary)] mt-1 truncate font-mono">
+                                    {selectedLog.userAgent}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Changes Table */}
+                        {(() => {
+                            try {
+                                const details = typeof selectedLog.details === 'object' ? selectedLog.details : JSON.parse(selectedLog.details);
+                                if (details.changes && Object.keys(details.changes).length > 0) {
+                                    const changeEntries = Object.entries(details.changes);
+                                    return (
+                                        <div className="mb-6">
+                                            <h4 className="text-[11px] weight-590 uppercase tracking-widest text-[var(--ln-text-tertiary)] opacity-60 mb-3">
+                                                Cambios Realizados ({changeEntries.length})
+                                            </h4>
+                                            <div className="overflow-hidden rounded-xl border border-[var(--ln-border-standard)]">
+                                                <table className="w-full text-[12px]">
+                                                    <thead>
+                                                        <tr className="bg-white/[0.03]">
+                                                            <th className="text-left px-4 py-2.5 weight-590 text-[var(--ln-text-tertiary)]">Campo</th>
+                                                            <th className="text-left px-4 py-2.5 weight-590 text-[var(--ln-text-tertiary)]">Valor Anterior</th>
+                                                            <th className="text-left px-4 py-2.5 weight-590 text-[var(--ln-text-tertiary)]">Valor Nuevo</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {changeEntries.map(([field, change]) => (
+                                                            <tr key={field} className="border-t border-[var(--ln-border-standard)] hover:bg-white/[0.02]">
+                                                                <td className="px-4 py-2.5 weight-590 text-[var(--ln-text-primary)]">
+                                                                    {propertyMap[field] || field}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-[var(--ln-text-tertiary)] font-mono">
+                                                                    {change.old !== undefined && change.old !== null ? String(change.old) : '-'}
+                                                                </td>
+                                                                <td className="px-4 py-2.5 text-emerald-400 font-mono weight-510">
+                                                                    {String(change.new ?? '')}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            } catch {
+                                return null;
+                            }
+                        })()}
+
+                        {/* Raw JSON */}
+                        {(() => {
+                            try {
+                                const details = typeof selectedLog.details === 'object' ? selectedLog.details : JSON.parse(selectedLog.details);
+                                const jsonStr = JSON.stringify(details, null, 2);
+                                return (
+                                    <details className="group">
+                                        <summary className="text-[11px] weight-590 uppercase tracking-widest text-[var(--ln-text-tertiary)] opacity-40 cursor-pointer hover:opacity-60 transition-all select-none">
+                                            JSON Raw
+                                        </summary>
+                                        <pre className="mt-2 p-4 bg-black/30 rounded-xl text-[10px] text-[var(--ln-text-tertiary)] font-mono overflow-x-auto leading-relaxed max-h-48 overflow-y-auto">
+                                            {jsonStr}
+                                        </pre>
+                                    </details>
+                                );
+                            } catch {
+                                return null;
+                            }
+                        })()}
+                    </Modal.Content>
+                </Modal>
+            )}
         </div>
     );
 };

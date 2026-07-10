@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const kidsScheduleController = require('../controllers/kidsScheduleController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, checkCoordinatorStatus } = require('../middleware/auth');
 const { 
     authorizeKidsScheduleAccess, 
     authorizeKidsScheduleModification,
@@ -10,6 +10,7 @@ const {
 
 // Protect all routes with authentication
 router.use(authenticate);
+router.use(checkCoordinatorStatus);
 
 // Get schedules for a specific course/module
 // Visible para: ADMIN, PASTOR, LIDER_DOCE (su propia red), Coordinador del módulo, Profesores y Auxiliares asignados

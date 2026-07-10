@@ -130,6 +130,7 @@ const servidorRoutes = require('./routes/servidorRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const dashboardTasksRoutes = require('./routes/dashboardTasksRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
+const bulkImportRoutes = require('./routes/bulkImportRoutes');
 
 /* ✅ Proteger directorios sensibles */
 app.use('/backups', (req, res) => {
@@ -173,6 +174,7 @@ app.use("/api/servidores", servidorRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/dashboard-tasks", dashboardTasksRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/users", bulkImportRoutes);
 
 /* ✅ Healthcheck */
 app.get("/", (req, res) => {

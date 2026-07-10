@@ -25,11 +25,16 @@ const DataTable = ({
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [filters, setFilters] = useState({});
   const [selectedRows, setSelectedRows] = useState(new Set());
+
+  const isExternalPagination = typeof pagination === 'object' && pagination !== null && 'page' in pagination;
   
-  // Reset page when data changes
+  // Reset page when data changes (internal pagination only)
   React.useEffect(() => {
-    setCurrentPage(1);
-  }, [data]);
+    if (!isExternalPagination) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentPage(1);
+    }
+  }, [data, isExternalPagination]);
 
   // Memoized filtered and sorted data
   const processedData = useMemo(() => {
@@ -77,11 +82,17 @@ const DataTable = ({
   }, [data, filters, sortConfig, sortable, filterable]);
 
   // Pagination
-  const totalPages = Math.ceil(processedData.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = pagination 
-    ? processedData.slice(startIndex, startIndex + pageSize)
-    : processedData;
+  const effectivePageSize = isExternalPagination && pagination.pageSize ? pagination.pageSize : pageSize;
+  const totalPages = isExternalPagination 
+    ? pagination.pages 
+    : Math.ceil(processedData.length / effectivePageSize);
+  const activePage = isExternalPagination ? pagination.page : currentPage;
+  const startIndex = (activePage - 1) * effectivePageSize;
+  const paginatedData = isExternalPagination 
+    ? data 
+    : pagination 
+      ? processedData.slice(startIndex, startIndex + effectivePageSize)
+      : processedData;
 
   // Handle sorting
   const handleSort = (key) => {
@@ -245,17 +256,30 @@ const DataTable = ({
       </div>
 
       {/* Pagination */}
-      {pagination && totalPages > 1 && (
+      {(isExternalPagination || (pagination && totalPages > 1)) && (
         <div className="border-t border-[var(--ln-border-standard)] px-4 py-3 bg-[var(--ln-bg-panel)]">
           <div className="flex items-center justify-between">
             <span className="text-[var(--ln-text-secondary)] text-[13px] font-[510]">
-              Mostrando <span className="text-[var(--ln-text-primary)] font-[700]">{startIndex + 1}</span> - <span className="text-[var(--ln-text-primary)] font-[700]">{Math.min(startIndex + pageSize, processedData.length)}</span> de <span className="text-[var(--ln-text-primary)] font-[700]">{processedData.length}</span> resultados
+              {isExternalPagination && pagination.total
+                ? (() => {
+                    const from = (activePage - 1) * effectivePageSize + 1;
+                    const to = Math.min(activePage * effectivePageSize, pagination.total);
+                    return <>Mostrando <span className="text-[var(--ln-text-primary)] font-[700]">{from}</span> - <span className="text-[var(--ln-text-primary)] font-[700]">{to}</span> de <span className="text-[var(--ln-text-primary)] font-[700]">{pagination.total}</span> resultados</>;
+                  })()
+                : <>Mostrando <span className="text-[var(--ln-text-primary)] font-[700]">{startIndex + 1}</span> - <span className="text-[var(--ln-text-primary)] font-[700]">{Math.min(startIndex + effectivePageSize, processedData.length)}</span> de <span className="text-[var(--ln-text-primary)] font-[700]">{processedData.length}</span> resultados</>
+              }
             </span>
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
+                onClick={() => {
+                  if (isExternalPagination) {
+                    pagination.onPrev?.();
+                  } else {
+                    setCurrentPage(prev => Math.max(1, prev - 1));
+                  }
+                }}
+                disabled={activePage === 1}
                 className="px-3 py-1.5 text-[12px] font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-[4px] hover:bg-[var(--ln-border-standard)]/20 hover:text-[var(--ln-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
               >
                 Anterior
@@ -266,22 +290,28 @@ const DataTable = ({
                   let pageNum;
                   if (totalPages <= 5) {
                     pageNum = i + 1;
-                  } else if (currentPage <= 3) {
+                  } else if (activePage <= 3) {
                     pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
+                  } else if (activePage >= totalPages - 2) {
                     pageNum = totalPages - 4 + i;
                   } else {
-                    pageNum = currentPage - 2 + i;
+                    pageNum = activePage - 2 + i;
                   }
 
-                  const isActive = currentPage === pageNum;
+                  const isActivePage = activePage === pageNum;
 
                   return (
                     <button
                       key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
+                      onClick={() => {
+                        if (isExternalPagination) {
+                          pagination.onPageChange?.(pageNum);
+                        } else {
+                          setCurrentPage(pageNum);
+                        }
+                      }}
                       className={`min-w-[28px] h-7 px-2 text-[12px] font-[510] rounded-[4px] transition-all duration-200 ${
-                        isActive
+                        isActivePage
                           ? 'bg-[var(--ln-brand-indigo)] text-white shadow-md'
                           : 'text-[var(--ln-text-secondary)] bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] hover:bg-[var(--ln-border-standard)]/20 hover:text-[var(--ln-text-primary)]'
                       }`}
@@ -293,8 +323,14 @@ const DataTable = ({
               </div>
 
               <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
+                onClick={() => {
+                  if (isExternalPagination) {
+                    pagination.onNext?.();
+                  } else {
+                    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                  }
+                }}
+                disabled={activePage === totalPages}
                 className="px-3 py-1.5 text-[12px] font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-[4px] hover:bg-[var(--ln-border-standard)]/20 hover:text-[var(--ln-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
               >
                 Siguiente

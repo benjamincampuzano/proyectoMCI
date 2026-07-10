@@ -324,21 +324,21 @@ const GuestTracking = ({ refreshTrigger }) => {
         return (
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded-lg w-48 animate-pulse"></div>
-                    <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-32 animate-pulse"></div>
+                    <div className="h-8 bg-[var(--ln-bg-secondary)] rounded-md w-48 animate-pulse"></div>
+                    <div className="h-10 bg-[var(--ln-bg-secondary)] rounded-md w-32 animate-pulse"></div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
+                <div className="bg-[var(--ln-bg-panel)] rounded-xl border border-[var(--ln-border-subtle)] overflow-hidden">
                     <div className="p-6 space-y-4">
                         {[...Array(5)].map((_, i) => (
                             <div key={i} className="space-y-3">
                                 <div className="flex items-center space-x-4">
-                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 animate-pulse"></div>
-                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/6 animate-pulse"></div>
-                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/5 animate-pulse"></div>
+                                    <div className="h-4 bg-[var(--ln-bg-secondary)] rounded w-1/4 animate-pulse"></div>
+                                    <div className="h-4 bg-[var(--ln-bg-secondary)] rounded w-1/6 animate-pulse"></div>
+                                    <div className="h-4 bg-[var(--ln-bg-secondary)] rounded w-1/5 animate-pulse"></div>
                                 </div>
                                 <div className="flex items-center space-x-4">
-                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
-                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4 animate-pulse"></div>
+                                    <div className="h-3 bg-[var(--ln-bg-secondary)] rounded w-1/3 animate-pulse"></div>
+                                    <div className="h-3 bg-[var(--ln-bg-secondary)] rounded w-1/4 animate-pulse"></div>
                                 </div>
                             </div>
                         ))}
@@ -351,15 +351,15 @@ const GuestTracking = ({ refreshTrigger }) => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Seguimiento de Invitados</h2>
+                <h2 className="text-2xl font-[590] text-[var(--ln-text-primary)] tracking-[-0.288px]">Seguimiento de Invitados</h2>
                 <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${hasActiveFilters
-                        ? 'bg-blue-500 text-white shadow-md'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-[510] transition-all ${hasActiveFilters
+                        ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
+                        : 'bg-[var(--ln-btn-ghost)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] border border-[var(--ln-border-subtle)]'
                         }`}
                 >
-                    <Funnel size={18} weight={showFilters ? "fill" : "bold"} />
+                    <Funnel size={16} weight={showFilters ? "fill" : "bold"} />
                     Filtros
                     {hasActiveFilters && (
                         <span className="ml-1 px-2 py-0.5 rounded-full bg-white/20 text-xs">
@@ -371,15 +371,15 @@ const GuestTracking = ({ refreshTrigger }) => {
 
             {/* Panel de Filtros */}
             {showFilters && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+                <div className="bg-[var(--ln-bg-panel)] rounded-xl border border-[var(--ln-border-subtle)] p-4 space-y-4">
                     <div className="flex flex-wrap items-end gap-4">
                         {/* Filtro por Fecha - Desde */}
                         <div className="flex-1 min-w-[200px]">
-                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                            <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                 Fecha Desde
                             </label>
                             <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ln-text-quaternary)]" size={16} />
                                 <input
                                     type="date"
                                     value={startDate}
@@ -387,18 +387,18 @@ const GuestTracking = ({ refreshTrigger }) => {
                                         setStartDate(e.target.value);
                                         setCurrentPage(1);
                                     }}
-                                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+                                    className="w-full pl-10 pr-3.5 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-sm text-[var(--ln-text-primary)] placeholder:text-[var(--ln-text-tertiary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all"
                                 />
                             </div>
                         </div>
 
                         {/* Filtro por Fecha - Hasta */}
                         <div className="flex-1 min-w-[200px]">
-                            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                            <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                 Fecha Hasta
                             </label>
                             <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ln-text-quaternary)]" size={16} />
                                 <input
                                     type="date"
                                     value={endDate}
@@ -406,7 +406,7 @@ const GuestTracking = ({ refreshTrigger }) => {
                                         setEndDate(e.target.value);
                                         setCurrentPage(1);
                                     }}
-                                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
+                                    className="w-full pl-10 pr-3.5 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-sm text-[var(--ln-text-primary)] placeholder:text-[var(--ln-text-tertiary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all"
                                 />
                             </div>
                         </div>
@@ -414,7 +414,7 @@ const GuestTracking = ({ refreshTrigger }) => {
                         {/* Filtro por Líder de 12 - solo visible para admin/coordinadores/pastores */}
                         {(!isDoceLeader() || isModuleCoordinator) && (
                             <div className="flex-[2] min-w-[250px]">
-                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
+                                <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Líder de 12
                                 </label>
                                 <AsyncSearchSelect
@@ -431,18 +431,17 @@ const GuestTracking = ({ refreshTrigger }) => {
                                     }}
                                     placeholder="Buscar líder de 12..."
                                     labelKey="fullName"
-                                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg"
                                 />
                             </div>
                         )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[var(--ln-border-subtle)]">
                         {/* Checkbox - Pendientes por llamadas */}
                         <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${pendingCalls
-                                ? 'bg-green-500 border-green-500'
-                                : 'border-gray-300 dark:border-gray-600 group-hover:border-green-400'
+                            <div className={`relative flex items-center justify-center w-4 h-4 rounded border transition-all ${pendingCalls
+                                ? 'bg-[var(--ln-btn-subtle)] border-[var(--ln-border-primary)]'
+                                : 'bg-[var(--ln-input-bg)] border-[var(--ln-border-standard)] group-hover:border-[var(--ln-text-quaternary)]'
                                 }`}>
                                 <input
                                     type="checkbox"
@@ -453,18 +452,18 @@ const GuestTracking = ({ refreshTrigger }) => {
                                     }}
                                     className="absolute opacity-0 w-full h-full cursor-pointer"
                                 />
-                                {pendingCalls && <CheckCircle size={14} className="text-white" weight="fill" />}
+                                {pendingCalls && <CheckCircle size={12} className="text-[var(--ln-text-primary)]" weight="fill" />}
                             </div>
-                            <span className={`text-sm font-medium ${pendingCalls ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <span className={`text-sm font-[510] ${pendingCalls ? 'text-[var(--ln-text-primary)]' : 'text-[var(--ln-text-secondary)]'}`}>
                                 Pendientes por llamadas
                             </span>
                         </label>
 
                         {/* Checkbox - Pendientes por visitas */}
                         <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${pendingVisits
-                                ? 'bg-blue-500 border-blue-500'
-                                : 'border-gray-300 dark:border-gray-600 group-hover:border-blue-400'
+                            <div className={`relative flex items-center justify-center w-4 h-4 rounded border transition-all ${pendingVisits
+                                ? 'bg-[var(--ln-brand-indigo)]/20 border-[var(--ln-brand-indigo)]/40'
+                                : 'bg-[var(--ln-input-bg)] border-[var(--ln-border-standard)] group-hover:border-[var(--ln-accent-violet)]'
                                 }`}>
                                 <input
                                     type="checkbox"
@@ -475,18 +474,18 @@ const GuestTracking = ({ refreshTrigger }) => {
                                     }}
                                     className="absolute opacity-0 w-full h-full cursor-pointer"
                                 />
-                                {pendingVisits && <CheckCircle size={14} className="text-white" weight="fill" />}
+                                {pendingVisits && <CheckCircle size={12} className="text-[var(--ln-accent-violet)]" weight="fill" />}
                             </div>
-                            <span className={`text-sm font-medium ${pendingVisits ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <span className={`text-sm font-[510] ${pendingVisits ? 'text-[var(--ln-accent-violet)]' : 'text-[var(--ln-text-secondary)]'}`}>
                                 Pendientes por visitas
                             </span>
                         </label>
 
                         {/* Checkbox - Ya fueron llamados */}
                         <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${alreadyCalled
-                                ? 'bg-emerald-500 border-emerald-500'
-                                : 'border-gray-300 dark:border-gray-600 group-hover:border-emerald-400'
+                            <div className={`relative flex items-center justify-center w-4 h-4 rounded border transition-all ${alreadyCalled
+                                ? 'bg-[var(--ln-emerald)]/15 border-[var(--ln-emerald)]/30'
+                                : 'bg-[var(--ln-input-bg)] border-[var(--ln-border-standard)] group-hover:border-[var(--ln-success)]'
                                 }`}>
                                 <input
                                     type="checkbox"
@@ -497,18 +496,18 @@ const GuestTracking = ({ refreshTrigger }) => {
                                     }}
                                     className="absolute opacity-0 w-full h-full cursor-pointer"
                                 />
-                                {alreadyCalled && <CheckCircle size={14} className="text-white" weight="fill" />}
+                                {alreadyCalled && <CheckCircle size={12} className="text-[var(--ln-success)]" weight="fill" />}
                             </div>
-                            <span className={`text-sm font-medium ${alreadyCalled ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <span className={`text-sm font-[510] ${alreadyCalled ? 'text-[var(--ln-success)]' : 'text-[var(--ln-text-secondary)]'}`}>
                                 Ya fueron llamados
                             </span>
                         </label>
 
                         {/* Checkbox - Ya fueron visitados */}
                         <label className="flex items-center gap-2 cursor-pointer group">
-                            <div className={`relative flex items-center justify-center w-5 h-5 rounded border-2 transition-all ${alreadyVisited
-                                ? 'bg-indigo-500 border-indigo-500'
-                                : 'border-gray-300 dark:border-gray-600 group-hover:border-indigo-400'
+                            <div className={`relative flex items-center justify-center w-4 h-4 rounded border transition-all ${alreadyVisited
+                                ? 'bg-[var(--ln-emerald)]/15 border-[var(--ln-emerald)]/30'
+                                : 'bg-[var(--ln-input-bg)] border-[var(--ln-border-standard)] group-hover:border-[var(--ln-success)]'
                                 }`}>
                                 <input
                                     type="checkbox"
@@ -519,9 +518,9 @@ const GuestTracking = ({ refreshTrigger }) => {
                                     }}
                                     className="absolute opacity-0 w-full h-full cursor-pointer"
                                 />
-                                {alreadyVisited && <CheckCircle size={14} className="text-white" weight="fill" />}
+                                {alreadyVisited && <CheckCircle size={12} className="text-[var(--ln-success)]" weight="fill" />}
                             </div>
-                            <span className={`text-sm font-medium ${alreadyVisited ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <span className={`text-sm font-[510] ${alreadyVisited ? 'text-[var(--ln-success)]' : 'text-[var(--ln-text-secondary)]'}`}>
                                 Ya fueron visitados
                             </span>
                         </label>
@@ -532,9 +531,9 @@ const GuestTracking = ({ refreshTrigger }) => {
                         {hasActiveFilters && (
                             <button
                                 onClick={clearFilters}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] rounded-md transition-colors"
                             >
-                                <X size={16} weight="bold" />
+                                <X size={14} weight="bold" />
                                 Limpiar filtros
                             </button>
                         )}
@@ -542,18 +541,18 @@ const GuestTracking = ({ refreshTrigger }) => {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
+            <div className="bg-[var(--ln-bg-panel)] rounded-xl border border-[var(--ln-border-subtle)] overflow-hidden">
                 {/* Pagination Controls - Top */}
                 {totalPages > 1 && (
-                    <div className="flex items-center justify-between bg-white dark:bg-gray-800 px-6 py-3 border-b border-gray-200 dark:border-gray-700">
-                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                    <div className="flex items-center justify-between bg-[var(--ln-bg-panel)] px-4 sm:px-6 py-3 border-b border-[var(--ln-border-subtle)]">
+                        <div className="text-sm text-[var(--ln-text-secondary)]">
                             Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalGuests)} de {totalGuests} invitados
                         </div>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                 disabled={currentPage === 1 || loading}
-                                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                                 Anterior
                             </button>
@@ -578,10 +577,10 @@ const GuestTracking = ({ refreshTrigger }) => {
                                             key={pageNum}
                                             onClick={() => setCurrentPage(pageNum)}
                                             disabled={loading}
-                                            className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${isActive
-                                                ? 'bg-blue-600 text-white shadow-md'
-                                                : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            className={`min-w-[32px] h-8 px-2 text-sm font-[510] rounded-md transition-colors ${isActive
+                                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
+                                                : 'text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] hover:bg-[var(--ln-btn-subtle)]'
+                                                } disabled:opacity-40 disabled:cursor-not-allowed`}
                                         >
                                             {pageNum}
                                         </button>
@@ -592,7 +591,7 @@ const GuestTracking = ({ refreshTrigger }) => {
                             <button
                                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                 disabled={currentPage === totalPages || loading}
-                                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                                 Siguiente
                             </button>
@@ -600,20 +599,20 @@ const GuestTracking = ({ refreshTrigger }) => {
                     </div>
                 )}
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-900/50">
+                    <table className="min-w-full">
+                        <thead className="bg-[var(--ln-btn-ghost)] border-b border-[var(--ln-border-subtle)]">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Invitado</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contacto / Dirección</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Quién Invitó / Petición</th>
-                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Encuentro / Celula</th>
-                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Llamada</th>
-                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Visita</th>
-                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Observaciones</th>
+                                <th className="px-4 sm:px-6 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Invitado</th>
+                                <th className="px-4 sm:px-6 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Contacto / Dirección</th>
+                                <th className="px-4 sm:px-6 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Quién Invitó / Petición</th>
+                                <th className="px-4 sm:px-6 py-3 text-center text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Encuentro / Celula</th>
+                                <th className="px-4 sm:px-6 py-3 text-center text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Llamada</th>
+                                <th className="px-4 sm:px-6 py-3 text-center text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Visita</th>
+                                <th className="px-4 sm:px-6 py-3 text-center text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Acciones</th>
+                                <th className="px-4 sm:px-6 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Observaciones</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody>
                             {guests.map((guest) => {
                                 const alerts = getAlerts(guest);
                                 const callCount = guest.calls?.length || 0;
@@ -622,14 +621,13 @@ const GuestTracking = ({ refreshTrigger }) => {
                                 const lastVisit = guest.visits?.[0];
 
                                 return (
-                                    <tr key={guest.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{guest.name}</div>
-                                            <div className="mt-1 flex flex-wrap gap-1 text-[10px] font-semibold">
-                                                <span className={`px-1.5 py-0.5 rounded-full ${guest.status === 'GANADO' ? 'bg-green-100 text-green-700 dark:bg-green-900/30' :
-                                                    guest.status === 'CONSOLIDADO' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30' :
-                                                        guest.status === 'CONTACTADO' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30' :
-                                                            'bg-gray-100 text-gray-600 dark:bg-gray-700'
+                                    <tr key={guest.id} className="hover:bg-[var(--ln-btn-ghost)] border-b border-[var(--ln-border-subtle)] transition-colors">
+                                        <td className="px-4 sm:px-6 py-4">
+                                            <div className="text-sm font-[510] text-[var(--ln-text-primary)]">{guest.name}</div>
+                                            <div className="mt-1 flex flex-wrap gap-1 text-[10px] font-[510]">
+                                                <span className={`px-1.5 py-0.5 rounded-md ${guest.status === 'GANADO'
+                                                    ? 'bg-[var(--ln-emerald)]/15 text-[var(--ln-success)] border border-[var(--ln-emerald)]/30'
+                                                    : 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-secondary)] border border-[var(--ln-border-subtle)]'
                                                     }`}>
                                                     {guest.status === 'GANADO' ? 'Consolidado' :
                                                         guest.status === 'CONSOLIDADO' ? 'Visitado' :
@@ -639,142 +637,142 @@ const GuestTracking = ({ refreshTrigger }) => {
                                             </div>
                                             <div className="mt-1 flex flex-wrap gap-1">
                                                 {alerts.map((alert, idx) => (
-                                                    <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                                    <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-[510] bg-red-500/10 text-red-500 border border-red-500/20">
                                                         <WarningCircleIcon className="w-3 h-3 mr-1" />
                                                         {alert.message}
                                                     </span>
                                                 ))}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                                        <td className="px-4 sm:px-6 py-4">
+                                            <div className="flex items-center text-sm text-[var(--ln-text-secondary)]">
                                                 <div className="flex items-center flex-1">
-                                                    <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                                                    <Phone className="w-4 h-4 mr-2 text-[var(--ln-text-quaternary)]" />
                                                     {guest.phone}
                                                 </div>
                                                 {(isAdmin() || hasRole('PASTOR') || isModuleCoordinator || hasRole('LIDER_DOCE')) && guest.phone && (
                                                     <button
                                                         onClick={() => handleOpenModal(guest, 'whatsapp')}
-                                                        className="ml-2 p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
+                                                        className="ml-2 p-1 text-[var(--ln-success)] hover:bg-[var(--ln-emerald)]/10 rounded transition-colors"
                                                         title="Enviar WhatsApp"
                                                     >
                                                         <WhatsappLogoIcon className="w-4 h-4" />
                                                     </button>
                                                 )}
                                             </div>
-                                            <div className="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-300">
-                                                <House className="w-4 h-4 mr-2 text-gray-400" />
+                                            <div className="flex items-center mt-1 text-sm text-[var(--ln-text-secondary)]">
+                                                <House className="w-4 h-4 mr-2 text-[var(--ln-text-quaternary)]" />
                                                 {guest.address || 'N/A'}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                                                <User className="w-4 h-4 mr-2 text-gray-400" />
+                                        <td className="px-4 sm:px-6 py-4">
+                                            <div className="flex items-center text-sm text-[var(--ln-text-secondary)]">
+                                                <User className="w-4 h-4 mr-2 text-[var(--ln-text-quaternary)]" />
                                                 Invitó: {guest.invitedBy?.fullName}
                                             </div>
                                             {guest.assignedTo && guest.assignedTo.id !== guest.invitedBy?.id && (
-                                                <div className="flex items-center mt-1 text-sm text-blue-600 dark:text-blue-400">
-                                                    <User className="w-4 h-4 mr-2 text-blue-400" />
+                                                <div className="flex items-center mt-1 text-sm text-[var(--ln-accent-violet)]">
+                                                    <User className="w-4 h-4 mr-2 text-[var(--ln-accent-violet)]" />
                                                     Asignado a: {guest.assignedTo.fullName || guest.assignedTo.profile?.fullName || guest.assignedTo.email}
                                                 </div>
                                             )}
-                                            <div className="flex items-start mt-1 text-sm text-gray-500 dark:text-gray-400 italic">
-                                                <HandsPrayingIcon className="w-4 h-4 mr-2 mt-0.5 text-gray-400" />
+                                            <div className="flex items-start mt-1 text-sm text-[var(--ln-text-tertiary)] italic">
+                                                <HandsPrayingIcon className="w-4 h-4 mr-2 mt-0.5 text-[var(--ln-text-quaternary)]" />
                                                 {guest.prayerRequest || 'Sin petición'}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-4 sm:px-6 py-4 text-center">
                                             <div className="flex flex-col items-center gap-1">
                                                 {/* Encuentro Registration Status */}
                                                 {guest.encuentroRegistrations && guest.encuentroRegistrations.length > 0 ? (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-[510] bg-[var(--ln-emerald)]/15 text-[var(--ln-success)] border border-[var(--ln-emerald)]/30">
                                                         <CheckCircle className="w-3 h-3 mr-1" />
                                                         Registrado a encuentro
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-[510] bg-[var(--ln-bg-secondary)] text-[var(--ln-text-tertiary)] border border-[var(--ln-border-subtle)]">
                                                         Sin encuentro
                                                     </span>
                                                 )}
                                                 {/* Cell Alert - Show warning if not assigned to cell */}
                                                 {!guest.cell ? (
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-[510] bg-red-500/10 text-red-500 border border-red-500/20">
                                                         <WarningCircleIcon className="w-3 h-3 mr-1" />
                                                         Sin celula asignada
                                                     </span>
                                                 ) : (
-                                                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                                                        <span className="font-medium">Celula:</span> {guest.cell.name}
+                                                    <div className="text-xs text-[var(--ln-text-secondary)]">
+                                                        <span className="font-[510]">Celula:</span> {guest.cell.name}
                                                     </div>
                                                 )}
                                                 {/* Last Cell Attendance */}
                                                 {guest.cell && (
-                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                    <span className="text-[10px] text-[var(--ln-text-quaternary)]">
                                                         Ult. iglesia: {guest.churchAttendances && guest.churchAttendances.length > 0 ? new Date(guest.churchAttendances[0].date).toLocaleDateString() : 'Pendiente'}
                                                     </span>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-4 sm:px-6 py-4 text-center">
                                             <div className="flex flex-col items-center gap-1">
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full ${callCount > 0
-                                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30'
-                                                        : 'bg-gray-100 text-gray-400 dark:bg-gray-700'
+                                                    <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-[510] rounded-full ${callCount > 0
+                                                        ? 'bg-[var(--ln-emerald)]/15 text-[var(--ln-success)]'
+                                                        : 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-quaternary)]'
                                                         }`}>
                                                         {callCount}
                                                     </span>
                                                     <button
                                                         onClick={() => handleOpenModal(guest, 'call')}
-                                                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-600 transition-colors"
+                                                        className="p-1 hover:bg-[var(--ln-btn-subtle)] rounded text-[var(--ln-text-tertiary)] hover:text-[var(--ln-accent-violet)] transition-colors"
                                                         title="Agregar llamada"
                                                     >
                                                         <Plus className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                                 {lastCall && (
-                                                    <p className="text-[10px] text-gray-500 truncate max-w-[100px]" title={lastCall.observation}>
+                                                    <p className="text-[10px] text-[var(--ln-text-tertiary)] truncate max-w-[100px]" title={lastCall.observation}>
                                                         {lastCall.observation}
                                                     </p>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-4 sm:px-6 py-4 text-center">
                                             <div className="flex flex-col items-center gap-1">
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full ${visitCount > 0
-                                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30'
-                                                        : 'bg-gray-100 text-gray-400 dark:bg-gray-700'
+                                                    <span className={`inline-flex items-center justify-center w-6 h-6 text-xs font-[510] rounded-full ${visitCount > 0
+                                                        ? 'bg-[var(--ln-brand-indigo)]/15 text-[var(--ln-accent-violet)]'
+                                                        : 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-quaternary)]'
                                                         }`}>
                                                         {visitCount}
                                                     </span>
                                                     <button
                                                         onClick={() => handleOpenModal(guest, 'visit')}
-                                                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-600 transition-colors"
+                                                        className="p-1 hover:bg-[var(--ln-btn-subtle)] rounded text-[var(--ln-text-tertiary)] hover:text-[var(--ln-accent-violet)] transition-colors"
                                                         title="Agregar visita"
                                                     >
                                                         <Plus className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                                 {lastVisit && (
-                                                    <p className="text-[10px] text-gray-500 truncate max-w-[100px]" title={lastVisit.observation}>
+                                                    <p className="text-[10px] text-[var(--ln-text-tertiary)] truncate max-w-[100px]" title={lastVisit.observation}>
                                                         {lastVisit.observation}
                                                     </p>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-4 sm:px-6 py-4 text-center">
                                             <button
                                                 onClick={() => handleOpenModal(guest, 'history')}
-                                                className="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                                className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] rounded-md transition-colors"
                                                 title="Ver historial"
                                             >
                                                 <ClockCounterClockwiseIcon className="w-5 h-5" />
                                             </button>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-600 dark:text-gray-300 max-w-[200px] truncate" title={guest.observations}>
-                                                {guest.observations || <span className="text-gray-400 italic text-xs">Sin observaciones</span>}
+                                        <td className="px-4 sm:px-6 py-4">
+                                            <div className="text-sm text-[var(--ln-text-secondary)] max-w-[200px] truncate" title={guest.observations}>
+                                                {guest.observations || <span className="text-[var(--ln-text-quaternary)] italic text-xs">Sin observaciones</span>}
                                             </div>
                                         </td>
                                     </tr>
@@ -787,15 +785,15 @@ const GuestTracking = ({ refreshTrigger }) => {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between bg-white dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700 rounded-b-xl">
-                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                <div className="flex items-center justify-between bg-[var(--ln-bg-panel)] px-4 sm:px-6 py-4 border-t border-[var(--ln-border-subtle)] rounded-b-xl">
+                    <div className="text-sm text-[var(--ln-text-secondary)]">
                         Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalGuests)} de {totalGuests} invitados
                     </div>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                             disabled={currentPage === 1 || loading}
-                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                             Anterior
                         </button>
@@ -820,10 +818,10 @@ const GuestTracking = ({ refreshTrigger }) => {
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
                                         disabled={loading}
-                                        className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${isActive
-                                            ? 'bg-blue-600 text-white shadow-md'
-                                            : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        className={`min-w-[32px] h-8 px-2 text-sm font-[510] rounded-md transition-colors ${isActive
+                                            ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
+                                            : 'text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] hover:bg-[var(--ln-btn-subtle)]'
+                                            } disabled:opacity-40 disabled:cursor-not-allowed`}
                                     >
                                         {pageNum}
                                     </button>
@@ -834,7 +832,7 @@ const GuestTracking = ({ refreshTrigger }) => {
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                             disabled={currentPage === totalPages || loading}
-                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                             Siguiente
                         </button>
@@ -844,49 +842,59 @@ const GuestTracking = ({ refreshTrigger }) => {
 
             {/* Add Action Modal (Call or Visit) */}
             {(modalType === 'call' || modalType === 'visit') && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--ln-overlay)] backdrop-blur-[2px]">
+                    <div
+                        className="bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] rounded-xl w-full max-w-md overflow-hidden"
+                        style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 8px 24px, rgba(0, 0, 0, 0.05) 0px 2px 4px' }}
+                    >
+                        <div className="px-6 py-4 border-b border-[var(--ln-border-subtle)] flex items-center justify-between bg-[var(--ln-bg-panel)]">
+                            <h3 className="text-lg font-[590] text-[var(--ln-text-primary)] tracking-[-0.24px]">
                                 {modalType === 'call' ? 'Registrar Llamada' : 'Registrar Visita'}
                             </h3>
-                            <button onClick={() => setModalType(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <button
+                                onClick={() => setModalType(null)}
+                                className="text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] rounded-md p-1 transition-colors"
+                            >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="p-6 space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha y Hora</label>
+                            <div className="space-y-1.5">
+                                <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Fecha y Hora</label>
                                 <div className="relative">
-                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ln-text-quaternary)]" />
                                     <input
                                         type="datetime-local"
                                         value={formData.date}
                                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                        className="w-full pl-10 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
+                                        className="w-full pl-10 pr-3 py-2 text-sm bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-[var(--ln-text-primary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all"
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Observación (Obligatoria)</label>
+                            <div className="space-y-1.5">
+                                <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Observación (Obligatoria)</label>
                                 <textarea
                                     value={formData.observation}
                                     onChange={(e) => setFormData({ ...formData, observation: e.target.value })}
-                                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white resize-none"
+                                    className="w-full px-3 py-2 text-sm bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-[var(--ln-text-primary)] placeholder-[var(--ln-text-tertiary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all resize-none"
                                     placeholder="Escribe lo que sucedió durante el contacto..."
                                     rows="4"
                                     required
                                 />
                             </div>
                         </div>
-                        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+                        <div className="px-6 py-4 bg-[var(--ln-bg-panel)] border-t border-[var(--ln-border-subtle)] flex justify-end gap-3">
                             <button
                                 onClick={() => setModalType(null)}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                className="px-4 py-2 text-sm font-[510] text-[var(--ln-text-secondary)] hover:bg-[var(--ln-btn-subtle)] rounded-md transition-colors"
                             >
                                 Cancelar
                             </button>
-                            <button onClick={handleAction} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm flex items-center gap-2">
+                            <button
+                                onClick={handleAction}
+                                className="px-4 py-2 text-sm font-[510] text-white bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] rounded-md transition-colors flex items-center gap-2"
+                                style={{ boxShadow: 'rgba(94, 106, 210, 0.3) 0px 4px 12px' }}
+                            >
                                 <CheckCircle className="w-4 h-4" />
                                 Crear contacto
                             </button>
@@ -897,26 +905,32 @@ const GuestTracking = ({ refreshTrigger }) => {
 
             {/* WhatsApp Modal */}
             {modalType === 'whatsapp' && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--ln-overlay)] backdrop-blur-[2px]">
+                    <div
+                        className="bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] rounded-xl w-full max-w-md overflow-hidden"
+                        style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 8px 24px, rgba(0, 0, 0, 0.05) 0px 2px 4px' }}
+                    >
+                        <div className="px-6 py-4 border-b border-[var(--ln-border-subtle)] flex items-center justify-between bg-[var(--ln-bg-panel)]">
                             <div className="flex items-center gap-2">
-                                <WhatsappLogoIcon className="w-5 h-5 text-green-500" />
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                <WhatsappLogoIcon className="w-5 h-5 text-[var(--ln-success)]" />
+                                <h3 className="text-lg font-[590] text-[var(--ln-text-primary)] tracking-[-0.24px]">
                                     Enviar Mensaje
                                 </h3>
                             </div>
-                            <button onClick={() => setModalType(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <button
+                                onClick={() => setModalType(null)}
+                                className="text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] rounded-md p-1 transition-colors"
+                            >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="p-6 space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Elige el tipo de mensaje</label>
+                            <div className="space-y-1.5">
+                                <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Elige el tipo de mensaje</label>
                                 <select
                                     value={whatsappData.stage}
                                     onChange={(e) => handleWhatsappStageChange(e.target.value)}
-                                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
+                                    className="w-full px-3 py-2 text-sm bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-[var(--ln-text-primary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all"
                                 >
                                     <option value="">Seleccione una etapa...</option>
                                     <option value="Bienvenida">Bienvenida (Inmediato)</option>
@@ -927,16 +941,16 @@ const GuestTracking = ({ refreshTrigger }) => {
                             </div>
 
                             {whatsappData.stage && (
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plantilla</label>
+                                <div className="space-y-1.5">
+                                    <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Plantilla</label>
                                     <div className="flex gap-2">
                                         {Object.keys(WHATSAPP_TEMPLATES[whatsappData.stage]).map((key) => (
                                             <button
                                                 key={key}
                                                 onClick={() => handleWhatsappTemplateChange(key)}
-                                                className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${whatsappData.templateKey === key
-                                                    ? 'bg-green-50 border-green-500 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-                                                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'
+                                                className={`flex-1 px-3 py-2 text-sm font-[510] rounded-md border transition-colors ${whatsappData.templateKey === key
+                                                    ? 'bg-[var(--ln-emerald)]/15 border-[var(--ln-emerald)]/40 text-[var(--ln-success)]'
+                                                    : 'bg-[var(--ln-btn-ghost)] border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] hover:bg-[var(--ln-btn-subtle)]'
                                                     }`}
                                             >
                                                 Opción {key}
@@ -947,30 +961,31 @@ const GuestTracking = ({ refreshTrigger }) => {
                             )}
 
                             {whatsappData.templateKey && (
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex justify-between">
-                                        <span>Previsualización (Puedes editarlo)</span>
+                                <div className="space-y-1.5">
+                                    <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">
+                                        Previsualización (Puedes editarlo)
                                     </label>
                                     <textarea
                                         value={whatsappData.previewText}
                                         onChange={(e) => setWhatsappData({ ...whatsappData, previewText: e.target.value })}
-                                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 bg-transparent dark:text-white resize-none"
+                                        className="w-full px-3 py-2 text-sm bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-[var(--ln-text-primary)] placeholder-[var(--ln-text-tertiary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all resize-none"
                                         rows="6"
                                     />
                                 </div>
                             )}
                         </div>
-                        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+                        <div className="px-6 py-4 bg-[var(--ln-bg-panel)] border-t border-[var(--ln-border-subtle)] flex justify-end gap-3">
                             <button
                                 onClick={() => setModalType(null)}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                className="px-4 py-2 text-sm font-[510] text-[var(--ln-text-secondary)] hover:bg-[var(--ln-btn-subtle)] rounded-md transition-colors"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleSendWhatsapp}
                                 disabled={!whatsappData.previewText.trim()}
-                                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                                className="px-4 py-2 text-sm font-[510] text-white bg-[var(--ln-success)] hover:bg-[var(--ln-emerald)] disabled:opacity-40 disabled:cursor-not-allowed rounded-md transition-colors flex items-center gap-2"
+                                style={{ boxShadow: 'rgba(39, 166, 68, 0.3) 0px 4px 12px' }}
                             >
                                 <WhatsappLogoIcon className="w-4 h-4" />
                                 Enviar
@@ -982,40 +997,46 @@ const GuestTracking = ({ refreshTrigger }) => {
 
             {/* History Modal */}
             {modalType === 'history' && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--ln-overlay)] backdrop-blur-[2px]">
+                    <div
+                        className="bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden"
+                        style={{ boxShadow: 'rgba(0, 0, 0, 0.1) 0px 8px 24px, rgba(0, 0, 0, 0.05) 0px 2px 4px' }}
+                    >
+                        <div className="px-6 py-4 border-b border-[var(--ln-border-subtle)] flex items-center justify-between bg-[var(--ln-bg-panel)]">
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white font-outfit">Historial de Seguimiento</h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Invitado: {selectedGuest?.name}</p>
+                                <h3 className="text-lg font-[590] text-[var(--ln-text-primary)] tracking-[-0.24px]">Historial de Seguimiento</h3>
+                                <p className="text-xs text-[var(--ln-text-tertiary)] mt-0.5">Invitado: {selectedGuest?.name}</p>
                             </div>
-                            <button onClick={() => setModalType(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <button
+                                onClick={() => setModalType(null)}
+                                className="text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] rounded-md p-1 transition-colors"
+                            >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
                             {/* Calls History */}
                             <div>
-                                <h4 className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-                                    <Phone className="w-4 h-4 text-green-500" />
+                                <h4 className="flex items-center gap-2 text-sm font-[510] uppercase tracking-wider text-[var(--ln-text-primary)] mb-4">
+                                    <Phone className="w-4 h-4 text-[var(--ln-success)]" />
                                     Llamadas Realizadas ({selectedGuest.calls?.length || 0})
                                 </h4>
                                 <div className="space-y-4">
                                     {selectedGuest.calls?.length > 0 ? (
                                         selectedGuest.calls.map((call, idx) => (
-                                            <div key={idx} className="bg-gray-50 dark:bg-gray-900/30 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+                                            <div key={idx} className="bg-[var(--ln-bg-panel)] rounded-xl p-4 border border-[var(--ln-border-subtle)]">
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">
+                                                    <span className="text-xs font-[510] text-[var(--ln-accent-violet)] bg-[var(--ln-brand-indigo)]/10 px-2 py-0.5 rounded-md">
                                                         {format(new Date(call.date), "PPP p", { locale: es })}
                                                     </span>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] text-gray-500 uppercase font-semibold">
+                                                        <span className="text-[10px] text-[var(--ln-text-tertiary)] uppercase font-[510]">
                                                             Por: {call.caller?.fullName}
                                                         </span>
                                                         {canDeleteRecords() && (
                                                             <button
                                                                 onClick={() => handleDeleteCall(call.id)}
-                                                                className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                                className="p-1 text-red-500 hover:bg-red-500/10 rounded transition-colors"
                                                                 title="Eliminar llamada"
                                                             >
                                                                 <Trash className="w-4 h-4" />
@@ -1023,13 +1044,13 @@ const GuestTracking = ({ refreshTrigger }) => {
                                                         )}
                                                     </div>
                                                 </div>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic border-l-2 border-gray-200 dark:border-gray-700 pl-3">
+                                                <p className="text-sm text-[var(--ln-text-secondary)] leading-relaxed italic border-l-2 border-[var(--ln-border-subtle)] pl-3">
                                                     "{call.observation}"
                                                 </p>
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-sm text-gray-500 italic text-center py-4 bg-gray-50 dark:bg-gray-900/20 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                                        <p className="text-sm text-[var(--ln-text-tertiary)] italic text-center py-4 bg-[var(--ln-bg-panel)] rounded-xl border border-dashed border-[var(--ln-border-subtle)]">
                                             No hay registros de llamadas.
                                         </p>
                                     )}
@@ -1038,26 +1059,26 @@ const GuestTracking = ({ refreshTrigger }) => {
 
                             {/* Visits History */}
                             <div>
-                                <h4 className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4">
-                                    <House className="w-4 h-4 text-blue-500" />
+                                <h4 className="flex items-center gap-2 text-sm font-[510] uppercase tracking-wider text-[var(--ln-text-primary)] mb-4">
+                                    <House className="w-4 h-4 text-[var(--ln-accent-violet)]" />
                                     Visitas Realizadas ({selectedGuest.visits?.length || 0})
                                 </h4>
                                 <div className="space-y-4">
                                     {selectedGuest.visits?.length > 0 ? (
                                         selectedGuest.visits.map((visit, idx) => (
-                                            <div key={idx} className="bg-gray-50 dark:bg-gray-900/30 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+                                            <div key={idx} className="bg-[var(--ln-bg-panel)] rounded-xl p-4 border border-[var(--ln-border-subtle)]">
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">
+                                                    <span className="text-xs font-[510] text-[var(--ln-accent-violet)] bg-[var(--ln-brand-indigo)]/10 px-2 py-0.5 rounded-md">
                                                         {format(new Date(visit.date), "PPP p", { locale: es })}
                                                     </span>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] text-gray-500 uppercase font-semibold">
+                                                        <span className="text-[10px] text-[var(--ln-text-tertiary)] uppercase font-[510]">
                                                             Por: {visit.visitor?.fullName}
                                                         </span>
                                                         {canDeleteRecords() && (
                                                             <button
                                                                 onClick={() => handleDeleteVisit(visit.id)}
-                                                                className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                                className="p-1 text-red-500 hover:bg-red-500/10 rounded transition-colors"
                                                                 title="Eliminar visita"
                                                             >
                                                                 <Trash className="w-4 h-4" />
@@ -1065,23 +1086,24 @@ const GuestTracking = ({ refreshTrigger }) => {
                                                         )}
                                                     </div>
                                                 </div>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic border-l-2 border-gray-200 dark:border-gray-700 pl-3">
+                                                <p className="text-sm text-[var(--ln-text-secondary)] leading-relaxed italic border-l-2 border-[var(--ln-border-subtle)] pl-3">
                                                     "{visit.observation}"
                                                 </p>
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-sm text-gray-500 italic text-center py-4 bg-gray-50 dark:bg-gray-900/20 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                                        <p className="text-sm text-[var(--ln-text-tertiary)] italic text-center py-4 bg-[var(--ln-bg-panel)] rounded-xl border border-dashed border-[var(--ln-border-subtle)]">
                                             No hay registros de visitas.
                                         </p>
                                     )}
                                 </div>
                             </div>
                         </div>
-                        <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+                        <div className="px-6 py-4 bg-[var(--ln-bg-panel)] border-t border-[var(--ln-border-subtle)] flex justify-end">
                             <button
                                 onClick={() => setModalType(null)}
-                                className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-lg active:scale-95"
+                                className="px-4 py-2 text-sm font-[510] text-white bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] rounded-md transition-colors"
+                                style={{ boxShadow: 'rgba(94, 106, 210, 0.3) 0px 4px 12px' }}
                             >
                                 Cerrar
                             </button>
@@ -1104,23 +1126,23 @@ const GuestTracking = ({ refreshTrigger }) => {
                 confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
             >
                 {callToDelete && (
-                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                    <div className="bg-[var(--ln-bg-panel)] p-4 rounded-lg mb-4 border border-[var(--ln-border-subtle)]">
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Fecha:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">
+                                <span className="text-[var(--ln-text-tertiary)]">Fecha:</span>
+                                <span className="font-[510] text-[var(--ln-text-primary)]">
                                     {format(new Date(callToDelete.date), "PPP 'a las' p", { locale: es })}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Realizada por:</span>
-                                <span className="font-medium text-gray-900 dark:text-white">
+                                <span className="text-[var(--ln-text-tertiary)]">Realizada por:</span>
+                                <span className="font-[510] text-[var(--ln-text-primary)]">
                                     {callToDelete.caller?.fullName || 'Usuario desconocido'}
                                 </span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-gray-600 dark:text-gray-400 mb-1">Observación:</span>
-                                <span className="font-medium text-gray-900 dark:text-white italic">
+                                <span className="text-[var(--ln-text-tertiary)] mb-1">Observación:</span>
+                                <span className="font-[510] text-[var(--ln-text-primary)] italic">
                                     "{callToDelete.observation}"
                                 </span>
                             </div>
@@ -1128,18 +1150,18 @@ const GuestTracking = ({ refreshTrigger }) => {
                     </div>
                 )}
 
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-lg">
+                <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-lg">
                     <div className="flex items-start gap-3">
-                        <div className="text-red-600 dark:text-red-400 mt-0.5">
+                        <div className="text-red-500 mt-0.5">
                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                             </svg>
                         </div>
                         <div>
-                            <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
+                            <h4 className="text-red-500 font-[590] mb-1">
                                 ⚠️ Acción Irreversible
                             </h4>
-                            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+                            <ul className="text-red-500/80 text-sm space-y-1">
                                 <li>• Se eliminará el registro de la llamada</li>
                                 <li>• Se actualizará el estado del invitado</li>
                                 <li>• No se puede deshacer esta acción</li>

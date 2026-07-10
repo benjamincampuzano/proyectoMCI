@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
-import TabNavigator from '../components/TabNavigator';
-import ChurchAttendance from '../components/ChurchAttendance';
-import ChurchAttendanceChart from '../components/ChurchAttendanceChart';
-import DiscipleTracking from '../components/DiscipleTracking';
-import { ROLE_GROUPS, ROLES } from '../constants/roles';
-import { PageHeader, Button } from '../components/ui';
-import { useAuth } from '../context/AuthContext';
-import CoordinatorDisplay from '../components/CoordinatorDisplay';
-import { ArrowsClockwise } from '@phosphor-icons/react';
-import api from '../utils/api';
-import toast from 'react-hot-toast';
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import TabNavigator from "../components/TabNavigator";
+import CoordinatorDisplay from "../components/CoordinatorDisplay";
+import FloatingRefreshButton from "../components/FloatingRefreshButton";
+import ChurchAttendance from "../components/ChurchAttendance";
+import ChurchAttendanceChart from "../components/ChurchAttendanceChart";
+import DiscipleTracking from "../components/DiscipleTracking";
+import { ROLE_GROUPS, ROLES } from "../constants/roles";
+import { PageHeader, Button } from "../components/ui";
+import { useAuth } from "../context/AuthContext";
+import api from "../utils/api";
 
 const Consolidar = () => {
     const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer, user } = useAuth();
@@ -101,15 +101,11 @@ const Consolidar = () => {
             />
 
             {/* Floating Refresh Button */}
-            <div className="fixed bottom-8 right-8 z-40">
-                <button
-                    onClick={() => setRefreshTrigger(prev => prev + 1)}
-                    className="flex items-center gap-2.5 px-4 py-2.5 bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] text-white rounded-xl weight-510 text-[13px] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95"
-                >
-                    <ArrowsClockwise className="w-4 h-4" weight="bold" />
-                    Actualizar
-                </button>
-            </div>
+            <FloatingRefreshButton
+                onClick={() => setRefreshTrigger(prev => prev + 1)}
+                label="Actualizar"
+                ariaLabel="Actualizar datos del módulo Consolidar"
+            />
 
             <TabNavigator 
                 tabs={tabs} 
