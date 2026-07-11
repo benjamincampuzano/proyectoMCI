@@ -626,35 +626,42 @@ const getAttendanceStats = async (req, res) => {
             }
         });
 
-        // Group by date and cell, count present per cell-date
-        const cellDatePresentMap = {};
+        // Group by date and cell, count present/absent/justified per cell-date
+        const cellDateMap = {};
         attendances.forEach(att => {
             const dateKey = att.date.toISOString().split('T')[0];
-            if (!cellDatePresentMap[dateKey]) {
-                cellDatePresentMap[dateKey] = {};
+            if (!cellDateMap[dateKey]) {
+                cellDateMap[dateKey] = {};
             }
-            if (!cellDatePresentMap[dateKey][att.cellId]) {
-                cellDatePresentMap[dateKey][att.cellId] = 0;
+            if (!cellDateMap[dateKey][att.cellId]) {
+                cellDateMap[dateKey][att.cellId] = { present: 0, absent: 0, justified: 0, recorded: 0 };
             }
-            if (att.status === 'PRESENTE') {
-                cellDatePresentMap[dateKey][att.cellId]++;
+            const cellData = cellDateMap[dateKey][att.cellId];
+            cellData.recorded++;
+            if (att.status === 'PRESENTE' || att.status === 'VIRTUAL' || att.status === 'TARDE') {
+                cellData.present++;
+            } else if (att.status === 'AUSENTE') {
+                cellData.absent++;
+            } else if (att.status === 'JUSTIFICADO') {
+                cellData.justified++;
             }
         });
 
-        // Build stats: for each date, present = sum of present across cells,
-        // absent = sum of (cellMemberCount - present) across cells that have records
+        // Build stats: present = present records, absent = absent records + members with no record at all
         const statsMap = {};
-        Object.keys(cellDatePresentMap).forEach(dateKey => {
+        Object.keys(cellDateMap).forEach(dateKey => {
             let totalPresent = 0;
             let totalAbsent = 0;
 
-            Object.keys(cellDatePresentMap[dateKey]).forEach(cellIdStr => {
+            Object.keys(cellDateMap[dateKey]).forEach(cellIdStr => {
                 const cid = parseInt(cellIdStr);
-                const presentCount = cellDatePresentMap[dateKey][cid];
+                const cellData = cellDateMap[dateKey][cid];
                 const memberCount = cellMemberCounts[cid] || 0;
 
-                totalPresent += presentCount;
-                totalAbsent += Math.max(0, memberCount - presentCount);
+                totalPresent += cellData.present;
+                // Members with no attendance record at all are absent
+                const noRecord = Math.max(0, memberCount - cellData.recorded);
+                totalAbsent += cellData.absent + noRecord;
             });
 
             statsMap[dateKey] = {

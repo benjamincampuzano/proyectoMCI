@@ -745,6 +745,163 @@ const getEncuentroBalanceReport = async (req, res) => {
     }
 };
 
+const getPublicEncuentros = async (req, res) => {
+    try {
+        const encuentros = await prisma.encuentro.findMany({
+            where: {
+                isDeleted: false,
+                endDate: {
+                    gte: new Date()
+                }
+            },
+            select: {
+                id: true,
+                type: true,
+                name: true,
+                description: true,
+                cost: true,
+                startDate: true,
+                endDate: true,
+                transportCost: true,
+                accommodationCost: true,
+                registrations: {
+                    select: {
+                        id: true
+                    }
+                }
+            },
+            orderBy: {
+                startDate: 'asc'
+            }
+        });
+
+        res.json(encuentros.map((enc) => ({
+            ...enc,
+            registeredCount: enc.registrations?.length || 0
+        })));
+    } catch (error) {
+        console.error('Error fetching public encuentros:', error);
+        res.status(500).json({ error: 'Error getting public encuentros' });
+    }
+};
+
+const createPublicEncuentroRegistration = async (req, res) => {
+    try {
+        const { encuentroId } = req.params;
+        const { fullName, phone, sex, needsTransport, needsAccommodation } = req.body;
+
+        const encuentro = await prisma.encuentro.findUnique({
+            where: { id: parseInt(encuentroId) },
+            select: {
+                id: true,
+                type: true,
+                name: true,
+                cost: true,
+                endDate: true
+            }
+        });
+
+        if (!encuentro) {
+            return res.status(404).json({ error: 'Encuentro no encontrado.' });
+        }
+
+        if (new Date(encuentro.endDate) < new Date()) {
+            return res.status(400).json({ error: 'El encuentro ya finalizó y no acepta nuevas inscripciones.' });
+        }
+
+        const trimmedName = (fullName || '').trim();
+        const trimmedPhone = (phone || '').trim();
+
+        if (!trimmedName) {
+            return res.status(400).json({ error: 'El nombre completo es obligatorio.' });
+        }
+
+        if ((encuentro.type === 'HOMBRES' || encuentro.type === 'MUJERES') && !sex) {
+            return res.status(400).json({ error: 'Debes indicar el sexo para este encuentro.' });
+        }
+
+        if (encuentro.type === 'HOMBRES' && sex && sex !== 'HOMBRE') {
+            return res.status(400).json({ error: 'Este encuentro es exclusivo para hombres.' });
+        }
+
+        if (encuentro.type === 'MUJERES' && sex && sex !== 'MUJER') {
+            return res.status(400).json({ error: 'Este encuentro es exclusivo para mujeres.' });
+        }
+
+        // Find an admin user to serve as the default inviter for the guest
+        const adminUser = await prisma.user.findFirst({
+            where: {
+                roles: { some: { role: { name: 'ADMIN' } } }
+            },
+            select: { id: true }
+        });
+
+        if (!adminUser) {
+            return res.status(500).json({ error: 'No hay usuarios administradores disponibles para procesar el registro.' });
+        }
+
+        // Create or find guest by name+phone
+        let guest = await prisma.guest.findFirst({
+            where: {
+                name: { equals: trimmedName, mode: 'insensitive' },
+                phone: trimmedPhone || undefined,
+                isDeleted: false
+            },
+            select: { id: true }
+        });
+
+        if (!guest) {
+            guest = await prisma.guest.create({
+                data: {
+                    name: trimmedName,
+                    phone: trimmedPhone || 'Sin teléfono',
+                    sex: sex || null,
+                    status: 'NUEVO',
+                    invitedById: adminUser.id,
+                    registeredById: adminUser.id
+                },
+                select: { id: true }
+            });
+        }
+
+        // Check for duplicate registration
+        const existingRegistration = await prisma.encuentroRegistration.findFirst({
+            where: {
+                encuentroId: parseInt(encuentroId),
+                guestId: guest.id
+            },
+            select: { id: true }
+        });
+
+        if (existingRegistration) {
+            return res.status(400).json({ error: 'Ya estás inscrito en este encuentro.' });
+        }
+
+        const registration = await prisma.encuentroRegistration.create({
+            data: {
+                encuentroId: parseInt(encuentroId),
+                guestId: guest.id,
+                needsTransport: Boolean(needsTransport),
+                needsAccommodation: Boolean(needsAccommodation)
+            }
+        });
+
+        await logActivity(null, 'CREATE', 'ENCUENTRO_REGISTRATION', registration.id, {
+            type: 'PUBLIC_REGISTRATION',
+            encuentroId: parseInt(encuentroId),
+            fullName: trimmedName
+        }, req.ip, req.headers['user-agent']);
+
+        res.status(201).json({
+            message: 'Tu inscripción fue registrada exitosamente.',
+            registration
+        });
+    } catch (error) {
+        console.error('Error creating public encuentro registration:', error);
+        res.status(500).json({ error: 'Error creating public registration' });
+    }
+};
+
 const deletePayment = async (req, res) => {
     try {
         const { paymentId } = req.params;
@@ -797,5 +954,7 @@ module.exports = {
     addPayment,
     deletePayment,
     updateClassAttendance,
-    getEncuentroBalanceReport
+    getEncuentroBalanceReport,
+    getPublicEncuentros,
+    createPublicEncuentroRegistration
 };

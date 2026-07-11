@@ -34,6 +34,7 @@ const SetupWizard = lazy(() => import('./pages/SetupWizard'));
 const Metas = lazy(() => import('./pages/Metas'));
 const PublicGuestRegistration = lazy(() => import('./pages/PublicGuestRegistration'));
 const PublicConventionRegistration = lazy(() => import('./pages/PublicConventionRegistration'));
+const PublicEncuentrosRegistration = lazy(() => import('./pages/PublicEncuentrosRegistration'));
 
 // 
 
@@ -198,6 +199,7 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/registro-invitados" element={<PublicGuestRegistration />} />
                 <Route path="/registro-convenciones" element={<PublicConventionRegistration />} />
+                <Route path="/registro-encuentros" element={<PublicEncuentrosRegistration />} />
 
                 <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
                   <Route index element={<Home />} />

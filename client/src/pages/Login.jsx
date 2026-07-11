@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
-import { Lock, Eye, EyeClosedIcon, ArrowsClockwiseIcon, Sun, Moon, UserPlus, Users, CalendarDots } from '@phosphor-icons/react';
+import { Lock, Eye, EyeClosedIcon, ArrowsClockwiseIcon, Sun, Moon, UserPlus, Users, CalendarDots, Cross } from '@phosphor-icons/react';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import logo from '../assets/logo.jpg';
 
@@ -207,7 +207,7 @@ const Login = () => {
                         {/* Guest and Convention Registration - Grid on Desktop */}
                         <div className="mt-6 pt-6 border-t border-[var(--ln-border-standard)]">
                             <p className="text-[11px] sm:text-[12px] text-[var(--ln-text-tertiary)] uppercase tracking-widest mb-4 text-center opacity-70">Otros tipos de registro</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 {/* Guest Registration */}
                                 <button
                                     onClick={() => navigate('/registro-invitados')}
@@ -224,6 +224,15 @@ const Login = () => {
                                 >
                                     <CalendarDots size={18} weight="regular" className="group-hover:scale-110 transition-transform" />
                                     <span>Registrar Convención</span>
+                                </button>
+
+                                {/* Encounter Registration */}
+                                <button
+                                    onClick={() => navigate('/registro-encuentros')}
+                                    className="group bg-gradient-to-br from-[#22c55e]/10 to-transparent border border-[#22c55e]/30 hover:border-[#22c55e]/60 text-[var(--ln-text-primary)] font-medium py-3 sm:py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-[#22c55e]/10 text-[12px] sm:text-[13px] flex items-center justify-center gap-2"
+                                >
+                                    <Cross size={18} weight="regular" className="group-hover:scale-110 transition-transform" />
+                                    <span>Registrar Encuentro</span>
                                 </button>
                             </div>
                         </div>
