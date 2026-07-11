@@ -3,6 +3,8 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { MagnifyingGlass, Camera, X, Upload, Link, Download } from '@phosphor-icons/react';
 import { Button, Input, AsyncSearchSelect } from '../ui';
+import Modal from '../ui/Modal';
+import toast from 'react-hot-toast';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
@@ -28,6 +30,15 @@ const KidsStudentMatrix = () => {
     const [photoUrl, setPhotoUrl] = useState('');
     const [photoDescription, setPhotoDescription] = useState('');
     const [uploading, setUploading] = useState(false);
+    
+    // Edit Student Modal State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [editingStudent, setEditingStudent] = useState(null);
+    const [editingResponsible, setEditingResponsible] = useState(null);
+    const [editingPhone, setEditingPhone] = useState('');
+    const [editingEmail, setEditingEmail] = useState('');
+    const [saving, setSaving] = useState(false);
 
     // Función para calcular edad
     const calculateAge = (birthDate) => {
@@ -121,7 +132,7 @@ const KidsStudentMatrix = () => {
         try {
             setLoading(true);
             const res = await api.get('/kids/student-matrix');
-            setStudents(res.data.filter(student => student.enrollments && student.enrollments.length > 0));
+            setStudents(res.data || []);
         } catch (error) {
             console.error('Error fetching student matrix:', error);
         } finally {
@@ -171,7 +182,7 @@ const KidsStudentMatrix = () => {
 
     const handlePhotoUpload = async () => {
         if (!photoUrl.trim()) {
-            alert('Por favor ingresa la URL de la imagen');
+            toast.error('Por favor ingresa la URL de la imagen');
             return;
         }
 
@@ -185,16 +196,16 @@ const KidsStudentMatrix = () => {
             };
 
             await api.post('/kids-class-photos', photoData);
-            
+
             // Resetear el modal
             setPhotoUrl('');
             setPhotoDescription('');
             setShowPhotoModal(false);
-            
-            alert('Evidencia de clase guardada exitosamente');
+
+            toast.success('Evidencia de clase guardada exitosamente');
         } catch (error) {
             console.error('Error uploading photo:', error);
-            alert('Error al guardar la evidencia de clase');
+            toast.error('Error al guardar la evidencia de clase');
         } finally {
             setUploading(false);
         }
@@ -210,6 +221,92 @@ const KidsStudentMatrix = () => {
         setPhotoDescription('');
     };
 
+    const openEditModal = (student) => {
+        setSelectedStudent(student);
+        setEditingStudent({
+            fullName: student.fullName || ''
+        });
+
+        // Buscar el acudiente actual en la API para obtener sus datos completos
+        if (student.responsible?.fullName) {
+            api.get('/users', { params: { search: student.responsible.fullName } })
+                .then(res => {
+                    // La API devuelve {users: [...], pagination: {...}}
+                    const usersArray = res.data?.users || res.data || [];
+                    const responsibleData = usersArray.find(u => u.fullName === student.responsible.fullName);
+                    if (responsibleData) {
+                        setEditingResponsible({
+                            id: responsibleData.id || '',
+                            fullName: responsibleData.fullName || responsibleData.name || '',
+                            phone: responsibleData.phone || responsibleData.profile?.phone || '',
+                            email: responsibleData.email || responsibleData.profile?.email || ''
+                        });
+                    } else {
+                        setEditingResponsible({
+                            id: '',
+                            fullName: student.responsible.fullName || '',
+                            phone: student.responsible.phone || '',
+                            email: student.responsible.email || ''
+                        });
+                    }
+                })
+                .catch(() => {
+                    setEditingResponsible({
+                        id: '',
+                        fullName: student.responsible.fullName || '',
+                        phone: student.responsible.phone || '',
+                        email: student.responsible.email || ''
+                    });
+                });
+        } else {
+            setEditingResponsible({
+                id: '',
+                fullName: '',
+                phone: '',
+                email: ''
+            });
+        }
+
+        setEditingPhone(student.phone || '');
+        setEditingEmail(student.email || '');
+        setShowEditModal(true);
+    };
+
+    const closeEditModal = () => {
+        setShowEditModal(false);
+        setSelectedStudent(null);
+        setEditingStudent(null);
+        setEditingResponsible(null);
+        setEditingPhone('');
+        setEditingEmail('');
+    };
+
+    const handleSaveStudent = async () => {
+        if (!selectedStudent) return;
+
+        try {
+            setSaving(true);
+            const updateData = {
+                phone: editingPhone.trim(),
+                email: editingEmail.trim(),
+                responsible: editingResponsible
+            };
+
+            await api.put(`/users/${selectedStudent.id}`, updateData);
+
+            // Refresh the student matrix
+            await fetchStudentMatrix();
+
+            toast.success('Información del estudiante actualizada exitosamente');
+            closeEditModal();
+        } catch (error) {
+            console.error('Error updating student:', error);
+            toast.error('Error al actualizar la información del estudiante');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const downloadExcel = async () => {
         try {
             const workbook = new ExcelJS.Workbook();
@@ -219,6 +316,7 @@ const KidsStudentMatrix = () => {
             worksheet.columns = [
                 { header: 'Nombre', key: 'name', width: 30 },
                 { header: 'Edad', key: 'age', width: 8 },
+                { header: 'Inscrito en clases', key: 'registered', width: 18 },
                 { header: 'Teléfono', key: 'phone', width: 15 },
                 { header: 'Correo', key: 'email', width: 25 },
                 { header: 'Fecha de Nacimiento', key: 'birthDate', width: 20 },
@@ -235,10 +333,12 @@ const KidsStudentMatrix = () => {
                 const birthDate = student.profile?.birthDate;
                 const age = calculateAge(birthDate);
                 const formattedDate = formatDate(birthDate);
+                const registered = student.enrollments && student.enrollments.length > 0;
 
                 worksheet.addRow({
                     name: student.fullName,
                     age: age || '-',
+                    registered: registered ? 'SÍ' : 'NO',
                     phone: student.phone || '-',
                     email: student.email || '-',
                     birthDate: formattedDate,
@@ -285,6 +385,10 @@ const KidsStudentMatrix = () => {
         return matchesSearch;
     });
 
+    const totalStudents = filteredStudents.length;
+    const studentsWithClasses = filteredStudents.filter(student => student.enrollments && student.enrollments.length > 0).length;
+    const studentsWithoutClasses = totalStudents - studentsWithClasses;
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -309,8 +413,21 @@ const KidsStudentMatrix = () => {
                 </Button>
             </div>
 
-            <div className="bg-white dark:bg-[#272729] rounded-lg shadow p-4 space-y-4">
-                
+            <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-[#3a3a3c] dark:bg-[#272729]">
+                    <div className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Total de Estudiantes</div>
+                    <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{totalStudents}</div>
+                </div>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                    <div className="text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Registrado en Clase</div>
+                    <div className="mt-2 text-2xl font-bold text-emerald-900 dark:text-emerald-200">{studentsWithClasses}</div>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/25">
+                    <div className="text-xs uppercase tracking-wider text-amber-700 dark:text-amber-300">Pendientes por Registro</div>
+                    <div className="mt-2 text-2xl font-bold text-amber-900 dark:text-amber-200">{studentsWithoutClasses}</div>
+                </div>
+            </div>
+
             <div className="bg-white dark:bg-[#272729] rounded-lg shadow p-4 space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -327,7 +444,6 @@ const KidsStudentMatrix = () => {
                     </div>
                 </div>
             </div>
-            </div>
 
             <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
@@ -339,6 +455,9 @@ const KidsStudentMatrix = () => {
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Edad
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
+                                    Registro
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-gray-300 uppercase tracking-wider">
                                     Teléfono
@@ -371,14 +490,37 @@ const KidsStudentMatrix = () => {
                                 const birthDate = student.profile?.birthDate;
                                 const age = calculateAge(birthDate);
                                 const formattedDate = formatDate(birthDate);
+                                const hasEnrollments = student.enrollments && student.enrollments.length > 0;
                                 
                                 return (
-                                    <tr key={student.id}>
+                                    <tr
+                                        key={student.id}
+                                        className={!hasEnrollments
+                                            ? 'bg-amber-50/80 dark:bg-amber-950/25'
+                                            : ''
+                                        }
+                                    >
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {student.fullName}
+                                            <button
+                                                onClick={() => openEditModal(student)}
+                                                className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer transition-colors"
+                                            >
+                                                {student.fullName}
+                                            </button>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {age || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
+                                            {hasEnrollments ? (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                                                    Registrado
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                                                    Sin clases
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
                                             {student.phone || '-'}
@@ -524,6 +666,184 @@ const KidsStudentMatrix = () => {
                     </div>
                 </div>
             )}
+
+            {/* Modal para editar información del estudiante */}
+            <Modal
+                isOpen={showEditModal}
+                onClose={closeEditModal}
+                title="Editar Información del Estudiante"
+                size="md"
+            >
+                <Modal.Content className="space-y-4">
+                    {/* Nombre del estudiante (lectura) */}
+                    <div>
+                        <label className="block text-sm font-medium text-black dark:text-white mb-1">
+                            Nombre del Estudiante
+                        </label>
+                        <Input
+                            type="text"
+                            value={editingStudent?.fullName || ''}
+                            disabled
+                            className="w-full opacity-50 cursor-not-allowed !text-black dark:!text-white"
+                        />
+                    </div>
+
+                    {/* Teléfono del estudiante */}
+                    <div>
+                        <label className="block text-sm font-medium text-black dark:text-white mb-1">
+                            Teléfono del Estudiante
+                        </label>
+                        <Input
+                            type="tel"
+                            value={editingPhone}
+                            onChange={(e) => setEditingPhone(e.target.value)}
+                            placeholder="Ej: +57 300 1234567"
+                            className="w-full !text-black dark:!text-white"
+                        />
+                    </div>
+
+                    {/* Correo del estudiante */}
+                    <div>
+                        <label className="block text-sm font-medium text-black dark:text-white mb-1">
+                            Correo del Estudiante
+                        </label>
+                        <Input
+                            type="email"
+                            value={editingEmail}
+                            onChange={(e) => setEditingEmail(e.target.value)}
+                            placeholder="Ej: estudiante@example.com"
+                            className="w-full !text-black dark:!text-white"
+                        />
+                    </div>
+
+                    {/* Acudiente */}
+                    <div className="border-t border-[rgba(255,255,255,0.08)] pt-4 mt-4">
+                        <h4 className="font-semibold text-black dark:text-white mb-3">
+                            Información del Acudiente
+                        </h4>
+
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-sm font-medium text-black dark:text-white mb-1">
+                                    Nombre del Acudiente
+                                </label>
+                                <AsyncSearchSelect
+                                    fetchItems={async (term) => {
+                                        try {
+                                            const res = await api.get('/users', { params: { search: term } });
+                                            // La API devuelve {users: [...], pagination: {...}}
+                                            const usersArray = res.data?.users || res.data || [];
+                                            return Array.isArray(usersArray) ? usersArray : [];
+                                        } catch (error) {
+                                            return [];
+                                        }
+                                    }}
+                                    selectedValue={editingResponsible || null}
+                                    onSelect={(responsible) => {
+                                        if (responsible) {
+                                            setEditingResponsible({
+                                                id: responsible.id,
+                                                fullName: responsible.fullName || responsible.name || '',
+                                                phone: responsible.phone || responsible.profile?.phone || '',
+                                                email: responsible.email || responsible.profile?.email || ''
+                                            });
+                                            // Opcional: Actualizar también los campos del estudiante con los datos del acudiente
+                                            // setEditingPhone(responsible.phone || responsible.profile?.phone || '');
+                                            // setEditingEmail(responsible.email || responsible.profile?.email || '');
+                                        } else {
+                                            setEditingResponsible({
+                                                id: '',
+                                                fullName: '',
+                                                phone: '',
+                                                email: ''
+                                            });
+                                        }
+                                    }}
+                                    placeholder="Buscar acudiente..."
+                                    labelKey={(item) => item.fullName || item.name || ''}
+                                    valueKey="id"
+                                    renderItem={(item) => (
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-[var(--ln-brand-indigo)]/10 flex items-center justify-center text-[var(--ln-brand-indigo)] text-[12px] weight-700 shadow-sm border border-[var(--ln-brand-indigo)]/20">
+                                                {(item.fullName || item.name || '?').charAt(0)}
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <div className="text-[13.5px] weight-590 text-[var(--ln-text-primary)] truncate">
+                                                    {item.fullName || item.name || 'Sin nombre'}
+                                                </div>
+                                                <div className="text-[11px] weight-510 text-[var(--ln-text-tertiary)] opacity-60 truncate">
+                                                    {item.phone || item.profile?.phone || item.email || item.profile?.email || 'Sin contacto'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    renderSelected={(item) => (
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-5 h-5 rounded-full bg-[var(--ln-brand-indigo)]/10 flex items-center justify-center text-[var(--ln-brand-indigo)] text-[10px] weight-700">
+                                                {item?.fullName?.charAt(0) || item?.name?.charAt(0) || '?'}
+                                            </div>
+                                            <span className="text-[13.5px] weight-590 text-[var(--ln-text-primary)] truncate block tracking-tight">
+                                                {item?.fullName || item?.name || 'Sin acudiente'}
+                                            </span>
+                                        </div>
+                                    )}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-black dark:text-white mb-1">
+                                    Teléfono del Acudiente
+                                </label>
+                                <Input
+                                    type="tel"
+                                    value={editingResponsible?.phone || ''}
+                                    disabled
+                                    placeholder="Se llena automáticamente al seleccionar acudiente"
+                                    className="w-full opacity-50 cursor-not-allowed !text-black dark:!text-white"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-black dark:text-white mb-1">
+                                    Correo del Acudiente
+                                </label>
+                                <Input
+                                    type="email"
+                                    value={editingResponsible?.email || ''}
+                                    disabled
+                                    placeholder="Se llena automáticamente al seleccionar acudiente"
+                                    className="w-full opacity-50 cursor-not-allowed !text-black dark:!text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </Modal.Content>
+
+                <Modal.Footer className="flex gap-3">
+                    <Button
+                        onClick={handleSaveStudent}
+                        disabled={saving}
+                        className="flex-1"
+                    >
+                        {saving ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Guardando...
+                            </>
+                        ) : (
+                            'Guardar Cambios'
+                        )}
+                    </Button>
+                    <Button
+                        onClick={closeEditModal}
+                        variant="secondary"
+                        disabled={saving}
+                        className="flex-1"
+                    >
+                        Cancelar
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 };

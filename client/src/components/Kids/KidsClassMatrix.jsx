@@ -36,6 +36,7 @@ const KidsClassMatrix = ({ courseId }) => {
     const [matrix, setMatrix] = useState([]);
     const [courseInfo, setCourseInfo] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [pendingStudents, setPendingStudents] = useState([]);
     const [showEnrollModal, setShowEnrollModal] = useState(false);
     const [selectedStudentId, setSelectedStudentId] = useState('');
     const [selectedStudent, setSelectedStudent] = useState(null);
@@ -111,11 +112,33 @@ const KidsClassMatrix = ({ courseId }) => {
         }
     }, [courseId]);
 
+    const fetchPendingStudents = useCallback(async () => {
+        try {
+            const res = await api.get('/kids/student-matrix');
+            setPendingStudents((res.data || []).filter(student => !student.enrollments || student.enrollments.length === 0));
+        } catch {
+            // Error fetching pending students
+        }
+    }, []);
+
+    const visiblePendingStudents = useMemo(() => {
+        if (!courseInfo) return pendingStudents;
+
+        const categoryConfig = CATEGORY_INFO[courseInfo.category];
+        if (!categoryConfig) return pendingStudents;
+
+        return pendingStudents.filter(student => {
+            const age = calculateAge(student.profile?.birthDate);
+            return age !== null && age >= categoryConfig.minAge && age <= categoryConfig.maxAge;
+        });
+    }, [pendingStudents, courseInfo]);
+
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchMatrix();
         fetchCourseInfo();
-    }, [courseId, fetchMatrix, fetchCourseInfo]);
+        fetchPendingStudents();
+    }, [courseId, fetchMatrix, fetchCourseInfo, fetchPendingStudents]);
 
     const handleCellUpdate = async (enrollmentId, classNumber, field, value) => {
         try {
@@ -249,7 +272,7 @@ const KidsClassMatrix = ({ courseId }) => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Matriz de Clases</h2>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Matriz de Clases Kids</h2>
                 {canEnrollStudents && (
                     <Button
                         onClick={() => setShowEnrollModal(true)}
@@ -261,6 +284,44 @@ const KidsClassMatrix = ({ courseId }) => {
                     </Button>
                 )}
             </div>
+
+            {visiblePendingStudents.length > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/25">
+                    <div className="flex items-start gap-3">
+                        <div className="mt-0.5 rounded-full bg-amber-100 p-2 text-amber-700 dark:bg-amber-900/60 dark:text-amber-200">
+                            <WarningCircle size={18} weight="fill" />
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+                                    Estudiantes sin inscripción para esta clase
+                                </h3>
+                                <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-900 dark:text-amber-100">
+                                    {visiblePendingStudents.length}
+                                </span>
+                            </div>
+                            <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                                Estos menores aún no aparecen registrados en ninguna clase y encajan en la categoría del curso actual. Quedan resaltados para priorizar su inscripción.
+                            </p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {visiblePendingStudents.slice(0, 12).map(student => (
+                                    <button
+                                        key={student.id}
+                                        onClick={() => {
+                                            setSelectedStudentId(student.id);
+                                            setSelectedStudent(student);
+                                            setShowEnrollModal(true);
+                                        }}
+                                        className="inline-flex items-center rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-medium text-amber-900 shadow-sm dark:border-amber-900/70 dark:bg-[#272729] dark:text-amber-100 cursor-pointer transition-all hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-[#2d2d2f] hover:shadow-md active:scale-95"
+                                    >
+                                        {student.fullName}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
                 <table className="min-w-full">

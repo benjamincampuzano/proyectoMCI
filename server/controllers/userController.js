@@ -751,7 +751,7 @@ const updateUser = async (req, res) => {
             return res.status(403).json({ message: permission.reason });
         }
 
-        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, isCoordinator, spouseId, encuentro, discipular1A, discipular1B, discipular2A, discipular2B, discipular3A, discipular3B } = req.body;
+        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, isCoordinator, spouseId, encuentro, discipular1A, discipular1B, discipular2A, discipular2B, discipular3A, discipular3B, responsible } = req.body;
 
         if (email) {
             const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -817,6 +817,14 @@ const updateUser = async (req, res) => {
                 },
                 include: { profile: true, roles: { include: { role: true } } }
             });
+
+            // Actualizar el guardianId en las inscripciones de clases si se proporciona responsible
+            if (responsible && responsible.id) {
+                await tx.seminarEnrollment.updateMany({
+                    where: { userId: userId },
+                    data: { guardianId: parseInt(responsible.id) }
+                });
+            }
 
             // 2. Update Role if provided
             if (role) {

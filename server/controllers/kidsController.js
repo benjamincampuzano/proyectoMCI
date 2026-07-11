@@ -533,16 +533,7 @@ const getStudentMatrix = async (req, res) => {
         const access = await getRequesterKidsAccess(req);
 
         const whereClause = {
-            isDeleted: false,
-            seminarEnrollments: {
-                some: {
-                    module: {
-                        type: {
-                            in: ['KIDS1', 'KIDS2', 'TEENS', 'JOVENES']
-                        }
-                    }
-                }
-            }
+            isDeleted: false
         };
 
         if (!access.hasFullAccess) {
@@ -605,58 +596,64 @@ const getStudentMatrix = async (req, res) => {
             }
         });
 
-        const formatted = users.map(u => {
-            // Buscar líder (puede ser LIDER_DOCE o LIDER_CELULA)
-            const leaderEntry = u.parents?.find(p => p.role === 'LIDER_DOCE' || p.role === 'LIDER_CELULA');
-            
-            // Buscar acudiente únicamente en las inscripciones (campo guardian)
-            const guardianFromEnrollment = u.seminarEnrollments?.find(e => e.guardian)?.guardian;
-            
-            // Información de célula
-            const hasCell = !!u.cellId;
-            const lastCellAttendance = u.cellAttendances && u.cellAttendances.length > 0 
-                ? u.cellAttendances[0] 
-                : null;
-            
-            return {
-                id: u.id,
-                email: u.email,
-                phone: u.phone,
-                fullName: u.profile?.fullName,
-                profile: {
-                    birthDate: u.profile?.birthDate
-                },
-                cell: hasCell ? {
-                    id: u.cell?.id,
-                    name: u.cell?.name,
-                    hasCell: true
-                } : {
-                    hasCell: false
-                },
-                lastCellAttendance: lastCellAttendance ? {
-                    date: lastCellAttendance.date,
-                    status: lastCellAttendance.status
-                } : null,
-                leaderDoce: leaderEntry ? {
-                    id: leaderEntry.parent.id,
-                    fullName: leaderEntry.parent.profile?.fullName,
-                    role: leaderEntry.role
-                } : null,
-                responsible: guardianFromEnrollment ? {
-                    fullName: guardianFromEnrollment.profile?.fullName
-                } : null,
-                enrollments: u.seminarEnrollments.map(e => ({
-                    module: {
-                        ...e.module,
-                        category: e.module?.code?.split('_')[0] || 'KIDS'
+        const formatted = users
+            .filter(u => {
+                const age = calculateAge(u.profile?.birthDate);
+                return age !== null && age < 18;
+            })
+            .map(u => {
+                // Buscar líder (puede ser LIDER_DOCE o LIDER_CELULA)
+                const leaderEntry = u.parents?.find(p => p.role === 'LIDER_DOCE' || p.role === 'LIDER_CELULA');
+
+                // Buscar acudiente únicamente en las inscripciones (campo guardian)
+                const guardianFromEnrollment = u.seminarEnrollments?.find(e => e.guardian)?.guardian;
+
+                // Información de célula
+                const hasCell = !!u.cellId;
+                const lastCellAttendance = u.cellAttendances && u.cellAttendances.length > 0
+                    ? u.cellAttendances[0]
+                    : null;
+
+                return {
+                    id: u.id,
+                    email: u.email,
+                    phone: u.phone,
+                    fullName: u.profile?.fullName,
+                    profile: {
+                        birthDate: u.profile?.birthDate
                     },
-                    finalGrade: e.finalGrade,
-                    attendanceRate: e.classAttendances.length > 0
-                        ? (e.classAttendances.filter(a => a.status === 'ASISTE').length / e.classAttendances.length) * 100
-                        : 0
-                }))
-            };
-        });
+                    cell: hasCell ? {
+                        id: u.cell?.id,
+                        name: u.cell?.name,
+                        hasCell: true
+                    } : {
+                        hasCell: false
+                    },
+                    lastCellAttendance: lastCellAttendance ? {
+                        date: lastCellAttendance.date,
+                        status: lastCellAttendance.status
+                    } : null,
+                    leaderDoce: leaderEntry ? {
+                        id: leaderEntry.parent.id,
+                        fullName: leaderEntry.parent.profile?.fullName,
+                        role: leaderEntry.role
+                    } : null,
+                    responsible: guardianFromEnrollment ? {
+                        fullName: guardianFromEnrollment.profile?.fullName
+                    } : null,
+                    enrollments: u.seminarEnrollments.map(e => ({
+                        module: {
+                            ...e.module,
+                            category: e.module?.code?.split('_')[0] || 'KIDS'
+                        },
+                        finalGrade: e.finalGrade,
+                        attendanceRate: e.classAttendances.length > 0
+                            ? (e.classAttendances.filter(a => a.status === 'ASISTE').length / e.classAttendances.length) * 100
+                            : 0
+                    })),
+                    hasEnrollments: (u.seminarEnrollments || []).length > 0
+                };
+            });
 
         res.json(formatted);
     } catch (error) {

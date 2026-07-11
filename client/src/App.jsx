@@ -11,6 +11,7 @@ import LoadingOverlay from './components/LoadingOverlay';
 import TransitionLoader from './components/TransitionLoader';
 import ChangePasswordModal from './components/ChangePasswordModal';
 import PostLoginAttendanceModal from './components/PostLoginAttendanceModal';
+import SessionTimeoutProvider from './components/SessionTimeoutProvider';
 import api from './utils/api';
 import './utils/logger';
 import mobileDebug from './utils/mobileDebug';
@@ -188,37 +189,39 @@ function App() {
       <LoadingProvider>
         <BrowserRouter>
           <AuthProvider>
-            <ConnectivityHandler />
-            <RouteTransitionHandler />
-            <LoadingOverlay />
-            <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-            <Suspense fallback={<TransitionLoader />}>
-              <Routes>
-                <Route path="/setup" element={<SetupWizard />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/registro-invitados" element={<PublicGuestRegistration />} />
-                <Route path="/registro-convenciones" element={<PublicConventionRegistration />} />
-                <Route path="/registro-encuentros" element={<PublicEncuentrosRegistration />} />
+            <SessionTimeoutProvider>
+              <ConnectivityHandler />
+              <RouteTransitionHandler />
+              <LoadingOverlay />
+              <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+              <Suspense fallback={<TransitionLoader />}>
+                <Routes>
+                  <Route path="/setup" element={<SetupWizard />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/registro-invitados" element={<PublicGuestRegistration />} />
+                  <Route path="/registro-convenciones" element={<PublicConventionRegistration />} />
+                  <Route path="/registro-encuentros" element={<PublicEncuentrosRegistration />} />
 
-                <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-                  <Route index element={<Home />} />
-                  <Route path="metas" element={<Metas />} />
-                  <Route path="ganar" element={<Ganar />} />
-                  <Route path="consolidar" element={<Consolidar />} />
-                  <Route path="discipular" element={<Discipular />} />
-                  <Route path="enviar" element={<Enviar />} />
-                  <Route path="encuentros" element={<Encuentros />} />
-                  <Route path="kids" element={<KidsModuleRoute><KidsModule /></KidsModuleRoute>} />
-                  <Route path="escuela-de-artes" element={<EscuelaDeArtes />} />
-                  <Route path="convenciones" element={<Convenciones />} />
-                  <Route path="network" element={<NetworkAssignment />} />
-                  <Route path="usuarios" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
-                  <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
-                </Route>
-              </Routes>
-            </Suspense>
-            <PostLoginAttendanceModal />
+                  <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+                    <Route index element={<Home />} />
+                    <Route path="metas" element={<Metas />} />
+                    <Route path="ganar" element={<Ganar />} />
+                    <Route path="consolidar" element={<Consolidar />} />
+                    <Route path="discipular" element={<Discipular />} />
+                    <Route path="enviar" element={<Enviar />} />
+                    <Route path="encuentros" element={<Encuentros />} />
+                    <Route path="kids" element={<KidsModuleRoute><KidsModule /></KidsModuleRoute>} />
+                    <Route path="escuela-de-artes" element={<EscuelaDeArtes />} />
+                    <Route path="convenciones" element={<Convenciones />} />
+                    <Route path="network" element={<NetworkAssignment />} />
+                    <Route path="usuarios" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
+                    <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
+                  </Route>
+                </Routes>
+              </Suspense>
+              <PostLoginAttendanceModal />
+            </SessionTimeoutProvider>
           </AuthProvider>
         </BrowserRouter>
       </LoadingProvider>

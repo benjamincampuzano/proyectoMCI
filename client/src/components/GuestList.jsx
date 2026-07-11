@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { SpinnerIcon, Funnel, PencilIcon, Trash, X, UserCheckIcon, Users, CheckCircle, FileXls, FloppyDiskIcon, XCircle } from '@phosphor-icons/react';
+import { SpinnerIcon, Funnel, Trash, X, UserCheckIcon, Users, CheckCircle, FileXls } from '@phosphor-icons/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import PropTypes from 'prop-types';
@@ -53,15 +53,12 @@ const GuestList = ({ refreshTrigger }) => {
     } = useGuestManagement({ refreshTrigger });
 
     // Modal unificado: { type, guest, data }
-    // type: 'edit' | 'delete' | 'convert' | 'inline'
-    // data: { email, password, ...} para 'convert' e 'inline'
+    // type: 'edit' | 'delete' | 'convert'
+    // data: { email, password, ...} para 'convert'
     const [activeModal, setActiveModal] = useState(null);
 
     // Estado para exportación
     const [isExporting, setIsExporting] = useState(false);
-
-    // Estado para guardado inline
-    const [inlineSaving, setInlineSaving] = useState(false);
 
     // Estado para filtros avanzados
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(() => {
@@ -105,19 +102,8 @@ const GuestList = ({ refreshTrigger }) => {
             data.password = '';
             data.dataPolicyAccepted = false;
             data.dataTreatmentAuthorized = false;
-        } else if (type === 'inline') {
-            // Copiar los datos del guest para edición
-            Object.assign(data, guest);
         }
         setActiveModal({ type, guest, data });
-    }, []);
-
-    // Función helper para actualizar datos dentro del modal
-    const updateModalData = useCallback((updates) => {
-        setActiveModal((prev) => ({
-            ...prev,
-            data: { ...prev.data, ...updates }
-        }));
     }, []);
 
     const handleGuestUpdated = useCallback(() => {
@@ -153,46 +139,6 @@ const GuestList = ({ refreshTrigger }) => {
             setError(err.message || 'Error al convertir invitado');
         }
     }, [activeModal, convertGuestToMember, setError]);
-
-    // Handlers para edición inline
-    const handleInlineEditStart = useCallback((guest) => {
-        openModal('inline', guest);
-    }, [openModal]);
-
-    const handleInlineEditCancel = useCallback(() => {
-        setActiveModal(null);
-    }, []);
-
-    const handleInlineEditSave = useCallback(async () => {
-        if (!activeModal?.guest || !activeModal?.data) return;
-
-        const { data } = activeModal;
-        if (!data.name || !data.phone) {
-            setError('Nombre y teléfono son requeridos');
-            return;
-        }
-
-        setInlineSaving(true);
-        try {
-            const res = await updateGuest(activeModal.guest.id, {
-                name: data.name,
-                phone: data.phone,
-                address: data.address,
-                status: data.status,
-                invitedById: data.invitedById,
-                assignedToId: data.assignedToId,
-            });
-
-            if (res?.success) {
-                toast.success('Invitado actualizado exitosamente');
-                setActiveModal(null);
-            }
-        } catch (err) {
-            setError(err.message || 'Error al actualizar invitado');
-        } finally {
-            setInlineSaving(false);
-        }
-    }, [activeModal, updateGuest, setError]);
 
     const getStatusBadgeColor = (status) => {
         // Token-based status pills: neutral translúcido, salvo GANADO (success Linear)
@@ -672,20 +618,13 @@ const GuestList = ({ refreshTrigger }) => {
                                         <p className="text-[var(--ln-text-primary)] text-sm font-[510]">{guest.registeredBy?.fullName || 'N/A'}</p>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
-                                            <input
-                                                type="text"
-                                                value={activeModal?.data?.name}
-                                                onChange={(e) =>
-                                                    updateModalData({ name: e.target.value })
-                                                }
-                                                disabled={!canModify()}
-                                                className="w-full px-2 py-1 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded text-[var(--ln-text-primary)] text-sm focus:outline-none focus:border-[var(--ln-accent-violet)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                placeholder="Nombre"
-                                            />
-                                        ) : (
-                                            <p className="text-[var(--ln-text-primary)] text-sm font-[510]">{guest.name}</p>
-                                        )}
+                                        <button
+                                            onClick={() => openModal('edit', guest)}
+                                            className="text-[var(--ln-text-primary)] text-sm font-[510] hover:text-[var(--ln-accent-violet)] transition-colors text-left cursor-pointer underline decoration-dotted underline-offset-2 decoration-[var(--ln-border-subtle)] hover:decoration-[var(--ln-accent-violet)]"
+                                            title="Editar invitado"
+                                        >
+                                            {guest.name}
+                                        </button>
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className="text-[var(--ln-text-secondary)] text-sm">
@@ -693,35 +632,10 @@ const GuestList = ({ refreshTrigger }) => {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
-                                            <input
-                                                type="text"
-                                                value={activeModal?.data?.phone}
-                                                onChange={(e) =>
-                                                    updateModalData({ phone: e.target.value })
-                                                }
-                                                disabled={!canModify()}
-                                                className="w-full px-2 py-1 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded text-[var(--ln-text-primary)] text-sm focus:outline-none focus:border-[var(--ln-accent-violet)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                            />
-                                        ) : (
-                                            <span className="text-[var(--ln-text-secondary)] text-sm">{guest.phone}</span>
-                                        )}
+                                        <span className="text-[var(--ln-text-secondary)] text-sm">{guest.phone}</span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
-                                            <input
-                                                type="text"
-                                                value={activeModal?.data?.address || ''}
-                                                onChange={(e) =>
-                                                    updateModalData({ address: e.target.value })
-                                                }
-                                                disabled={!canModify()}
-                                                className="w-full px-2 py-1 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded text-[var(--ln-text-primary)] text-sm focus:outline-none focus:border-[var(--ln-accent-violet)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                placeholder="Dirección"
-                                            />
-                                        ) : (
-                                            <span className="text-[var(--ln-text-secondary)] text-sm">{guest.address || 'N/A'}</span>
-                                        )}
+                                        <span className="text-[var(--ln-text-secondary)] text-sm">{guest.address || 'N/A'}</span>
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className="text-[var(--ln-text-secondary)] text-sm max-w-[150px] block truncate" title={guest.prayerRequest || ''}>
@@ -729,24 +643,9 @@ const GuestList = ({ refreshTrigger }) => {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
-                                            <select
-                                                value={activeModal?.data?.status}
-                                                onChange={(e) =>
-                                                    updateModalData({ status: e.target.value })
-                                                }
-                                                className="w-full px-2 py-1 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded text-[var(--ln-text-primary)] text-sm focus:outline-none focus:border-[var(--ln-accent-violet)] transition-all"
-                                            >
-                                                <option value="NUEVO">Nuevo</option>
-                                                <option value="CONTACTADO">Llamado</option>
-                                                <option value="CONSOLIDADO">Visitado</option>
-                                                <option value="GANADO">Consolidado</option>
-                                            </select>
-                                        ) : (
-                                            <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-[510] ${getStatusBadgeColor(guest.status)}`}>
-                                                {getStatusLabel(guest.status)}
-                                            </span>
-                                        )}
+                                        <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-[510] ${getStatusBadgeColor(guest.status)}`}>
+                                            {getStatusLabel(guest.status)}
+                                        </span>
                                     </td>
                                     <td className="px-4 py-3">
                                         {(guest.invitedBy?.liderDoce || guest.assignedTo?.liderDoce) ? (
@@ -758,46 +657,14 @@ const GuestList = ({ refreshTrigger }) => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
-                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
-                                            canModify() ? (
-                                                <AsyncSearchSelect
-                                                    fetchItems={(term) =>
-                                                        api.get('/users/search', { params: { search: term } })
-                                                            .then(res => res.data)
-                                                    }
-                                                    selectedValue={activeModal?.data?.invitedBy}
-                                                    onSelect={(user) => updateModalData({ invitedById: user?.id, invitedBy: user })}
-                                                    placeholder="Invitado por..."
-                                                    labelKey="fullName"
-                                                />
-                                            ) : (
-                                                <p className="text-[var(--ln-text-primary)] text-sm">
-                                                    {guest.invitedBy?.fullName || (guest.invitedBy?.liderDoce ? `Invitado por: ${guest.invitedBy.liderDoce.fullName}` : 'N/A')}
-                                                </p>
-                                            )
-                                        ) : (
-                                            <p className="text-[var(--ln-text-primary)] text-sm">
-                                                {guest.invitedBy?.fullName || (guest.invitedBy?.liderDoce ? `Invitado por: ${guest.invitedBy.liderDoce.fullName}` : 'N/A')}
-                                            </p>
-                                        )}
+                                        <p className="text-[var(--ln-text-primary)] text-sm">
+                                            {guest.invitedBy?.fullName || (guest.invitedBy?.liderDoce ? `Invitado por: ${guest.invitedBy.liderDoce.fullName}` : 'N/A')}
+                                        </p>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
-                                            <AsyncSearchSelect
-                                                fetchItems={(term) =>
-                                                    api.get('/users/search', { params: { search: term } })
-                                                        .then(res => res.data)
-                                                }
-                                                selectedValue={activeModal?.data?.assignedTo}
-                                                onSelect={(user) => updateModalData({ assignedToId: user?.id, assignedTo: user })}
-                                                placeholder="Asignar a..."
-                                                labelKey="fullName"
-                                            />
-                                        ) : (
-                                            <p className="text-[var(--ln-text-primary)] text-sm">
-                                                {guest.assignedTo?.fullName || (guest.assignedTo?.liderDoce ? `Asignado por: ${guest.assignedTo.liderDoce.fullName}` : 'Pendiente')}
-                                            </p>
-                                        )}
+                                        <p className="text-[var(--ln-text-primary)] text-sm">
+                                            {guest.assignedTo?.fullName || (guest.assignedTo?.liderDoce ? `Asignado por: ${guest.assignedTo.liderDoce.fullName}` : 'Pendiente')}
+                                        </p>
                                     </td>
                                     <td className="px-4 py-3">
                                         {guest.cell ? (
@@ -830,60 +697,26 @@ const GuestList = ({ refreshTrigger }) => {
                                         )}
                                     </td>
                                     <td className="px-4 py-3">
-                                        {activeModal?.type === 'inline' && activeModal?.guest?.id === guest.id ? (
-                                            <div className="flex items-center justify-end space-x-2">
+                                        <div className="flex items-center justify-end space-x-1">
+                                            {canModify() && (
                                                 <button
-                                                    onClick={handleInlineEditSave}
-                                                    disabled={inlineSaving}
-                                                    className="flex items-center gap-1 px-2 py-1 bg-[var(--ln-emerald)]/15 hover:bg-[var(--ln-emerald)]/25 border border-[var(--ln-emerald)]/30 text-[var(--ln-success)] disabled:opacity-40 disabled:cursor-not-allowed text-xs font-[510] rounded transition-colors"
-                                                    title="Guardar cambios"
+                                                    onClick={() => openModal('delete', guest)}
+                                                    className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
+                                                    title="Eliminar"
                                                 >
-                                                    {inlineSaving ? (
-                                                        <SpinnerIcon size={14} className="animate-spin" />
-                                                    ) : (
-                                                        <FloppyDiskIcon size={14} weight="bold" />
-                                                    )}
-                                                    <span>Guardar</span>
+                                                    <Trash size={16} />
                                                 </button>
+                                            )}
+                                            {!currentUser?.roles?.includes('PASTOR') && (
                                                 <button
-                                                    onClick={handleInlineEditCancel}
-                                                    disabled={inlineSaving}
-                                                    className="flex items-center gap-1 px-2 py-1 bg-[var(--ln-btn-ghost)] hover:bg-[var(--ln-btn-subtle)] border border-[var(--ln-border-subtle)] text-[var(--ln-text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed text-xs font-[510] rounded transition-colors"
-                                                    title="Cancelar edición"
+                                                    onClick={() => openModal('convert', guest)}
+                                                    className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-success)] hover:bg-[var(--ln-emerald)]/10 rounded-md transition-colors"
+                                                    title="Convertir a Discípulo"
                                                 >
-                                                    <XCircle size={14} weight="bold" />
-                                                    <span>Cancelar</span>
+                                                    <UserCheckIcon size={16} />
                                                 </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center justify-end space-x-1">
-                                                <button
-                                                    onClick={() => handleInlineEditStart(guest)}
-                                                    className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-accent-violet)] hover:bg-[var(--ln-accent-violet)]/10 rounded-md transition-colors"
-                                                    title="Editar"
-                                                >
-                                                    <PencilIcon size={16} />
-                                                </button>
-                                                {canModify() && (
-                                                    <button
-                                                        onClick={() => openModal('delete', guest)}
-                                                        className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
-                                                        title="Eliminar"
-                                                    >
-                                                        <Trash size={16} />
-                                                    </button>
-                                                )}
-                                                {!currentUser?.roles?.includes('PASTOR') && (
-                                                    <button
-                                                        onClick={() => openModal('convert', guest)}
-                                                        className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-success)] hover:bg-[var(--ln-emerald)]/10 rounded-md transition-colors"
-                                                        title="Convertir a Discípulo"
-                                                    >
-                                                        <UserCheckIcon size={16} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))
