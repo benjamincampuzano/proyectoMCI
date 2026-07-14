@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../utils/api';
+import { getTodayString } from '../utils/dateUtils';
 
 const useCellAttendance = () => {
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(getTodayString());
 
     const [cells, setCells] = useState([]);
     const [selectedCell, setSelectedCell] = useState(null);

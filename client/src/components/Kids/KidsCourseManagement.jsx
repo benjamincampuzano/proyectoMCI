@@ -8,6 +8,16 @@ import { useAuth } from "../../context/AuthContext";
 import { ROLES } from '../../constants/roles';
 import KidsClassMatrix from './KidsClassMatrix';
 
+// Extract YYYY-MM-DD from an ISO string and format for display (timezone-safe)
+const formatDateDisplay = (dateStr) => {
+  if (!dateStr) return 'Sin fecha';
+  const iso = typeof dateStr === 'string' ? dateStr : dateStr.toISOString();
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return new Date(dateStr).toLocaleDateString('es-CO');
+  const [, year, month, day] = match;
+  return `${parseInt(day)}/${parseInt(month)}/${year}`;
+};
+
 
 
 const CATEGORY_INFO = {
@@ -130,7 +140,7 @@ const KidsCourseManagement = () => {
                                     <div className="flex items-center">
                                         <Calendar size={16} className="mr-2" />
                                         <span>
-                                            {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
+                                            {formatDateDisplay(course.startDate)}
                                         </span>
                                     </div>
                                 </div>
@@ -204,10 +214,10 @@ const KidsCourseManagement = () => {
                                             }
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
-                                            {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
+                                            {formatDateDisplay(course.startDate)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
-                                            {course.endDate ? new Date(course.endDate).toLocaleDateString() : 'Sin fecha'}
+                                            {formatDateDisplay(course.endDate)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-[#86868b] dark:text-[#98989d]">
                                             {course._count?.enrollments || 0}

@@ -745,7 +745,8 @@ const updateUser = async (req, res) => {
         }
 
         const targetRole = targetUser.roles?.[0]?.role?.name;
-        const permission = await canManageUser(req.user, targetRole, targetUser.profile?.network, undefined, userId);
+        const moduleContext = req.query.module || req.body.module || undefined;
+        const permission = await canManageUser(req.user, targetRole, targetUser.profile?.network, moduleContext, userId);
 
         if (!permission.canManage) {
             return res.status(403).json({ message: permission.reason });

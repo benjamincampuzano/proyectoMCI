@@ -110,6 +110,37 @@ const Register = () => {
         e.preventDefault();
         setError('');
 
+        if (!/^\d{8,}$/.test(formData.documentNumber)) {
+            setError('El número de documento debe tener al menos 8 dígitos numéricos.');
+            return;
+        }
+
+        if (formData.birthDate) {
+            const today = new Date();
+            const birthDateObj = new Date(formData.birthDate);
+            if (birthDateObj >= today) {
+                setError('La fecha de nacimiento debe ser en el pasado.');
+                return;
+            }
+            const diffTime = today - birthDateObj;
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            if (diffDays <= 360) {
+                setError('La edad debe ser mayor a 360 días.');
+                return;
+            }
+        }
+
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|hotmail\.com|yahoo\.com)$/i;
+        if (!emailRegex.test(formData.email)) {
+            setError('El correo debe ser de dominio gmail.com, hotmail.com o yahoo.com.');
+            return;
+        }
+
+        if (!/^\d{10}$/.test(formData.phone)) {
+            setError('El número de teléfono debe tener exactamente 10 dígitos numéricos.');
+            return;
+        }
+
         // Verify captcha
         const expectedAnswer = captcha.operator === '+'
             ? captcha.num1 + captcha.num2

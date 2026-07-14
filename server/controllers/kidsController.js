@@ -1,6 +1,13 @@
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 
+// Parse date-only strings (YYYY-MM-DD) as noon UTC to avoid timezone shift issues.
+const parseDateSafe = (dateStr) => {
+    if (!dateStr) return new Date();
+    if (dateStr.includes('T')) return new Date(dateStr);
+    return new Date(dateStr + 'T12:00:00Z');
+};
+
 const CATEGORY_CONFIG = {
     'KIDS1': { label: 'Kids 1 (5-7 años)', minAge: 5, maxAge: 7 },
     'KIDS2': { label: 'Kids 2 (8-10 años)', minAge: 8, maxAge: 10 },
@@ -132,8 +139,8 @@ const createModule = async (req, res) => {
                 code,
                 type: category,
                 ...(classCount && { classCount: parseInt(classCount) }),
-                startDate: startDate ? new Date(startDate) : null,
-                endDate: endDate ? new Date(endDate) : null,
+                startDate: startDate ? parseDateSafe(startDate) : null,
+                endDate: endDate ? parseDateSafe(endDate) : null,
                 professorIds: professorIds.length > 0 ? professorIds.map(id => parseInt(id)) : [],
                 auxiliaries: auxiliarIds.length > 0 ? {
                     connect: auxiliarIds.map(id => ({ id: parseInt(id) }))
@@ -249,8 +256,8 @@ const updateModule = async (req, res) => {
             data: {
                 name,
                 description,
-                startDate: startDate ? new Date(startDate) : null,
-                endDate: endDate ? new Date(endDate) : null,
+                startDate: startDate ? parseDateSafe(startDate) : null,
+                endDate: endDate ? parseDateSafe(endDate) : null,
                 classCount: classCount !== undefined ? parseInt(classCount) : undefined,
                 professorIds: professorIds.length > 0 ? professorIds.map(id => parseInt(id)) : [],
                 auxiliaries: {
@@ -907,11 +914,104 @@ const getKidsStatsByLeader = async (req, res) => {
                 avgGrade: gradeCount > 0 ? (totalGrades / gradeCount) : 0,
                 avgAttendance: attendanceCount > 0 ? (totalAttendance / attendanceCount) : 0,
                 cellAttendance: cellAttendanceCount > 0 ? (totalCellAttendance / cellAttendanceCount) : 0,
-                passed
+                passed,
+                _studentIds: networkStudents.map(s => s.id)
             };
         }))).filter(l => l.students > 0);
 
-        res.json(stats);
+        // Find orphaned students (KIDS enrollments but not in any leader's network)
+        const allLeaderStudentIds = new Set(stats.flatMap(s => s._studentIds || []));
+
+        const allKidsStudents = await prisma.user.findMany({
+            where: {
+                isDeleted: false,
+                seminarEnrollments: {
+                    some: {
+                        module: {
+                            type: { in: KIDS_MODULE_TYPES }
+                        }
+                    }
+                }
+            },
+            select: {
+                id: true,
+                cellId: true,
+                cellAttendances: {
+                    select: { status: true },
+                    orderBy: { date: 'desc' }
+                },
+                seminarEnrollments: {
+                    where: {
+                        module: { type: { in: KIDS_MODULE_TYPES } }
+                    },
+                    select: {
+                        finalGrade: true,
+                        classAttendances: { select: { status: true } }
+                    }
+                }
+            }
+        });
+
+        const orphanedStudents = allKidsStudents.filter(s => !allLeaderStudentIds.has(s.id));
+
+        let orphanedStats = null;
+        if (orphanedStudents.length > 0) {
+            const studentsInCells = orphanedStudents.filter(s => s.cellId).length;
+            let totalAttendance = 0;
+            let attendanceCount = 0;
+            let totalCellAttendance = 0;
+            let cellAttendanceCount = 0;
+            let totalGrades = 0;
+            let gradeCount = 0;
+            let passed = 0;
+
+            orphanedStudents.forEach(student => {
+                if (student.cellId) {
+                    const cellAttendanceRecords = student.cellAttendances || [];
+                    if (cellAttendanceRecords.length > 0) {
+                        const presentCount = cellAttendanceRecords.filter(a => a.status === 'PRESENTE').length;
+                        totalCellAttendance += (presentCount / cellAttendanceRecords.length) * 100;
+                        cellAttendanceCount++;
+                    }
+                }
+
+                student.seminarEnrollments.forEach(enrollment => {
+                    if (enrollment.finalGrade !== null) {
+                        totalGrades += enrollment.finalGrade;
+                        gradeCount++;
+                    }
+                    if (enrollment.classAttendances.length > 0) {
+                        const rate = (enrollment.classAttendances.filter(a => a.status === 'ASISTE').length / enrollment.classAttendances.length) * 100;
+                        totalAttendance += rate;
+                        attendanceCount++;
+                    }
+                    if (enrollment.finalGrade !== null && enrollment.finalGrade >= 7) {
+                        passed++;
+                    }
+                });
+            });
+
+            orphanedStats = {
+                leaderName: 'Sin líder asignado',
+                students: orphanedStudents.length,
+                studentsInCells,
+                cellPercentage: orphanedStudents.length > 0 ? (studentsInCells / orphanedStudents.length) * 100 : 0,
+                avgGrade: gradeCount > 0 ? (totalGrades / gradeCount) : 0,
+                avgAttendance: attendanceCount > 0 ? (totalAttendance / attendanceCount) : 0,
+                cellAttendance: cellAttendanceCount > 0 ? (totalCellAttendance / cellAttendanceCount) : 0,
+                passed,
+                isOrphaned: true
+            };
+        }
+
+        // Clean up internal _studentIds before sending
+        const cleanStats = stats.map(({ _studentIds, ...rest }) => rest);
+
+        if (orphanedStats) {
+            cleanStats.push(orphanedStats);
+        }
+
+        res.json(cleanStats);
     } catch (error) {
         console.error('Error fetching kids stats:', error);
         if (error?.code === 'P1001') {

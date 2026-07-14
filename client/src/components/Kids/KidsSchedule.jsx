@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { CaretDown, CaretUp, Plus, Pen, Trash, Calendar, BookOpen } from '@phosphor-icons/react';
-import { Button, AsyncSearchSelect } from '../ui';
+import { CaretDown, CaretUp, Plus, Pen, Trash, Calendar, BookOpen, ShieldSlash } from '@phosphor-icons/react';
+import { Button, AsyncSearchSelect, Modal } from '../ui';
 import { useAuth } from '../../context/AuthContext';
 import { ROLES, ROLE_GROUPS } from '../../constants/roles';
 import ConfirmationModal from '../ConfirmationModal';
 import PropTypes from 'prop-types';
+
+// Extract YYYY-MM-DD from an ISO string and format for display (timezone-safe)
+const formatDateDisplay = (dateStr) => {
+  if (!dateStr) return '-';
+  const iso = typeof dateStr === 'string' ? dateStr : dateStr.toISOString();
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return new Date(dateStr).toLocaleDateString('es-CO');
+  const [, year, month, day] = match;
+  return `${parseInt(day)}/${parseInt(month)}/${year}`;
+};
 
 // Helper function to truncate text with tooltip
 const truncateText = (text, maxLength = 50) => {
@@ -64,6 +74,10 @@ const KidsSchedule = ({ moduleCoordinator }) => {
     const [showCourseDeleteConfirm, setShowCourseDeleteConfirm] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState(null);
 
+    // Access denied modal state
+    const [showAccessDeniedModal, setShowAccessDeniedModal] = useState(false);
+    const [accessDeniedCourseName, setAccessDeniedCourseName] = useState('');
+
     const [formData, setFormData] = useState({
         unit: '',
         date: '',
@@ -108,9 +122,8 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
     const handleCreateCourse = async (e) => {
         e.preventDefault();
-        // Check if user has permission to view schedules before making the request
-        if (!canViewSchedule) {
-            console.warn('User does not have permission to view kids schedule');
+        if (!canManageSchedule) {
+            toast.error('No tienes permisos para crear clases');
             return;
         }
         try {
@@ -170,9 +183,8 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
     const handleUpdateCourse = async (e) => {
         e.preventDefault();
-        // Check if user has permission to view schedules before making the request
-        if (!canViewSchedule) {
-            console.warn('User does not have permission to view kids schedule');
+        if (!canManageSchedule) {
+            toast.error('No tienes permisos para editar clases');
             return;
         }
         try {
@@ -205,6 +217,12 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
     const performCourseDelete = async () => {
         if (!courseToDelete) return;
+        if (!canManageSchedule) {
+            toast.error('No tienes permisos para eliminar clases');
+            setShowCourseDeleteConfirm(false);
+            setCourseToDelete(null);
+            return;
+        }
 
         // Check if there are enrolled students before attempting deletion
         const enrollmentCount = courseToDelete._count?.enrollments || 0;
@@ -240,9 +258,17 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             const res = await api.get(`/kids-schedule/module/${courseId}`);
             setSchedules(prev => ({ ...prev, [courseId]: res.data }));
         } catch (error) {
-            console.error('Error fetching schedules for course:', error);
-            // Only show toast for unexpected errors, not permission errors (403)
-            if (error.response?.status !== 403) {
+            if (error.response?.status === 403) {
+                const course = courses.find(c => c.id === courseId);
+                setAccessDeniedCourseName(course?.name || 'este curso');
+                setShowAccessDeniedModal(true);
+                setExpandedCourseIds(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(courseId);
+                    return newSet;
+                });
+            } else {
+                console.error('Error fetching schedules for course:', error);
                 const errorMessage = error.response?.data?.message || error.message || 'Error al cargar cronograma del curso';
                 toast.error(errorMessage);
             }
@@ -313,9 +339,8 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
     const performDelete = async () => {
         if (!scheduleToDelete) return;
-        // Check if user has permission to view schedules before making the request
-        if (!canViewSchedule) {
-            console.warn('User does not have permission to view kids schedule');
+        if (!canManageSchedule) {
+            toast.error('No tienes permisos para eliminar del cronograma');
             setShowDeleteConfirm(false);
             setScheduleToDelete(null);
             return;
@@ -339,9 +364,8 @@ const KidsSchedule = ({ moduleCoordinator }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Check if user has permission to view schedules before making the request
-        if (!canViewSchedule) {
-            console.warn('User does not have permission to view kids schedule');
+        if (!canManageSchedule) {
+            toast.error('No tienes permisos para modificar el cronograma');
             setShowModal(false);
             return;
         }
@@ -383,7 +407,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                         <p className="text-sm text-[#86868b] dark:text-[#98989d]">Despliega un curso para ver su cronograma</p>
                     </div>
                 </div>
-                {hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.COORDINADOR, ROLES.SUBCOORDINADOR, ROLES.TESORERO]) && (
+                {canManageSchedule && (
                     <Button
                         onClick={() => setShowCreateCourseModal(true)}
                         variant="primary"
@@ -504,7 +528,7 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                                                     {schedule.unit}
                                                                 </td>
                                                                 <td className="px-4 py-3 text-indigo-600 dark:text-indigo-400 font-medium">
-                                                                    {schedule.date ? new Date(schedule.date).toLocaleDateString() : '-'}
+                                                                    {formatDateDisplay(schedule.date)}
                                                                 </td>
                                                                 <td className="px-4 py-3 text-gray-700 dark:text-white/80 whitespace-normal min-w-[200px]">
                                                                     <TruncatedCell text={schedule.lesson} maxLength={60} />
@@ -800,9 +824,37 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                 onClose={() => setShowDeleteConfirm(false)}
                 onConfirm={performDelete}
                 title="Eliminar del Cronograma"
-                message={<>¿Estás seguro de que deseas eliminar la lección <strong>{scheduleToDelete?.lesson}</strong> sumada a la fecha {scheduleToDelete?.date ? new Date(scheduleToDelete.date).toLocaleDateString() : ''}?</>}
+                message={<>¿Estás seguro de que deseas eliminar la lección <strong>{scheduleToDelete?.lesson}</strong> sumada a la fecha {formatDateDisplay(scheduleToDelete?.date)}?</>}
                 confirmText="Sí, Eliminar"
             />
+
+            <Modal
+                isOpen={showAccessDeniedModal}
+                onClose={() => setShowAccessDeniedModal(false)}
+                title="Sin acceso"
+                size="sm"
+            >
+                <div className="flex flex-col items-center text-center gap-4 py-2">
+                    <div className="p-3 rounded-full bg-red-500/10 dark:bg-red-500/20">
+                        <ShieldSlash className="w-10 h-10 text-red-500 dark:text-red-400" weight="duotone" />
+                    </div>
+                    <div>
+                        <p className="text-[var(--ln-text-primary)] font-medium text-base">
+                            No tienes permiso para visualizar el cronograma de <strong>{accessDeniedCourseName}</strong>.
+                        </p>
+                        <p className="text-[var(--ln-text-secondary)] text-sm mt-1.5">
+                            Contacta al coordinador del módulo Kids si necesitas acceso.
+                        </p>
+                    </div>
+                    <Button
+                        onClick={() => setShowAccessDeniedModal(false)}
+                        variant="primary"
+                        size="sm"
+                    >
+                        Entendido
+                    </Button>
+                </div>
+            </Modal>
         </div>
     );
 };

@@ -62,6 +62,17 @@ const PublicEncuentrosRegistration = () => {
     const handleSubmit = async (event) => {
         event.preventDefault();
 
+        // Validación de seguridad para prevenir inyección SQL en todos los campos de texto
+        const sqlInjectionRegex = /['";\\]|(--)|(\/\*)|(\*\/)/;
+        const hasSQLInjection = Object.values(formData).some(value => 
+            typeof value === 'string' && sqlInjectionRegex.test(value)
+        );
+
+        if (hasSQLInjection) {
+            setError('❌ Error de seguridad: Se han detectado caracteres no permitidos en el formulario.');
+            return;
+        }
+
         if (!selectedEncuentroId) {
             setError('Selecciona un encuentro.');
             return;

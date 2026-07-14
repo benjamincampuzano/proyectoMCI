@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import api from '../utils/api';
 import { Calendar, TrendUp, Users, UserMinus, ClipboardIcon, Percent, X} from '@phosphor-icons/react';
+import { getTodayString, getLocalDateString } from '../utils/dateUtils';
 
 const ChurchAttendanceChart = () => {
     const [stats, setStats] = useState([]);
     const [startDate, setStartDate] = useState(() => {
         const date = new Date();
         date.setDate(date.getDate() - 30);
-        return date.toISOString().split('T')[0];
+        return getLocalDateString(date);
     });
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(getTodayString());
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Users, BookOpen, UserCheck, TrendUp } from '@phosphor-icons/react';
+import { Users, BookOpen, UserCheck, TrendUp, UserMinus } from '@phosphor-icons/react';
 
 const KidsStats = () => {
     const [data, setData] = useState([]);
@@ -48,6 +48,8 @@ const KidsStats = () => {
     const cellPercentage = totalStudents > 0 ? ((totalStudentsInCells / totalStudents) * 100).toFixed(1) : 0;
     const avgAttendance = data.length > 0 ? (data.reduce((acc, curr) => acc + safeNumber(curr.avgAttendance), 0) / data.length).toFixed(1) : 0;
     const avgCellAttendance = data.length > 0 ? (data.reduce((acc, curr) => acc + safeNumber(curr.cellAttendance), 0) / data.length).toFixed(1) : 0;
+    const orphanedEntry = data.find(item => item.isOrphaned);
+    const orphanedCount = orphanedEntry ? safeNumber(orphanedEntry.students) : 0;
 
     return (
         <div className="space-y-8 animate-fade-in">
@@ -58,7 +60,7 @@ const KidsStats = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
                 <div className="bg-pink-50 dark:bg-pink-900/20 p-5 rounded-xl border border-pink-100 dark:border-pink-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-pink-100 dark:bg-pink-800 rounded-lg text-pink-600 dark:text-pink-300">
@@ -119,6 +121,18 @@ const KidsStats = () => {
                         <span className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">Asistencia a células</span>
                     </div>
                 </div>
+                <div className={`p-5 rounded-xl shadow-sm ${orphanedCount > 0 ? 'bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800' : 'bg-gray-50 dark:bg-gray-900/20 border border-gray-100 dark:border-gray-800'}`}>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className={`p-2 rounded-lg ${orphanedCount > 0 ? 'bg-red-100 dark:bg-red-800 text-red-600 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}>
+                            <UserMinus size={20} />
+                        </div>
+                        <span className={`text-sm font-bold uppercase tracking-tight ${orphanedCount > 0 ? 'text-red-800 dark:text-red-200' : 'text-gray-800 dark:text-gray-200'}`}>Sin Líder</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className={`text-3xl font-extrabold ${orphanedCount > 0 ? 'text-red-900 dark:text-white' : 'text-gray-900 dark:text-white'}`}>{orphanedCount}</span>
+                        <span className={`text-xs font-medium mt-1 ${orphanedCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>Estudiantes huérfanos</span>
+                    </div>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-[#272729] p-6 rounded-lg shadow">
@@ -172,9 +186,14 @@ const KidsStats = () => {
                         </thead>
                         <tbody className="bg-white dark:bg-[#272729] divide-y divide-gray-200 dark:divide-gray-700">
                             {data.map((item) => (
-                                <tr key={item.leaderName} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700 transition-colors">
+                                <tr key={item.leaderName} className={`transition-colors ${item.isOrphaned ? 'bg-red-50/80 dark:bg-red-950/25' : 'hover:bg-[#f5f5f7] dark:hover:bg-gray-700'}`}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                        {item.leaderName}
+                                        {item.isOrphaned ? (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                <UserMinus size={14} className="text-red-500" />
+                                                <span className="text-red-600 dark:text-red-400">{item.leaderName}</span>
+                                            </span>
+                                        ) : item.leaderName}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
                                         {item.students}

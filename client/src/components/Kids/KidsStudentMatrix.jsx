@@ -292,7 +292,7 @@ const KidsStudentMatrix = () => {
                 responsible: editingResponsible
             };
 
-            await api.put(`/users/${selectedStudent.id}`, updateData);
+            await api.put(`/users/${selectedStudent.id}?module=kids`, updateData);
 
             // Refresh the student matrix
             await fetchStudentMatrix();

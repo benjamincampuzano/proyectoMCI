@@ -7,6 +7,7 @@ import MultiUserSelect from './MultiUserSelect';
 import { Button } from './ui';
 import ConfirmationModal from './ConfirmationModal';
 import PropTypes from 'prop-types';
+import { getTodayString, getLocalDateString } from '../utils/dateUtils';
 
 const OracionDeTresManagement = ({ refreshTrigger: externalRefresh }) => {
     const { user, hasRole, hasAnyRole } = useAuth();

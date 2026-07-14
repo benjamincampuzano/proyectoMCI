@@ -4,6 +4,7 @@ import { Modal } from './ui';
 import { AsyncSearchSelect } from './ui';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const GuestEditModal = ({ isOpen, onClose, guest, onGuestUpdated }) => {
     const [formData, setFormData] = useState({
@@ -37,7 +38,7 @@ const GuestEditModal = ({ isOpen, onClose, guest, onGuestUpdated }) => {
                 phone: guest.phone || '',
                 address: guest.address || '',
                 city: guest.city || '',
-                birthDate: guest.birthDate ? new Date(guest.birthDate).toISOString().split('T')[0] : '',
+                birthDate: guest.birthDate ? getLocalDateString(guest.birthDate) : '',
                 sex: guest.sex || '',
                 status: guest.status || 'NUEVO',
                 prayerRequest: guest.prayerRequest || '',

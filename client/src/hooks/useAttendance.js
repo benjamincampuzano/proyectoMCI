@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../utils/api';
+import { getTodayString, getLocalDateString } from '../utils/dateUtils';
 
 const useAttendance = () => {
     const [stats, setStats] = useState([]);
@@ -9,10 +10,10 @@ const useAttendance = () => {
     const [startDate, setStartDate] = useState(() => {
         const date = new Date();
         date.setDate(date.getDate() - 30);
-        return date.toISOString().split('T')[0];
+        return getLocalDateString(date);
     });
 
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = useState(getTodayString());
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 

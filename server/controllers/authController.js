@@ -8,6 +8,31 @@ const { normalizeModuleName } = require('../middleware/coordinatorAuth');
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 
+// --- RATE LIMITING STATE ---
+const loginAttempts = new Map();
+
+const getLockTime = (attempts) => {
+    if (attempts >= 9) return 60 * 60 * 1000; // 1 hora
+    if (attempts >= 8) return 15 * 60 * 1000; // 15 minutos
+    if (attempts >= 5) return 5 * 60 * 1000; // 5 minutos
+    return 0;
+};
+
+// Limpieza periódica para evitar fugas de memoria
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of loginAttempts.entries()) {
+        if (!value.lockUntil && (now - value.lastAttempt) > 60 * 60 * 1000) {
+            loginAttempts.delete(key);
+        } else if (value.lockUntil && now > value.lockUntil + 60 * 60 * 1000) {
+            loginAttempts.delete(key); // Cleanup expired long time ago
+        }
+    }
+}, 15 * 60 * 1000); // 15 mins
+// ---------------------------
+
+
+
 /**
  * Obtiene las coordinaciones de módulo del usuario (para incluir en JWT)
  */
@@ -278,6 +303,22 @@ const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        const emailLower = email.toLowerCase();
+        
+        // --- RATE LIMITING CHECK ---
+        const attemptRecord = loginAttempts.get(emailLower);
+        if (attemptRecord && attemptRecord.lockUntil && Date.now() < attemptRecord.lockUntil) {
+            const remainingTime = Math.ceil((attemptRecord.lockUntil - Date.now()) / 60000);
+            return res.status(429).json({ 
+                message: `Demasiados intentos fallidos. Por favor, intenta de nuevo en ${remainingTime} minuto(s).` 
+            });
+        }
+        if (attemptRecord && attemptRecord.lockUntil && Date.now() > attemptRecord.lockUntil) {
+            // El bloqueo expiró, pero mantenemos los attempts para la progresividad
+            attemptRecord.lockUntil = null;
+        }
+        // ---------------------------
+
         const user = await prisma.user.findFirst({
             where: {
                 email,
@@ -294,12 +335,32 @@ const login = async (req, res) => {
         });
 
         if (!user) {
+            // --- REGISTRAR INTENTO FALLIDO ---
+            const currentAttempts = (attemptRecord?.attempts || 0) + 1;
+            const lockDuration = getLockTime(currentAttempts);
+            
+            loginAttempts.set(emailLower, {
+                attempts: currentAttempts,
+                lockUntil: lockDuration > 0 ? Date.now() + lockDuration : null,
+                lastAttempt: Date.now()
+            });
+            // ---------------------------------
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
+            // --- REGISTRAR INTENTO FALLIDO ---
+            const currentAttempts = (attemptRecord?.attempts || 0) + 1;
+            const lockDuration = getLockTime(currentAttempts);
+            
+            loginAttempts.set(emailLower, {
+                attempts: currentAttempts,
+                lockUntil: lockDuration > 0 ? Date.now() + lockDuration : null,
+                lastAttempt: Date.now()
+            });
+            // ---------------------------------
             await logActivity(user.id, 'LOGIN_FAILED', 'USER', user.id, { 
                 reason: 'Invalid password',
                 ipAddress: req.ip,
@@ -307,6 +368,10 @@ const login = async (req, res) => {
             }, req.ip, req.headers['user-agent']);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
+
+        // --- LOGIN EXITOSO: RESETEAR INTENTOS ---
+        loginAttempts.delete(emailLower);
+        // -----------------------------------------
 
         const moduleCoordinations = {
             coordinating: user.moduleCoordinations.map(c => normalizeModuleName(c.moduleName)),

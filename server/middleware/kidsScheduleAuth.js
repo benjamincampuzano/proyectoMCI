@@ -89,28 +89,13 @@ const authorizeKidsScheduleAccess = async (req, res, next) => {
 const authorizeKidsScheduleModification = async (req, res, next) => {
     try {
         const user = req.user;
-        const { moduleId } = req.params;
         
-        // Si es ADMIN, PASTOR o Coordinador/Subcoordinador/Tesorero del módulo de KIDS, permitir acceso inmediato
+        // Solo ADMIN, PASTOR o Coordinador/Subcoordinador/Tesorero del módulo de KIDS pueden modificar
         if (hasAdminAccessOnModule(user, 'kids')) {
             return next();
         }
         
-        // Verificar si es profesor/coordinador del módulo (ahora es un array)
-        const moduleProfessor = await prisma.seminarModule.findFirst({
-            where: {
-                id: parseInt(moduleId),
-                professorIds: {
-                    has: parseInt(user.id)
-                }
-            }
-        });
-        
-        if (moduleProfessor) {
-            return next();
-        }
-        
-        // Si no es coordinador, denegar acceso
+        // Si no tiene permisos, denegar acceso
         return res.status(403).json({ 
             message: 'No tienes permiso para modificar el cronograma de este módulo' 
         });
@@ -130,7 +115,7 @@ const authorizeScheduleModification = async (req, res, next) => {
         const user = req.user;
         const { id } = req.params;
         
-        // Si es ADMIN, PASTOR o Coordinador/Subcoordinador/Tesorero del módulo de KIDS, permitir acceso inmediato
+        // Solo ADMIN, PASTOR o Coordinador/Subcoordinador/Tesorero del módulo de KIDS pueden modificar
         if (hasAdminAccessOnModule(user, 'kids')) {
             return next();
         }
@@ -145,21 +130,7 @@ const authorizeScheduleModification = async (req, res, next) => {
             return res.status(404).json({ message: 'Cronograma no encontrado' });
         }
         
-        // Verificar si es profesor/coordinador del módulo (ahora es un array)
-        const moduleProfessor = await prisma.seminarModule.findFirst({
-            where: {
-                id: schedule.moduleId,
-                professorIds: {
-                    has: parseInt(user.id)
-                }
-            }
-        });
-        
-        if (moduleProfessor) {
-            return next();
-        }
-        
-        // Si no es coordinador, denegar acceso
+        // Si no tiene permisos, denegar acceso
         return res.status(403).json({ 
             message: 'No tienes permiso para modificar este cronograma' 
         });

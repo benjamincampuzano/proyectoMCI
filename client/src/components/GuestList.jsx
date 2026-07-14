@@ -13,7 +13,7 @@ import GuestEditModal from './GuestEditModal';
 import ConfirmationModal from './ConfirmationModal';
 
 const GuestList = ({ refreshTrigger }) => {
-    const { isCoordinator, isDoceLeader, user } = useAuth();
+    const { isCoordinator, isSubCoordinator, isTreasurer, isDoceLeader, user } = useAuth();
     const isModuleCoordinator = isCoordinator('ganar');
     const {
         guests,
@@ -77,14 +77,17 @@ const GuestList = ({ refreshTrigger }) => {
 
     useEffect(() => {
         const isDoceLeaderRole = userRoles.includes('LIDER_DOCE');
+        const isSubCoordGanar = isSubCoordinator('ganar');
+        const isTreasurerGanar = isTreasurer('ganar');
+        const isModuleRole = isModuleCoordinator || isSubCoordGanar || isTreasurerGanar;
 
-        if (isDoceLeaderRole && !isModuleCoordinator && userId) {
+        if (isDoceLeaderRole && !isModuleRole && userId) {
             setLiderDoceFilter({
                 id: userId,
                 fullName: userFullName || userEmail
             });
         }
-    }, [userId, userRoles, isModuleCoordinator, userFullName, userEmail]);
+    }, [userId, userRoles, isModuleCoordinator, isSubCoordinator, isTreasurer, userFullName, userEmail]);
 
     const handleSearch = useCallback(() => {
         fetchGuests(1);
@@ -175,11 +178,13 @@ const GuestList = ({ refreshTrigger }) => {
 
     const canExport = useCallback(() => {
         const roles = currentUser?.roles || [];
-        return roles.includes('ADMIN') || roles.includes('PASTOR') || roles.includes('LIDER_DOCE');
-    }, [currentUser]);
+        const hasRoleAccess = roles.includes('ADMIN') || roles.includes('PASTOR') || roles.includes('LIDER_DOCE');
+        return hasRoleAccess || isModuleCoordinator || isSubCoordinator('ganar') || isTreasurer('ganar');
+    }, [currentUser, isModuleCoordinator, isSubCoordinator, isTreasurer]);
 
     // Check if liderDoceFilter is auto-applied (for non-coordinator LIDER_DOCE)
-    const isLiderDoceFilterAutoApplied = isDoceLeader() && !isModuleCoordinator && liderDoceFilter?.id === user?.id;
+    const isModuleRoleForGanar = isModuleCoordinator || isSubCoordinator('ganar') || isTreasurer('ganar');
+    const isLiderDoceFilterAutoApplied = isDoceLeader() && !isModuleRoleForGanar && liderDoceFilter?.id === user?.id;
 
     const hasAdvancedFilters = searchTerm || statusFilter || invitedByFilter || (liderDoceFilter && !isLiderDoceFilterAutoApplied) || startDate || endDate || pendingCalls || pendingVisits;
     const activeAdvancedCount = [searchTerm, statusFilter, invitedByFilter, (liderDoceFilter && !isLiderDoceFilterAutoApplied), startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited].filter(Boolean).length;

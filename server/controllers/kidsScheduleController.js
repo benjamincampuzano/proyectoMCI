@@ -1,5 +1,14 @@
 const prisma = require('../utils/database');
 
+// Parse date-only strings (YYYY-MM-DD) as noon UTC to avoid timezone shift issues.
+// new Date("2026-05-01") parses as UTC midnight, which shifts the date by +/-1 day
+// depending on the client's timezone offset. Using noon UTC keeps the date stable.
+const parseDateSafe = (dateStr) => {
+    if (!dateStr) return new Date();
+    if (dateStr.includes('T')) return new Date(dateStr);
+    return new Date(dateStr + 'T12:00:00Z');
+};
+
 exports.getSchedulesByModule = async (req, res) => {
     try {
         const { moduleId } = req.params;
@@ -32,7 +41,7 @@ exports.createSchedule = async (req, res) => {
             data: {
                 moduleId: parseInt(moduleId),
                 unit,
-                date: new Date(date),
+                date: parseDateSafe(date),
                 lesson,
                 bibleReading,
                 memoryVerse,
@@ -76,7 +85,7 @@ exports.updateSchedule = async (req, res) => {
             where: { id: parseInt(id) },
             data: {
                 unit,
-                date: new Date(date),
+                date: parseDateSafe(date),
                 lesson,
                 bibleReading,
                 memoryVerse,

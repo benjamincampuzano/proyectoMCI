@@ -6,6 +6,7 @@ import ModalAttendance from './ModalAttendance';
 import AsyncSearchSelect from './ui/AsyncSearchSelect';
 import { useAuth } from '../hooks/useAuth';
 import { ROLES } from '../constants/roles';
+import { getTodayString } from '../utils/dateUtils';
 
 // Valores del enum Network de Prisma
 const NETWORK_OPTIONS = [
@@ -24,7 +25,7 @@ const getNetworkLabel = (redValue) => {
 };
 
 const ChurchAttendance = (props) => {
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(getTodayString());
     const [members, setMembers] = useState([]);
     const [attendances, setAttendances] = useState({});
     const [loading, setLoading] = useState(false);

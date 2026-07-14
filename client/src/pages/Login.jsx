@@ -40,6 +40,14 @@ const Login = () => {
         e.preventDefault();
         setError('');
 
+        // Validación de seguridad para prevenir inyección SQL (fugas de información)
+        const sqlInjectionRegex = /['";\\]|(--)|(\/\*)|(\*\/)/;
+        if (sqlInjectionRegex.test(email) || sqlInjectionRegex.test(password)) {
+            setError('❌ Error de seguridad: Se han detectado caracteres no permitidos.');
+            generateCaptcha();
+            return;
+        }
+
         const expectedAnswer = captcha.operator === '+'
             ? captcha.num1 + captcha.num2
             : captcha.num1 - captcha.num2;

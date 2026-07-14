@@ -3,6 +3,7 @@ import { Calendar, CheckCircle, XCircle, Clock, UserPlus, BookOpen, GuitarIcon, 
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { AsyncSearchSelect, ConfirmDialog } from './ui';
+import { getLocalDateString } from '../utils/dateUtils';
 
 const ArtClassAttendanceTracker = ({ classId, enrollments, canModify }) => {
     const [sessions, setSessions] = useState([]);
@@ -48,7 +49,7 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, canModify }) => {
     const handleOpenEditModal = (session) => {
         setIsEditing(true);
         setEditingSessionId(session.id);
-        setSessionDate(new Date(session.date).toISOString().split('T')[0]);
+        setSessionDate(getLocalDateString(session.date));
         setSessionTopic(session.topic || '');
         setShowSessionModal(true);
     };

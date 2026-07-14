@@ -120,7 +120,10 @@ const getAllGuests = async (req, res) => {
         // Allow ADMIN to see all guests
         const isModuleCoordinator = req.user.isModuleCoordinator || false;
         const coordinatedModules = req.user.moduleCoordinations || [];
-        const isGuestModuleCoordinator = coordinatedModules.some(m => 
+        const subCoordinatedModules = req.user.moduleSubCoordinations || [];
+        const treasuredModules = req.user.moduleTreasurers || [];
+        const allModuleRoles = [...coordinatedModules, ...subCoordinatedModules, ...treasuredModules];
+        const isGuestModuleCoordinator = allModuleRoles.some(m => 
             ['ganar', 'consolidar'].includes(m.toLowerCase())
         );
         

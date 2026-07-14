@@ -4,15 +4,10 @@ import Modal from './ui/Modal';
 import Button from './ui/Button';
 import Input from './ui/Input';
 import toast from 'react-hot-toast';
+import { getTodayString, formatDateSpanish } from '../utils/dateUtils';
 
-const formatDateSpanish = (dateStr) => {
-  if (!dateStr) return '...';
-  try {
-    const d = new Date(dateStr + 'T12:00:00');
-    return d.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
-  } catch {
-    return dateStr;
-  }
+const dateFormatSpanish = (dateStr) => {
+  return formatDateSpanish(dateStr);
 };
 
 const reportTypeLabels = {
@@ -39,7 +34,7 @@ const ModalAttendance = ({
 
   useEffect(() => {
     if (isOpen && !prevIsOpen.current) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayString();
       setForm({ type: initialType || '', date: today, attended: null });
       setErrors({});
       setSaving(false);
