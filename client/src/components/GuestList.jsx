@@ -61,12 +61,7 @@ const GuestList = ({ refreshTrigger }) => {
     const [isExporting, setIsExporting] = useState(false);
 
     // Estado para filtros avanzados
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return window.innerWidth >= 768;
-        }
-        return false;
-    });
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
     // Auto-apply filter for LIDER_DOCE who are not coordinators
     // Extraemos propiedades primitivas de user para evitar re-renders innecesarios
@@ -242,7 +237,7 @@ const GuestList = ({ refreshTrigger }) => {
                     address: guest.address || 'N/A',
                     prayerRequest: guest.prayerRequest || 'N/A',
                     status: getStatusLabel(guest.status) || 'N/A',
-                    liderDoce: guest.invitedBy?.liderDoce?.fullName || guest.assignedTo?.liderDoce?.fullName || 'N/A',
+                    liderDoce: guest.assignedTo?.liderDoce?.fullName || guest.invitedBy?.liderDoce?.fullName || 'N/A',
                     invitedBy: guest.invitedBy?.fullName || 'N/A',
                     assignedTo: guest.assignedTo?.fullName || 'Pendiente',
                     cell: guest.cell?.name || 'No asignado',
@@ -653,9 +648,9 @@ const GuestList = ({ refreshTrigger }) => {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {(guest.invitedBy?.liderDoce || guest.assignedTo?.liderDoce) ? (
+                                        {(guest.assignedTo?.liderDoce || guest.invitedBy?.liderDoce) ? (
                                             <p className="text-[var(--ln-text-primary)] text-sm">
-                                                {guest.invitedBy?.liderDoce?.fullName || guest.assignedTo?.liderDoce?.fullName}
+                                                {guest.assignedTo?.liderDoce?.fullName || guest.invitedBy?.liderDoce?.fullName}
                                             </p>
                                         ) : (
                                             <span className="text-[var(--ln-text-quaternary)] text-sm">N/A</span>

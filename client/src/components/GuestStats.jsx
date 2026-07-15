@@ -8,7 +8,8 @@ import api from '../utils/api';
 import PropTypes from 'prop-types';
 
 const GuestStats = ({ refreshTrigger }) => {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
+    const isModuleCoordinator = isCoordinator('ganar') || isSubCoordinator('ganar') || isTreasurer('ganar');
     const [stats, setStats] = useState(null);
     const [trackingStats, setTrackingStats] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -28,7 +29,8 @@ const GuestStats = ({ refreshTrigger }) => {
         setEndDate(end.toISOString().split('T')[0]);
 
         // Fetch Lideres Doce if user has permission
-        if (currentUser?.roles?.some(r => ['ADMIN', 'PASTOR', 'COORDINADOR'].includes(r))) {
+        const canSeeAll = currentUser?.roles?.some(r => ['ADMIN', 'PASTOR', 'COORDINADOR'].includes(r)) || isModuleCoordinator;
+        if (canSeeAll) {
             const fetchLideres = async () => {
                 try {
                     const res = await api.get('/users/by-role/LIDER_DOCE');
@@ -201,7 +203,7 @@ const GuestStats = ({ refreshTrigger }) => {
                             className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm"
                         />
                     </div>
-                    {currentUser?.roles?.some(r => ['ADMIN', 'PASTOR', 'COORDINADOR'].includes(r)) && (
+                    {(currentUser?.roles?.some(r => ['ADMIN', 'PASTOR', 'COORDINADOR'].includes(r)) || isModuleCoordinator) && (
                         <div className="flex items-center gap-2">
                             <label htmlFor="liderDoce" className="text-sm font-medium text-[#1d1d1f] dark:text-white/80">
                                 Red Líder 12
@@ -221,7 +223,7 @@ const GuestStats = ({ refreshTrigger }) => {
                             </select>
                         </div>
                     )}
-                    {currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR', 'COORDINADOR'].includes(r)) && (
+                    {(currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR', 'COORDINADOR'].includes(r)) || isModuleCoordinator) && (
                         <button
                             onClick={exportToExcel}
                             disabled={!stats || loading}

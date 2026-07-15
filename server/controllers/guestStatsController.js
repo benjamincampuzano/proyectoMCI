@@ -46,7 +46,17 @@ const getGuestStats = async (req, res) => {
         const isPastor = userRoles.includes('PASTOR');
         const isLiderDoce = userRoles.includes('LIDER_DOCE');
         const isCoordinator = userRoles.includes('COORDINADOR');
-        const canSeeAllGuests = isAdmin || isPastor || isCoordinator;
+
+        // Check if user is a module coordinator/sub-coordinator/treasurer of Ganar or Consolidar
+        const coordinatedModules = req.user.moduleCoordinations || [];
+        const subCoordinatedModules = req.user.moduleSubCoordinations || [];
+        const treasuredModules = req.user.moduleTreasurers || [];
+        const allModuleRoles = [...coordinatedModules, ...subCoordinatedModules, ...treasuredModules];
+        const isGuestModuleCoordinator = allModuleRoles.some(m =>
+            ['ganar', 'consolidar'].includes(m.toLowerCase())
+        );
+
+        const canSeeAllGuests = isAdmin || isPastor || isCoordinator || isGuestModuleCoordinator;
 
         // Build date filter
         const dateFilter = {};
@@ -158,16 +168,27 @@ const getGuestStats = async (req, res) => {
             : (canSeeAllGuests && !liderDoceId ? Prisma.empty : Prisma.sql`AND (g."invitedById" = ${currentUserId} OR g."assignedToId" = ${currentUserId})`);
 
         const guestLeaderRaw = await prisma.$queryRaw`
+            WITH resolved_leaders AS (
+                SELECT
+                    g.id AS guest_id,
+                    COALESCE(
+                        (SELECT uh."parentId" FROM "UserHierarchy" uh
+                         WHERE uh."parentId" = g."invitedById" AND uh.role = 'LIDER_DOCE' LIMIT 1),
+                        (SELECT uh."parentId" FROM "UserHierarchy" uh
+                         WHERE uh."childId" = g."invitedById" AND uh.role = 'LIDER_DOCE' LIMIT 1)
+                    ) AS lider_doce_id,
+                    TO_CHAR(g."createdAt", 'YYYY-MM') AS month_key
+                FROM "Guest" g
+                WHERE g."isDeleted" = false
+                  ${networkFilterStats}
+            )
             SELECT
                 COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
-                COUNT(g.id)::int AS count,
-                TO_CHAR(g."createdAt", 'YYYY-MM') AS month_key
-            FROM "Guest" g
-            LEFT JOIN "UserHierarchy" uh ON uh."childId" = g."invitedById" AND uh.role = 'LIDER_DOCE'
-            LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
-            WHERE g."isDeleted" = false
-              ${networkFilterStats}
-            GROUP BY leader_name, month_key
+                COUNT(rl.guest_id)::int AS count,
+                rl.month_key
+            FROM resolved_leaders rl
+            LEFT JOIN "UserProfile" up ON up."userId" = rl.lider_doce_id
+            GROUP BY leader_name, rl.month_key
             ORDER BY count DESC
         `;
 

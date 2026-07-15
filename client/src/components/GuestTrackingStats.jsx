@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Users, Phone, House, Calendar, FunnelIcon, ChartBarIcon, PhoneDisconnect, Handshake } from '@phosphor-icons/react';
+import PropTypes from 'prop-types';
 import api from '../utils/api';
 
-const GuestTrackingStats = () => {
+const GuestTrackingStats = ({ refreshTrigger }) => {
     const [stats, setStats] = useState([]);
     const [loading, setLoading] = useState(true);
     const [startDate, setStartDate] = useState('');
@@ -10,7 +11,7 @@ const GuestTrackingStats = () => {
 
     useEffect(() => {
         fetchStats();
-    }, [startDate, endDate]);
+    }, [startDate, endDate, refreshTrigger]);
 
     const fetchStats = async () => {
         try {
@@ -186,6 +187,10 @@ const GuestTrackingStats = () => {
             </div>
         </div>
     );
+};
+
+GuestTrackingStats.propTypes = {
+    refreshTrigger: PropTypes.number,
 };
 
 export default GuestTrackingStats;

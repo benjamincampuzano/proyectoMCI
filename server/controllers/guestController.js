@@ -284,6 +284,7 @@ const getAllGuests = async (req, res) => {
                 invitedBy: {
                     include: {
                         profile: true,
+                        roles: { include: { role: true } },
                         parents: {
                             where: { role: 'LIDER_DOCE' },
                             include: {
@@ -297,6 +298,7 @@ const getAllGuests = async (req, res) => {
                 assignedTo: {
                     include: {
                         profile: true,
+                        roles: { include: { role: true } },
                         parents: {
                             where: { role: 'LIDER_DOCE' },
                             include: {
@@ -351,8 +353,14 @@ const getAllGuests = async (req, res) => {
 
         // Format for frontend
         const formattedGuests = guests.map(g => {
-            const invitedByLiderDoce = g.invitedBy?.parents?.[0]?.parent || null;
-            const assignedToLiderDoce = g.assignedTo?.parents?.[0]?.parent || null;
+            const invitedByIsLiderDoce = g.invitedBy?.roles?.some(r => r.role?.name === 'LIDER_DOCE');
+            const invitedByLiderDoce = invitedByIsLiderDoce
+                ? g.invitedBy
+                : g.invitedBy?.parents?.[0]?.parent || null;
+            const assignedToIsLiderDoce = g.assignedTo?.roles?.some(r => r.role?.name === 'LIDER_DOCE');
+            const assignedToLiderDoce = assignedToIsLiderDoce
+                ? g.assignedTo
+                : g.assignedTo?.parents?.[0]?.parent || null;
             return {
                 ...g,
                 invitedBy: g.invitedBy ? {
@@ -428,6 +436,7 @@ const getGuestById = async (req, res) => {
                 invitedBy: {
                     include: {
                         profile: true,
+                        roles: { include: { role: true } },
                         parents: {
                             where: { role: 'LIDER_DOCE' },
                             include: {
@@ -441,6 +450,7 @@ const getGuestById = async (req, res) => {
                 assignedTo: {
                     include: {
                         profile: true,
+                        roles: { include: { role: true } },
                         parents: {
                             where: { role: 'LIDER_DOCE' },
                             include: {
@@ -470,24 +480,33 @@ const getGuestById = async (req, res) => {
             return res.status(404).json({ message: 'Guest not found' });
         }
 
+        const invitedByIsLiderDoce = guest.invitedBy?.roles?.some(r => r.role?.name === 'LIDER_DOCE');
+        const invitedByLiderDoce = invitedByIsLiderDoce
+            ? guest.invitedBy
+            : guest.invitedBy?.parents?.[0]?.parent || null;
+        const assignedToIsLiderDoce = guest.assignedTo?.roles?.some(r => r.role?.name === 'LIDER_DOCE');
+        const assignedToLiderDoce = assignedToIsLiderDoce
+            ? guest.assignedTo
+            : guest.assignedTo?.parents?.[0]?.parent || null;
+
         const formattedGuest = {
             ...guest,
             invitedBy: guest.invitedBy ? {
                 id: guest.invitedBy.id,
                 fullName: guest.invitedBy.profile?.fullName,
                 email: guest.invitedBy.email,
-                liderDoce: guest.invitedBy.parents?.[0]?.parent ? {
-                    id: guest.invitedBy.parents[0].parent.id,
-                    fullName: guest.invitedBy.parents[0].parent.profile?.fullName
+                liderDoce: invitedByLiderDoce ? {
+                    id: invitedByLiderDoce.id,
+                    fullName: invitedByLiderDoce.profile?.fullName
                 } : null
             } : null,
             assignedTo: guest.assignedTo ? {
                 id: guest.assignedTo.id,
                 fullName: guest.assignedTo.profile?.fullName,
                 email: guest.assignedTo.email,
-                liderDoce: guest.assignedTo.parents?.[0]?.parent ? {
-                    id: guest.assignedTo.parents[0].parent.id,
-                    fullName: guest.assignedTo.parents[0].parent.profile?.fullName
+                liderDoce: assignedToLiderDoce ? {
+                    id: assignedToLiderDoce.id,
+                    fullName: assignedToLiderDoce.profile?.fullName
                 } : null
             } : null,
             calls: guest.calls.map(c => ({ ...c, caller: c.caller ? { fullName: c.caller.profile?.fullName } : null })),
