@@ -214,6 +214,19 @@ const ChurchAttendance = (props) => {
         return { totales, presentes, ausentes, virtuales, sinRegistro, totalMembers };
     }, [members, attendances, totalMembers]);
 
+    const pagination = useMemo(() => {
+        const totalPages = Math.max(1, Math.ceil(totalMembers / PAGE_SIZE));
+        return {
+            page: currentPage,
+            pages: totalPages,
+            total: totalMembers,
+            hasPrev: currentPage > 1,
+            hasNext: currentPage < totalPages,
+            onPrev: () => setCurrentPage(prev => Math.max(1, prev - 1)),
+            onNext: () => setCurrentPage(prev => Math.min(totalPages, prev + 1)),
+        };
+    }, [currentPage, totalMembers]);
+
     if (loading) {
         return (
             <div className="flex justify-center items-center py-12">
@@ -375,6 +388,16 @@ const ChurchAttendance = (props) => {
 
             {/* List and Search Container */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                {/* Top Pagination */}
+                {totalMembers > PAGE_SIZE && (
+                    <PaginationBar
+                        pagination={pagination}
+                        pageSize={PAGE_SIZE}
+                        loading={loading}
+                        onPageChange={setCurrentPage}
+                    />
+                )}
+
                 {/* Search Bar with Filters Button */}
                 <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
                     <div className="flex flex-col sm:flex-row gap-3">
@@ -589,26 +612,14 @@ const ChurchAttendance = (props) => {
 
                 {/* Mobile Pagination */}
                 {totalMembers > PAGE_SIZE && (
-                    <div className="md:hidden flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
-                        <div className="text-xs text-gray-600 dark:text-gray-400">
-                            {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalMembers)} de {totalMembers} registros
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1 || loading}
-                                className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Anterior
-                            </button>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalMembers / PAGE_SIZE), prev + 1))}
-                                disabled={currentPage === Math.ceil(totalMembers / PAGE_SIZE) || loading}
-                                className="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Siguiente
-                            </button>
-                        </div>
+                    <div className="md:hidden">
+                        <PaginationBar
+                            pagination={pagination}
+                            pageSize={PAGE_SIZE}
+                            loading={loading}
+                            onPageChange={setCurrentPage}
+                            variant="compact"
+                        />
                     </div>
                 )}
 
@@ -723,30 +734,12 @@ const ChurchAttendance = (props) => {
 
                 {/* Pagination Controls */}
                 {totalMembers > PAGE_SIZE && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30">
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                            Mostrando {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, totalMembers)} de {totalMembers} registros
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1 || loading}
-                                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Anterior
-                            </button>
-                            <span className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200">
-                                Página {currentPage} de {Math.ceil(totalMembers / PAGE_SIZE)}
-                            </span>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalMembers / PAGE_SIZE), prev + 1))}
-                                disabled={currentPage === Math.ceil(totalMembers / PAGE_SIZE) || loading}
-                                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Siguiente
-                            </button>
-                        </div>
-                    </div>
+                    <PaginationBar
+                        pagination={pagination}
+                        pageSize={PAGE_SIZE}
+                        loading={loading}
+                        onPageChange={setCurrentPage}
+                    />
                 )}
             </div>
 
@@ -814,3 +807,75 @@ const ChurchAttendance = (props) => {
 };
 
 export default ChurchAttendance;
+
+function PaginationBar({ pagination, pageSize, loading, onPageChange, variant = 'default' }) {
+    if (pagination.pages <= 1) return null;
+
+    const labelText = `Mostrando ${(pagination.page - 1) * pageSize + 1} - ${Math.min(pagination.page * pageSize, pagination.total)} de ${pagination.total} registros`;
+    const sizeClasses = variant === 'compact'
+        ? 'px-4 py-3 text-xs'
+        : 'px-6 py-4 text-sm';
+
+    return (
+        <div className={`flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 ${sizeClasses}`}>
+            <div className={variant === 'compact' ? 'text-xs text-gray-600 dark:text-gray-400' : 'text-sm text-gray-600 dark:text-gray-400'}>
+                {labelText}
+            </div>
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={pagination.onPrev}
+                    disabled={!pagination.hasPrev || loading}
+                    className={variant === 'compact'
+                        ? 'px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                        : 'px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                    }
+                >
+                    Anterior
+                </button>
+
+                <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.pages <= 5) {
+                            pageNum = i + 1;
+                        } else if (pagination.page <= 3) {
+                            pageNum = i + 1;
+                        } else if (pagination.page >= pagination.pages - 2) {
+                            pageNum = pagination.pages - 4 + i;
+                        } else {
+                            pageNum = pagination.page - 2 + i;
+                        }
+
+                        const isActive = pagination.page === pageNum;
+
+                        return (
+                            <button
+                                key={pageNum}
+                                onClick={() => onPageChange(pageNum)}
+                                disabled={loading}
+                                className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
+                                    isActive
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                                {pageNum}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <button
+                    onClick={pagination.onNext}
+                    disabled={!pagination.hasNext || loading}
+                    className={variant === 'compact'
+                        ? 'px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                        : 'px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                    }
+                >
+                    Siguiente
+                </button>
+            </div>
+        </div>
+    );
+}

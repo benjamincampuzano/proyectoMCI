@@ -581,7 +581,7 @@ const useUserManagement = () => {
 
             // Generar nombre de archivo con fecha
             const date = new Date().toISOString().split('T')[0];
-            const filename = `Usuarios_Iglesia_${date}.xlsx`;
+            const filename = `Usuarios_Somos_${date}.xlsx`;
 
             // Escribir el buffer y descargar
             const buffer = await workbook.xlsx.writeBuffer();

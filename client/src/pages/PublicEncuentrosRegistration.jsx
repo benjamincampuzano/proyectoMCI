@@ -94,9 +94,9 @@ const PublicEncuentrosRegistration = () => {
                 phone: formData.phone.trim()
             });
 
-            setSuccess('Tu inscripción fue registrada exitosamente.');
+            setSuccess('Tu solicitud quedó registrada y pendiente de aprobación.');
             setFormData(INITIAL_FORM);
-            toast.success('Inscripción enviada');
+            toast.success('Solicitud enviada');
         } catch (requestError) {
             const apiError = requestError.response?.data?.error || requestError.response?.data?.message;
             setError(apiError || 'No se pudo enviar la inscripción.');
@@ -161,7 +161,7 @@ const PublicEncuentrosRegistration = () => {
                     <section className="ln-card p-6 lg:p-8">
                         <div className="mb-6">
                             <p className="text-sm text-[var(--ln-text-secondary)] max-w-2xl">
-                                Selecciona el encuentro al que deseas inscribirte. Tu inscripción quedará registrada y podrás asistir.
+                                Selecciona el encuentro al que deseas postularte. Tu solicitud quedará pendiente hasta que el coordinador la apruebe.
                             </p>
                         </div>
 
@@ -345,7 +345,7 @@ const PublicEncuentrosRegistration = () => {
                                 ) : (
                                     <UserPlus size={20} />
                                 )}
-                                Inscribirme
+                                Enviar solicitud
                             </button>
                         </form>
                     </section>

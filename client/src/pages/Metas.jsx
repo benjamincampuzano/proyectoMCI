@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
     Target, Plus, Clock, CheckCircle, XCircle, Pen, Trash, 
-    FileText, Minus, SquaresFour, List, Calendar, ArrowUpRight, ArrowDownRight, Users
+    FileText, Calendar
 } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -104,7 +104,6 @@ const Metas = () => {
     const [loading, setLoading] = useState(true);
     const [showGoalForm, setShowGoalForm] = useState(false);
     const [editingGoal, setEditingGoal] = useState(null);
-    const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, goal: null });
 
     const isEditor = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_GOALS);
@@ -252,174 +251,6 @@ const Metas = () => {
         );
     };
 
-    // Agrupar metas por contexto (Tipo + Evento/Periodo)
-    const groupedGoals = useMemo(() => {
-        const groups = {};
-
-        goals.forEach(goal => {
-            const contextKey = [
-                goal.type,
-                goal.encuentroId || '',
-                goal.conventionId || '',
-                goal.month || '',
-                goal.year || ''
-            ].join('|');
-
-            if (!groups[contextKey]) {
-                groups[contextKey] = {
-                    id: contextKey,
-                    type: goal.type,
-                    encuentro: goal.encuentro,
-                    convention: goal.convention,
-                    month: goal.month,
-                    year: goal.year,
-                    leaders: [],
-                    targetTotal: 0,
-                    currentTotal: 0
-                };
-            }
-
-            groups[contextKey].leaders.push(goal);
-            groups[contextKey].targetTotal += goal.targetValue;
-            groups[contextKey].currentTotal += goal.currentValue;
-        });
-
-        return Object.values(groups);
-    }, [goals]);
-
-    const GroupedGoalCard = ({ group }) => {
-        const percent = group.targetTotal > 0 ? Math.min(Math.round((group.currentTotal / group.targetTotal) * 100), 100) : 0;
-        const firstGoal = group.leaders[0];
-        
-        let goalName = '';
-        if (group.type === 'CELL_COUNT') goalName = 'Meta Células';
-        else if (group.type === 'CELL_ATTENDANCE') goalName = 'Asistencia Células';
-        else if (firstGoal.encuentro) goalName = `Encuentro: ${firstGoal.encuentro.name}`;
-        else if (firstGoal.convention) goalName = `Convención: ${firstGoal.convention.theme}`;
-
-        let statusColor = 'blue';
-        if (percent >= 100) statusColor = 'green';
-        else if (percent < 50) statusColor = 'amber';
-        const colors = COLOR_CLASSES[statusColor];
-
-        return (
-            <div className="group relative bg-[var(--ln-bg-surface)] rounded-[32px] border border-[var(--ln-border-standard)] overflow-hidden hover:border-[var(--ln-border-primary)] transition-all duration-500 hover:shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                <div className={`h-1.5 bg-gradient-to-r ${colors.gradient} opacity-80`}></div>
-                
-                <div className="p-8">
-                    <div className="flex items-start justify-between mb-8">
-                        <div className="flex-1 min-w-0">
-                            <h4 className="text-xl weight-590 text-[var(--ln-text-primary)] tracking-tight truncate group-hover:text-[var(--ln-brand-indigo)] transition-colors">{goalName}</h4>
-                            <p className="text-[10px] weight-700 uppercase tracking-widest text-[var(--ln-text-quaternary)] mt-1.5 flex items-center gap-2">
-                                <Target size={12} weight="bold" className={colors.text} />
-                                {group.type.replace(/_/g, ' ')}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] weight-700 bg-[var(--ln-bg-panel)] text-[var(--ln-text-secondary)] border border-[var(--ln-border-standard)]">
-                            <Users size={12} weight="bold" />
-                            {group.leaders.length} {group.leaders.length === 1 ? 'LÍDER' : 'LÍDERES'}
-                        </div>
-                    </div>
-
-                    <div className="mb-10 p-6 rounded-2xl bg-[var(--ln-bg-panel)]/30 border border-[var(--ln-border-standard)] relative overflow-hidden group/impact">
-                        <div className="flex justify-between items-end mb-4">
-                            <div>
-                                <p className="text-[10px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-[0.05em] mb-1.5">Impacto Grupal</p>
-                                <p className="text-3xl weight-590 text-[var(--ln-text-primary)]">
-                                    {group.currentTotal}<span className="text-sm weight-510 text-[var(--ln-text-tertiary)] ml-1.5 opacity-40">/ {group.targetTotal}</span>
-                                </p>
-                            </div>
-                            <div className="text-right">
-                                <span className={`text-4xl weight-590 italic tracking-tighter ${colors.text} opacity-90`}>{percent}%</span>
-                            </div>
-                        </div>
-                        <div className="h-2.5 w-full bg-[var(--ln-border-standard)] rounded-full overflow-hidden shadow-sm">
-                            <div 
-                                className={`h-full ${colors.bg} transition-all duration-1000 ease-out shadow-lg shadow-current/10`}
-                                style={{ width: `${percent}%` }}
-                            ></div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between px-1">
-                            <span className="text-[10px] weight-700 uppercase tracking-widest text-[var(--ln-text-quaternary)]">Objetivos Individuales</span>
-                        </div>
-                        <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
-                            {group.leaders.map(leader => {
-                                const leaderPercent = Math.min(Math.round((leader.currentValue / leader.targetValue) * 100), 100);
-                                const leaderName = leader.user?.profile?.fullName || 'N/A';
-                                return (
-                                    <div key={leader.id} className="group/leader flex flex-col gap-3.5 p-5 rounded-2xl bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] hover:border-[var(--ln-brand-indigo)]/30 transition-all hover:bg-[var(--ln-bg-panel)]/50">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3.5 min-w-0">
-                                                <div className="w-10 h-10 rounded-xl bg-[var(--ln-brand-indigo)]/10 flex items-center justify-center text-[var(--ln-brand-indigo)] weight-590 text-sm border border-[var(--ln-brand-indigo)]/20 uppercase">
-                                                    {leaderName.charAt(0)}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-[14px] weight-590 text-[var(--ln-text-primary)] truncate tracking-tight">{leaderName}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        {leaderPercent >= 100 ? (
-                                                            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[9px] weight-700 uppercase tracking-wider border border-emerald-500/20">
-                                                                <CheckCircle size={10} weight="bold" /> Cumplida
-                                                            </span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-brand-indigo)] text-[9px] weight-700 uppercase tracking-wider border border-[var(--ln-brand-indigo)]/20">
-                                                                <Clock size={10} weight="bold" /> En progreso
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="flex items-baseline justify-end gap-1.5">
-                                                    <span className="text-xl weight-590 text-[var(--ln-text-primary)]">{leader.currentValue}</span>
-                                                    <span className="text-[11px] weight-510 text-[var(--ln-text-tertiary)] opacity-40">/ {leader.targetValue}</span>
-                                                </div>
-                                                <span className={`text-[12px] weight-700 ${leaderPercent >= 100 ? 'text-emerald-500' : 'text-[var(--ln-brand-indigo)]'}`}>
-                                                    {leaderPercent}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-[var(--ln-border-standard)] rounded-full overflow-hidden">
-                                            <div 
-                                                className={`h-full transition-all duration-1000 ease-out ${leaderPercent >= 100 ? 'bg-emerald-500' : 'bg-[var(--ln-brand-indigo)]'}`}
-                                                style={{ width: `${leaderPercent}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="mt-8 flex items-center justify-between pt-6 border-t border-[var(--ln-border-standard)]">
-                        <div className="flex items-center gap-2.5 text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-[0.05em] opacity-70">
-                            <Calendar size={14} className={colors.text} weight="bold" />
-                            <span>Límite: <span className="text-[var(--ln-text-primary)]">{getDeadlineText(firstGoal)}</span></span>
-                        </div>
-                        <div className="flex gap-1.5">
-                            <button
-                                onClick={() => { setEditingGoal(firstGoal); setShowGoalForm(true); }}
-                                className="p-2.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-brand-indigo)] hover:bg-[var(--ln-brand-indigo)]/5 rounded-xl transition-all border border-transparent hover:border-[var(--ln-brand-indigo)]/20"
-                                title="Gestionar este grupo"
-                            >
-                                <Pen size={16} weight="bold" />
-                            </button>
-                            <button
-                                onClick={() => setDeleteConfirm({ isOpen: true, goal: firstGoal })}
-                                className="p-2.5 text-[var(--ln-text-tertiary)] hover:text-red-500 hover:bg-red-500/5 rounded-xl transition-all border border-transparent hover:border-red-500/20"
-                                title="Eliminar este grupo"
-                            >
-                                <Trash size={16} weight="bold" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
     return (
         <div className="space-y-10 pb-32 animate-in fade-in duration-700">
             <PageHeader
@@ -524,116 +355,62 @@ const Metas = () => {
 
             {/* Contenedor de Contenido */}
             <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[32px] border border-[var(--ln-border-standard)] overflow-hidden shadow-2xl">
-                {/* Header con toggle */}
-                <div className="flex items-center justify-between px-10 py-8 border-b border-[var(--ln-border-standard)] bg-white/[0.02]">
-                    <div>
-                        <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] flex items-center gap-3 tracking-tight">
-                            <Target size={24} className="text-[var(--ln-brand-indigo)]" weight="bold" />
-                            Vista de Objetivos
-                        </h3>
-                        {viewMode === 'cards' && (
-                            <p className="text-[12px] text-[var(--ln-text-tertiary)] mt-1 opacity-60">Agrupados por evento y periodo ministerial.</p>
-                        )}
-                    </div>
-                    
-                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
-                        <button
-                            onClick={() => setViewMode('cards')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'cards' 
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                        >
-                            <SquaresFour size={18} weight="bold" />
-                            Tarjetas
-                        </button>
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'table' 
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                        >
-                            <List size={18} weight="bold" />
-                            Tabla
-                        </button>
-                    </div>
+                <div className="px-10 py-8 border-b border-[var(--ln-border-standard)] bg-white/[0.02]">
+                    <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] flex items-center gap-3 tracking-tight">
+                        <Target size={24} className="text-[var(--ln-brand-indigo)]" weight="bold" />
+                        Vista de Objetivos
+                    </h3>
                 </div>
 
-                {/* Contenido según vista */}
-                {viewMode === 'cards' ? (
-                    <div className="p-10">
-                        {loading ? (
-                            <div className="flex flex-col items-center justify-center py-24 space-y-6">
-                                <div className="w-12 h-12 border-[3px] border-[var(--ln-brand-indigo)]/20 border-t-[var(--ln-brand-indigo)] rounded-full animate-spin"></div>
-                                <p className="text-[14px] weight-510 text-[var(--ln-text-tertiary)] animate-pulse">Sincronizando metas y registros...</p>
-                            </div>
-                        ) : groupedGoals.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-32 space-y-4">
-                                <div className="w-20 h-20 bg-[var(--ln-bg-panel)] rounded-3xl flex items-center justify-center border border-[var(--ln-border-standard)] mb-2 shadow-sm">
-                                    <FileText size={32} className="text-[var(--ln-text-quaternary)]" weight="bold" />
-                                </div>
-                                <h3 className="text-xl weight-590 text-[var(--ln-text-primary)]">Sin metas registradas</h3>
-                                <p className="text-[14px] text-[var(--ln-text-tertiary)] opacity-60">No se han definido objetivos para este periodo aún.</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-                                {groupedGoals.map(group => (
-                                    <GroupedGoalCard key={group.id} group={group} />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-white/[0.02] border-b border-[var(--ln-border-standard)]">
-                                    <th className="py-6 px-10 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60">Líder Doce</th>
-                                    <th className="py-6 px-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60">Meta / KPI</th>
-                                    <th className="py-6 px-4 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center">Objetivo</th>
-                                    <th className="py-6 px-4 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center">Actual</th>
-                                    <th className="py-6 px-4 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center w-52">Cumplimiento</th>
-                                    <th className="py-6 px-4 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center">Fecha Límite</th>
-                                    <th className="py-6 px-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center">Estado</th>
-                                    <th className="py-6 px-10 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-right">Acciones</th>
+                {/* Tabla */}
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-white/[0.02] border-b border-[var(--ln-border-standard)]">
+                                <th className="py-6 px-10 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60">Líder Doce</th>
+                                <th className="py-6 px-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60">Meta / KPI</th>
+                                <th className="py-6 px-4 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center">Objetivo</th>
+                                <th className="py-6 px-4 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center">Actual</th>
+                                <th className="py-6 px-4 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center w-52">Cumplimiento</th>
+                                <th className="py-6 px-4 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center">Fecha Límite</th>
+                                <th className="py-6 px-6 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-center">Estado</th>
+                                <th className="py-6 px-10 text-[10px] weight-700 text-[var(--ln-text-tertiary)] uppercase tracking-[0.1em] opacity-60 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--ln-border-standard)]/50">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={8} className="p-32 text-center">
+                                        <div className="flex flex-col items-center gap-5">
+                                            <div className="w-12 h-12 border-[3px] border-[var(--ln-brand-indigo)]/20 border-t-[var(--ln-brand-indigo)] rounded-full animate-spin"></div>
+                                            <p className="text-[13px] weight-510 text-[var(--ln-text-tertiary)]">Cargando datos de rendimiento...</p>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[var(--ln-border-standard)]/50">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={8} className="p-32 text-center">
-                                            <div className="flex flex-col items-center gap-5">
-                                                <div className="w-12 h-12 border-[3px] border-[var(--ln-brand-indigo)]/20 border-t-[var(--ln-brand-indigo)] rounded-full animate-spin"></div>
-                                                <p className="text-[13px] weight-510 text-[var(--ln-text-tertiary)]">Cargando datos de rendimiento...</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ) : goals.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={8} className="p-40 text-center">
-                                            <div className="w-20 h-20 bg-[var(--ln-bg-panel)] rounded-3xl flex items-center justify-center mx-auto mb-6 border border-[var(--ln-border-standard)] shadow-sm">
-                                                <FileText size={32} className="text-[var(--ln-text-quaternary)]" weight="bold" />
-                                            </div>
-                                            <h3 className="text-xl weight-590 text-[var(--ln-text-primary)]">Sin metas registradas</h3>
-                                            <p className="text-[14px] text-[var(--ln-text-tertiary)] opacity-60 mt-2">Inicia creando una nueva meta ministerial.</p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    goals.map(goal => (
-                                        <GoalRow
-                                            key={goal.id}
-                                            goal={goal}
-                                            onEdit={(g) => { setEditingGoal(g); setShowGoalForm(true); }}
-                                            onDelete={handleDelete}
-                                            onRequestDelete={(g) => setDeleteConfirm({ isOpen: true, goal: g })}
-                                        />
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                            ) : goals.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="p-40 text-center">
+                                        <div className="w-20 h-20 bg-[var(--ln-bg-panel)] rounded-3xl flex items-center justify-center mx-auto mb-6 border border-[var(--ln-border-standard)] shadow-sm">
+                                            <FileText size={32} className="text-[var(--ln-text-quaternary)]" weight="bold" />
+                                        </div>
+                                        <h3 className="text-xl weight-590 text-[var(--ln-text-primary)]">Sin metas registradas</h3>
+                                        <p className="text-[14px] text-[var(--ln-text-tertiary)] opacity-60 mt-2">Inicia creando una nueva meta ministerial.</p>
+                                    </td>
+                                </tr>
+                            ) : (
+                                goals.map(goal => (
+                                    <GoalRow
+                                        key={goal.id}
+                                        goal={goal}
+                                        onEdit={(g) => { setEditingGoal(g); setShowGoalForm(true); }}
+                                        onDelete={handleDelete}
+                                        onRequestDelete={(g) => setDeleteConfirm({ isOpen: true, goal: g })}
+                                    />
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {showGoalForm && (

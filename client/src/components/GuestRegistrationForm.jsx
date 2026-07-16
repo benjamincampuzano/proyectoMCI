@@ -357,7 +357,7 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
                                         onChange={handleChange}
                                     />
                                     <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                                        Declaro que he leído y acepto la <strong>Política de Tratamiento de Datos Personales</strong> de MCI.
+                                        Declaro que he leído y acepto la <strong>Política de Tratamiento de Datos Personales.</strong>
                                     </span>
                                 </label>
                                 <label className="flex items-start gap-3 cursor-pointer group">

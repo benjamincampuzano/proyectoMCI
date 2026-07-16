@@ -13,7 +13,9 @@ const {
     deletePayment,
     updateClassAttendance,
     updateRegistration,
-    getEncuentroBalanceReport
+    getEncuentroBalanceReport,
+    approveEncuentroRegistration,
+    rejectEncuentroRegistration
 } = require('../controllers/encuentroController');
 
 router.use(authenticate);
@@ -29,6 +31,8 @@ router.get('/:id/report/balance', getEncuentroBalanceReport);
 router.post('/:encuentroId/register', registerParticipant);
 router.delete('/registrations/:registrationId', deleteRegistration);
 router.put('/registrations/:registrationId', updateRegistration);
+router.patch('/registrations/:registrationId/approve', approveEncuentroRegistration);
+router.patch('/registrations/:registrationId/reject', rejectEncuentroRegistration);
 
 router.post('/registrations/:registrationId/payments', addPayment);
 router.delete('/payments/:paymentId', deletePayment);

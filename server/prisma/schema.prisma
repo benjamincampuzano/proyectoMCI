@@ -563,7 +563,7 @@ model EncuentroRegistration {
   guestId            Int?
   userId             Int?
   encuentroId        Int
-  status             RegistrationStatus         @default(REGISTERED)
+  status             RegistrationStatus         @default(PENDING)
   discountPercentage Float                      @default(0)
   createdAt          DateTime                   @default(now()) @db.Timestamptz(6)
   updatedAt          DateTime                   @updatedAt @db.Timestamptz(6)

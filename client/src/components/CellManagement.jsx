@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Users, MapPin, Clock, Calendar, DotIcon, Trash, Pen, X, List, SquaresFour, MapTrifold, Tag, Image, UserIcon } from '@phosphor-icons/react';
+import { Plus, Users, MapPin, Clock, DotIcon, Trash, X, MapTrifold, Tag, UserIcon } from '@phosphor-icons/react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -17,6 +17,69 @@ L.Icon.Default.mergeOptions({
     iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
+
+function PaginationBar({ pagination, pageSize, loading, onPageChange }) {
+    if (pagination.pages <= 1) return null;
+
+    const labelText = `Mostrando ${(pagination.page - 1) * pageSize + 1} - ${Math.min(pagination.page * pageSize, pagination.total)} de ${pagination.total} células`;
+
+    return (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-gray-900/30">
+            <div className="text-sm text-[#86868b] dark:text-[#98989d]">
+                {labelText}
+            </div>
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={pagination.onPrev}
+                    disabled={!pagination.hasPrev || loading}
+                    className="px-3 py-1.5 text-sm font-medium text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-md hover:bg-[#f5f5f7] dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    Anterior
+                </button>
+
+                <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.pages <= 5) {
+                            pageNum = i + 1;
+                        } else if (pagination.page <= 3) {
+                            pageNum = i + 1;
+                        } else if (pagination.page >= pagination.pages - 2) {
+                            pageNum = pagination.pages - 4 + i;
+                        } else {
+                            pageNum = pagination.page - 2 + i;
+                        }
+
+                        const isActive = pagination.page === pageNum;
+
+                        return (
+                            <button
+                                key={pageNum}
+                                onClick={() => onPageChange(pageNum)}
+                                disabled={loading}
+                                className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
+                                    isActive
+                                        ? 'bg-[#0071e3] text-white shadow-sm'
+                                        : 'text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] hover:bg-[#f5f5f7] dark:hover:bg-gray-700'
+                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                                {pageNum}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <button
+                    onClick={pagination.onNext}
+                    disabled={!pagination.hasNext || loading}
+                    className="px-3 py-1.5 text-sm font-medium text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-md hover:bg-[#f5f5f7] dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    Siguiente
+                </button>
+            </div>
+        </div>
+    );
+}
 
 const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasurer }) => {
     const { user, hasAnyRole, isCoordinator } = useAuth();
@@ -75,7 +138,10 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
     const [filterLeader, setFilterLeader] = useState('');
     const [filterBarrio, setFilterBarrio] = useState('');
     const [filterDayOfWeek, setFilterDayOfWeek] = useState('');
-    const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
+
+    // Pagination
+    const PAGE_SIZE = 10;
+    const [currentPage, setCurrentPage] = useState(1);
 
     // Management State
     const [selectedCell, setSelectedCell] = useState(null);
@@ -277,7 +343,7 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
                 {
                     headers: {
-                        'User-Agent': 'ProyectoIglesia/1.0',
+                        'User-Agent': 'Somos/1.0',
                         'Accept': 'application/json'
                     }
                 }
@@ -322,7 +388,7 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`,
                 {
                     headers: {
-                        'User-Agent': 'ProyectoIglesia/1.0',
+                        'User-Agent': 'Somos/1.0',
                         'Accept': 'application/json'
                     }
                 }
@@ -566,7 +632,7 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
         const matchesLeader = !filterLeader || cell.leaderId === parseInt(filterLeader);
         const matchesBarrio = !filterBarrio || (cell.barrio && cell.barrio.toLowerCase().includes(filterBarrio.toLowerCase()));
         const matchesDayOfWeek = !filterDayOfWeek || cell.dayOfWeek === filterDayOfWeek;
-        
+
         // For disciples, only show the cell they belong to
         if (isDisciple) {
             const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -574,9 +640,32 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                                cell.leaderId === user.id;
             return belongsToCell && matchesDoce && matchesLeader && matchesBarrio && matchesDayOfWeek;
         }
-        
+
         return matchesDoce && matchesLeader && matchesBarrio && matchesDayOfWeek;
     });
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterDoce, filterLeader, filterBarrio, filterDayOfWeek]);
+
+    const pagination = useMemo(() => {
+        const totalPages = Math.max(1, Math.ceil(filteredCells.length / PAGE_SIZE));
+        return {
+            page: currentPage,
+            pages: totalPages,
+            total: filteredCells.length,
+            hasPrev: currentPage > 1,
+            hasNext: currentPage < totalPages,
+            onPrev: () => setCurrentPage(prev => Math.max(1, prev - 1)),
+            onNext: () => setCurrentPage(prev => Math.min(totalPages, prev + 1)),
+        };
+    }, [currentPage, filteredCells.length]);
+
+    const paginatedCells = useMemo(() => {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        return filteredCells.slice(start, start + PAGE_SIZE);
+    }, [filteredCells, currentPage]);
 
     return (
         <div className="space-y-6">
@@ -1455,268 +1544,149 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                         ))}
                     </select>
                 </div>
-                <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
-                    <button
-                        onClick={() => setViewMode('cards')}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'cards'
-                            ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
-                            : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                    >
-                        <SquaresFour size={18} weight="bold" />
-                        Tarjetas
-                    </button>
-                    <button
-                        onClick={() => setViewMode('table')}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'table'
-                            ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
-                            : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                    >
-                        <List size={18} weight="bold" />
-                        Tabla
-                    </button>
-                </div>
                 <p className="text-xs text-[#86868b] whitespace-nowrap">
                     Mostrando {filteredCells.length} células
                 </p>
             </div>
 
-            {/* List of Cells */}
-            {viewMode === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredCells.map(cell => (
-                        <div key={cell.id} className="bg-white dark:bg-[#272729] rounded-lg shadow p-6 border border-gray-100 dark:border-[#3a3a3c] hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-lg font-bold text-[#1d1d1f] dark:text-white">{cell.name}</h3>
-                                <div className="flex gap-2">
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
-                                            cell.cellType === 'VIRTUAL' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                        }`}>
-                                        {cell.cellType}
-                                    </span>
-                                    <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">
-                                        {(cell._count?.members ?? 0) + (cell._count?.guests ?? 0)}
-                                    </span>
-                                </div>
-                            </div>
+            {/* Pagination (top) */}
+            {filteredCells.length > PAGE_SIZE && (
+                <PaginationBar
+                    pagination={pagination}
+                    pageSize={PAGE_SIZE}
+                    loading={loading}
+                    onPageChange={setCurrentPage}
+                />
+            )}
 
-                            <div className="space-y-2 text-sm text-[#1d1d1f] dark:text-white/80">
-                                <div className="flex items-center gap-2">
-                                    <Users size={16} className="text-gray-400" />
-                                    <span><strong className="text-[#1d1d1f] dark:text-white/80">Líder:</strong> {cell.leader?.fullName}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Clock size={16} className="text-gray-400" />
-                                    <span><strong className="text-[#1d1d1f] dark:text-white/80">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
-                                </div>
-                                {cell.liderDoce && (
-                                    <div className="flex items-center gap-2">
-                                        <Users size={16} className="text-blue-300" />
-                                        <span><strong className="text-[#1d1d1f] dark:text-white/80">Líder 12:</strong> {cell.liderDoce?.fullName}</span>
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-2">
-                                    <Tag size={16} className="text-gray-400" />
-                                    <span><strong className="text-[#1d1d1f] dark:text-white/80">Tipo:</strong> {cell.cellType}</span>
-                                </div>
-                                {cell.spiritualMappingUrl && (
-                                    <div className="flex items-center gap-2">
-                                        <Image size={16} className="text-purple-400" />
-                                        <span className="text-xs text-[#86868b] italic">
-                                            <a href={cell.spiritualMappingUrl} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline">
-                                                Ver Cartografía Espiritual
-                                            </a>
-                                        </span>
-                                    </div>
-                                )}
-                                <div className="flex items-center gap-2">
-                                    <MapPin size={16} className="text-gray-400" />
-                                    <span><strong className="text-[#1d1d1f] dark:text-white/80">Ciudad:</strong> {cell.city}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Clock size={16} className="text-gray-400" />
-                                    <span><strong className="text-[#1d1d1f] dark:text-white/80">Horario:</strong> {cell.dayOfWeek} {cell.time}</span>
-                                </div>
-                                <div className="flex items-center gap-2 pt-1">
-                                    {cell.cellType === 'VIRTUAL' ? (
-                                        <>
-                                            <MapPin size={16} className="text-purple-400" />
-                                            <span className="text-xs text-[#86868b] italic">
-                                                {cell.address ? (
-                                                    <a href={cell.address} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline">
-                                                        Unirse a virtual
-                                                    </a>
-                                                ) : (
-                                                    'Sin URL configurada'
-                                                )}
-                                            </span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <MapPin size={16} className="text-blue-400" />
-                                            <span className="text-xs text-[#86868b] italic">
-                                                {cell.latitude && cell.longitude
-                                                    ? `${cell.latitude.toFixed(4)}, ${cell.longitude.toFixed(4)}`
-                                                    : 'Sin ubicación en mapa'
-                                                }
-                                            </span>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-[#3a3a3c] flex justify-between items-center">
-                                <div className="flex gap-4">
-                                    {!isDisciple && (
-                                        <Button
-                                            onClick={() => setSelectedCell(cell)}
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-blue-600 hover:text-blue-800"
-                                        >
-                                            Agregar Usuarios
-                                        </Button>
-                                    )}
-                                    {canManageCells() && (
-                                        <Button
-                                            onClick={() => handleEditClick(cell)}
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-amber-600 hover:text-amber-800"
-                                        >
-                                            Editar
-                                        </Button>
-                                    )}
-                                </div>
-                                {canManageCells() && (
-                                    <Button
-                                        onClick={() => handleDeleteCell(cell.id)}
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-red-500 hover:text-red-700"
-                                        icon={Trash}
-                                    >
-                                        Eliminar
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                        Nombre
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                        Líder
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                        Barrio / URL
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                        Horario
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                        Discípulos
-                                    </th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
-                                        Acciones
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-[#272729] divide-y divide-gray-200 dark:divide-gray-700">
-                                {filteredCells.map(cell => (
-                                    <tr key={cell.id} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700/50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div>
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{cell.name}</div>
-                                                <div className="flex gap-2 mt-1">
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
-                                                            cell.cellType === 'VIRTUAL' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
-                                                                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                                        }`}>
-                                                        {cell.cellType}
+            {/* List of Cells (table only) */}
+            <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                    Nombre
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                    Líder
+                                </th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                    Barrio / URL
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                    Horario
+                                </th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                    Discípulos
+                                </th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                    Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-[#272729] divide-y divide-gray-200 dark:divide-gray-700">
+                            {paginatedCells.map(cell => (
+                                <tr key={cell.id} className="hover:bg-[#f5f5f7] dark:hover:bg-gray-700/50">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{cell.name}</div>
+                                            <div className="flex gap-2 mt-1">
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
+                                                        cell.cellType === 'VIRTUAL' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                                            'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                                    }`}>
+                                                    {cell.cellType}
+                                                </span>
+                                                {cell.liderDoce && (
+                                                    <span className="text-xs text-blue-600 dark:text-blue-400">
+                                                        L12: {cell.liderDoce.fullName}
                                                     </span>
-                                                    {cell.liderDoce && (
-                                                        <span className="text-xs text-blue-600 dark:text-blue-400">
-                                                            L12: {cell.liderDoce.fullName}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
-                                            {cell.leader?.fullName || 'N/A'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
-                                            {cell.cellType === 'VIRTUAL' ? (
-                                                cell.address ? (
-                                                    <a href={cell.address} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline">
-                                                        Url de la reunión
-                                                    </a>
-                                                ) : (
-                                                    <span className="text-gray-400">Sin URL</span>
-                                                )
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
+                                        {cell.leader?.fullName || 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
+                                        {cell.cellType === 'VIRTUAL' ? (
+                                            cell.address ? (
+                                                <a href={cell.address} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline">
+                                                    Url de la reunión
+                                                </a>
                                             ) : (
-                                                cell.barrio
+                                                <span className="text-gray-400">Sin URL</span>
+                                            )
+                                        ) : (
+                                            cell.barrio
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
+                                        {cell.dayOfWeek} {cell.time}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                            {(cell._count?.members ?? 0) + (cell._count?.guests ?? 0)}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div className="flex justify-end gap-2">
+                                            {!isDisciple && (
+                                                <Button
+                                                    onClick={() => setSelectedCell(cell)}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-blue-600 hover:text-blue-800"
+                                                >
+                                                    Agregar Usuarios
+                                                </Button>
                                             )}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#86868b] dark:text-[#98989d]">
-                                            {cell.dayOfWeek} {cell.time}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                                                {(cell._count?.members ?? 0) + (cell._count?.guests ?? 0)}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end gap-2">
-                                                {!isDisciple && (
-                                                    <Button
-                                                        onClick={() => setSelectedCell(cell)}
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-blue-600 hover:text-blue-800"
-                                                    >
-                                                        Agregar Usuarios
-                                                    </Button>
-                                                )}
-                                                {canManageCells() && (
-                                                    <Button
-                                                        onClick={() => handleEditClick(cell)}
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-amber-600 hover:text-amber-800"
-                                                    >
-                                                        Editar
-                                                    </Button>
-                                                )}
-                                                {canManageCells() && (
-                                                    <Button
-                                                        onClick={() => handleDeleteCell(cell.id)}
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-red-500 hover:text-red-700"
-                                                        icon={Trash}
-                                                    >
-                                                        Eliminar
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                            {canManageCells() && (
+                                                <Button
+                                                    onClick={() => handleEditClick(cell)}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-amber-600 hover:text-amber-800"
+                                                >
+                                                    Editar
+                                                </Button>
+                                            )}
+                                            {canManageCells() && (
+                                                <Button
+                                                    onClick={() => handleDeleteCell(cell.id)}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700"
+                                                    icon={Trash}
+                                                >
+                                                    Eliminar
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {paginatedCells.length === 0 && (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-12 text-center text-sm text-[#86868b] dark:text-[#98989d]">
+                                        No se encontraron células con los filtros aplicados.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+
+            {/* Pagination (bottom) */}
+            {filteredCells.length > PAGE_SIZE && (
+                <PaginationBar
+                    pagination={pagination}
+                    pageSize={PAGE_SIZE}
+                    loading={loading}
+                    onPageChange={setCurrentPage}
+                />
             )}
 
             {/* Delete Cell Confirmation Modal */}

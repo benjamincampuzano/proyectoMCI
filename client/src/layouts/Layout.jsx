@@ -79,7 +79,7 @@ const Layout = () => {
                             <div className="relative w-full h-full rounded-xl overflow-hidden border border-[var(--ln-border-standard)] bg-white/5">
                                 <img
                                     src={logo}
-                                    alt="MCI Logo"
+                                    alt="Somos Logo"
                                     className="w-full h-full object-cover grayscale-[0.2]"
                                 />
                             </div>
@@ -91,7 +91,7 @@ const Layout = () => {
                                     {user.fullName}
                                 </p>
                                 <p className="text-[10px] uppercase tracking-widest text-[var(--ln-text-tertiary)] font-bold mt-0.5">
-                                    MCI Panel
+                                    Somos Panel
                                 </p>
                             </div>
                         )}

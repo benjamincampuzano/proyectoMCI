@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MicrosoftExcelLogoIcon, SpinnerIcon,Users, PhoneOutgoingIcon, UserCheck, HouseLineIcon, UserPlusIcon } from '@phosphor-icons/react';
+import { MicrosoftExcelLogoIcon, SpinnerIcon, Users, Phone, House, Handshake } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
 import ExcelJS from 'exceljs';
@@ -241,73 +241,84 @@ const GuestStats = ({ refreshTrigger }) => {
                     </div>
                 ) : stats ? (
                     <>
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                                <Users size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Invitados</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{stats.totalGuests}</span>
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Invitados en General</span>
-                        </div>
-                    </div>
+                {/* Tracking Summary Cards */}
+                        {trackingStats && trackingStats.length > 0 && (() => {
+                            const totals = trackingStats.reduce((acc, curr) => ({
+                                total: acc.total + curr.total,
+                                withCall: acc.withCall + curr.withCall,
+                                withoutCall: acc.withoutCall + curr.withoutCall,
+                                withVisit: acc.withVisit + curr.withVisit,
+                                withoutVisit: acc.withoutVisit + curr.withoutVisit,
+                            }), { total: 0, withCall: 0, withoutCall: 0, withVisit: 0, withoutVisit: 0 });
 
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-5 rounded-xl border border-yellow-100 dark:border-yellow-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-yellow-100 dark:bg-yellow-800 rounded-lg text-yellow-600 dark:text-yellow-300">
-                                <UserPlusIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-yellow-800 dark:text-yellow-200 uppercase tracking-tight">Nuevos</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-yellow-900 dark:text-white">{stats.byStatus.NUEVO || 0}</span>
-                            <span className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mt-1">Invitados Nuevos</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
-                                <PhoneOutgoingIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Llamados</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{stats.byStatus.CONTACTADO || 0}</span>
-                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Invitados Llamados</span>
-                        </div>
-                    </div>
-
-                    <div className="bg--50 dark:bg-lime-900/20 p-5 rounded-xl border border-lime-100 dark:border-lime-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-lime-100 dark:bg-lime-800 rounded-lg text-lime-600 dark:text-lime-300">
-                                <HouseLineIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-lime-800 dark:text-lime-200 uppercase tracking-tight">Visitado</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-lime-900 dark:text-white">{stats.byStatus.CONSOLIDADO || 0}</span>
-                            <span className="text-xs text-lime-600 dark:text-lime-400 font-medium mt-1">Invitados Visitados</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                                <UserCheck size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Consolidados</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">{stats.byStatus.GANADO || 0}</span>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Total de Consolidados</span>
-                        </div>
-                    </div>
-                </div>
+                            return (
+                                <div className="mt-8">
+                                    <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Reporte de Seguimiento</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                                                    <Users size={20} />
+                                                </div>
+                                                <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Invitados</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{totals.total}</span>
+                                                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Personas registradas</span>
+                                            </div>
+                                        </div>
+                                        <div className="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl border border-green-100 dark:border-green-800 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
+                                                    <Phone size={20} />
+                                                </div>
+                                                <span className="text-sm font-bold text-green-800 dark:text-green-200 uppercase tracking-tight">Con Llamada</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-3xl font-extrabold text-green-900 dark:text-white">{totals.withCall}</span>
+                                                <span className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">Contactados</span>
+                                            </div>
+                                        </div>
+                                        <div className="bg-orange-50 dark:bg-orange-900/20 p-5 rounded-xl border border-orange-100 dark:border-orange-800 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg text-orange-600 dark:text-orange-300">
+                                                    <Phone size={20} />
+                                                </div>
+                                                <span className="text-sm font-bold text-orange-800 dark:text-orange-200 uppercase tracking-tight">Sin Llamada</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-3xl font-extrabold text-orange-900 dark:text-white">{totals.withoutCall}</span>
+                                                <span className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">Pendientes</span>
+                                            </div>
+                                        </div>
+                                        <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                                                    <Handshake size={20} />
+                                                </div>
+                                                <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Con Visita</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{totals.withVisit}</span>
+                                                <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Visitados</span>
+                                            </div>
+                                        </div>
+                                        <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                                                    <House size={20} />
+                                                </div>
+                                                <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Sin Visita</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-3xl font-extrabold text-red-900 dark:text-white">{totals.withoutVisit}</span>
+                                                <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Pendientes</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
 
                         {/* Charts */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

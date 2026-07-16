@@ -301,10 +301,10 @@ const UserFormFields = ({
                     <option value="">Seleccione...</option>
                     <option value="MUJERES">RED de Mujeres</option>
                     <option value="HOMBRES">RED de Hombres</option>
-                    <option value="KIDS">MCI Kids 1 (5 a 7 años)</option>
-                    <option value="ROCAS">MCI Kids 2 (8 a 10 años)</option>
-                    <option value="TEENS">MCI Teens (11 a 13 años)</option>
-                    <option value="JOVENES">MCI Jóvenes (14+ solteros)</option>
+                    <option value="KIDS">Somos Kids 1 (5 a 7 años)</option>
+                    <option value="ROCAS">Somos Kids 2 (8 a 10 años)</option>
+                    <option value="TEENS">Somos Teens (11 a 13 años)</option>
+                    <option value="JOVENES">Somos Jóvenes (14+ solteros)</option>
                 </select>
             , true)}
 
@@ -516,8 +516,8 @@ const UserFormFields = ({
                         />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-[13.5px] weight-590 text-[var(--ln-text-primary)] group-hover:text-[var(--ln-brand-indigo)] transition-colors">Política de MCI</span>
-                        <span className="text-[11px] text-[var(--ln-text-tertiary)] opacity-60">Aceptación de la Política de Tratamiento de MCI Global.</span>
+                        <span className="text-[13.5px] weight-590 text-[var(--ln-text-primary)] group-hover:text-[var(--ln-brand-indigo)] transition-colors">Política de Somos</span>
+                        <span className="text-[11px] text-[var(--ln-text-tertiary)] opacity-60">Aceptación de la Política de Tratamiento de Somos Global.</span>
                     </div>
                 </label>
 

@@ -3,7 +3,7 @@
  */
 
 const commonPasswords = [
-    'password', '12345678', 'contraseña', 'iglesia', 'mci2024', 'mci2025',
+    'password', '12345678', 'contraseña', 'iglesia', 'somos2024', 'somos2025',
     'qwerty', 'admin123', 'godisgood', 'jesus123'
 ];
 

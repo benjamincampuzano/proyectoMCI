@@ -1,13 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, Users, UserIcon, MoneyIcon, CaretRight, Trash, Pen, UserCheck, SquaresFour, List, FileTextIcon, TrendUpIcon, ArrowsClockwise, Clock } from '@phosphor-icons/react';
+import { Plus, Calendar, Users, UserIcon, MoneyIcon, Trash, Pen, UserCheck, FileTextIcon, ArrowsClockwise, Clock } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import ConventionDetails from '../components/ConventionDetails';
 import ConvencionTable from '../components/ConvencionTable';
 import ConvencionesReport from '../components/ConvencionesReport';
-import ActionModal from '../components/ActionModal';
-import { Button, Modal, Skeleton, PageHeader, AsyncSearchSelect } from '../components/ui';
+import { Button, Modal, PageHeader, AsyncSearchSelect } from '../components/ui';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ROLES } from '../constants/roles';
@@ -18,7 +17,6 @@ const Convenciones = () => {
     const [loading, setLoading] = useState(true);
     const [selectedConvention, setSelectedConvention] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
@@ -281,100 +279,6 @@ const Convenciones = () => {
             );
         }
 
-        if (viewMode === 'cards') {
-            // Vista de tarjetas (actual)
-            return (
-                <>
-                    {loading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <Skeleton variant="card" lines={4} />
-                            <Skeleton variant="card" lines={4} />
-                            <Skeleton variant="card" lines={4} />
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {conventions.map((conv) => (
-                                <div
-                                    key={conv.id}
-                                    onClick={() => fetchConventionDetails(conv.id)}
-                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && fetchConventionDetails(conv.id)}
-                                    role="button"
-                                    tabIndex={0}
-                                    className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 cursor-pointer overflow-hidden relative"
-                                >
-                                    <div className="absolute top-0 left-0 w-2 h-full bg-blue-500 group-hover:bg-blue-600 transition-colors"></div>
-                                    <div className="p-6 pl-8">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                                    {conv.type}
-                                                </h3>
-                                                <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded mt-1">
-                                                    {conv.year}
-                                                </span>
-                                            </div>
-                                            <CaretRight className="text-gray-400 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" size={24} />
-                                        </div>
-
-                                        <div className="absolute top-4 right-12 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                            {canModify && (
-                                                <>
-                                                    <button
-                                                        onClick={(e) => handleEdit(e, conv)}
-                                                        className="p-2 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
-                                                        title="Editar Convención"
-                                                    >
-                                                        <Pen size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => handleDelete(e, conv.id)}
-                                                        className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition-colors"
-                                                        title="Eliminar Convención"
-                                                    >
-                                                        <Trash size={16} />
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {conv.theme && (
-                                            <p className="text-gray-600 dark:text-gray-300 italic mb-4 line-clamp-2">
-                                                "{conv.theme}"
-                                            </p>
-                                        )}
-
-                                        <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <Calendar size={16} className="mr-2 text-blue-500" />
-                                                {new Date(conv.startDate).toLocaleDateString()}
-                                            </div>
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <MoneyIcon size={16} className="mr-2 text-orange-500" />
-                                                {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(conv.generalCost || conv.cost)}
-                                                {conv.vipPlateaCost > 0 && (
-                                                    <span className="ml-1 text-xs text-gray-400">/ VIP: {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(conv.vipPlateaCost)}</span>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <UserCheck size={16} className="mr-2 text-blue-500" />
-                                                Coord: {conv.coordinator?.fullName || 'Sin Asignar'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            {conventions.length === 0 && (
-                                <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                                    No hay convenciones creadas.<br />
-                                    ¡Crea una nueva convención para comenzar!
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </>
-            );
-        }
-
         // Vista de tabla
         return (
             <div className="animate-fade-in">
@@ -511,45 +415,16 @@ const Convenciones = () => {
                     </div>
                 </div>
             )}
-            {/* Toggle de Vista y Reporte */}
-            {!showReport && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
-                        <button
-                            onClick={() => setViewMode('cards')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] font-semibold ${viewMode === 'cards'
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                        >
-                            <SquaresFour size={18} weight="bold" />
-                            Tarjetas
-                        </button>
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] font-semibold ${viewMode === 'table'
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                        >
-                            <List size={18} weight="bold" />
-                            Tabla
-                        </button>
-                    </div>
-
-                    {canViewReport && (
-                        <button
-                            onClick={() => setShowReport(true)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                                showReport
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                            }`}
-                        >
-                            <FileTextIcon size={16} />
-                            Ver Reporte
-                        </button>
-                    )}
+            {/* Reporte */}
+            {!showReport && canViewReport && (
+                <div className="flex justify-end pb-4 border-b border-gray-200 dark:border-gray-700">
+                    <button
+                        onClick={() => setShowReport(true)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    >
+                        <FileTextIcon size={16} />
+                        Ver Reporte
+                    </button>
                 </div>
             )}
 

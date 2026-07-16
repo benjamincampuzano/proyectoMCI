@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, UserIcon,Users, MoneyIcon, CaretRight, Trash, UserCheck, SquaresFour, List, FileTextIcon, TrendUpIcon, ArrowsClockwise, GuitarIcon, GraduationCap, Eye, Pencil } from '@phosphor-icons/react';
+import { Plus, UserIcon, Users, MoneyIcon, Trash, UserCheck, FileTextIcon, ArrowsClockwise, GuitarIcon, GraduationCap, Pencil } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import ArtClassDetails from '../components/ArtClassDetails';
@@ -14,12 +14,10 @@ import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ROLES } from '../constants/roles';
 
 const EscuelaDeArtes = () => {
-    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
+    const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const [classes, setClasses] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [selectedClass, setSelectedClass] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
@@ -95,14 +93,11 @@ const EscuelaDeArtes = () => {
     };
 
     const fetchClasses = async () => {
-        setLoading(true);
         try {
             const res = await api.get('/arts/classes');
             setClasses(res.data);
         } catch (error) {
             console.error('Error fetching classes:', error);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -290,7 +285,7 @@ const EscuelaDeArtes = () => {
     const canCreateOrDelete = hasFullEditAccess;
     const canViewReport = hasFullEditAccess;
 
-    // Renderizar contenido según vista
+    // Renderizar contenido
     const renderContent = () => {
         if (showReport) {
             return (
@@ -306,114 +301,6 @@ const EscuelaDeArtes = () => {
             );
         }
 
-        if (viewMode === 'cards') {
-            // Vista de tarjetas (actual)
-            return (
-                <>
-                    {loading ? (
-                        <div className="flex justify-center py-12">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {classes.map((cls) => (
-                                <div
-                                    key={cls.id}
-                                    className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden relative"
-                                >
-                                    <div className="absolute top-0 left-0 w-2 h-full bg-purple-500 group-hover:bg-purple-600 transition-colors"></div>
-
-                                    <div className="p-6 pl-8">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="text-xs font-bold tracking-wider text-purple-600 dark:text-purple-400 uppercase">
-                                                {cls.schedule}
-                                            </span>
-                                            <div className="flex items-center space-x-2">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        fetchClassDetails(cls.id);
-                                                    }}
-                                                    className="p-1 text-gray-400 hover:text-blue-500 transition-colors z-10"
-                                                    title="Ver clase e inscribir estudiantes"
-                                                >
-                                                    <Eye size={16} />
-                                                </button>
-                                                {canCreateOrDelete && (
-                                                    <>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleEdit(cls.id);
-                                                            }}
-                                                            className="p-1 text-gray-400 hover:text-purple-500 transition-colors z-10"
-                                                            title="Editar información de la clase"
-                                                        >
-                                                            <Pencil size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => handleDelete(e, cls.id)}
-                                                            className="p-1 text-gray-400 hover:text-red-500 transition-colors z-10"
-                                                            title="Eliminar clase"
-                                                        >
-                                                            <Trash size={16} />
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <h3 
-                                            className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-purple-600 transition-colors cursor-pointer hover:underline"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                fetchClassDetails(cls.id);
-                                            }}
-                                            title="Ver detalles y estudiantes inscritos"
-                                        >
-                                            {cls.name}
-                                        </h3>
-
-                                        {cls.description && (
-                                            <p className="text-gray-600 dark:text-gray-300 italic mb-4 line-clamp-2 text-sm">
-                                                "{cls.description}"
-                                            </p>
-                                        )}
-
-                                        <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <GuitarIcon size={16} className="mr-2 text-purple-500" />
-                                                {cls.duration} Minutos //Revisa
-                                            </div>
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <Users size={16} className="mr-2 text-purple-500" />
-                                                {cls.enrollments?.length || 0} Inscritos
-                                            </div>
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <MoneyIcon size={16} className="mr-2 text-orange-500" />
-                                                {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(parseFloat(cls.cost) || 0)}
-                                            </div>
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <GraduationCap size={16} className="mr-2 text-green-500" />
-                                                Prof: {cls.professor?.profile?.fullName || cls.professor?.fullName || 'Sin Asignar'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            {classes.length === 0 && (
-                                <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                                    No hay clases activas.<br />
-                                    ¡Crea una nueva clase para comenzar!
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </>
-            );
-        }
-
-        // Vista de tabla
         return (
             <div className="animate-fade-in">
                 <ArtClassTable
@@ -538,57 +425,32 @@ const EscuelaDeArtes = () => {
                     </div>
                 </div>
             )}
-            {/* Toggle de Vista y Reporte */}
+            {/* Acciones: Nueva Clase y Reporte */}
             {!showReport && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
+                <div className="flex items-center justify-end gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+                    {canCreateOrDelete && (
+                        <Button
+                            variant="primary"
+                            icon={Plus}
+                            onClick={() => setShowCreateModal(true)}
+                            className="shadow-sm border-purple-500/30"
+                        >
+                            Nueva Clase
+                        </Button>
+                    )}
+                    {canViewReport && (
                         <button
-                            onClick={() => setViewMode('cards')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] font-semibold ${viewMode === 'cards'
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
+                            onClick={() => setShowReport(true)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                                showReport
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                         >
-                            <SquaresFour size={18} weight="bold" />
-                            Tarjetas
+                            <FileTextIcon size={16} />
+                            Ver Reporte
                         </button>
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] font-semibold ${viewMode === 'table'
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                        >
-                            <List size={18} weight="bold" />
-                            Tabla
-                        </button>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        {canCreateOrDelete && (
-                            <Button
-                                variant="primary"
-                                icon={Plus}
-                                onClick={() => setShowCreateModal(true)}
-                                className="shadow-sm border-purple-500/30"
-                            >
-                                Nueva Clase
-                            </Button>
-                        )}
-                        {canViewReport && (
-                            <button
-                                onClick={() => setShowReport(true)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                                    showReport
-                                        ? 'bg-purple-600 text-white'
-                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                }`}
-                            >
-                                <FileTextIcon size={16} />
-                                Ver Reporte
-                            </button>
-                        )}
-                    </div>
+                    )}
                 </div>
             )}
 

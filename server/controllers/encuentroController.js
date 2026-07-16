@@ -1,6 +1,11 @@
 const prisma = require('../utils/database');
 const { logActivity } = require('../utils/auditLogger');
 const { getUserNetwork } = require('../utils/networkUtils');
+const bcrypt = require('bcryptjs');
+
+const ACTIVE_REGISTRATION_STATUSES = ['REGISTERED', 'ATTENDED'];
+const PENDING_REGISTRATION_STATUS = 'PENDING';
+const isActiveRegistration = (status) => ACTIVE_REGISTRATION_STATUSES.includes(status);
 
 // Helper to check if user has modification access to an encuentro
 const checkEncuentroAccess = async (user, encuentroId) => {
@@ -39,12 +44,10 @@ const getEncuentros = async (req, res) => {
                 coordinator: {
                     include: { profile: true }
                 },
-                _count: {
-                    select: { registrations: true }
-                },
                 registrations: {
                     select: {
                         id: true,
+                        status: true,
                         discountPercentage: true,
                         needsTransport: true,
                         needsAccommodation: true,
@@ -59,12 +62,15 @@ const getEncuentros = async (req, res) => {
 
         // Calculate stats
         const encuentrosWithStats = encuentros.map(enc => {
-            const totalCollected = enc.registrations?.reduce((acc, reg) => {
+            const activeRegs = enc.registrations?.filter(r => isActiveRegistration(r.status)) || [];
+            const pendingRegs = enc.registrations?.filter(r => r.status === PENDING_REGISTRATION_STATUS) || [];
+
+            const totalCollected = activeRegs.reduce((acc, reg) => {
                 const paymentsSum = reg.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
                 return acc + paymentsSum;
             }, 0) || 0;
 
-            const expectedIncome = enc.registrations?.reduce((acc, reg) => {
+            const expectedIncome = activeRegs.reduce((acc, reg) => {
                 const baseCost = enc.cost * (1 - ((reg.discountPercentage || 0) / 100));
                 const transportCost = reg.needsTransport ? enc.transportCost : 0;
                 const accommodationCost = reg.needsAccommodation ? enc.accommodationCost : 0;
@@ -76,7 +82,8 @@ const getEncuentros = async (req, res) => {
                 ...enc,
                 coordinator: enc.coordinator ? { id: enc.coordinator.id, fullName: enc.coordinator.profile?.fullName } : null,
                 stats: {
-                    registeredCount: enc._count?.registrations || 0,
+                    registeredCount: activeRegs.length,
+                    pendingCount: pendingRegs.length,
                     totalCollected,
                     expectedIncome
                 }
@@ -129,8 +136,12 @@ const getEncuentroById = async (req, res) => {
 
         if (!encuentro) return res.status(404).json({ error: 'Not found' });
 
+        const allRegistrations = encuentro.registrations || [];
+        const activeRegistrations = allRegistrations.filter((reg) => isActiveRegistration(reg.status));
+        const pendingRegistrations = allRegistrations.filter((reg) => reg.status === PENDING_REGISTRATION_STATUS);
+
         // Visibility Filtering
-        let filteredRegistrations = encuentro.registrations;
+        let filteredRegistrations = activeRegistrations;
 
         const isAdmin = roles.includes('ADMIN');
         const isEncuentroCoordinator = encuentro.coordinatorId === parseInt(currentUserId);
@@ -147,7 +158,7 @@ const getEncuentroById = async (req, res) => {
             const networkIds = await getUserNetwork(currentUserId);
             const allowedIds = new Set([...networkIds, parseInt(currentUserId)]);
 
-            filteredRegistrations = encuentro.registrations.filter(reg => {
+            filteredRegistrations = activeRegistrations.filter(reg => {
                 const participant = reg.guest || reg.user;
                 if (!participant) return false;
 
@@ -199,10 +210,42 @@ const getEncuentroById = async (req, res) => {
             };
         });
 
+        const visiblePendingRegistrations = hasFullAccess
+            ? pendingRegistrations.map(reg => {
+                const paymentsByType = reg.payments?.reduce((acc, p) => {
+                    const type = p.paymentType || 'ENCUENTRO';
+                    acc[type] = (acc[type] || 0) + p.amount;
+                    return acc;
+                }, { ENCUENTRO: 0, TRANSPORT: 0, ACCOMMODATION: 0 }) || { ENCUENTRO: 0, TRANSPORT: 0, ACCOMMODATION: 0 };
+
+                const totalPaid = Object.values(paymentsByType).reduce((sum, amount) => sum + amount, 0);
+
+                const baseCost = encuentro.cost * (1 - ((reg.discountPercentage || 0) / 100));
+                const transportCost = reg.needsTransport ? encuentro.transportCost : 0;
+                const accommodationCost = reg.needsAccommodation ? encuentro.accommodationCost : 0;
+
+                const finalCost = baseCost + transportCost + accommodationCost;
+                const balance = finalCost - totalPaid;
+
+                return {
+                    ...reg,
+                    user: reg.user ? { id: reg.user.id, fullName: reg.user.profile?.fullName, phone: reg.user.phone } : null,
+                    paymentsByType,
+                    totalPaid,
+                    baseCost,
+                    transportCost,
+                    accommodationCost,
+                    finalCost,
+                    balance
+                };
+            })
+            : [];
+
         const formattedEncuentro = {
             ...encuentro,
             coordinator: encuentro.coordinator ? { id: encuentro.coordinator.id, fullName: encuentro.coordinator.profile?.fullName } : null,
-            registrations: registrationsWithFinancials
+            registrations: registrationsWithFinancials,
+            pendingRegistrations: visiblePendingRegistrations
         };
 
         res.json(formattedEncuentro);
@@ -448,6 +491,7 @@ const registerParticipant = async (req, res) => {
                 encuentroId: parseInt(encuentroId),
                 guestId: guestId ? parseInt(guestId) : null,
                 userId: userId ? parseInt(userId) : null,
+                status: 'REGISTERED',
                 discountPercentage: parseFloat(discountPercentage || 0),
                 needsTransport: !!needsTransport,
                 needsAccommodation: !!needsAccommodation
@@ -881,6 +925,7 @@ const createPublicEncuentroRegistration = async (req, res) => {
             data: {
                 encuentroId: parseInt(encuentroId),
                 guestId: guest.id,
+                status: 'PENDING',
                 needsTransport: Boolean(needsTransport),
                 needsAccommodation: Boolean(needsAccommodation)
             }
@@ -899,6 +944,199 @@ const createPublicEncuentroRegistration = async (req, res) => {
     } catch (error) {
         console.error('Error creating public encuentro registration:', error);
         res.status(500).json({ error: 'Error creating public registration' });
+    }
+};
+
+const approveEncuentroRegistration = async (req, res) => {
+    try {
+        const { registrationId } = req.params;
+        const { userId, createUser, leaderId } = req.body;
+        const currentUserId = req.user?.id;
+
+        const registration = await prisma.encuentroRegistration.findUnique({
+            where: { id: parseInt(registrationId) },
+            include: { guest: true }
+        });
+
+        if (!registration) {
+            return res.status(404).json({ error: 'Registro no encontrado.' });
+        }
+
+        const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para aprobar este registro.' });
+        }
+
+        if (registration.status !== PENDING_REGISTRATION_STATUS) {
+            return res.status(400).json({ error: 'Solo se pueden aprobar registros pendientes.' });
+        }
+
+        let targetUserId = userId ? parseInt(userId) : null;
+
+        // If createUser is requested
+        if (createUser && registration.guest) {
+            const cleanPhone = (registration.guest.phone || '').trim();
+            const emailLocalPart = cleanPhone
+                ? cleanPhone.replace(/[^a-zA-Z0-9]/g, '_')
+                : `invitado_${registration.id}_${Date.now()}`;
+            let email = `${emailLocalPart}@invitado.iglesia.app`;
+
+            const existingEmail = await prisma.user.findUnique({ where: { email } });
+            if (existingEmail) {
+                email = `invitado_${registration.id}_${Date.now()}@invitado.iglesia.app`;
+            }
+
+            const tempPassword = 'Mci' + Math.random().toString(36).substring(2, 8).toUpperCase() + '!';
+            const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+            const newUser = await prisma.$transaction(async (tx) => {
+                const user = await tx.user.create({
+                    data: {
+                        email,
+                        password: hashedPassword,
+                        phone: cleanPhone || null,
+                        mustChangePassword: true,
+                        profile: {
+                            create: {
+                                fullName: registration.guest.name || 'Invitado'
+                            }
+                        }
+                    },
+                    include: { profile: true }
+                });
+
+                const targetRole = await tx.role.upsert({
+                    where: { name: 'DISCIPULO' },
+                    update: {},
+                    create: { name: 'DISCIPULO' }
+                });
+
+                await tx.userRole.create({
+                    data: { userId: user.id, roleId: targetRole.id }
+                });
+
+                if (leaderId) {
+                    await tx.userHierarchy.create({
+                        data: {
+                            parentId: parseInt(leaderId),
+                            childId: user.id,
+                            role: 'DISCIPULO'
+                        }
+                    });
+                }
+
+                // Update the guest status to GANADO
+                await tx.guest.update({
+                    where: { id: registration.guest.id },
+                    data: {
+                        status: 'GANADO'
+                    }
+                });
+
+                return user;
+            });
+
+            targetUserId = newUser.id;
+        }
+
+        // Check for duplicate registration if linking a user
+        if (targetUserId) {
+            const existingReg = await prisma.encuentroRegistration.findFirst({
+                where: {
+                    userId: targetUserId,
+                    encuentroId: registration.encuentroId
+                },
+                select: { id: true }
+            });
+
+            if (existingReg && existingReg.id !== parseInt(registrationId)) {
+                return res.status(400).json({ error: 'El usuario ya está registrado en este encuentro.' });
+            }
+        }
+
+        const updateData = {
+            status: 'REGISTERED'
+        };
+
+        if (targetUserId) {
+            updateData.userId = targetUserId;
+            updateData.guestId = null; // Unlink guest since they are now a user
+        }
+
+        const updated = await prisma.encuentroRegistration.update({
+            where: { id: parseInt(registrationId) },
+            data: updateData
+        });
+
+        // Also if it remains a guest, update guest status to GANADO
+        if (!targetUserId && registration.guestId) {
+            await prisma.guest.update({
+                where: { id: registration.guestId },
+                data: { status: 'GANADO' }
+            });
+        }
+
+        if (currentUserId) {
+            await logActivity(currentUserId, 'UPDATE', 'ENCUENTRO_REGISTRATION', updated.id, {
+                action: 'APPROVE_PUBLIC_REGISTRATION',
+                encuentroId: registration.encuentroId,
+                linkedUserId: targetUserId,
+                createdUser: createUser || false
+            }, req.ip, req.headers['user-agent']);
+        }
+
+        const message = createUser
+            ? 'Registro aprobado y usuario creado correctamente.'
+            : 'Registro aprobado correctamente.';
+
+        res.json({ message });
+    } catch (error) {
+        console.error('Error approving encuentro registration:', error);
+        res.status(500).json({ error: 'Error approving registration' });
+    }
+};
+
+const rejectEncuentroRegistration = async (req, res) => {
+    try {
+        const { registrationId } = req.params;
+        const userId = req.user?.id;
+
+        const registration = await prisma.encuentroRegistration.findUnique({
+            where: { id: parseInt(registrationId) },
+            select: { id: true, encuentroId: true, status: true }
+        });
+
+        if (!registration) {
+            return res.status(404).json({ error: 'Registro no encontrado.' });
+        }
+
+        const hasAccess = await checkEncuentroAccess(req.user, registration.encuentroId);
+        if (!hasAccess) {
+            return res.status(403).json({ error: 'No tienes permisos para rechazar este registro.' });
+        }
+
+        if (registration.status !== PENDING_REGISTRATION_STATUS) {
+            return res.status(400).json({ error: 'Solo se pueden rechazar registros pendientes.' });
+        }
+
+        const updated = await prisma.encuentroRegistration.update({
+            where: { id: parseInt(registrationId) },
+            data: {
+                status: 'CANCELLED'
+            }
+        });
+
+        if (userId) {
+            await logActivity(userId, 'UPDATE', 'ENCUENTRO_REGISTRATION', updated.id, {
+                action: 'REJECT_PUBLIC_REGISTRATION',
+                encuentroId: registration.encuentroId
+            }, req.ip, req.headers['user-agent']);
+        }
+
+        res.json({ message: 'Registro rechazado correctamente.' });
+    } catch (error) {
+        console.error('Error rejecting encuentro registration:', error);
+        res.status(500).json({ error: 'Error rejecting registration' });
     }
 };
 
@@ -956,5 +1194,7 @@ module.exports = {
     updateClassAttendance,
     getEncuentroBalanceReport,
     getPublicEncuentros,
-    createPublicEncuentroRegistration
+    createPublicEncuentroRegistration,
+    approveEncuentroRegistration,
+    rejectEncuentroRegistration
 };

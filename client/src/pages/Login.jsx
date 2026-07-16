@@ -113,9 +113,9 @@ const Login = () => {
             <div className="w-full max-w-[600px] relative z-10 animate-in fade-in zoom-in-95 duration-500">
                 <div className="text-center mb-8 sm:mb-10">
                     <div className="w-14 sm:w-16 h-14 sm:h-16 mx-auto mb-4 sm:mb-6 rounded-[20px] overflow-hidden border border-[var(--ln-border-standard)] bg-white/5 shadow-2xl p-0.5">
-                        <img src={logo} alt="MCI Logo" className="w-full h-full object-cover rounded-[18px]" />
+                        <img src={logo} alt="Somos Logo" className="w-full h-full object-cover rounded-[18px]" />
                     </div>
-                    <h1 className="text-2xl sm:text-3xl weight-590 text-[var(--ln-text-primary)] tracking-[-0.7px] mb-2">Bienvenido</h1>
+                    <h1 className="text-2xl sm:text-3xl weight-590 text-[var(--ln-text-primary)] tracking-[-0.7px] mb-2">Bienvenido a Somos MCI Manizales</h1>
                     <p className="text-[12px] sm:text-[14px] text-[var(--ln-text-secondary)] font-medium opacity-80">Ingresa a tu cuenta para continuar</p>
                 </div>
 
@@ -248,7 +248,7 @@ const Login = () => {
                     
                 </div>
                 <div className="pt-4 sm:pt-6 text-center">
-                    <p className="text-[10px] sm:text-[11px] text-[var(--ln-text-tertiary)] opacity-60">© 2026 MCI. Todos los derechos reservados.</p>
+                    <p className="text-[10px] sm:text-[11px] text-[var(--ln-text-tertiary)] opacity-60">© 2026 Somos. Todos los derechos reservados.</p>
                 </div>
             </div>
 

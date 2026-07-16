@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, UserIcon,Users, MoneyIcon, Trash, UserCheck, SquaresFour, List, FileTextIcon, ArrowsClockwise, Clock } from '@phosphor-icons/react';
+import { Plus, UserIcon, Users, MoneyIcon, Trash, UserCheck, FileTextIcon, ArrowsClockwise, Clock } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import EncuentroDetails from '../components/EncuentroDetails';
@@ -15,10 +15,8 @@ import { ROLES } from '../constants/roles';
 const Encuentros = () => {
     const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const [encuentros, setEncuentros] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [selectedEncuentro, setSelectedEncuentro] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [viewMode, setViewMode] = useState('table'); // 'cards' or 'table'
     const [showReport, setShowReport] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
@@ -79,14 +77,11 @@ const Encuentros = () => {
     };
 
     const fetchEncuentros = async () => {
-        setLoading(true);
         try {
             const res = await api.get('/encuentros');
             setEncuentros(res.data);
         } catch (error) {
             console.error('Error fetching encuentros:', error);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -166,6 +161,7 @@ const Encuentros = () => {
         let totalConversos = 0;
         let totalPendientes = 0;
         let totalSaldoPendiente = 0;
+        let totalPendientesAprobacion = 0;
 
         const calculateFinancials = (encuentro, registration) => {
             const paymentsByType = {
@@ -181,9 +177,9 @@ const Encuentros = () => {
             });
 
             const totalPaid = Object.values(paymentsByType).reduce((sum, amount) => sum + amount, 0);
-            const baseCost = encontro.cost * (1 - ((registration.discountPercentage || 0) / 100));
-            const transportCost = registration.needsTransport ? encontro.transportCost : 0;
-            const accommodationCost = registration.needsAccommodation ? encontro.accommodationCost : 0;
+            const baseCost = encuentro.cost * (1 - ((registration.discountPercentage || 0) / 100));
+            const transportCost = registration.needsTransport ? encuentro.transportCost : 0;
+            const accommodationCost = registration.needsAccommodation ? encuentro.accommodationCost : 0;
             const finalCost = baseCost + transportCost + accommodationCost;
             const balance = finalCost - totalPaid;
 
@@ -191,7 +187,8 @@ const Encuentros = () => {
         };
 
         encuentros.forEach(enc => {
-            totalInscritos += enc.registrations?.length || 0;
+            totalInscritos += enc.stats?.registeredCount || 0;
+            totalPendientesAprobacion += enc.stats?.pendingCount || 0;
             // Count registrations with isConvert or converted flag
             enc.registrations?.forEach(reg => {
                 if (reg.isConvert || reg.converted) {
@@ -216,7 +213,8 @@ const Encuentros = () => {
             promedioInscritos,
             conversos: totalConversos,
             pendientes: totalPendientes,
-            saldoPendiente: totalSaldoPendiente
+            saldoPendiente: totalSaldoPendiente,
+            pendientesAprobacion: totalPendientesAprobacion
         };
     }, [encuentros]);
 
@@ -226,7 +224,7 @@ const Encuentros = () => {
         || isTreasurer('encuentro');
     const canViewReport = canCreateOrDelete;
 
-    // Renderizar contenido según vista
+    // Renderizar contenido
     const renderContent = () => {
         if (showReport) {
             return (
@@ -242,96 +240,6 @@ const Encuentros = () => {
             );
         }
 
-        if (viewMode === 'cards') {
-            // Vista de tarjetas (actual)
-            return (
-                <>
-                    {loading ? (
-                        <div className="flex justify-center py-12">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {encuentros.map((enc) => (
-                                <div
-                                    key={enc.id}
-                                    onClick={() => fetchEncuentroDetails(enc.id)}
-                                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && fetchEncuentroDetails(enc.id)}
-                                    role="button"
-                                    tabIndex={0}
-                                    className="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 cursor-pointer overflow-hidden relative"
-                                >
-                                    <div className="absolute top-0 left-0 w-2 h-full bg-blue-500 group-hover:bg-blue-600 transition-colors"></div>
-
-                                    <div className="p-6 pl-8">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="text-xs font-bold tracking-wider text-blue-600 dark:text-blue-400 uppercase">
-                                                {enc.type}
-                                            </span>
-                                            <div className="flex items-center space-x-2">
-                                                {canCreateOrDelete && (
-                                                    <button
-                                                        onClick={(e) => handleDelete(e, enc.id)}
-                                                        className="p-1 text-gray-400 hover:text-red-500 transition-colors z-10"
-                                                        title="Eliminar Encuentro"
-                                                    >
-                                                        <Trash size={16} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 transition-colors">
-                                            {enc.name}
-                                        </h3>
-
-                                        {enc.description && (
-                                            <p className="text-gray-600 dark:text-gray-300 italic mb-4 line-clamp-2 text-sm">
-                                                "{enc.description}"
-                                            </p>
-                                        )}
-
-                                        <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <Calendar size={16} className="mr-2 text-blue-500" />
-                                                {new Date(enc.startDate).toLocaleDateString()} - {new Date(enc.endDate).toLocaleDateString()}
-                                            </div>
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <Users size={16} className="mr-2 text-blue-500" />
-                                                {enc._count?.registrations || enc.registrations?.length || 0} Inscritos
-                                            </div>
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <MoneyIcon size={16} className="mr-2 text-orange-500" />
-                                                {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(enc.cost)}
-                                            </div>
-                                            <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                                                <UserCheck size={16} className="mr-2 text-green-500" />
-                                                Coord: {(() => {
-                                                    if (enc.coordinator?.fullName) return enc.coordinator.fullName;
-                                                    if (enc.coordinator?.name) return enc.coordinator.name;
-                                                    if (enc.coordinatorId?.fullName) return enc.coordinatorId.fullName;
-                                                    if (enc.coordinatorId?.name) return enc.coordinatorId.name;
-                                                    if (enc.coordinatorId) return 'Asignado';
-                                                    return 'Sin Asignar';
-                                                })()}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            {encuentros.length === 0 && (
-                                <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-                                    No hay encuentros activos.<br />
-                                    ¡Crea un nuevo encuentro para comenzar!
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </>
-            );
-        }
-
-        // Vista de tabla
         return (
             <div className="animate-fade-in">
                 <EncuentroTable
@@ -462,10 +370,10 @@ const Encuentros = () => {
                             <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg text-amber-600 dark:text-amber-300">
                                 <Clock size={20} />
                             </div>
-                            <span className="text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Pendientes</span>
+                            <span className="text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Solic. Pendientes</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-amber-900 dark:text-white">{stats.pendientes}</span>
+                            <span className="text-3xl font-extrabold text-amber-900 dark:text-white">{stats.pendientesAprobacion || 0}</span>
                             <span className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">
                                 Saldo pendiente: {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(stats.saldoPendiente)}
                             </span>
@@ -473,32 +381,9 @@ const Encuentros = () => {
                     </div>
                 </div>
             )}
-            {/* Toggle de Vista y Reporte */}
+            {/* Acciones: Reporte */}
             {!showReport && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
-                        <button
-                            onClick={() => setViewMode('cards')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] font-semibold ${viewMode === 'cards'
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                        >
-                            <SquaresFour size={18} weight="bold" />
-                            Tarjetas
-                        </button>
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] font-semibold ${viewMode === 'table'
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95'
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                        >
-                            <List size={18} weight="bold" />
-                            Tabla
-                        </button>
-                    </div>
-
+                <div className="flex items-center justify-end gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
                     {canViewReport && (
                         <button
                             onClick={() => setShowReport(true)}

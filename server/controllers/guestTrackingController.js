@@ -6,7 +6,7 @@ const { getUserNetwork } = require('../utils/networkUtils');
 // con y sin visita por lider y por fecha.
 const getGuestTrackingStats = async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
+        const { startDate, endDate, liderDoceId } = req.query;
         const userRoles = req.user.roles || [];
         const currentUserId = req.user.id ? parseInt(req.user.id) : null;
 
@@ -28,7 +28,24 @@ const getGuestTrackingStats = async (req, res) => {
 
         const canSeeAllGuests = isAdmin || isPastor || isCoordinator || isGuestModuleCoordinator;
 
-        if (isLeader && currentUserId && !canSeeAllGuests && !isModuleCoordinator) {
+        if (liderDoceId && canSeeAllGuests) {
+            // Filter by specific LIDER_DOCE including their spouse's network
+            const lId = parseInt(liderDoceId);
+            const liderUser = await prisma.user.findUnique({
+                where: { id: lId },
+                select: { spouseId: true }
+            });
+            const spouseId = liderUser?.spouseId || null;
+
+            networkIds = await getUserNetwork(lId);
+            networkIds.push(lId);
+            if (spouseId) {
+                const spouseNetwork = await getUserNetwork(spouseId);
+                networkIds.push(spouseId);
+                networkIds.push(...spouseNetwork);
+            }
+            networkIds = [...new Set(networkIds)];
+        } else if (isLeader && currentUserId && !canSeeAllGuests && !isModuleCoordinator) {
             networkIds = await getUserNetwork(currentUserId);
             networkIds.push(currentUserId);
         }

@@ -107,7 +107,7 @@ const SetupWizard = () => {
                         <ShieldCheck size={40} weight="duotone" />
                     </div>
                     <h2 className="text-4xl weight-590 text-[var(--ln-text-primary)] tracking-tight mb-3">Configuración Inicial</h2>
-                    <p className="text-[15px] text-[var(--ln-text-secondary)] opacity-80 max-w-lg mx-auto leading-relaxed">Configura la cuenta raíz del administrador para activar el sistema MCI.</p>
+                    <p className="text-[15px] text-[var(--ln-text-secondary)] opacity-80 max-w-lg mx-auto leading-relaxed">Configura la cuenta raíz del administrador para activar el sistema Somos.</p>
                 </div>
 
                 <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-md border border-[var(--ln-border-standard)] rounded-3xl shadow-2xl overflow-hidden">
@@ -217,7 +217,7 @@ const SetupWizard = () => {
                                             onChange={handleChange}
                                             disabled={isFormDisabled()}
                                             className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all text-sm disabled:opacity-50"
-                                            placeholder="admin@mci.com"
+                                            placeholder="admin@somos.com"
                                             required
                                         />
                                     </div>
@@ -326,7 +326,7 @@ const SetupWizard = () => {
                     </form>
                 </div>
                 <p className="text-center mt-8 text-[12px] text-[var(--ln-text-tertiary)] opacity-60">
-                    Propiedad Intelectual MCI © 2026. Todos los derechos reservados.
+                    Propiedad Intelectual Somos © 2026. Todos los derechos reservados.
                 </p>
             </div>
         </div>

@@ -593,7 +593,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
 
                     <div className="mt-24 pt-10 border-t border-[var(--ln-border-standard)] text-center">
                         <p className="text-[11px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-[0.2em] opacity-40">
-                            Producido por media MCI Manizales • {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                            Producido por Somos Manizales • {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
                         </p>
                     </div>
                 </div>

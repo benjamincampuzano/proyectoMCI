@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { MagnifyingGlass, Camera, X, Upload, Link, Download } from '@phosphor-icons/react';
@@ -30,6 +30,10 @@ const KidsStudentMatrix = () => {
     const [photoUrl, setPhotoUrl] = useState('');
     const [photoDescription, setPhotoDescription] = useState('');
     const [uploading, setUploading] = useState(false);
+
+    // Pagination
+    const PAGE_SIZE = 10;
+    const [currentPage, setCurrentPage] = useState(1);
     
     // Edit Student Modal State
     const [showEditModal, setShowEditModal] = useState(false);
@@ -385,6 +389,29 @@ const KidsStudentMatrix = () => {
         return matchesSearch;
     });
 
+    // Reset page when search term changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const pagination = useMemo(() => {
+        const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
+        return {
+            page: currentPage,
+            pages: totalPages,
+            total: filteredStudents.length,
+            hasPrev: currentPage > 1,
+            hasNext: currentPage < totalPages,
+            onPrev: () => setCurrentPage(prev => Math.max(1, prev - 1)),
+            onNext: () => setCurrentPage(prev => Math.min(totalPages, prev + 1)),
+        };
+    }, [currentPage, filteredStudents.length]);
+
+    const paginatedStudents = useMemo(() => {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        return filteredStudents.slice(start, start + PAGE_SIZE);
+    }, [filteredStudents, currentPage]);
+
     const totalStudents = filteredStudents.length;
     const studentsWithClasses = filteredStudents.filter(student => student.enrollments && student.enrollments.length > 0).length;
     const studentsWithoutClasses = totalStudents - studentsWithClasses;
@@ -445,6 +472,13 @@ const KidsStudentMatrix = () => {
                 </div>
             </div>
 
+            {/* Paginación (superior) */}
+            <PaginationBar
+                pagination={pagination}
+                studentsPerPage={PAGE_SIZE}
+                onPageChange={setCurrentPage}
+            />
+
             <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -486,7 +520,7 @@ const KidsStudentMatrix = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-[#272729] divide-y divide-gray-200 dark:divide-gray-700">
-                            {filteredStudents.map((student) => {
+                            {paginatedStudents.map((student) => {
                                 const birthDate = student.profile?.birthDate;
                                 const age = calculateAge(birthDate);
                                 const formattedDate = formatDate(birthDate);
@@ -586,6 +620,13 @@ const KidsStudentMatrix = () => {
                     </div>
                 )}
             </div>
+
+            {/* Paginación */}
+            <PaginationBar
+                pagination={pagination}
+                studentsPerPage={PAGE_SIZE}
+                onPageChange={setCurrentPage}
+            />
 
             {/* Modal para subir evidencias de clase */}
             {showPhotoModal && (
@@ -849,3 +890,64 @@ const KidsStudentMatrix = () => {
 };
 
 export default KidsStudentMatrix;
+
+function PaginationBar({ pagination, studentsPerPage, loading = false, onPageChange, className = '' }) {
+    if (pagination.pages <= 1) return null;
+
+    return (
+        <div className={`flex items-center justify-between bg-white dark:bg-[#272729] px-4 py-3 border border-gray-200 dark:border-[#3a3a3c] rounded-lg shadow-sm ${className}`}>
+            <div className="text-sm text-[#86868b] dark:text-[#98989d]">
+                Mostrando {(pagination.page - 1) * studentsPerPage + 1} - {Math.min(pagination.page * studentsPerPage, pagination.total)} de {pagination.total} estudiantes
+            </div>
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={pagination.onPrev}
+                    disabled={!pagination.hasPrev || loading}
+                    className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                    Anterior
+                </button>
+
+                <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                        let pageNum;
+                        if (pagination.pages <= 5) {
+                            pageNum = i + 1;
+                        } else if (pagination.page <= 3) {
+                            pageNum = i + 1;
+                        } else if (pagination.page >= pagination.pages - 2) {
+                            pageNum = pagination.pages - 4 + i;
+                        } else {
+                            pageNum = pagination.page - 2 + i;
+                        }
+
+                        const isActive = pagination.page === pageNum;
+
+                        return (
+                            <button
+                                key={pageNum}
+                                onClick={() => onPageChange(pageNum)}
+                                disabled={loading}
+                                className={`min-w-[32px] h-8 px-2 text-sm font-[510] rounded-md transition-colors ${
+                                    isActive
+                                        ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
+                                        : 'text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] hover:bg-[var(--ln-btn-subtle)]'
+                                } disabled:opacity-40 disabled:cursor-not-allowed`}
+                            >
+                                {pageNum}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <button
+                    onClick={pagination.onNext}
+                    disabled={!pagination.hasNext || loading}
+                    className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                    Siguiente
+                </button>
+            </div>
+        </div>
+    );
+}

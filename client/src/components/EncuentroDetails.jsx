@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, MoneyIcon, X, XCircle, Trash, Calendar, BookOpen, FileTextIcon } from '@phosphor-icons/react';
+import { ArrowLeft, UserPlus, MoneyIcon, X, XCircle, Trash, Calendar, BookOpen, FileTextIcon, Clock } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +16,13 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [activeTab, setActiveTab] = useState('general'); // general | classes | report
     const [reportData, setReportData] = useState([]);
     const [loadingReport, setLoadingReport] = useState(false);
+
+    // Approve Pending Registration Modal State
+    const [showApproveModal, setShowApproveModal] = useState(false);
+    const [pendingRegToApprove, setPendingRegToApprove] = useState(null);
+    const [approveMode, setApproveMode] = useState('link'); // 'link' | 'create'
+    const [approveUserId, setApproveUserId] = useState(null);
+    const [approveLeaderId, setApproveLeaderId] = useState(null);
 
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -98,6 +105,57 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             toast.error('Error cargando el reporte financiero');
         } finally {
             setLoadingReport(false);
+        }
+    };
+
+    const handleOpenApproveModal = (reg) => {
+        setPendingRegToApprove(reg);
+        setApproveMode('link');
+        setApproveUserId(null);
+        setApproveLeaderId(null);
+        setShowApproveModal(true);
+    };
+
+    const handleConfirmApprove = async () => {
+        if (!pendingRegToApprove) return;
+        setLoading(true);
+        try {
+            const body = { createUser: approveMode === 'create' };
+            if (approveMode === 'link' && approveUserId) {
+                body.userId = approveUserId;
+            } else if (approveMode === 'create') {
+                if (approveLeaderId) body.leaderId = approveLeaderId;
+            }
+
+            await api.patch(`/encuentros/registrations/${pendingRegToApprove.id}/approve`, body);
+            toast.success('Registro aprobado exitosamente!');
+            setShowApproveModal(false);
+            setPendingRegToApprove(null);
+            onRefresh();
+            if (activeTab === 'report') fetchReport();
+        } catch (error) {
+            console.error('Error approving registration:', error);
+            toast.error(error.response?.data?.error || 'Error al aprobar registro');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRejectPendingRegistration = async (registrationId) => {
+        const confirmReject = window.confirm('¿Estás seguro de rechazar este registro pendiente?');
+        if (!confirmReject) return;
+
+        setLoading(true);
+        try {
+            await api.patch(`/encuentros/registrations/${registrationId}/reject`);
+            toast.success('Registro rechazado exitosamente');
+            onRefresh();
+            if (activeTab === 'report') fetchReport();
+        } catch (error) {
+            console.error('Error rejecting registration:', error);
+            toast.error('Error al rechazar registro');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -426,6 +484,23 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         <BookOpen size={18} className="mr-2" />
                         Asistencia a Clases
                     </button>
+                    {canModify && (
+                        <button
+                            onClick={() => setActiveTab('pending')}
+                            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap ${activeTab === 'pending'
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                                }`}
+                        >
+                            <Clock size={18} className="mr-2" />
+                            Pendientes
+                            {encuentro.pendingRegistrations?.length > 0 && (
+                                <span className="ml-2 px-1.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                    {encuentro.pendingRegistrations.length}
+                                </span>
+                            )}
+                        </button>
+                    )}
                     <button
                         onClick={() => setActiveTab('report')}
                         className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap ${activeTab === 'report'
@@ -440,6 +515,70 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             </div>
 
             {/* Content Switcher */}
+            {activeTab === 'pending' && canModify && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 mt-4">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                            Solicitudes de Inscripción Pendientes
+                        </h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                            {encuentro.pendingRegistrations?.length || 0} pendientes
+                        </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nombre</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Teléfono</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Incluye libro U. de la V.</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Incluye otros gastos</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {encuentro.pendingRegistrations?.map((reg) => (
+                                    <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                            {reg.guest?.name || reg.user?.fullName || reg.fullName}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {reg.guest?.phone || reg.user?.phone || reg.phone || 'N/A'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {reg.needsTransport ? 'Sí' : 'No'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {reg.needsAccommodation ? 'Sí' : 'No'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                            <button
+                                                onClick={() => handleOpenApproveModal(reg)}
+                                                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none transition-colors"
+                                            >
+                                                Aprobar
+                                            </button>
+                                            <button
+                                                onClick={() => handleRejectPendingRegistration(reg.id)}
+                                                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 focus:outline-none transition-colors"
+                                            >
+                                                Rechazar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {(!encuentro.pendingRegistrations || encuentro.pendingRegistrations.length === 0) && (
+                                    <tr>
+                                        <td colSpan="5" className="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                                            No hay solicitudes pendientes de aprobación.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
             {activeTab === 'general' && (
                 <>
                     {/* Actions */}
@@ -807,6 +946,115 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                 </div>
             )}
 
+            {/* Approve Pending Registration Modal */}
+            {showApproveModal && pendingRegToApprove && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/30">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Aprobar Inscripción</h3>
+                            <button onClick={() => setShowApproveModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-xl space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Nombre:</span>
+                                    <span className="font-medium text-gray-900 dark:text-white">{pendingRegToApprove.guest?.name || pendingRegToApprove.user?.fullName || pendingRegToApprove.fullName}</span>
+                                </div>
+                                {(pendingRegToApprove.guest?.phone || pendingRegToApprove.user?.phone || pendingRegToApprove.phone) && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Teléfono:</span>
+                                        <span className="font-medium text-gray-900 dark:text-white">{pendingRegToApprove.guest?.phone || pendingRegToApprove.user?.phone || pendingRegToApprove.phone}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Libro U. de la V.:</span>
+                                    <span className="font-medium text-gray-900 dark:text-white">{pendingRegToApprove.needsTransport ? 'Sí' : 'No'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Otros Gastos:</span>
+                                    <span className="font-medium text-gray-900 dark:text-white">{pendingRegToApprove.needsAccommodation ? 'Sí' : 'No'}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-900 rounded-lg">
+                                <button
+                                    onClick={() => { setApproveMode('link'); setApproveLeaderId(null); }}
+                                    className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${approveMode === 'link'
+                                        ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                        }`}
+                                >
+                                    Vincular a Cuenta Existente
+                                </button>
+                                <button
+                                    onClick={() => { setApproveMode('create'); setApproveUserId(null); }}
+                                    className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${approveMode === 'create'
+                                        ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                        }`}
+                                >
+                                    Crear Nueva Cuenta
+                                </button>
+                            </div>
+
+                            {approveMode === 'link' ? (
+                                <div className="space-y-1">
+                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Buscar Cuenta Existente</label>
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) => {
+                                            const params = { search: term };
+                                            return api.get('/users/search', { params })
+                                                .then(res => res.data);
+                                        }}
+                                        selectedValue={approveUserId}
+                                        onSelect={(user) => setApproveUserId(user?.id || null)}
+                                        placeholder="Buscar por nombre o correo..."
+                                        labelKey="fullName"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="space-y-4 border-t border-gray-100 dark:border-gray-700 pt-4">
+                                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+                                        Se creará un nuevo usuario Discípulo con el nombre del registro y una contraseña temporal.
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asignar Líder *</label>
+                                        <AsyncSearchSelect
+                                            fetchItems={(term) => {
+                                                const params = { search: term, role: 'LIDER_CELULA' };
+                                                return api.get('/users/search', { params })
+                                                    .then(res => res.data);
+                                            }}
+                                            selectedValue={approveLeaderId}
+                                            onSelect={(user) => setApproveLeaderId(user?.id || null)}
+                                            placeholder="Buscar líder de célula..."
+                                            labelKey="fullName"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 flex gap-3">
+                            <button
+                                onClick={() => setShowApproveModal(false)}
+                                className="flex-1 py-2 px-4 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleConfirmApprove}
+                                disabled={loading || (approveMode === 'link' && !approveUserId)}
+                                className="flex-1 py-2 px-4 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Aprobar Registro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* History Modal */}
             {showHistoryModal && selectedHistoryRegistration && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -925,7 +1173,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                         onChange={e => setConvertData({ ...convertData, dataPolicyAccepted: e.target.checked })}
                                     />
                                     <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                                        Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos</a>.
+                                        Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline font-semibold">Política de Tratamiento de Datos Personales</a>.
                                     </span>
                                 </label>
                                 <label className="flex items-start gap-3 cursor-pointer group">

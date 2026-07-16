@@ -6,7 +6,6 @@ import FloatingRefreshButton from "../components/FloatingRefreshButton";
 import GuestRegistrationForm from "../components/GuestRegistrationForm";
 import GuestList from "../components/GuestList";
 import GuestTracking from "../components/GuestTracking";
-import GuestTrackingStats from "../components/GuestTrackingStats";
 import GuestStats from "../components/GuestStats";
 import OracionDeTresManagement from "../components/OracionDeTresManagement";
 import ServerManager from "../components/ServerManager";
@@ -56,18 +55,6 @@ const Ganar = () => {
     const tabs = [
         { id: 'list', label: 'Lista de Invitados', component: GuestList },
         { id: 'tracking', label: 'Seguimiento de Invitados', component: GuestTracking },
-        {
-            id: 'trackingStats',
-            label: 'Reporte Seguimiento',
-            component: GuestTrackingStats,
-            customCheck: () => {
-                const hasRoleAccess = hasAnyRole(ROLE_GROUPS.ALL_LEADERS);
-                const isModuleCoord = isCoordinator('ganar');
-                const isModuleSubCoord = isSubCoordinator('ganar');
-                const isModuleTreasurer = isTreasurer('ganar');
-                return hasRoleAccess || isModuleCoord || isModuleSubCoord || isModuleTreasurer;
-            }
-        },
         {
             id: 'stats',
             label: 'Estadísticas',

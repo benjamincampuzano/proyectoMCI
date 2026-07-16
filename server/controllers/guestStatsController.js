@@ -98,16 +98,31 @@ const getGuestStats = async (req, res) => {
 
         if (liderDoceId && canSeeAllGuests) {
             const lId = parseInt(liderDoceId);
-            whereClause.AND.push({
-                OR: [
-                    { invitedBy: { liderDoceId: lId } },
-                    { assignedTo: { liderDoceId: lId } },
-                    { invitedBy: { id: lId } },
-                    { assignedTo: { id: lId } }
-                ]
+
+            // Get spouse of the selected LIDER_DOCE to include their network too
+            const liderUser = await prisma.user.findUnique({
+                where: { id: lId },
+                select: { spouseId: true }
             });
+            const spouseId = liderUser?.spouseId || null;
+
+            // Build network IDs including the spouse's network
             networkIds = await getUserNetwork(lId);
             networkIds.push(lId);
+            if (spouseId) {
+                const spouseNetwork = await getUserNetwork(spouseId);
+                networkIds.push(spouseId);
+                networkIds.push(...spouseNetwork);
+            }
+            // Remove duplicates
+            networkIds = [...new Set(networkIds)];
+
+            whereClause.AND.push({
+                OR: [
+                    { invitedById: { in: networkIds } },
+                    { assignedToId: { in: networkIds } }
+                ]
+            });
         }
 
         // Get total guests

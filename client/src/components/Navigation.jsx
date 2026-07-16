@@ -56,10 +56,10 @@ const Navigation = ({
               {logo || (
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-[var(--ln-brand-indigo)] rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">M</span>
+                    <span className="text-white font-bold text-sm">S</span>
                   </div>
                   <Typography variant="body-medium" className="text-[var(--ln-text-primary)]">
-                    Mi Iglesia
+                    Somos
                   </Typography>
                 </div>
               )}

@@ -217,7 +217,7 @@ const Register = () => {
                     </button>
                     <div className="text-right">
                         <h1 className="text-3xl weight-590 text-[var(--ln-text-primary)] tracking-[-0.7px] mb-2">Crear Cuenta</h1>
-                        <p className="text-[14px] text-[var(--ln-text-secondary)]">Únete a la plataforma de MCI</p>
+                        <p className="text-[14px] text-[var(--ln-text-secondary)]">Únete a la plataforma Somos y sé parte de la historia</p>
                     </div>
                 </div>
 
@@ -508,7 +508,7 @@ const Register = () => {
                                 onChange={e => setFormData({ ...formData, dataPolicyAccepted: e.target.checked })}
                             />
                             <span className="text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">
-                                Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-hover)] hover:underline font-semibold">Política de Tratamiento de Datos Personales</a> de MCI.
+                                Declaro que he leído y acepto la <a href={DATA_POLICY_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-hover)] hover:underline font-semibold">Política de Tratamiento de Datos Personales.</a>
                             </span>
                         </label>
                         
@@ -549,7 +549,7 @@ const Register = () => {
 
                     <div className="pt-4">
                         <button type="submit" className="w-full ln-btn-primary py-4 text-lg">
-                            Crear cuenta MCI
+                            Crear cuenta Somos
                         </button>
                     </div>
                 </form>
