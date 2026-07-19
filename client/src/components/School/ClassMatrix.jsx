@@ -16,8 +16,7 @@ const ClassMatrix = ({ courseId }) => {
     const [classMaterials, setClassMaterials] = useState([]);
 
     const [enrollForm, setEnrollForm] = useState({
-        studentId: null,
-        assignedAuxiliarId: ''
+        student: null
     });
 
     // Delete Confirmation Modal State
@@ -68,11 +67,10 @@ const ClassMatrix = ({ courseId }) => {
         try {
             await api.post('/school/enroll', {
                 moduleId: courseId,
-                studentId: enrollForm.studentId,
-                assignedAuxiliarId: enrollForm.assignedAuxiliarId
+                studentId: enrollForm.student?.id
             });
             setShowEnrollModal(false);
-            setEnrollForm({ studentId: null, assignedAuxiliarId: '' });
+            setEnrollForm({ student: null });
             fetchMatrix();
         } catch (err) {
             toast.error('Error enrolling student: ' + (err.response?.data?.error || 'Unknown error'));
@@ -305,24 +303,11 @@ const ClassMatrix = ({ courseId }) => {
                                         return api.get('/users/search', { params })
                                             .then(res => res.data.filter(u => !matrix.map(row => row.studentId).includes(u.id)));
                                     }}
-                                    selectedValue={enrollForm.studentId}
-                                    onSelect={(user) => setEnrollForm({ ...enrollForm, studentId: user?.id || null })}
+                                    selectedValue={enrollForm.student}
+                                    onSelect={(user) => setEnrollForm({ ...enrollForm, student: user || null })}
                                     placeholder="Buscar estudiante por nombre..."
                                     labelKey="fullName"
                                 />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Asignar Auxiliar</label>
-                                <select
-                                    className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all dark:text-white"
-                                    value={enrollForm.assignedAuxiliarId}
-                                    onChange={e => setEnrollForm({ ...enrollForm, assignedAuxiliarId: e.target.value })}
-                                >
-                                    <option value="">Ninguno (o Profesor)</option>
-                                    {module.auxiliaries.map(a => (
-                                        <option key={a.id} value={a.id}>{a.fullName}</option>
-                                    ))}
-                                </select>
                             </div>
                             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700 mt-2">
                                 <Button type="button" onClick={() => setShowEnrollModal(false)} variant="secondary">Cancelar</Button>

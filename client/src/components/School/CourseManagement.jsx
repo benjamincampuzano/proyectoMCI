@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { Plus, Calendar, Users, Trash, Pencil, Eye, List, SquaresFour, BookOpen } from '@phosphor-icons/react';
+import { Plus, Calendar, Users, Trash, Pencil, List, BookOpen } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from "../../context/AuthContext";
 import { ROLES } from '../../constants/roles';
@@ -32,9 +32,6 @@ const CourseManagement = () => {
     };
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingCourse, setEditingCourse] = useState(null);
-    const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
-
-    // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState(null);
     const [showMaterialModal, setShowMaterialModal] = useState(false);
@@ -55,7 +52,7 @@ const CourseManagement = () => {
 
     useEffect(() => {
         fetchCourses();
-         
+
     }, [user.roles]);
 
     const fetchCourses = async () => {
@@ -72,13 +69,13 @@ const CourseManagement = () => {
         e.stopPropagation();
         // Find the course to show details in the confirmation modal
         const course = courses.find(c => c.id === id);
-        
+
         // Check if course has students or grades before allowing deletion
         if (course._count?.enrollments > 0) {
             toast.error('No se puede eliminar la clase porque tiene estudiantes inscritos. Primero debe desvincular a todos los estudiantes.');
             return;
         }
-        
+
         setCourseToDelete(course);
         setShowDeleteConfirm(true);
     };
@@ -179,28 +176,6 @@ const CourseManagement = () => {
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Escuelas de Discipulado</h2>
                 <div className="flex items-center gap-2">
-                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
-                        <button
-                            onClick={() => setViewMode('cards')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'cards' 
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                        >
-                            <SquaresFour size={18} weight="bold" />
-                            Tarjetas
-                        </button>
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'table' 
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                        >
-                            <List size={18} weight="bold" />
-                            Tabla
-                        </button>
-                    </div>
                     {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
                         <Button
                             onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
@@ -214,130 +189,51 @@ const CourseManagement = () => {
                 </div>
             </div>
 
-            {viewMode === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {courses.map(course => (
-                        <div
-                            key={course.id}
-                            onClick={() => setSelectedCourseId(course.id)}
-                            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedCourseId(course.id)}
-                            role="button"
-                            tabIndex={0}
-                            className="bg-white dark:bg-gray-800 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow p-6 border border-gray-200 dark:border-gray-700 relative group"
-                        >
-                             <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{course.name}</h3>
-                                {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator || hasRole('DISCIPULO') || isAuxiliarAssignedToCourse(course)) && (
-                                    <div className="flex space-x-2">
-                                        <Button
-                                            onClick={(e) => { e.stopPropagation(); setSelectedMaterialModuleId(course.id); setShowMaterialModal(true); }}
-                                            variant="ghost"
-                                            size="icon"
-                                            className={`${hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator || isAuxiliarAssignedToCourse(course) ? 'text-purple-500 hover:text-purple-700 hover:bg-purple-50' : 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'}`}
-                                            title={hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator || isAuxiliarAssignedToCourse(course) ? "Gestionar Material" : "Ver Material"}
-                                        >
-                                            <BookOpen size={18} />
-                                        </Button>
-                                        {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
-                                            <Button
-                                                onClick={(e) => openEditModal(e, course)}
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                                                title="Editar"
-                                            >
-                                                <Pencil size={18} />
-                                            </Button>
-                                        )}
-                                        {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
-                                            <Button
-                                                onClick={(e) => handleDelete(e, course.id)}
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                title="Eliminar"
-                                            >
-                                                <Trash size={18} />
-                                            </Button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mb-2 inline-block">
-                                {course._count?.enrollments || 0} Estudiantes
-                            </span>
-                            <p className="text-gray-500 text-sm mb-4 line-clamp-2">{course.description}</p>
-
-                            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                                <div className="flex items-center">
-                                    <Users size={16} className="mr-2" />
-                                    <span>Prof: {course.professor?.fullName || 'N/A'} - Aux: {course.auxiliaries?.[0]?.fullName || 'N/A'}</span>
-                                </div>
-                                <div className="flex items-center">
-                                    <Calendar size={16} className="mr-2" />
-                                    <span>
-                                        {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-900/50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Nombre
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Profesor/Auxiliar
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Fecha Inicio
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Estudiantes
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Acciones
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {courses.map(course => (
-                                <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div>
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600" onClick={() => setSelectedCourseId(course.id)}>
-                                                {course.name}
-                                            </div>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{course.description}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-900/50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Nombre
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Profesor/Auxiliar
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Fecha Inicio
+                            </th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Estudiantes
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {courses.map(course => (
+                            <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div>
+                                        <div className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600" onClick={() => setSelectedCourseId(course.id)}>
+                                            {course.name}
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {course.professor?.fullName || 'N/A'} / {course.auxiliaries?.[0]?.fullName || 'N/A'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-                                            {course._count?.enrollments || 0}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                         <div className="flex justify-end gap-2">
-                                                                                        <Button
-                                                onClick={() => setSelectedCourseId(course.id)}
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-blue-600 hover:text-blue-800"
-                                                icon={Eye}
-                                            >
-                                                Ver
-                                            </Button>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{course.description}</p>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    {course.professor?.fullName || 'N/A'} / {course.auxiliaries?.[0]?.fullName || 'N/A'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                                        {course._count?.enrollments || 0}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                     <div className="flex justify-end gap-2">
                                             {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
                                                 <>
                                                     <Button
@@ -361,13 +257,12 @@ const CourseManagement = () => {
                                                 </>
                                             )}
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
 
             {/* Create/Edit Modal */}
             {(showCreateModal || showEditModal) && (

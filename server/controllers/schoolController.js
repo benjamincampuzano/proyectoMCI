@@ -295,11 +295,25 @@ const enrollStudent = async (req, res) => {
             return res.status(403).json({ error: 'Solo los administradores o coordinadores pueden inscribir estudiantes.' });
         }
 
+        let finalAuxiliarId = assignedAuxiliarId;
+
+        // Si no se proporcionó un auxiliar, intentar asignar el primero de la clase automáticamente
+        if (!finalAuxiliarId) {
+            const module = await prisma.seminarModule.findUnique({
+                where: { id: parseInt(moduleId) },
+                select: { auxiliaries: true }
+            });
+
+            if (module && module.auxiliaries && module.auxiliaries.length > 0) {
+                finalAuxiliarId = module.auxiliaries[0].id;
+            }
+        }
+
         const enrollment = await prisma.seminarEnrollment.create({
             data: {
                 moduleId: parseInt(moduleId),
                 userId: parseInt(studentId),
-                assignedAuxiliarId: assignedAuxiliarId ? parseInt(assignedAuxiliarId) : undefined,
+                assignedAuxiliarId: finalAuxiliarId ? parseInt(finalAuxiliarId) : undefined,
                 status: 'INSCRITO'
             }
         });
