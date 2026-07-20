@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { SpinnerIcon, Funnel, Trash, X, UserCheckIcon, Users, CheckCircle, FileXls } from '@phosphor-icons/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -62,16 +62,18 @@ const GuestList = ({ refreshTrigger }) => {
 
     // Estado para filtros avanzados
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const autoLiderDoceFilterAppliedRef = useRef(false);
 
     // Auto-apply filter for LIDER_DOCE who are not coordinators
     // Extraemos propiedades primitivas de user para evitar re-renders innecesarios
     const userId = user?.id;
-    const userRoles = user?.roles || [];
+    const userRoles = user?.roles;
     const userFullName = user?.profile?.fullName;
     const userEmail = user?.email;
 
     useEffect(() => {
-        const isDoceLeaderRole = userRoles.includes('LIDER_DOCE');
+        const roles = Array.isArray(userRoles) ? userRoles : [];
+        const isDoceLeaderRole = roles.includes('LIDER_DOCE');
         const isSubCoordGanar = isSubCoordinator('ganar');
         const isTreasurerGanar = isTreasurer('ganar');
         const isModuleRole = isModuleCoordinator || isSubCoordGanar || isTreasurerGanar;
@@ -81,8 +83,15 @@ const GuestList = ({ refreshTrigger }) => {
                 id: userId,
                 fullName: userFullName || userEmail
             });
+            autoLiderDoceFilterAppliedRef.current = true;
+            return;
         }
-    }, [userId, userRoles, isModuleCoordinator, isSubCoordinator, isTreasurer, userFullName, userEmail]);
+
+        if (autoLiderDoceFilterAppliedRef.current && isModuleRole && liderDoceFilter?.id === userId) {
+            setLiderDoceFilter(null);
+            autoLiderDoceFilterAppliedRef.current = false;
+        }
+    }, [userId, userRoles, isModuleCoordinator, isSubCoordinator, isTreasurer, userFullName, userEmail, liderDoceFilter, setLiderDoceFilter]);
 
     const handleSearch = useCallback(() => {
         fetchGuests(1);
@@ -200,7 +209,8 @@ const GuestList = ({ refreshTrigger }) => {
     const exportToExcel = useCallback(async () => {
         setIsExporting(true);
         try {
-            const allGuests = await fetchAllGuests();
+            const hasFullModuleAccess = isModuleCoordinator || isSubCoordinator('ganar') || isTreasurer('ganar');
+            const allGuests = await fetchAllGuests({ ignoreNetworkFilter: hasFullModuleAccess });
 
             if (allGuests.length === 0) {
                 toast.error('No hay datos para exportar');
@@ -267,7 +277,7 @@ const GuestList = ({ refreshTrigger }) => {
         } finally {
             setIsExporting(false);
         }
-    }, [fetchAllGuests, calculateAge, getStatusLabel]);
+    }, [fetchAllGuests, calculateAge, getStatusLabel, isModuleCoordinator, isSubCoordinator, isTreasurer]);
 
     return (
         <div className="bg-[var(--ln-bg-panel)] border border-[var(--ln-border-subtle)] rounded-xl p-6 transition-colors">

@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 require("dotenv").config();
+const { encryptBackupFile, decryptBackupFile, isEncryptedBackup } = require("../utils/backupCrypto");
 
 /* =========================
    🔍 UTILIDAD
@@ -144,28 +145,43 @@ const toCliDatabaseUrl = (rawUrl) => {
 };
 
 const generateBackup = async (req, res) => {
+    const filesToClean = [];
     try {
         const databaseUrl = toCliDatabaseUrl(getDatabaseUrl());
 
         const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-        const baseName = `backup_${stamp}.sql`;
         const tempDir = fs.existsSync(path.join(process.cwd(), "uploads"))
             ? path.join(process.cwd(), "uploads")
             : os.tmpdir();
-        const outPath = path.join(tempDir, baseName);
 
-        const generatedPath = generateBackupFile(databaseUrl, outPath);
+        // 1. Generate plain SQL dump
+        const plainPath = path.join(tempDir, `backup_${stamp}.sql`);
+        generateBackupFile(databaseUrl, plainPath);
+        filesToClean.push(plainPath);
 
-        res.setHeader("Content-Disposition", `attachment; filename="${baseName}"`);
-        res.setHeader("Content-Type", "application/sql");
+        // 2. Encrypt the dump
+        const encName = `backup_${stamp}.sql.enc`;
+        const encPath = path.join(tempDir, encName);
+        encryptBackupFile(plainPath, encPath);
+        filesToClean.push(encPath);
 
-        const stream = fs.createReadStream(generatedPath);
+        // Remove the plain dump immediately — only the encrypted file is served
+        fs.unlinkSync(plainPath);
+        filesToClean.splice(filesToClean.indexOf(plainPath), 1);
+
+        // 3. Stream the encrypted file to the client
+        res.setHeader("Content-Disposition", `attachment; filename="${encName}"`);
+        res.setHeader("Content-Type", "application/octet-stream");
+
+        const stream = fs.createReadStream(encPath);
         const cleanup = () => {
-            fs.unlink(generatedPath, (err) => {
-                if (err && process.env.NODE_ENV !== 'production') {
-                    console.warn('⚠️ No se pudo eliminar el backup temporal:', err.message);
-                }
-            });
+            for (const f of filesToClean) {
+                fs.unlink(f, (err) => {
+                    if (err && process.env.NODE_ENV !== 'production') {
+                        console.warn('⚠️ No se pudo eliminar temporal:', f, err.message);
+                    }
+                });
+            }
         };
         stream.on("close", cleanup);
         stream.on("error", (e) => {
@@ -174,36 +190,56 @@ const generateBackup = async (req, res) => {
         });
         stream.pipe(res);
     } catch (error) {
+        // Clean up any temp files on failure
+        for (const f of filesToClean) {
+            fs.unlink(f, () => {});
+        }
         console.error("❌ Error generating backup:", error.message);
         res.status(500).json({ error: error.message });
     }
 };
 
 const restoreBackup = async (req, res) => {
+    const filesToClean = [];
     try {
         const databaseUrl = toCliDatabaseUrl(getDatabaseUrl());
         const filePath = req.file?.path;
         if (!filePath) {
             return res.status(400).json({ error: "No se recibió archivo (campo: backupFile)." });
         }
+        filesToClean.push(filePath);
+
+        // Determine if the uploaded file is encrypted and decrypt if needed
+        let sqlFilePath = filePath;
+        if (isEncryptedBackup(filePath)) {
+            console.log("🔐 Backup cifrado detectado, descifrando...");
+            const decryptedPath = filePath + '.decrypted.sql';
+            decryptBackupFile(filePath, decryptedPath);
+            filesToClean.push(decryptedPath);
+            sqlFilePath = decryptedPath;
+        } else {
+            console.log("📄 Backup sin cifrar detectado (formato legacy), restaurando directamente...");
+        }
 
         const cleanBeforeRestore = req.body?.cleanBeforeRestore !== "false" && req.body?.cleanBeforeRestore !== false;
-        await restoreBackupFile(databaseUrl, filePath, { cleanBeforeRestore });
+        await restoreBackupFile(databaseUrl, sqlFilePath, { cleanBeforeRestore });
 
-        // borrar archivo subido por multer
-        fs.unlink(filePath, (err) => {
-            if (err && process.env.NODE_ENV !== 'production') {
-                console.warn('⚠️ No se pudo eliminar el backup subido:', err.message);
-            }
-        });
+        // Clean up all temp files
+        for (const f of filesToClean) {
+            fs.unlink(f, (err) => {
+                if (err && process.env.NODE_ENV !== 'production') {
+                    console.warn('⚠️ No se pudo eliminar temporal:', f, err.message);
+                }
+            });
+        }
 
         res.json({ success: true });
     } catch (error) {
         console.error("❌ Error restoring backup:", error.message);
-        if (req.file?.path) {
-            fs.unlink(req.file.path, (err) => {
+        for (const f of filesToClean) {
+            fs.unlink(f, (err) => {
                 if (err && process.env.NODE_ENV !== 'production') {
-                    console.warn('⚠️ No se pudo eliminar archivo temporal:', err.message);
+                    console.warn('⚠️ No se pudo eliminar temporal:', f, err.message);
                 }
             });
         }

@@ -69,7 +69,8 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
     }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, guestsPerPage]);
 
     // Obtener todos los invitados filtrados (sin paginación) para exportar
-    const fetchAllGuests = useCallback(async () => {
+    const fetchAllGuests = useCallback(async (options = {}) => {
+        const { ignoreNetworkFilter = false } = options;
         try {
             const params = new URLSearchParams();
             params.append('page', 1);
@@ -77,7 +78,9 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
 
             if (statusFilter) params.append('status', statusFilter);
             if (invitedByFilter && invitedByFilter.id !== undefined) params.append('invitedById', invitedByFilter.id);
-            if (liderDoceFilter && liderDoceFilter.id !== undefined) params.append('liderDoceId', liderDoceFilter.id);
+            // Si el usuario tiene acceso total al módulo (coordinador/subcoordinador/tesorero),
+            // no se aplica el filtro de red por Líder de 12 al exportar.
+            if (liderDoceFilter && liderDoceFilter.id !== undefined && !ignoreNetworkFilter) params.append('liderDoceId', liderDoceFilter.id);
             if (searchTerm) params.append('search', searchTerm);
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);

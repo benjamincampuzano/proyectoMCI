@@ -119,12 +119,34 @@ const getAllGuests = async (req, res) => {
         // Aplicar visibilidad basada en roles
         // Allow ADMIN to see all guests
         const isModuleCoordinator = req.user.isModuleCoordinator || false;
-        const coordinatedModules = req.user.moduleCoordinations || [];
-        const subCoordinatedModules = req.user.moduleSubCoordinations || [];
-        const treasuredModules = req.user.moduleTreasurers || [];
-        const allModuleRoles = [...coordinatedModules, ...subCoordinatedModules, ...treasuredModules];
-        const isGuestModuleCoordinator = allModuleRoles.some(m => 
-            ['ganar', 'consolidar'].includes(m.toLowerCase())
+
+        // Determinar roles de módulo del usuario consultando la base de datos
+        // directamente. Esto evita depender del token JWT o del middleware, que
+        // pueden estar desactualizados (p.ej. coordinador asignado después de
+        // iniciar sesión) y garantiza que coordinadores, subcoordinadores y
+        // tesoreros de Ganar/Consolidar vean todos los invitados al exportar.
+        const [coordRecords, subCoordRecords, treasurerRecords] = await Promise.all([
+            prisma.moduleCoordinator.findMany({
+                where: { userId: parseInt(currentUserId), isDeleted: false },
+                select: { moduleName: true }
+            }),
+            prisma.moduleSubCoordinator.findMany({
+                where: { userId: parseInt(currentUserId), isDeleted: false },
+                select: { moduleName: true }
+            }),
+            prisma.moduleTreasurer.findMany({
+                where: { userId: parseInt(currentUserId), isDeleted: false },
+                select: { moduleName: true }
+            })
+        ]);
+
+        const allModuleRoles = [
+            ...coordRecords.map(c => String(c.moduleName).toLowerCase()),
+            ...subCoordRecords.map(sc => String(sc.moduleName).toLowerCase()),
+            ...treasurerRecords.map(t => String(t.moduleName).toLowerCase())
+        ];
+        const isGuestModuleCoordinator = allModuleRoles.some(m =>
+            ['ganar', 'consolidar'].includes(m)
         );
         
         if (roles.includes('ADMIN')) {

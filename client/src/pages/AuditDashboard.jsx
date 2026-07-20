@@ -44,7 +44,7 @@ const AuditDashboard = () => {
             });
 
             const contentDisposition = response.headers['content-disposition'];
-            let fileName = `backup_${new Date().toISOString().replace(/[:.]/g, '-')}.sql`;
+            let fileName = `backup_${new Date().toISOString().replace(/[:.]/g, '-')}.sql.enc`;
 
             if (contentDisposition) {
                 const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
@@ -53,7 +53,7 @@ const AuditDashboard = () => {
                 }
             }
 
-            const blob = new Blob([response.data], { type: 'application/sql' });
+            const blob = new Blob([response.data], { type: 'application/octet-stream' });
             const url_window = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url_window;
@@ -66,7 +66,21 @@ const AuditDashboard = () => {
             toast.success('Backup correctamente generado y descargado');
         } catch (error) {
             console.error('Error downloading backup:', error);
-            toast.error(`Error: ${error.response?.data?.error || error.message}`);
+            
+            let errorMsg = error.message;
+            if (error.response?.data instanceof Blob) {
+                try {
+                    const text = await error.response.data.text();
+                    const json = JSON.parse(text);
+                    errorMsg = json.error || errorMsg;
+                } catch (e) {
+                    // Ignorar si no se puede parsear
+                }
+            } else if (error.response?.data?.error) {
+                errorMsg = error.response.data.error;
+            }
+            
+            toast.error(`Error: ${errorMsg}`);
         } finally {
             if (button) {
                 button.innerHTML = originalText;
@@ -79,8 +93,9 @@ const AuditDashboard = () => {
         const file = event.target.files[0];
         if (!file) return;
 
-        if (!file.name.toLowerCase().endsWith('.sql')) {
-            toast.error('Solo se permiten archivos de backup SQL (.sql)');
+        const validExtension = file.name.toLowerCase().endsWith('.sql') || file.name.toLowerCase().endsWith('.sql.enc');
+        if (!validExtension) {
+            toast.error('Solo se permiten archivos de backup SQL (.sql) o cifrados (.sql.enc)');
             event.target.value = '';
             return;
         }
@@ -477,8 +492,8 @@ const AuditDashboard = () => {
                             <Download size={24} weight="bold" />
                         </div>
                         <div>
-                            <h3 className="text-lg weight-590 text-[var(--ln-text-primary)]">Respaldo SQL</h3>
-                            <p className="text-sm text-[var(--ln-text-tertiary)] opacity-70">Copia completa compatible con PostgreSQL</p>
+                            <h3 className="text-lg weight-590 text-[var(--ln-text-primary)]">Respaldo Cifrado</h3>
+                            <p className="text-sm text-[var(--ln-text-tertiary)] opacity-70">Copia cifrada AES-256 compatible con PostgreSQL</p>
                         </div>
                     </div>
                     <button
@@ -487,7 +502,7 @@ const AuditDashboard = () => {
                         className="w-full py-3.5 bg-emerald-500 text-white rounded-2xl weight-590 text-[14px] hover:bg-emerald-600 active:scale-[0.98] transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3"
                     >
                         <Download size={18} weight="bold" />
-                        Descargar Backup
+                        Descargar Backup Cifrado
                     </button>
                 </div>
 
@@ -504,7 +519,7 @@ const AuditDashboard = () => {
                     <input
                         type="file"
                         id="backupUpload"
-                        accept=".sql"
+                        accept=".sql,.enc"
                         className="hidden"
                         onChange={handleRestoreBackup}
                     />
