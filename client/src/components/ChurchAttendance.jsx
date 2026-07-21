@@ -34,9 +34,15 @@ const ChurchAttendance = (props) => {
     const [deleting, setDeleting] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const PAGE_SIZE = 50;
     const [currentPage, setCurrentPage] = useState(1);
     const [totalMembers, setTotalMembers] = useState(0);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
     
     // Estados para filtros
     const { user } = useAuth();
@@ -54,7 +60,7 @@ const ChurchAttendance = (props) => {
                 params: {
                     page: targetPage,
                     limit: PAGE_SIZE,
-                    searchTerm,
+                    searchTerm: debouncedSearchTerm,
                     liderDoceId: liderDoceFilter?.id,
                     liderCelulaId: liderCelulaFilter?.id,
                     rol: rolFilter,
@@ -68,7 +74,7 @@ const ChurchAttendance = (props) => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, searchTerm, liderDoceFilter, liderCelulaFilter, rolFilter, redFilter]);
+    }, [currentPage, debouncedSearchTerm, liderDoceFilter, liderCelulaFilter, rolFilter, redFilter]);
 
     const fetchAttendance = useCallback(async () => {
         try {
@@ -95,14 +101,14 @@ const ChurchAttendance = (props) => {
     }, [fetchAttendance]);
 
     useEffect(() => {
-        const hasAnyFilter = searchTerm || liderDoceFilter || liderCelulaFilter || rolFilter || redFilter;
+        const hasAnyFilter = debouncedSearchTerm || liderDoceFilter || liderCelulaFilter || rolFilter || redFilter;
         if (hasAnyFilter && currentPage !== 1) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setCurrentPage(1);
             return;
         }
         fetchMembers();
-    }, [fetchMembers, currentPage, searchTerm, liderDoceFilter, liderCelulaFilter, rolFilter, redFilter]);
+    }, [fetchMembers, currentPage, debouncedSearchTerm, liderDoceFilter, liderCelulaFilter, rolFilter, redFilter]);
 
     const handleAttendanceChange = (id, type, status) => {
         const key = `${type}_${id}`;
@@ -193,6 +199,7 @@ const ChurchAttendance = (props) => {
         setRolFilter('');
         setRedFilter('');
         setSearchTerm('');
+        setDebouncedSearchTerm('');
     };
 
     const stats = useMemo(() => {
@@ -227,7 +234,7 @@ const ChurchAttendance = (props) => {
         };
     }, [currentPage, totalMembers]);
 
-    if (loading) {
+    if (loading && members.length === 0 && Object.keys(attendances).length === 0 && !searchTerm) {
         return (
             <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

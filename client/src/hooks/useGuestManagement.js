@@ -24,7 +24,12 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
 
     const [currentUser, setCurrentUser] = useState(null);
 
-    const searchDebounceTimeoutRef = useRef(null);
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
@@ -43,7 +48,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
             if (statusFilter) params.append('status', statusFilter);
             if (invitedByFilter && invitedByFilter.id !== undefined) params.append('invitedById', invitedByFilter.id);
             if (liderDoceFilter && liderDoceFilter.id !== undefined) params.append('liderDoceId', liderDoceFilter.id);
-            if (searchTerm) params.append('search', searchTerm);
+            if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
             if (pendingCalls) params.append('pendingCalls', 'true');
@@ -66,7 +71,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         } finally {
             setLoading(false);
         }
-    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, guestsPerPage]);
+    }, [invitedByFilter, liderDoceFilter, debouncedSearchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, guestsPerPage]);
 
     // Obtener todos los invitados filtrados (sin paginación) para exportar
     const fetchAllGuests = useCallback(async (options = {}) => {
@@ -81,7 +86,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
             // Si el usuario tiene acceso total al módulo (coordinador/subcoordinador/tesorero),
             // no se aplica el filtro de red por Líder de 12 al exportar.
             if (liderDoceFilter && liderDoceFilter.id !== undefined && !ignoreNetworkFilter) params.append('liderDoceId', liderDoceFilter.id);
-            if (searchTerm) params.append('search', searchTerm);
+            if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
             if (pendingCalls) params.append('pendingCalls', 'true');
@@ -97,7 +102,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         } catch (err) {
             throw new Error(err.userMessage || err.response?.data?.message || 'Error al cargar invitados');
         }
-    }, [invitedByFilter, liderDoceFilter, searchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited]);
+    }, [invitedByFilter, liderDoceFilter, debouncedSearchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited]);
 
     // Funciones de paginación
     const handlePageChange = useCallback((newPage) => {
@@ -112,35 +117,15 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         setCurrentPage(prev => Math.max(1, prev - 1));
     }, []);
 
-    // ✅ Un solo efecto para filtros NO-search: reset a página 1
+    // Cuando cambian los filtros, volvemos a la página 1
     useEffect(() => {
         setCurrentPage(1);
-         
-    }, [statusFilter, invitedByFilter, liderDoceFilter, startDate, endDate, pendingCalls, pendingVisits, refreshTrigger]);
+    }, [statusFilter, invitedByFilter, liderDoceFilter, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, debouncedSearchTerm, refreshTrigger]);
 
-    // ✅ Solo searchTerm usa debounce para evitar doble fetch por tecleo
-    useEffect(() => {
-        if (searchDebounceTimeoutRef.current) {
-            clearTimeout(searchDebounceTimeoutRef.current);
-        }
-
-        searchDebounceTimeoutRef.current = setTimeout(() => {
-            setCurrentPage(1);
-        }, 500);
-
-        return () => {
-            if (searchDebounceTimeoutRef.current) {
-                clearTimeout(searchDebounceTimeoutRef.current);
-            }
-        };
-         
-    }, [searchTerm]);
-
-    // ✅ Efecto para cambios de página: fetch con la página actual
+    // Efecto principal para hacer fetch cada vez que cambian los filtros o la página
     useEffect(() => {
         fetchGuests(currentPage);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage]);
+    }, [currentPage, fetchGuests]);
 
     const updateGuest = useCallback(async (guestId, updates) => {
         try {

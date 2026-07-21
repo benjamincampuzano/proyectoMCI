@@ -93,10 +93,6 @@ const GuestList = ({ refreshTrigger }) => {
         }
     }, [userId, userRoles, isModuleCoordinator, isSubCoordinator, isTreasurer, userFullName, userEmail, liderDoceFilter, setLiderDoceFilter]);
 
-    const handleSearch = useCallback(() => {
-        fetchGuests(1);
-    }, [fetchGuests]);
-
     const canModify = useCallback(() => {
         const roles = currentUser?.roles || [];
         return roles.includes('ADMIN') || roles.includes('LIDER_DOCE');
@@ -346,7 +342,6 @@ const GuestList = ({ refreshTrigger }) => {
                                             setSearchTerm(e.target.value);
                                             setCurrentPage(1);
                                         }}
-                                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                                         placeholder="Escribe un nombre..."
                                         className="w-full px-3.5 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] rounded-md text-sm text-[var(--ln-text-primary)] placeholder:text-[var(--ln-text-tertiary)] focus:outline-none focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all"
                                     />
@@ -486,15 +481,6 @@ const GuestList = ({ refreshTrigger }) => {
                                 activeColor="violet"
                                 label="Ya fueron visitados"
                             />
-                        </div>
-
-                        <div className="flex items-center gap-3 pt-2">
-                            <Button
-                                onClick={handleSearch}
-                                icon={Funnel}
-                            >
-                                Aplicar Filtros
-                            </Button>
                         </div>
                     </div>
                 </div>
