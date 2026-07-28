@@ -768,6 +768,237 @@ const getEligibleDoceLeaders = async (req, res) => {
     }
 };
 
+// Get Advanced Cell Statistics
+const getAdvancedCellStats = async (req, res) => {
+    try {
+        const { roles, id } = req.user;
+        const userId = parseInt(id);
+        const isEnviarCoordinator = hasFullEnviarAccess(req.user);
+
+        // Scope filter for cells
+        let cellWhere = { isDeleted: false };
+
+        if (!isEnviarCoordinator && !roles.includes('ADMIN')) {
+            if (roles.includes('LIDER_DOCE') || roles.includes('PASTOR')) {
+                const networkUserIds = await getUserNetwork(userId);
+                const user = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { spouseId: true }
+                });
+                const spouseId = user?.spouseId;
+
+                const liderDoceConditions = [{ liderDoceId: userId }];
+                if (spouseId) liderDoceConditions.push({ liderDoceId: spouseId });
+
+                cellWhere.OR = [
+                    { leaderId: { in: networkUserIds } },
+                    ...liderDoceConditions
+                ];
+            } else if (roles.includes('LIDER_CELULA')) {
+                cellWhere.leaderId = userId;
+            } else {
+                const userData = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { cellId: true }
+                });
+                if (userData?.cellId) {
+                    cellWhere.id = userData.cellId;
+                } else {
+                    return res.json({
+                        statsByLiderDoce: [],
+                        statsByLiderCelula: [],
+                        unassignedByNetwork: [],
+                        totalUnassigned: 0,
+                        cellsByNetwork: [],
+                        cellsByType: [],
+                        cartographyStats: { withCartography: 0, withoutCartography: 0, total: 0 },
+                        fastingStats: { withFasting: 0, withoutFasting: 0, total: 0 }
+                    });
+                }
+            }
+        }
+
+        // Fetch cells matching filter
+        const cells = await prisma.cell.findMany({
+            where: cellWhere,
+            select: {
+                id: true,
+                name: true,
+                cellType: true,
+                network: true,
+                spiritualMappingUrl: true,
+                fastingDate: true,
+                leaderId: true,
+                liderDoceId: true,
+                leader: {
+                    select: {
+                        id: true,
+                        profile: { select: { fullName: true } }
+                    }
+                },
+                liderDoce: {
+                    select: {
+                        id: true,
+                        profile: { select: { fullName: true } }
+                    }
+                },
+                guests: { select: { id: true } }
+            }
+        });
+
+        const cellIds = cells.map(c => c.id);
+
+        // Fetch member count for each cell
+        const membersCountByCell = {};
+        if (cellIds.length > 0) {
+            const memberUsers = await prisma.user.findMany({
+                where: { cellId: { in: cellIds }, isDeleted: false },
+                select: { cellId: true }
+            });
+            memberUsers.forEach(u => {
+                membersCountByCell[u.cellId] = (membersCountByCell[u.cellId] || 0) + 1;
+            });
+        }
+
+        // 1. Stats by LIDER_DOCE: cell count & average members per cell
+        const liderDoceMap = {};
+        cells.forEach(cell => {
+            const ldoceId = cell.liderDoceId || 0;
+            const ldoceName = cell.liderDoce?.profile?.fullName || (cell.liderDoceId ? `Líder #${cell.liderDoceId}` : 'Sin Líder 12');
+
+            if (!liderDoceMap[ldoceId]) {
+                liderDoceMap[ldoceId] = {
+                    id: ldoceId,
+                    name: ldoceName,
+                    cellCount: 0,
+                    totalPeople: 0
+                };
+            }
+            liderDoceMap[ldoceId].cellCount += 1;
+            const peopleInCell = (membersCountByCell[cell.id] || 0) + (cell.guests?.length || 0);
+            liderDoceMap[ldoceId].totalPeople += peopleInCell;
+        });
+
+        const statsByLiderDoce = Object.values(liderDoceMap).map(item => ({
+            ...item,
+            avgPeoplePerCell: item.cellCount > 0 ? parseFloat((item.totalPeople / item.cellCount).toFixed(1)) : 0
+        })).sort((a, b) => b.cellCount - a.cellCount);
+
+        // 2. Stats by LIDER_CELULA: cell count
+        const liderCelulaMap = {};
+        cells.forEach(cell => {
+            const lcelId = cell.leaderId;
+            const lcelName = cell.leader?.profile?.fullName || `Líder #${cell.leaderId}`;
+            if (!liderCelulaMap[lcelId]) {
+                liderCelulaMap[lcelId] = {
+                    id: lcelId,
+                    name: lcelName,
+                    cellCount: 0
+                };
+            }
+            liderCelulaMap[lcelId].cellCount += 1;
+        });
+        const statsByLiderCelula = Object.values(liderCelulaMap).sort((a, b) => b.cellCount - a.cellCount);
+
+        // 3. Unassigned people by network / ministerio
+        let unassignedUserWhere = {
+            cellId: null,
+            isDeleted: false,
+            roles: {
+                none: { role: { name: 'ADMIN' } }
+            }
+        };
+
+        if (!isEnviarCoordinator && !roles.includes('ADMIN')) {
+            const networkUserIds = await getUserNetwork(userId);
+            unassignedUserWhere.id = { in: networkUserIds };
+        }
+
+        const unassignedUsers = await prisma.user.findMany({
+            where: unassignedUserWhere,
+            select: {
+                id: true,
+                profile: { select: { network: true } }
+            }
+        });
+
+        const unassignedNetworkMap = {};
+        unassignedUsers.forEach(u => {
+            const net = u.profile?.network || 'Sin Red Especificada';
+            unassignedNetworkMap[net] = (unassignedNetworkMap[net] || 0) + 1;
+        });
+        const unassignedByNetwork = Object.keys(unassignedNetworkMap).map(net => ({
+            network: net,
+            count: unassignedNetworkMap[net]
+        })).sort((a, b) => b.count - a.count);
+
+        // 4. Cells by Network & CellType
+        const networkMap = {};
+        const typeMap = {};
+        cells.forEach(cell => {
+            const net = cell.network || 'MIXTA';
+            networkMap[net] = (networkMap[net] || 0) + 1;
+
+            const cType = cell.cellType || 'ABIERTA';
+            typeMap[cType] = (typeMap[cType] || 0) + 1;
+        });
+
+        const cellsByNetwork = Object.keys(networkMap).map(net => ({
+            network: net,
+            count: networkMap[net]
+        })).sort((a, b) => b.count - a.count);
+
+        const cellsByType = Object.keys(typeMap).map(type => ({
+            cellType: type,
+            count: typeMap[type]
+        }));
+
+        // 5. Cells with / without cartography (spiritualMappingUrl)
+        let withCartography = 0;
+        let withoutCartography = 0;
+        cells.forEach(cell => {
+            if (cell.spiritualMappingUrl && cell.spiritualMappingUrl.trim() !== '') {
+                withCartography++;
+            } else {
+                withoutCartography++;
+            }
+        });
+
+        // 6. Cells with / without fasting day (fastingDate)
+        let withFasting = 0;
+        let withoutFasting = 0;
+        cells.forEach(cell => {
+            if (cell.fastingDate && cell.fastingDate.trim() !== '') {
+                withFasting++;
+            } else {
+                withoutFasting++;
+            }
+        });
+
+        res.json({
+            statsByLiderDoce,
+            statsByLiderCelula,
+            unassignedByNetwork,
+            totalUnassigned: unassignedUsers.length,
+            cellsByNetwork,
+            cellsByType,
+            cartographyStats: {
+                withCartography,
+                withoutCartography,
+                total: cells.length
+            },
+            fastingStats: {
+                withFasting,
+                withoutFasting,
+                total: cells.length
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching advanced cell stats:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 module.exports = {
     createCell,
     deleteCell,
@@ -777,6 +1008,7 @@ module.exports = {
     getEligibleMembers,
     updateCellCoordinates,
     getEligibleDoceLeaders,
+    getAdvancedCellStats,
     updateCell,
     unassignMember
 };

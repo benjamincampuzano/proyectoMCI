@@ -1578,6 +1578,9 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                                     Horario
                                 </th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
+                                    Red
+                                </th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
                                     Discípulos
                                 </th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-[#86868b] dark:text-[#98989d] uppercase tracking-wider">
@@ -1626,6 +1629,22 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                                         {cell.dayOfWeek} {cell.time}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                            cell.network === 'HOMBRES' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                            cell.network === 'MUJERES' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300' :
+                                            cell.network === 'JOVENES' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                            cell.network === 'NIÑOS' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
+                                            'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300'
+                                        }`}>
+                                            {cell.network === 'MIXTA' ? 'Mixta' :
+                                             cell.network === 'HOMBRES' ? 'Hombres' :
+                                             cell.network === 'MUJERES' ? 'Mujeres' :
+                                             cell.network === 'JOVENES' ? 'Jóvenes' :
+                                             cell.network === 'NIÑOS' ? 'Niños' :
+                                             cell.network || 'N/A'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                                             {(cell._count?.members ?? 0) + (cell._count?.guests ?? 0)}
                                         </span>
@@ -1669,7 +1688,7 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                             ))}
                             {paginatedCells.length === 0 && (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-sm text-[#86868b] dark:text-[#98989d]">
+                                    <td colSpan="7" className="px-6 py-12 text-center text-sm text-[#86868b] dark:text-[#98989d]">
                                         No se encontraron células con los filtros aplicados.
                                     </td>
                                 </tr>
