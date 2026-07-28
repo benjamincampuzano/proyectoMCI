@@ -509,7 +509,6 @@ const UserFormFields = ({
                         <input
                             type="checkbox"
                             required={mode === 'create'}
-                            disabled={!isAdmin}
                             className="w-5 h-5 rounded-lg border-[var(--ln-border-standard)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)]/20 bg-white shadow-sm transition-all disabled:opacity-40"
                             checked={formData.dataPolicyAccepted || false}
                             onChange={e => setFormData({ ...formData, dataPolicyAccepted: e.target.checked })}
@@ -526,7 +525,6 @@ const UserFormFields = ({
                         <input
                             type="checkbox"
                             required={mode === 'create'}
-                            disabled={!isAdmin}
                             className="w-5 h-5 rounded-lg border-[var(--ln-border-standard)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)]/20 bg-white shadow-sm transition-all disabled:opacity-40"
                             checked={formData.dataTreatmentAuthorized || false}
                             onChange={e => setFormData({ ...formData, dataTreatmentAuthorized: e.target.checked })}
@@ -542,7 +540,6 @@ const UserFormFields = ({
                     <div className="relative flex items-center mt-1">
                         <input
                             type="checkbox"
-                            disabled={!isAdmin}
                             required={calculateAge(formData.birthDate) < 18}
                             className="w-6 h-6 rounded-lg border-[var(--ln-brand-indigo)]/30 text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)]/20 bg-white transition-all disabled:opacity-40"
                             checked={formData.minorConsentAuthorized || false}
@@ -559,15 +556,6 @@ const UserFormFields = ({
                         </span>
                     </div>
                 </label>
-
-                {!isAdmin && (
-                    <div className="flex items-center gap-2 p-3 bg-orange-500/5 rounded-xl border border-orange-500/10 animate-pulse sm:col-span-2">
-                        <div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
-                        <p className="text-[11px] weight-700 text-orange-500/80 uppercase tracking-widest">
-                            Auditoría de Acceso: Edición restringida a Administradores
-                        </p>
-                    </div>
-                )}
             </div>
         </div>
     );

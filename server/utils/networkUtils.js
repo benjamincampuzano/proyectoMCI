@@ -21,7 +21,7 @@ const getUserNetwork = async (leaderId) => {
                 SELECT uh."childId", h.depth + 1, h.visited || uh."parentId"
                 FROM "UserHierarchy" uh
                 INNER JOIN hierarchy h ON uh."parentId" = h."childId"
-                WHERE h.depth < 50
+                WHERE h.depth < 12
                   AND NOT uh."childId" = ANY(h.visited)
             )
             SELECT DISTINCT "childId" FROM hierarchy;
@@ -97,7 +97,7 @@ const getUserAncestors = async (userId) => {
                 SELECT uh."parentId", h.depth + 1, h.visited || uh."childId"
                 FROM "UserHierarchy" uh
                 INNER JOIN hierarchy h ON uh."childId" = h."parentId"
-                WHERE h.depth < 50
+                WHERE h.depth < 12
                   AND NOT uh."parentId" = ANY(h.visited)
             )
             SELECT DISTINCT "parentId" FROM hierarchy;

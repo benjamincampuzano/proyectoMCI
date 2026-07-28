@@ -85,8 +85,8 @@ const getEncryptionKey = () => {
  * @param {string} encFilePath    – path to write the encrypted output
  * @returns {string} encFilePath
  */
-const encryptBackupFile = (plainFilePath, encFilePath) => {
-    const passphrase = getEncryptionKey();
+const encryptBackupFile = (plainFilePath, encFilePath, userPassphrase) => {
+    const passphrase = userPassphrase || getEncryptionKey();
 
     // Generate random salt and IV
     const salt = crypto.randomBytes(SALT_LENGTH);
@@ -132,8 +132,8 @@ const encryptBackupFile = (plainFilePath, encFilePath) => {
  * @returns {string} plainFilePath
  * @throws {Error} if the file is not a valid MCI encrypted backup or the key is wrong
  */
-const decryptBackupFile = (encFilePath, plainFilePath) => {
-    const passphrase = getEncryptionKey();
+const decryptBackupFile = (encFilePath, plainFilePath, userPassphrase) => {
+    const passphrase = userPassphrase || getEncryptionKey();
 
     const fileData = fs.readFileSync(encFilePath);
 

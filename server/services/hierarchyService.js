@@ -22,7 +22,7 @@ async function createsHierarchyCycle(parentId, childId) {
                 SELECT uh."parentId", uh."childId", a.depth + 1, a.visited || uh."childId"
                 FROM "UserHierarchy" uh
                 JOIN ancestors a ON uh."childId" = a."parentId"
-                WHERE a.depth < 50
+                WHERE a.depth < 12
                   AND NOT uh."parentId" = ANY(a.visited)
             )
             SELECT "parentId" FROM ancestors;

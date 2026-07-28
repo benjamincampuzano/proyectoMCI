@@ -300,22 +300,24 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId, mod
     // LIDER_DOCE (sin permisos de coordinator)
     // ═══════════════════════════════════════════
     if (requester.roles.includes('LIDER_DOCE')) {
-        if (PROTECTED_ROLES.includes(targetUserRole)) {
+        // LIDER_DOCE no puede editar usuarios ADMIN ni PASTOR
+        const LIDER_DOCE_PROTECTED_ROLES = ['ADMIN', 'PASTOR'];
+        if (LIDER_DOCE_PROTECTED_ROLES.includes(targetUserRole)) {
             return { canManage: false, reason: `No tienes permisos para editar usuarios ${targetUserRole}` };
         }
 
-        // Restringir por red solo si ambos tienen red asignada Y son diferentes
-        // Si las redes no coinciden, verificar jerarquía como fallback
+        // Si se proporciona targetUserId, verificar primero si el usuario destino está en la jerarquía del LIDER_DOCE
+        if (targetUserId) {
+            const inHierarchy = await isDescendant(requester.id, targetUserId);
+            if (inHierarchy) {
+                return { canManage: true, level: 'lider_doce' };
+            }
+        }
+
+        // Restringir por red si ambos tienen red asignada Y son diferentes
         const requesterNetworkId = await getUserNetworkId(requester.id);
         if (targetUserNetworkId && requesterNetworkId && targetUserNetworkId !== requesterNetworkId) {
-            // Si el usuario destino es descendiente en la jerarquía, permitir
-            if (targetUserId) {
-                const inHierarchy = await isDescendant(requester.id, targetUserId);
-                if (inHierarchy) {
-                    return { canManage: true, level: 'lider_doce' };
-                }
-            }
-            return { canManage: false, reason: 'Sin permisos para edicion de usuarios' };
+            return { canManage: false, reason: 'Sin permisos para edición de usuarios fuera de tu red' };
         }
 
         return { canManage: true, level: 'lider_doce' };

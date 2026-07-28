@@ -25,6 +25,7 @@ const AuditDashboard = () => {
     const [restoreProgress, setRestoreProgress] = useState(0);
     const [restoreStatus, setRestoreStatus] = useState('');
     const [restorePassword, setRestorePassword] = useState('');
+    const [backupPassword, setBackupPassword] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [requirePasswordConfirm] = useState(true);
     const memoizedStats = useMemo(() => stats, [stats]);
@@ -39,7 +40,7 @@ const AuditDashboard = () => {
                 button.disabled = true;
             }
 
-            const response = await api.post('/audit/backup', {}, {
+            const response = await api.post('/audit/backup', { password: backupPassword }, {
                 responseType: 'blob'
             });
 
@@ -496,8 +497,19 @@ const AuditDashboard = () => {
                             <p className="text-sm text-[var(--ln-text-tertiary)] opacity-70">Copia cifrada AES-256 compatible con PostgreSQL</p>
                         </div>
                     </div>
-                    <button
-                        id="downloadBackupBtn"
+                        <div className="space-y-3 mb-6">
+                            <label className="text-[10px] weight-590 uppercase tracking-widest text-[var(--ln-text-primary)] opacity-60">Contraseña de cifrado (Opcional)</label>
+                            <input
+                                type="password"
+                                value={backupPassword}
+                                onChange={(e) => setBackupPassword(e.target.value)}
+                                className="w-full px-4 py-2.5 bg-[var(--ln-input-bg)] border border-emerald-500/20 rounded-xl focus:ring-2 focus:ring-emerald-500/20 outline-none text-[var(--ln-text-primary)] text-sm"
+                                placeholder="••••••••"
+                            />
+                            <p className="text-[10px] text-[var(--ln-text-tertiary)] opacity-50 italic">Si dejas este campo vacío, se utilizará la clave maestra del servidor.</p>
+                        </div>
+                        <button
+                            id="downloadBackupBtn"
                         onClick={performBackupDownload}
                         className="w-full py-3.5 bg-emerald-500 text-white rounded-2xl weight-590 text-[14px] hover:bg-emerald-600 active:scale-[0.98] transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3"
                     >
@@ -562,7 +574,7 @@ const AuditDashboard = () => {
                 )}
                 {!isRestoring && requirePasswordConfirm && (
                     <div className="space-y-4">
-                        <label className="text-xs weight-590 uppercase tracking-widest text-red-500 opacity-80">Contraseña de Administrador</label>
+                        <label className="text-xs weight-590 uppercase tracking-widest text-red-500 opacity-80">Contraseña de Cifrado del Backup</label>
                         <input
                             type="password"
                             value={restorePassword}
@@ -574,6 +586,7 @@ const AuditDashboard = () => {
                             placeholder="••••••••"
                         />
                         {passwordError && <p className="text-xs text-red-500 weight-590">{passwordError}</p>}
+                        <p className="text-[10px] text-[var(--ln-text-tertiary)] opacity-60 italic mt-2">Si el backup fue generado sin contraseña, deja este campo vacío para usar la clave del servidor.</p>
                     </div>
                 )}
                 {isRestoring && (

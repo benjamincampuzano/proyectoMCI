@@ -1,31 +1,22 @@
 const prisma = require('../utils/database');
+const { getUserNetwork } = require('../utils/networkUtils');
 
 /**
  * Checks if targetId is a descendant of ancestorId.
+ * Uses getUserNetwork with cycle detection and depth limiting.
  * @param {number} ancestorId 
  * @param {number} targetId 
  * @returns {Promise<boolean>}
  */
 async function isDescendant(ancestorId, targetId) {
-    if (ancestorId === targetId) return true; // Self is always allowed
+    const aId = parseInt(ancestorId);
+    const tId = parseInt(targetId);
+    if (isNaN(aId) || isNaN(tId)) return false;
+    if (aId === tId) return true; // Self is always allowed
 
     try {
-        const result = await prisma.$queryRaw`
-            WITH RECURSIVE hierarchy AS (
-                SELECT "parentId", "childId"
-                FROM "UserHierarchy"
-                WHERE "parentId" = ${ancestorId}
-
-                UNION ALL
-
-                SELECT uh."parentId", uh."childId"
-                FROM "UserHierarchy" uh
-                JOIN hierarchy h ON uh."parentId" = h."childId"
-            )
-            SELECT "childId" FROM hierarchy;
-        `;
-
-        return result.some(r => r.childId === targetId);
+        const descendants = await getUserNetwork(aId);
+        return descendants.includes(tId);
     } catch (error) {
         console.error('Error checking descendant status:', error);
         return false;

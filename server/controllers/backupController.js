@@ -162,7 +162,7 @@ const generateBackup = async (req, res) => {
         // 2. Encrypt the dump
         const encName = `backup_${stamp}.sql.enc`;
         const encPath = path.join(tempDir, encName);
-        encryptBackupFile(plainPath, encPath);
+        encryptBackupFile(plainPath, encPath, req.body?.password);
         filesToClean.push(encPath);
 
         // Remove the plain dump immediately — only the encrypted file is served
@@ -214,7 +214,7 @@ const restoreBackup = async (req, res) => {
         if (isEncryptedBackup(filePath)) {
             console.log("🔐 Backup cifrado detectado, descifrando...");
             const decryptedPath = filePath + '.decrypted.sql';
-            decryptBackupFile(filePath, decryptedPath);
+            decryptBackupFile(filePath, decryptedPath, req.body?.password);
             filesToClean.push(decryptedPath);
             sqlFilePath = decryptedPath;
         } else {

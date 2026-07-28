@@ -704,7 +704,7 @@ const getUserById = async (req, res) => {
         }
 
         const targetRole = user.roles?.[0]?.role?.name;
-        const permission = await canManageUser(req.user, targetRole, user.profile?.network);
+        const permission = await canManageUser(req.user, targetRole, user.profile?.network, undefined, userId);
 
         if (!permission.canManage) {
             return res.status(403).json({ message: permission.reason });
@@ -753,6 +753,10 @@ const updateUser = async (req, res) => {
         }
 
         const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, isCoordinator, spouseId, encuentro, discipular1A, discipular1B, discipular2A, discipular2B, discipular3A, discipular3B, responsible } = req.body;
+
+        if (role && !req.user.roles.includes('ADMIN') && ['ADMIN', 'PASTOR'].includes(role)) {
+            return res.status(403).json({ message: `No tienes permisos para asignar el rol ${role}` });
+        }
 
         if (email) {
             const existingUser = await prisma.user.findUnique({ where: { email } });
