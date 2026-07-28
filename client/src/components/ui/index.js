@@ -26,7 +26,7 @@ export { default as Spinner, Skeleton as LoadingSkeleton, CardSkeleton, TableSke
 // Specialized Components
 export { default as CommandPalette, useCommandPalette, CommandPaletteProvider } from './CommandPalette';
 export { default as Breadcrumb, BreadcrumbItem, BreadcrumbSeparator, CollapsibleBreadcrumb, StructuredBreadcrumb } from './Breadcrumb';
-export { default as Pagination, CompactPagination, LoadMorePagination } from './Pagination';
+export { default as Pagination } from './Pagination';
 export { default as ToastProvider, useToast, Toast, Alert, InlineAlert } from './Toast';
 export { default as Drawer, Panel, SlidePanel, CollapsiblePanel, useDrawer } from './Drawer';
 export { default as Image, Avatar, GalleryImage, HeroImage } from './Image';

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from '../utils/api';
 import ModalAttendance from './ModalAttendance';
 import AsyncSearchSelect from './ui/AsyncSearchSelect';
+import Pagination from './ui/Pagination';
 import { useAuth } from '../hooks/useAuth';
 import { ROLES } from '../constants/roles';
 import { getTodayString } from '../utils/dateUtils';
@@ -396,14 +397,15 @@ const ChurchAttendance = (props) => {
             {/* List and Search Container */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 {/* Top Pagination */}
-                {totalMembers > PAGE_SIZE && (
-                    <PaginationBar
-                        pagination={pagination}
-                        pageSize={PAGE_SIZE}
-                        loading={loading}
-                        onPageChange={setCurrentPage}
-                    />
-                )}
+                <Pagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.pages}
+                    totalItems={pagination.total}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setCurrentPage}
+                    loading={loading}
+                    itemLabel="miembros"
+                />
 
                 {/* Search Bar with Filters Button */}
                 <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
@@ -618,17 +620,17 @@ const ChurchAttendance = (props) => {
                 </div>
 
                 {/* Mobile Pagination */}
-                {totalMembers > PAGE_SIZE && (
-                    <div className="md:hidden">
-                        <PaginationBar
-                            pagination={pagination}
-                            pageSize={PAGE_SIZE}
-                            loading={loading}
-                            onPageChange={setCurrentPage}
-                            variant="compact"
-                        />
-                    </div>
-                )}
+                <div className="md:hidden">
+                    <Pagination
+                        currentPage={pagination.page}
+                        totalPages={pagination.pages}
+                        totalItems={pagination.total}
+                        pageSize={PAGE_SIZE}
+                        onPageChange={setCurrentPage}
+                        loading={loading}
+                        itemLabel="miembros"
+                    />
+                </div>
 
                 {/* Desktop View (Table) */}
                 <div className="hidden md:block overflow-x-auto">
@@ -740,14 +742,15 @@ const ChurchAttendance = (props) => {
                 </div>
 
                 {/* Pagination Controls */}
-                {totalMembers > PAGE_SIZE && (
-                    <PaginationBar
-                        pagination={pagination}
-                        pageSize={PAGE_SIZE}
-                        loading={loading}
-                        onPageChange={setCurrentPage}
-                    />
-                )}
+                <Pagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.pages}
+                    totalItems={pagination.total}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setCurrentPage}
+                    loading={loading}
+                    itemLabel="miembros"
+                />
             </div>
 
             <ModalAttendance
@@ -814,75 +817,3 @@ const ChurchAttendance = (props) => {
 };
 
 export default ChurchAttendance;
-
-function PaginationBar({ pagination, pageSize, loading, onPageChange, variant = 'default' }) {
-    if (pagination.pages <= 1) return null;
-
-    const labelText = `Mostrando ${(pagination.page - 1) * pageSize + 1} - ${Math.min(pagination.page * pageSize, pagination.total)} de ${pagination.total} registros`;
-    const sizeClasses = variant === 'compact'
-        ? 'px-4 py-3 text-xs'
-        : 'px-6 py-4 text-sm';
-
-    return (
-        <div className={`flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 ${sizeClasses}`}>
-            <div className={variant === 'compact' ? 'text-xs text-gray-600 dark:text-gray-400' : 'text-sm text-gray-600 dark:text-gray-400'}>
-                {labelText}
-            </div>
-            <div className="flex items-center gap-2">
-                <button
-                    onClick={pagination.onPrev}
-                    disabled={!pagination.hasPrev || loading}
-                    className={variant === 'compact'
-                        ? 'px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
-                        : 'px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
-                    }
-                >
-                    Anterior
-                </button>
-
-                <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                        let pageNum;
-                        if (pagination.pages <= 5) {
-                            pageNum = i + 1;
-                        } else if (pagination.page <= 3) {
-                            pageNum = i + 1;
-                        } else if (pagination.page >= pagination.pages - 2) {
-                            pageNum = pagination.pages - 4 + i;
-                        } else {
-                            pageNum = pagination.page - 2 + i;
-                        }
-
-                        const isActive = pagination.page === pageNum;
-
-                        return (
-                            <button
-                                key={pageNum}
-                                onClick={() => onPageChange(pageNum)}
-                                disabled={loading}
-                                className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
-                                    isActive
-                                        ? 'bg-blue-600 text-white shadow-sm'
-                                        : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                                {pageNum}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <button
-                    onClick={pagination.onNext}
-                    disabled={!pagination.hasNext || loading}
-                    className={variant === 'compact'
-                        ? 'px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
-                        : 'px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
-                    }
-                >
-                    Siguiente
-                </button>
-            </div>
-        </div>
-    );
-}

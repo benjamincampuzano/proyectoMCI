@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { House, Users, CrossIcon, UserPlus, Heart, PaperPlaneTilt, Calendar, BookOpen, SignOut, TreeStructure, Target, ShieldCheck, Baby, CaretLeft, CaretRight, GuitarIcon } from '@phosphor-icons/react';
+import { House, Users, CrossIcon, UserPlus, Heart, PaperPlaneTilt, Calendar, BookOpen, SignOut, TreeStructure, Target, ShieldCheck, Baby, CaretLeft, CaretRight, GuitarIcon, List, X } from '@phosphor-icons/react';
 import UserMenu from '../components/UserMenu';
 import PendingTasksPanel from '../components/PendingTasksPanel';
 import UserProfileModal from '../components/UserProfileModal';
@@ -27,8 +27,13 @@ const Layout = () => {
     const { user, logout, hasAnyRole, isAdmin } = useAuth();
     const location = useLocation();
     const [isCollapsed, setIsCollapsed] = useState(true);
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [hasKidsAccess, setHasKidsAccess] = useState(false);
+
+    useEffect(() => {
+        setIsMobileOpen(false);
+    }, [location.pathname]);
 
     // Check if user has access to KIDS module
     useEffect(() => {
@@ -53,6 +58,8 @@ const Layout = () => {
 
     if (!user) return <Outlet />;
 
+    const effectiveCollapsed = isMobileOpen ? false : isCollapsed;
+
     const navItems = [
         { to: '/', icon: House, label: 'Home' },
         ...(hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) ? [{ to: '/metas', icon: Target, label: 'Metas' }] : []),
@@ -70,12 +77,18 @@ const Layout = () => {
 
     return (
         <div className="flex min-h-[100dvh] bg-[var(--ln-bg-marketing)] text-[var(--ln-text-primary)] antialiased transition-colors">
+            {isMobileOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-[190] md:hidden"
+                    onClick={() => setIsMobileOpen(false)}
+                />
+            )}
             <aside
-                className={`${isCollapsed ? 'w-[72px]' : 'w-64'} bg-[var(--ln-bg-panel)] border-r border-[var(--ln-border-standard)] flex flex-col transition-all duration-300 ease-in-out relative z-[100]`}
+                className={`${isCollapsed ? 'w-[72px]' : 'w-64'} bg-[var(--ln-bg-panel)] border-r border-[var(--ln-border-standard)] flex flex-col transition-all duration-300 ease-in-out relative z-[100] max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-[200] max-md:w-64 ${isMobileOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'}`}
             >
-                <div className={`${isCollapsed ? 'p-4' : 'px-5 py-5'} border-b border-[var(--ln-border-standard)] flex items-center justify-between overflow-hidden bg-white/[0.02]`}>
+                <div className={`${effectiveCollapsed ? 'p-4' : 'px-5 py-5'} border-b border-[var(--ln-border-standard)] flex items-center justify-between overflow-hidden bg-white/[0.02]`}>
                     <div className="flex items-center space-x-3.5 min-w-0">
-                        <div className={`relative ${isCollapsed ? 'w-10 h-10' : 'w-11 h-11'} transition-all duration-300 flex-shrink-0`}>
+                        <div className={`relative ${effectiveCollapsed ? 'w-10 h-10' : 'w-11 h-11'} transition-all duration-300 flex-shrink-0`}>
                             <div className="relative w-full h-full rounded-xl overflow-hidden border border-[var(--ln-border-standard)] bg-white/5">
                                 <img
                                     src={logo}
@@ -85,7 +98,7 @@ const Layout = () => {
                             </div>
                         </div>
 
-                        {!isCollapsed && (
+                        {!effectiveCollapsed && (
                             <div className="min-w-0">
                                 <p className="text-[14px] weight-590 text-[var(--ln-text-primary)] truncate leading-tight">
                                     {user.fullName}
@@ -100,7 +113,7 @@ const Layout = () => {
 
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="absolute -right-3.5 top-[76px] bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] rounded-full p-1.5 shadow-xl hover:shadow-2xl transition-all z-[110] text-[var(--ln-text-tertiary)] hover:text-[var(--ln-accent-violet)] flex items-center justify-center group"
+                    className="absolute -right-3.5 top-[76px] bg-[var(--ln-bg-surface)] border border-[var(--ln-border-standard)] rounded-full p-1.5 shadow-xl hover:shadow-2xl transition-all z-[110] text-[var(--ln-text-tertiary)] hover:text-[var(--ln-accent-violet)] flex items-center justify-center group max-md:hidden"
                     title={isCollapsed ? "Expandir" : "Colapsar"}
                 >
                     <div className="group-hover:scale-110 transition-transform">
@@ -116,7 +129,7 @@ const Layout = () => {
                             icon={item.icon}
                             label={item.label}
                             active={location.pathname === item.to}
-                            isCollapsed={isCollapsed}
+                            isCollapsed={effectiveCollapsed}
                         />
                     ))}
                 </nav>
@@ -124,20 +137,29 @@ const Layout = () => {
                 <div className="p-3 border-t border-[var(--ln-border-standard)] bg-black/[0.02]">
                     <button
                         onClick={logout}
-                        className={`flex items-center ${isCollapsed ? 'justify-center px-0 py-3' : 'space-x-3 px-3 py-2.5'} w-full rounded-lg text-red-500 hover:bg-red-500/10 transition-all group`}
-                        title={isCollapsed ? "Cerrar Sesion" : ""}
+                        className={`flex items-center ${effectiveCollapsed ? 'justify-center px-0 py-3' : 'space-x-3 px-3 py-2.5'} w-full rounded-lg text-red-500 hover:bg-red-500/10 transition-all group`}
+                        title={effectiveCollapsed ? "Cerrar Sesion" : ""}
                     >
                         <SignOut size={22} weight="regular" className="group-hover:scale-110 transition-transform" />
-                        {!isCollapsed && <span className="text-[14px] weight-510">Cerrar Sesion</span>}
+                        {!effectiveCollapsed && <span className="text-[14px] weight-510">Cerrar Sesion</span>}
                     </button>
                 </div>
             </aside>
 
-            <main className="flex-1 overflow-auto bg-[var(--ln-bg-marketing)] flex flex-col relative">
-                <header className="bg-white/[0.8] dark:bg-[var(--ln-bg-panel)]/80 backdrop-blur-md border-b border-[var(--ln-border-standard)] px-8 h-[73px] flex items-center justify-between sticky top-0 z-[90]">
-                    <h2 className="text-[15px] weight-510 text-[var(--ln-text-secondary)] tracking-tight">
-                        {navItems.find(item => location.pathname === item.to)?.label || 'Dashboard'}
-                    </h2>
+            <main className="flex-1 overflow-auto bg-[var(--ln-bg-marketing)] flex flex-col relative max-md:min-w-0">
+                <header className="bg-white/[0.8] dark:bg-[var(--ln-bg-panel)]/80 backdrop-blur-md border-b border-[var(--ln-border-standard)] px-4 md:px-8 h-[73px] flex items-center justify-between sticky top-0 z-[90]">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsMobileOpen(!isMobileOpen)}
+                            className="md:hidden p-2 -ml-2 text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] rounded-lg transition-colors"
+                            title="Menú"
+                        >
+                            <List size={20} weight="bold" />
+                        </button>
+                        <h2 className="text-[15px] weight-510 text-[var(--ln-text-secondary)] tracking-tight">
+                            {navItems.find(item => location.pathname === item.to)?.label || 'Dashboard'}
+                        </h2>
+                    </div>
                     <div className="flex items-center gap-4">
                         <PendingTasksPanel />
                         <UserMenu
@@ -146,7 +168,7 @@ const Layout = () => {
                     </div>
                 </header>
 
-                <div className="flex-1 p-8 max-w-[1440px] mx-auto w-full">
+                <div className="flex-1 p-4 md:p-8 max-w-[1440px] mx-auto w-full">
                     <Outlet />
                 </div>
             </main>

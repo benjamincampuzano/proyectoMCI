@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
 import { AsyncSearchSelect, Button } from './ui';
+import Pagination from './ui/Pagination';
 import ConfirmationModal from './ConfirmationModal';
 
 // Fix for default marker icon
@@ -17,69 +18,6 @@ L.Icon.Default.mergeOptions({
     iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
-
-function PaginationBar({ pagination, pageSize, loading, onPageChange }) {
-    if (pagination.pages <= 1) return null;
-
-    const labelText = `Mostrando ${(pagination.page - 1) * pageSize + 1} - ${Math.min(pagination.page * pageSize, pagination.total)} de ${pagination.total} células`;
-
-    return (
-        <div className="flex items-center justify-between px-6 py-4 border-t border-[#d1d1d6] dark:border-[#3a3a3c] bg-[#f5f5f7] dark:bg-gray-900/30">
-            <div className="text-sm text-[#86868b] dark:text-[#98989d]">
-                {labelText}
-            </div>
-            <div className="flex items-center gap-2">
-                <button
-                    onClick={pagination.onPrev}
-                    disabled={!pagination.hasPrev || loading}
-                    className="px-3 py-1.5 text-sm font-medium text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-md hover:bg-[#f5f5f7] dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    Anterior
-                </button>
-
-                <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                        let pageNum;
-                        if (pagination.pages <= 5) {
-                            pageNum = i + 1;
-                        } else if (pagination.page <= 3) {
-                            pageNum = i + 1;
-                        } else if (pagination.page >= pagination.pages - 2) {
-                            pageNum = pagination.pages - 4 + i;
-                        } else {
-                            pageNum = pagination.page - 2 + i;
-                        }
-
-                        const isActive = pagination.page === pageNum;
-
-                        return (
-                            <button
-                                key={pageNum}
-                                onClick={() => onPageChange(pageNum)}
-                                disabled={loading}
-                                className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${
-                                    isActive
-                                        ? 'bg-[#0071e3] text-white shadow-sm'
-                                        : 'text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] hover:bg-[#f5f5f7] dark:hover:bg-gray-700'
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                                {pageNum}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <button
-                    onClick={pagination.onNext}
-                    disabled={!pagination.hasNext || loading}
-                    className="px-3 py-1.5 text-sm font-medium text-[#1d1d1f] dark:text-white/80 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-md hover:bg-[#f5f5f7] dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    Siguiente
-                </button>
-            </div>
-        </div>
-    );
-}
 
 const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasurer }) => {
     const { user, hasAnyRole, isCoordinator } = useAuth();
@@ -1550,14 +1488,15 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
             </div>
 
             {/* Pagination (top) */}
-            {filteredCells.length > PAGE_SIZE && (
-                <PaginationBar
-                    pagination={pagination}
-                    pageSize={PAGE_SIZE}
-                    loading={loading}
-                    onPageChange={setCurrentPage}
-                />
-            )}
+            <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.pages}
+                totalItems={pagination.total}
+                pageSize={PAGE_SIZE}
+                onPageChange={setCurrentPage}
+                loading={loading}
+                itemLabel="células"
+            />
 
             {/* List of Cells (table only) */}
             <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
@@ -1699,14 +1638,15 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
             </div>
 
             {/* Pagination (bottom) */}
-            {filteredCells.length > PAGE_SIZE && (
-                <PaginationBar
-                    pagination={pagination}
-                    pageSize={PAGE_SIZE}
-                    loading={loading}
-                    onPageChange={setCurrentPage}
-                />
-            )}
+            <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.pages}
+                totalItems={pagination.total}
+                pageSize={PAGE_SIZE}
+                onPageChange={setCurrentPage}
+                loading={loading}
+                itemLabel="células"
+            />
 
             {/* Delete Cell Confirmation Modal */}
             <ConfirmationModal

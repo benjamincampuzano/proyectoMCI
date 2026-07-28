@@ -5,6 +5,7 @@ import { saveAs } from 'file-saver';
 import PropTypes from 'prop-types';
 import toast from 'react-hot-toast';
 import { AsyncSearchSelect, Button } from './ui';
+import Pagination from './ui/Pagination';
 import useGuestManagement from '../hooks/useGuestManagement';
 import { useAuth } from '../hooks/useAuth';
 import { DATA_POLICY_URL } from '../constants/policies';
@@ -288,7 +289,7 @@ const GuestList = ({ refreshTrigger }) => {
             {/* Sección de Filtros */}
             <div className="bg-[var(--ln-bg-panel)] border border-[var(--ln-border-subtle)] rounded-xl overflow-hidden mb-6 transition-colors">
                 <div className="flex items-center justify-between p-4 border-b border-[var(--ln-border-subtle)]">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                         <h3 className="text-sm font-[510] text-[var(--ln-text-primary)] tracking-tight">Filtros</h3>
                         {activeAdvancedCount > 0 && (
                             <span className="px-2 py-0.5 rounded-full bg-[var(--ln-brand-indigo)]/15 text-[var(--ln-accent-violet)] text-xs font-[510]">
@@ -329,8 +330,8 @@ const GuestList = ({ refreshTrigger }) => {
                 <div className={`transition-all duration-300 overflow-hidden ${showAdvancedFilters ? 'max-h-[1200px] opacity-100' : 'max-h-0 opacity-0'}`}>
                     <div className="p-4 space-y-4">
                         {/* Fila 1: Búsqueda y Estado */}
-                        <div className="flex flex-wrap gap-4 items-end">
-                            <div className="flex-[2] min-w-[200px]">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-end">
+                            <div className="flex-[2] min-w-[150px] w-full sm:w-auto">
                                 <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Buscar por nombre
                                 </label>
@@ -359,7 +360,7 @@ const GuestList = ({ refreshTrigger }) => {
                                 </div>
                             </div>
 
-                            <div className="flex-1 min-w-[160px]">
+                            <div className="flex-1 min-w-[140px] w-full sm:w-auto">
                                 <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Estado
                                 </label>
@@ -379,7 +380,7 @@ const GuestList = ({ refreshTrigger }) => {
                                 </select>
                             </div>
 
-                            <div className="flex-[2] min-w-[200px]">
+                            <div className="flex-[2] min-w-[150px] w-full sm:w-auto">
                                 <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Invitado por
                                 </label>
@@ -400,8 +401,8 @@ const GuestList = ({ refreshTrigger }) => {
                         </div>
 
                         {/* Fila 2: Fechas y Líder */}
-                        <div className="flex flex-wrap gap-4 items-end">
-                            <div className="flex-1 min-w-[160px]">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-end">
+                            <div className="flex-1 min-w-[140px] w-full sm:w-auto">
                                 <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Fecha desde
                                 </label>
@@ -416,7 +417,7 @@ const GuestList = ({ refreshTrigger }) => {
                                 />
                             </div>
 
-                            <div className="flex-1 min-w-[160px]">
+                            <div className="flex-1 min-w-[140px] w-full sm:w-auto">
                                 <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Fecha hasta
                                 </label>
@@ -432,7 +433,7 @@ const GuestList = ({ refreshTrigger }) => {
                             </div>
 
                             {(!isDoceLeader() || isModuleCoordinator) && (
-                                <div className="flex-[2] min-w-[250px]">
+                                <div className="flex-[2] min-w-[150px] w-full sm:w-auto">
                                     <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                         Líder de 12
                                     </label>
@@ -487,8 +488,8 @@ const GuestList = ({ refreshTrigger }) => {
 
                 {/* Barra de estado */}
                 <div className="px-4 py-3 bg-[var(--ln-btn-ghost)] border-t border-[var(--ln-border-subtle)]">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                             <div className="flex items-center gap-2">
                                 <Users size={16} className="text-[var(--ln-text-tertiary)]" />
                                 <span className="text-sm font-[510] text-[var(--ln-text-secondary)]">
@@ -561,139 +562,235 @@ const GuestList = ({ refreshTrigger }) => {
                 </div>
             </div>
 
-            {/* Tabla de Invitados */}
-            <PaginationBar
-                pagination={pagination}
-                guestsPerPage={guestsPerPage}
-                loading={loading}
-                onPageChange={setCurrentPage}
-            />
+            {/* Tabla de Invitados - Desktop */}
+            <div className="hidden md:block">
+                <Pagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.pages}
+                    totalItems={pagination.total}
+                    pageSize={guestsPerPage}
+                    onPageChange={setCurrentPage}
+                    loading={loading}
+                    itemLabel="invitados"
+                    className="mb-4"
+                />
 
-            <div className="overflow-x-auto">
-                <table className="w-full">
-                    <thead className="bg-[var(--ln-btn-ghost)] border-b border-[var(--ln-border-subtle)]">
-                        <tr>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Fecha Creación</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Registrado Por</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Nombre</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Edad</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Teléfono</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Dirección</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Petición de Oración</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Estado</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Líder Doce</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Invitado Por</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Asignado a</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Célula</th>
-                            <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Encuentro</th>
-                            <th className="px-4 py-3 text-right text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--ln-border-subtle)]">
-                        {loading ? (
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead className="bg-[var(--ln-btn-ghost)] border-b border-[var(--ln-border-subtle)]">
                             <tr>
-                                <td colSpan="14" className="px-4 py-8 text-center text-[var(--ln-text-quaternary)]">
-                                    <SpinnerIcon size={24} className="animate-spin mx-auto text-[var(--ln-brand-indigo)]" />
-                                </td>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Fecha Creación</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Registrado Por</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Nombre</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Edad</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Teléfono</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Dirección</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Petición de Oración</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Estado</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Líder Doce</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Invitado Por</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Asignado a</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Célula</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Encuentro</th>
+                                <th className="px-4 py-3 text-right text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)]">Acciones</th>
                             </tr>
-                        ) : guests.length === 0 ? (
-                            <tr>
-                                <td colSpan="14" className="px-4 py-8 text-center text-[var(--ln-text-quaternary)]">
-                                    No se encontraron invitados
-                                </td>
-                            </tr>
-                        ) : (
-                            guests.map((guest) => (
-                                <tr key={guest.id} className="hover:bg-[var(--ln-btn-ghost)] transition-colors">
-                                    <td className="px-4 py-3">
-                                        <span className="text-[var(--ln-text-secondary)] text-sm">
-                                            {guest.createdAt ? new Date(guest.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
-                                        </span>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--ln-border-subtle)]">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="14" className="px-4 py-8 text-center text-[var(--ln-text-quaternary)]">
+                                        <SpinnerIcon size={24} className="animate-spin mx-auto text-[var(--ln-brand-indigo)]" />
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <p className="text-[var(--ln-text-primary)] text-sm font-[510]">{guest.registeredBy?.fullName || 'N/A'}</p>
+                                </tr>
+                            ) : guests.length === 0 ? (
+                                <tr>
+                                    <td colSpan="14" className="px-4 py-8 text-center text-[var(--ln-text-quaternary)]">
+                                        No se encontraron invitados
                                     </td>
-                                    <td className="px-4 py-3">
+                                </tr>
+                            ) : (
+                                guests.map((guest) => (
+                                    <tr key={guest.id} className="hover:bg-[var(--ln-btn-ghost)] transition-colors">
+                                        <td className="px-4 py-3">
+                                            <span className="text-[var(--ln-text-secondary)] text-sm">
+                                                {guest.createdAt ? new Date(guest.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <p className="text-[var(--ln-text-primary)] text-sm font-[510]">{guest.registeredBy?.fullName || 'N/A'}</p>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <button
+                                                onClick={() => openModal('edit', guest)}
+                                                className="text-[var(--ln-text-primary)] text-sm font-[510] hover:text-[var(--ln-accent-violet)] transition-colors text-left cursor-pointer underline decoration-dotted underline-offset-2 decoration-[var(--ln-border-subtle)] hover:decoration-[var(--ln-accent-violet)]"
+                                                title="Editar invitado"
+                                            >
+                                                {guest.name}
+                                            </button>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="text-[var(--ln-text-secondary)] text-sm">
+                                                {calculateAge(guest.birthDate) || 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="text-[var(--ln-text-secondary)] text-sm">{guest.phone}</span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="text-[var(--ln-text-secondary)] text-sm">{guest.address || 'N/A'}</span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="text-[var(--ln-text-secondary)] text-sm max-w-[150px] block truncate" title={guest.prayerRequest || ''}>
+                                                {guest.prayerRequest || 'N/A'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-[510] ${getStatusBadgeColor(guest.status)}`}>
+                                                {getStatusLabel(guest.status)}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {(guest.assignedTo?.liderDoce || guest.invitedBy?.liderDoce) ? (
+                                                <p className="text-[var(--ln-text-primary)] text-sm">
+                                                    {guest.assignedTo?.liderDoce?.fullName || guest.invitedBy?.liderDoce?.fullName}
+                                                </p>
+                                            ) : (
+                                                <span className="text-[var(--ln-text-quaternary)] text-sm">N/A</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <p className="text-[var(--ln-text-primary)] text-sm">
+                                                {guest.invitedBy?.fullName || (guest.invitedBy?.liderDoce ? `Invitado por: ${guest.invitedBy.liderDoce.fullName}` : 'N/A')}
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <p className="text-[var(--ln-text-primary)] text-sm">
+                                                {guest.assignedTo?.fullName || (guest.assignedTo?.liderDoce ? `Asignado por: ${guest.assignedTo.liderDoce.fullName}` : 'Pendiente')}
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {guest.cell ? (
+                                                <div>
+                                                    <p className="text-[var(--ln-text-primary)] text-sm font-[510]">{guest.cell.name}</p>
+                                                    <p className="text-[var(--ln-text-tertiary)] text-xs">
+                                                        Líder: {guest.cell.leader?.fullName || 'N/A'}
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <span className="text-[var(--ln-text-quaternary)] text-sm">No asignado</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {guest.encuentroRegistrations && guest.encuentroRegistrations.length > 0 ? (
+                                                <div>
+                                                    {guest.encuentroRegistrations.map((reg) => (
+                                                        <div key={reg.id} className="text-sm">
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-[510] bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-accent-violet)] border border-[var(--ln-brand-indigo)]/20">
+                                                                {reg.encuentro?.type || 'Encuentro'}
+                                                            </span>
+                                                            <p className="text-[var(--ln-text-tertiary)] text-xs mt-1">
+                                                                {reg.encuentro?.name || 'Sin nombre'}
+                                                            </p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-[var(--ln-text-quaternary)] text-sm">No registrado</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="flex items-center justify-end space-x-1">
+                                                {canModify() && (
+                                                    <button
+                                                        onClick={() => openModal('delete', guest)}
+                                                        className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash size={16} />
+                                                    </button>
+                                                )}
+                                                {!currentUser?.roles?.includes('PASTOR') && (
+                                                    <button
+                                                        onClick={() => openModal('convert', guest)}
+                                                        className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-success)] hover:bg-[var(--ln-emerald)]/10 rounded-md transition-colors"
+                                                        title="Convertir a Discípulo"
+                                                    >
+                                                        <UserCheckIcon size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                <Pagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.pages}
+                    totalItems={pagination.total}
+                    pageSize={guestsPerPage}
+                    onPageChange={setCurrentPage}
+                    loading={loading}
+                    itemLabel="invitados"
+                    className="mt-4"
+                />
+            </div>
+
+            {/* Vista de tarjetas - Móvil */}
+            <div className="md:hidden">
+                <Pagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.pages}
+                    totalItems={pagination.total}
+                    pageSize={guestsPerPage}
+                    onPageChange={setCurrentPage}
+                    loading={loading}
+                    itemLabel="invitados"
+                    className="mb-4"
+                />
+
+                {loading ? (
+                    <div className="flex justify-center py-8">
+                        <SpinnerIcon size={24} className="animate-spin text-[var(--ln-brand-indigo)]" />
+                    </div>
+                ) : guests.length === 0 ? (
+                    <div className="py-8 text-center text-[var(--ln-text-quaternary)] text-sm">
+                        No se encontraron invitados
+                    </div>
+                ) : (
+                    <>
+                        <div className="divide-y divide-[var(--ln-border-subtle)]">
+                            {guests.map((guest) => (
+                                <div key={guest.id} className="p-4 hover:bg-[var(--ln-btn-ghost)] transition-colors">
+                                    <div className="flex items-start justify-between gap-2 mb-2">
                                         <button
                                             onClick={() => openModal('edit', guest)}
-                                            className="text-[var(--ln-text-primary)] text-sm font-[510] hover:text-[var(--ln-accent-violet)] transition-colors text-left cursor-pointer underline decoration-dotted underline-offset-2 decoration-[var(--ln-border-subtle)] hover:decoration-[var(--ln-accent-violet)]"
-                                            title="Editar invitado"
+                                            className="text-sm font-[510] text-[var(--ln-text-primary)] underline decoration-dotted underline-offset-2 decoration-[var(--ln-border-subtle)] hover:decoration-[var(--ln-accent-violet)] hover:text-[var(--ln-accent-violet)] transition-colors text-left"
                                         >
                                             {guest.name}
                                         </button>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <span className="text-[var(--ln-text-secondary)] text-sm">
-                                            {calculateAge(guest.birthDate) || 'N/A'}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <span className="text-[var(--ln-text-secondary)] text-sm">{guest.phone}</span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <span className="text-[var(--ln-text-secondary)] text-sm">{guest.address || 'N/A'}</span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <span className="text-[var(--ln-text-secondary)] text-sm max-w-[150px] block truncate" title={guest.prayerRequest || ''}>
-                                            {guest.prayerRequest || 'N/A'}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-[510] ${getStatusBadgeColor(guest.status)}`}>
+                                        <span className={`shrink-0 px-2 py-0.5 rounded-md text-xs font-[510] ${getStatusBadgeColor(guest.status)}`}>
                                             {getStatusLabel(guest.status)}
                                         </span>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {(guest.assignedTo?.liderDoce || guest.invitedBy?.liderDoce) ? (
-                                            <p className="text-[var(--ln-text-primary)] text-sm">
-                                                {guest.assignedTo?.liderDoce?.fullName || guest.invitedBy?.liderDoce?.fullName}
-                                            </p>
-                                        ) : (
-                                            <span className="text-[var(--ln-text-quaternary)] text-sm">N/A</span>
+                                    </div>
+                                    <div className="text-xs text-[var(--ln-text-tertiary)] space-y-0.5">
+                                        {guest.createdAt && (
+                                            <p>{new Date(guest.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
                                         )}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <p className="text-[var(--ln-text-primary)] text-sm">
-                                            {guest.invitedBy?.fullName || (guest.invitedBy?.liderDoce ? `Invitado por: ${guest.invitedBy.liderDoce.fullName}` : 'N/A')}
-                                        </p>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <p className="text-[var(--ln-text-primary)] text-sm">
-                                            {guest.assignedTo?.fullName || (guest.assignedTo?.liderDoce ? `Asignado por: ${guest.assignedTo.liderDoce.fullName}` : 'Pendiente')}
-                                        </p>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {guest.cell ? (
-                                            <div>
-                                                <p className="text-[var(--ln-text-primary)] text-sm font-[510]">{guest.cell.name}</p>
-                                                <p className="text-[var(--ln-text-tertiary)] text-xs">
-                                                    Líder: {guest.cell.leader?.fullName || 'N/A'}
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <span className="text-[var(--ln-text-quaternary)] text-sm">No asignado</span>
+                                        {guest.phone && <p>Tel: {guest.phone}</p>}
+                                        {guest.invitedBy?.fullName && <p>Invitó: {guest.invitedBy.fullName}</p>}
+                                        {guest.assignedTo?.fullName && (
+                                            <p>Asignado: {guest.assignedTo.fullName}</p>
                                         )}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {guest.encuentroRegistrations && guest.encuentroRegistrations.length > 0 ? (
-                                            <div>
-                                                {guest.encuentroRegistrations.map((reg) => (
-                                                    <div key={reg.id} className="text-sm">
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-[510] bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-accent-violet)] border border-[var(--ln-brand-indigo)]/20">
-                                                            {reg.encuentro?.type || 'Encuentro'}
-                                                        </span>
-                                                        <p className="text-[var(--ln-text-tertiary)] text-xs mt-1">
-                                                            {reg.encuentro?.name || 'Sin nombre'}
-                                                        </p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <span className="text-[var(--ln-text-quaternary)] text-sm">No registrado</span>
+                                        {guest.prayerRequest && (
+                                            <p className="italic truncate" title={guest.prayerRequest}>Oración: {guest.prayerRequest}</p>
                                         )}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center justify-end space-x-1">
+                                    </div>
+                                    {(canModify() || !currentUser?.roles?.includes('PASTOR')) && (
+                                        <div className="flex items-center gap-2 mt-3 pt-2 border-t border-[var(--ln-border-subtle)]">
                                             {canModify() && (
                                                 <button
                                                     onClick={() => openModal('delete', guest)}
@@ -713,21 +810,23 @@ const GuestList = ({ refreshTrigger }) => {
                                                 </button>
                                             )}
                                         </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <Pagination
+                            currentPage={pagination.page}
+                            totalPages={pagination.pages}
+                            totalItems={pagination.total}
+                            pageSize={guestsPerPage}
+                            onPageChange={setCurrentPage}
+                            loading={loading}
+                            itemLabel="invitados"
+                            className="mt-4"
+                        />
+                    </>
+                )}
             </div>
-
-            <PaginationBar
-                pagination={pagination}
-                guestsPerPage={guestsPerPage}
-                loading={loading}
-                onPageChange={setCurrentPage}
-                className="mt-6"
-            />
 
             {/* Modal para convertir a Discípulo */}
             {activeModal?.type === 'convert' && activeModal.guest && (
@@ -870,66 +969,5 @@ function FilterCheckbox({ checked, onChange, activeColor = 'neutral', label }) {
                 {label}
             </span>
         </label>
-    );
-}
-
-function PaginationBar({ pagination, guestsPerPage, loading, onPageChange, className = '' }) {
-    if (pagination.pages <= 1) return null;
-
-    return (
-        <div className={`flex items-center justify-between bg-[var(--ln-bg-panel)] px-4 py-3 border border-[var(--ln-border-subtle)] rounded-md ${className}`}>
-            <div className="text-sm text-[var(--ln-text-secondary)]">
-                Mostrando {(pagination.page - 1) * guestsPerPage + 1} - {Math.min(pagination.page * guestsPerPage, pagination.total)} de {pagination.total} invitados
-            </div>
-            <div className="flex items-center gap-2">
-                <button
-                    onClick={pagination.onPrev}
-                    disabled={!pagination.hasPrev || loading}
-                    className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                    Anterior
-                </button>
-
-                <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                        let pageNum;
-                        if (pagination.pages <= 5) {
-                            pageNum = i + 1;
-                        } else if (pagination.page <= 3) {
-                            pageNum = i + 1;
-                        } else if (pagination.page >= pagination.pages - 2) {
-                            pageNum = pagination.pages - 4 + i;
-                        } else {
-                            pageNum = pagination.page - 2 + i;
-                        }
-
-                        const isActive = pagination.page === pageNum;
-
-                        return (
-                            <button
-                                key={pageNum}
-                                onClick={() => onPageChange(pageNum)}
-                                disabled={loading}
-                                className={`min-w-[32px] h-8 px-2 text-sm font-[510] rounded-md transition-colors ${
-                                    isActive
-                                        ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
-                                        : 'text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] hover:bg-[var(--ln-btn-subtle)]'
-                                } disabled:opacity-40 disabled:cursor-not-allowed`}
-                            >
-                                {pageNum}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <button
-                    onClick={pagination.onNext}
-                    disabled={!pagination.hasNext || loading}
-                    className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                    Siguiente
-                </button>
-            </div>
-        </div>
     );
 }

@@ -3,6 +3,7 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { MagnifyingGlass, Camera, X, Upload, Link, Download } from '@phosphor-icons/react';
 import { Button, Input, AsyncSearchSelect } from '../ui';
+import Pagination from '../ui/Pagination';
 import Modal from '../ui/Modal';
 import toast from 'react-hot-toast';
 import ExcelJS from 'exceljs';
@@ -473,10 +474,14 @@ const KidsStudentMatrix = () => {
             </div>
 
             {/* Paginación (superior) */}
-            <PaginationBar
-                pagination={pagination}
-                studentsPerPage={PAGE_SIZE}
+            <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.pages}
+                totalItems={pagination.total}
+                pageSize={PAGE_SIZE}
                 onPageChange={setCurrentPage}
+                loading={loading}
+                itemLabel="estudiantes"
             />
 
             <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
@@ -622,10 +627,14 @@ const KidsStudentMatrix = () => {
             </div>
 
             {/* Paginación */}
-            <PaginationBar
-                pagination={pagination}
-                studentsPerPage={PAGE_SIZE}
+            <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.pages}
+                totalItems={pagination.total}
+                pageSize={PAGE_SIZE}
                 onPageChange={setCurrentPage}
+                loading={loading}
+                itemLabel="estudiantes"
             />
 
             {/* Modal para subir evidencias de clase */}
@@ -890,64 +899,3 @@ const KidsStudentMatrix = () => {
 };
 
 export default KidsStudentMatrix;
-
-function PaginationBar({ pagination, studentsPerPage, loading = false, onPageChange, className = '' }) {
-    if (pagination.pages <= 1) return null;
-
-    return (
-        <div className={`flex items-center justify-between bg-white dark:bg-[#272729] px-4 py-3 border border-gray-200 dark:border-[#3a3a3c] rounded-lg shadow-sm ${className}`}>
-            <div className="text-sm text-[#86868b] dark:text-[#98989d]">
-                Mostrando {(pagination.page - 1) * studentsPerPage + 1} - {Math.min(pagination.page * studentsPerPage, pagination.total)} de {pagination.total} estudiantes
-            </div>
-            <div className="flex items-center gap-2">
-                <button
-                    onClick={pagination.onPrev}
-                    disabled={!pagination.hasPrev || loading}
-                    className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                    Anterior
-                </button>
-
-                <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                        let pageNum;
-                        if (pagination.pages <= 5) {
-                            pageNum = i + 1;
-                        } else if (pagination.page <= 3) {
-                            pageNum = i + 1;
-                        } else if (pagination.page >= pagination.pages - 2) {
-                            pageNum = pagination.pages - 4 + i;
-                        } else {
-                            pageNum = pagination.page - 2 + i;
-                        }
-
-                        const isActive = pagination.page === pageNum;
-
-                        return (
-                            <button
-                                key={pageNum}
-                                onClick={() => onPageChange(pageNum)}
-                                disabled={loading}
-                                className={`min-w-[32px] h-8 px-2 text-sm font-[510] rounded-md transition-colors ${
-                                    isActive
-                                        ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
-                                        : 'text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] hover:bg-[var(--ln-btn-subtle)]'
-                                } disabled:opacity-40 disabled:cursor-not-allowed`}
-                            >
-                                {pageNum}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <button
-                    onClick={pagination.onNext}
-                    disabled={!pagination.hasNext || loading}
-                    className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                    Siguiente
-                </button>
-            </div>
-        </div>
-    );
-}

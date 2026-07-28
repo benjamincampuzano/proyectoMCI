@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Phone, House, User, WhatsappLogoIcon, ChatCircle, ChatCircleDots, WarningCircleIcon, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon, Plus, Trash, Calendar, Funnel, MagnifyingGlass } from '@phosphor-icons/react';
 import AsyncSearchSelect from './ui/AsyncSearchSelect';
+import Pagination from './ui/Pagination';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
@@ -349,12 +350,12 @@ const GuestTracking = ({ refreshTrigger }) => {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-[590] text-[var(--ln-text-primary)] tracking-[-0.288px]">Seguimiento de Invitados</h2>
+        <div className="space-y-4 md:space-y-6">
+            <div className="flex items-start sm:items-center justify-between gap-3">
+                <h2 className="text-xl md:text-2xl font-[590] text-[var(--ln-text-primary)] tracking-[-0.288px]">Seguimiento de Invitados</h2>
                 <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-[510] transition-all ${hasActiveFilters
+                    className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-[510] transition-all shrink-0 ${hasActiveFilters
                         ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
                         : 'bg-[var(--ln-btn-ghost)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] border border-[var(--ln-border-subtle)]'
                         }`}
@@ -372,9 +373,9 @@ const GuestTracking = ({ refreshTrigger }) => {
             {/* Panel de Filtros */}
             {showFilters && (
                 <div className="bg-[var(--ln-bg-panel)] rounded-xl border border-[var(--ln-border-subtle)] p-4 space-y-4">
-                    <div className="flex flex-wrap items-end gap-4">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-end gap-4">
                         {/* Filtro por Fecha - Desde */}
-                        <div className="flex-1 min-w-[200px]">
+                        <div className="flex-1 min-w-[140px] w-full sm:w-auto">
                             <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                 Fecha Desde
                             </label>
@@ -393,7 +394,7 @@ const GuestTracking = ({ refreshTrigger }) => {
                         </div>
 
                         {/* Filtro por Fecha - Hasta */}
-                        <div className="flex-1 min-w-[200px]">
+                        <div className="flex-1 min-w-[140px] w-full sm:w-auto">
                             <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                 Fecha Hasta
                             </label>
@@ -413,7 +414,7 @@ const GuestTracking = ({ refreshTrigger }) => {
 
                         {/* Filtro por Líder de 12 - solo visible para admin/coordinadores/pastores */}
                         {(!isDoceLeader() || isModuleCoordinator) && (
-                            <div className="flex-[2] min-w-[250px]">
+                            <div className="flex-[2] min-w-[150px] w-full sm:w-auto">
                                 <label className="block text-[11px] font-[510] uppercase tracking-wider text-[var(--ln-text-tertiary)] mb-1.5">
                                     Líder de 12
                                 </label>
@@ -436,7 +437,7 @@ const GuestTracking = ({ refreshTrigger }) => {
                         )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[var(--ln-border-subtle)]">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-4 pt-2 border-t border-[var(--ln-border-subtle)]">
                         {/* Checkbox - Pendientes por llamadas */}
                         <label className="flex items-center gap-2 cursor-pointer group">
                             <div className={`relative flex items-center justify-center w-4 h-4 rounded border transition-all ${pendingCalls
@@ -541,64 +542,20 @@ const GuestTracking = ({ refreshTrigger }) => {
                 </div>
             )}
 
+            {/* Pagination - Top */}
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalGuests}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                loading={loading}
+                itemLabel="invitados"
+            />
+
             <div className="bg-[var(--ln-bg-panel)] rounded-xl border border-[var(--ln-border-subtle)] overflow-hidden">
-                {/* Pagination Controls - Top */}
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between bg-[var(--ln-bg-panel)] px-4 sm:px-6 py-3 border-b border-[var(--ln-border-subtle)]">
-                        <div className="text-sm text-[var(--ln-text-secondary)]">
-                            Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalGuests)} de {totalGuests} invitados
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1 || loading}
-                                className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Anterior
-                            </button>
-
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                    let pageNum;
-                                    if (totalPages <= 5) {
-                                        pageNum = i + 1;
-                                    } else if (currentPage <= 3) {
-                                        pageNum = i + 1;
-                                    } else if (currentPage >= totalPages - 2) {
-                                        pageNum = totalPages - 4 + i;
-                                    } else {
-                                        pageNum = currentPage - 2 + i;
-                                    }
-
-                                    const isActive = currentPage === pageNum;
-
-                                    return (
-                                        <button
-                                            key={pageNum}
-                                            onClick={() => setCurrentPage(pageNum)}
-                                            disabled={loading}
-                                            className={`min-w-[32px] h-8 px-2 text-sm font-[510] rounded-md transition-colors ${isActive
-                                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
-                                                : 'text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] hover:bg-[var(--ln-btn-subtle)]'
-                                                } disabled:opacity-40 disabled:cursor-not-allowed`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages || loading}
-                                className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Siguiente
-                            </button>
-                        </div>
-                    </div>
-                )}
-                <div className="overflow-x-auto">
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="min-w-full">
                         <thead className="bg-[var(--ln-btn-ghost)] border-b border-[var(--ln-border-subtle)]">
                             <tr>
@@ -781,64 +738,115 @@ const GuestTracking = ({ refreshTrigger }) => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-[var(--ln-border-subtle)]">
+                    {guests.map((guest) => {
+                        const alerts = getAlerts(guest);
+                        const callCount = guest.calls?.length || 0;
+                        const visitCount = guest.visits?.length || 0;
+                        return (
+                            <div key={guest.id} className="p-4 hover:bg-[var(--ln-btn-ghost)] transition-colors">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                    <span className="text-sm font-[510] text-[var(--ln-text-primary)]">{guest.name}</span>
+                                    <span className={`shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-[510] ${guest.status === 'GANADO'
+                                        ? 'bg-[var(--ln-emerald)]/15 text-[var(--ln-success)] border border-[var(--ln-emerald)]/30'
+                                        : 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-secondary)] border border-[var(--ln-border-subtle)]'
+                                    }`}>
+                                        {guest.status === 'GANADO' ? 'Consolidado' :
+                                            guest.status === 'CONSOLIDADO' ? 'Visitado' :
+                                                guest.status === 'CONTACTADO' ? 'Llamado' :
+                                                    guest.status}
+                                    </span>
+                                </div>
+                                {alerts.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                        {alerts.map((alert, idx) => (
+                                            <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-[510] bg-red-500/10 text-red-500 border border-red-500/20">
+                                                <WarningCircleIcon className="w-3 h-3 mr-0.5" />
+                                                {alert.message}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="text-xs text-[var(--ln-text-tertiary)] space-y-0.5 mb-2">
+                                    <div className="flex items-center gap-1.5">
+                                        <Phone className="w-3 h-3 shrink-0" />
+                                        <span>{guest.phone}</span>
+                                        {(isAdmin() || hasRole('PASTOR') || isModuleCoordinator || hasRole('LIDER_DOCE')) && guest.phone && (
+                                            <button
+                                                onClick={() => handleOpenModal(guest, 'whatsapp')}
+                                                className="text-[var(--ln-success)] hover:underline"
+                                            >
+                                                WhatsApp
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <House className="w-3 h-3 shrink-0" />
+                                        <span className="truncate">{guest.address || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <User className="w-3 h-3 shrink-0" />
+                                        <span>Invitó: {guest.invitedBy?.fullName}</span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--ln-border-subtle)]">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1">
+                                            <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-[510] ${callCount > 0 ? 'bg-[var(--ln-emerald)]/15 text-[var(--ln-success)]' : 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-quaternary)]'}`}>
+                                                {callCount}
+                                            </span>
+                                            <button
+                                                onClick={() => handleOpenModal(guest, 'call')}
+                                                className="p-0.5 hover:bg-[var(--ln-btn-subtle)] rounded text-[var(--ln-text-tertiary)] hover:text-[var(--ln-accent-violet)] transition-colors"
+                                                title="Agregar llamada"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-[510] ${visitCount > 0 ? 'bg-[var(--ln-brand-indigo)]/15 text-[var(--ln-accent-violet)]' : 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-quaternary)]'}`}>
+                                                {visitCount}
+                                            </span>
+                                            <button
+                                                onClick={() => handleOpenModal(guest, 'visit')}
+                                                className="p-0.5 hover:bg-[var(--ln-btn-subtle)] rounded text-[var(--ln-text-tertiary)] hover:text-[var(--ln-accent-violet)] transition-colors"
+                                                title="Agregar visita"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleOpenModal(guest, 'history')}
+                                        className="p-1.5 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-[var(--ln-btn-subtle)] rounded-md transition-colors"
+                                        title="Ver historial"
+                                    >
+                                        <ClockCounterClockwiseIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                    {guests.length === 0 && !loading && (
+                        <div className="p-8 text-center text-[var(--ln-text-quaternary)] text-sm">
+                            No se encontraron invitados
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between bg-[var(--ln-bg-panel)] px-4 sm:px-6 py-4 border-t border-[var(--ln-border-subtle)] rounded-b-xl">
-                    <div className="text-sm text-[var(--ln-text-secondary)]">
-                        Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalGuests)} de {totalGuests} invitados
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1 || loading}
-                            className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Anterior
-                        </button>
-
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                let pageNum;
-                                if (totalPages <= 5) {
-                                    pageNum = i + 1;
-                                } else if (currentPage <= 3) {
-                                    pageNum = i + 1;
-                                } else if (currentPage >= totalPages - 2) {
-                                    pageNum = totalPages - 4 + i;
-                                } else {
-                                    pageNum = currentPage - 2 + i;
-                                }
-
-                                const isActive = currentPage === pageNum;
-
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        disabled={loading}
-                                        className={`min-w-[32px] h-8 px-2 text-sm font-[510] rounded-md transition-colors ${isActive
-                                            ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
-                                            : 'text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] hover:bg-[var(--ln-btn-subtle)]'
-                                            } disabled:opacity-40 disabled:cursor-not-allowed`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages || loading}
-                            className="px-3 py-1.5 text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Pagination - Bottom */}
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalGuests}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                loading={loading}
+                itemLabel="invitados"
+            />
 
             {/* Add Action Modal (Call or Visit) */}
             {(modalType === 'call' || modalType === 'visit') && (

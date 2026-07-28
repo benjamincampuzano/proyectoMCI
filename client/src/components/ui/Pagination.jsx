@@ -1,365 +1,136 @@
-import React, { useState, useCallback } from 'react';
-import { CaretLeft, CaretRight, DotsThree } from '@phosphor-icons/react';
-import Typography from './Typography';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import PropTypes from 'prop-types';
 
 /**
- * Pagination Component - Estilo Linear completo
- * Standalone pagination con múltiples variantes y responsive design
+ * Pagination - Componente reutilizable responsive
+ *
+ * Props:
+ *   currentPage  - Página actual (1-based)
+ *   totalPages   - Total de páginas
+ *   totalItems   - Total de items
+ *   pageSize     - Items por página
+ *   onPageChange - Callback (pageNum) => void
+ *   loading      - Deshabilitar interacción
+ *   disabled     - Deshabilitar sin spinner
+ *   itemLabel    - Texto descriptivo ("invitados", "células", etc.)
+ *   variant      - 'default' (panel con borde) | 'inline' (sin borde/fondo)
+ *   className    - Clases extra al contenedor externo
  */
-
-const Pagination = ({ 
-  currentPage = 1, 
-  totalPages = 1, 
-  onPageChange, 
-  showFirstLast = true, 
-  showPrevNext = true, 
-  showJump = false, 
-  maxVisiblePages = 5, 
-  variant = 'default', 
-  size = 'default', 
-  disabled = false, 
-  className = '', 
-  ...props 
+const Pagination = ({
+    currentPage = 1,
+    totalPages = 1,
+    totalItems = 0,
+    pageSize = 10,
+    onPageChange,
+    loading = false,
+    disabled = false,
+    itemLabel = 'registros',
+    variant = 'default',
+    className = '',
 }) => {
-  const [jumpPage, setJumpPage] = useState('');
+    if (totalPages <= 1) return null;
 
-  // Calcular páginas visibles
-  const getVisiblePages = useCallback(() => {
-    if (totalPages <= maxVisiblePages) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
+    const isDisabled = disabled || loading;
+    const start = (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalItems);
 
-    const half = Math.floor(maxVisiblePages / 2);
-    let start = Math.max(1, currentPage - half);
-    let end = Math.min(totalPages, start + maxVisiblePages - 1);
+    const getVisiblePages = () => {
+        const max = 5;
+        if (totalPages <= max) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
+        if (currentPage <= 3) {
+            return [1, 2, 3, 4, 5];
+        }
+        if (currentPage >= totalPages - 2) {
+            return Array.from({ length: 5 }, (_, i) => totalPages - 4 + i);
+        }
+        return Array.from({ length: 5 }, (_, i) => currentPage - 2 + i);
+    };
 
-    // Ajustar si estamos cerca del final
-    if (end - start + 1 < maxVisiblePages) {
-      start = Math.max(1, end - maxVisiblePages + 1);
-    }
+    const visiblePages = getVisiblePages();
 
-    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-  }, [currentPage, totalPages, maxVisiblePages]);
+    const handlePrev = () => {
+        if (!isDisabled && currentPage > 1) onPageChange(currentPage - 1);
+    };
 
-  const visiblePages = getVisiblePages();
+    const handleNext = () => {
+        if (!isDisabled && currentPage < totalPages) onPageChange(currentPage + 1);
+    };
 
-  // Manejar cambio de página
-  const handlePageChange = useCallback((page) => {
-    if (disabled || page < 1 || page > totalPages || page === currentPage) {
-      return;
-    }
-    onPageChange?.(page);
-  }, [disabled, totalPages, currentPage, onPageChange]);
+    const handlePage = (page) => {
+        if (!isDisabled && page !== currentPage) onPageChange(page);
+    };
 
-  // Manejar jump a página
-  const handleJump = useCallback(() => {
-    const page = parseInt(jumpPage);
-    if (!isNaN(page) && page >= 1 && page <= totalPages) {
-      handlePageChange(page);
-      setJumpPage('');
-    }
-  }, [jumpPage, totalPages, handlePageChange]);
+    const containerClasses = variant === 'default'
+        ? `flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[var(--ln-bg-panel)] px-3 sm:px-4 py-3 border border-[var(--ln-border-subtle)] rounded-xl ${className}`
+        : `flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${className}`;
 
-  const variantClasses = {
-    default: {
-      container: 'flex items-center gap-1',
-      button: 'px-3 py-2 text-[13px] font-[510] rounded-md transition-all duration-200',
-      active: 'bg-[var(--ln-accent-violet)] text-white border-[var(--ln-accent-violet)]',
-      inactive: 'bg-[rgba(255,255,255,0.02)] text-[var(--ln-text-secondary)] border border-[rgba(255,255,255,0.08)] hover:text-[var(--ln-text-primary)] hover:border-[rgba(255,255,255,0.12)]',
-      disabled: 'opacity-40 cursor-not-allowed'
-    },
-    pills: {
-      container: 'flex items-center gap-2',
-      button: 'px-4 py-2 text-[13px] font-[510] rounded-full transition-all duration-200',
-      active: 'bg-[var(--ln-accent-violet)] text-white',
-      inactive: 'bg-[rgba(255,255,255,0.05)] text-[var(--ln-text-secondary)] hover:bg-[rgba(255,255,255,0.08)] hover:text-[var(--ln-text-primary)]',
-      disabled: 'opacity-40 cursor-not-allowed'
-    },
-    minimal: {
-      container: 'flex items-center gap-1',
-      button: 'px-2 py-1 text-[12px] font-[510] rounded-sm transition-all duration-200',
-      active: 'text-[var(--ln-accent-violet)] border-b-2 border-[var(--ln-accent-violet)]',
-      inactive: 'text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)]',
-      disabled: 'opacity-40 cursor-not-allowed'
-    }
-  };
+    const navBtnClass = `flex items-center justify-center min-w-[28px] sm:min-w-[32px] h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm font-[510] text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] rounded-md hover:bg-[var(--ln-btn-subtle)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors`;
 
-  const sizeClasses = {
-    sm: {
-      button: 'px-2 py-1 text-[11px]',
-      icon: 'w-3 h-3'
-    },
-    default: {
-      button: 'px-3 py-2 text-[13px]',
-      icon: 'w-4 h-4'
-    },
-    lg: {
-      button: 'px-4 py-2.5 text-[14px]',
-      icon: 'w-5 h-5'
-    }
-  };
-
-  const currentVariant = variantClasses[variant];
-  const currentSize = sizeClasses[size];
-
-  // Renderizar botón de página
-  const renderPageButton = (page, isEllipsis = false) => {
-    if (isEllipsis) {
-      return (
-        <div className={`px-2 py-2 ${currentSize.button} ${currentVariant.disabled}`}>
-          <DotsThree className={`${currentSize.icon} text-[var(--ln-text-quaternary)]`} />
-        </div>
-      );
-    }
-
-    const isActive = page === currentPage;
-    const buttonClasses = `
-      ${currentVariant.button} 
-      ${currentSize.button}
-      ${isActive ? currentVariant.active : currentVariant.inactive}
-      ${disabled ? currentVariant.disabled : 'cursor-pointer'}
-    `;
+    const pageBtnClass = (isActive) =>
+        `min-w-[28px] sm:min-w-[32px] h-7 sm:h-8 px-1.5 sm:px-2 text-xs sm:text-sm font-[510] rounded-md transition-colors ${
+            isActive
+                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-[rgba(94,106,210,0.3)_0px_4px_12px]'
+                : 'text-[var(--ln-text-secondary)] bg-[var(--ln-btn-ghost)] border border-[var(--ln-border-subtle)] hover:bg-[var(--ln-btn-subtle)]'
+        } disabled:opacity-40 disabled:cursor-not-allowed`;
 
     return (
-      <button
-        type="button"
-        onClick={() => handlePageChange(page)}
-        disabled={disabled}
-        className={buttonClasses}
-        aria-label={`Go to page ${page}`}
-        aria-current={isActive ? 'page' : undefined}
-      >
-        {page}
-      </button>
-    );
-  };
+        <div className={containerClasses}>
+            <div className="text-xs sm:text-sm text-[var(--ln-text-secondary)] text-center sm:text-left">
+                {start}-{end} de {totalItems} {itemLabel}
+            </div>
 
-  // Renderizar botones de navegación
-  const renderNavButton = (direction, onClick, isDisabled) => {
-    const icon = direction === 'prev' ? 
-      <CaretLeft className={currentSize.icon} /> : 
-      <CaretRight className={currentSize.icon} />;
+            <div className="flex items-center justify-center gap-1 sm:gap-2">
+                <button
+                    type="button"
+                    onClick={handlePrev}
+                    disabled={isDisabled || currentPage === 1}
+                    className={navBtnClass}
+                >
+                    <CaretLeft size={14} weight="bold" className="sm:hidden" />
+                    <span className="hidden sm:inline">Anterior</span>
+                </button>
 
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled || isDisabled}
-        className={`
-          ${currentVariant.button} 
-          ${currentSize.button}
-          ${isDisabled ? currentVariant.disabled : currentVariant.inactive}
-          ${disabled || isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}
-        `}
-        aria-label={`Go to ${direction} page`}
-      >
-        {icon}
-      </button>
-    );
-  };
+                <div className="flex items-center gap-0.5 sm:gap-1">
+                    {visiblePages.map((page) => (
+                        <button
+                            key={page}
+                            type="button"
+                            onClick={() => handlePage(page)}
+                            disabled={isDisabled}
+                            className={pageBtnClass(currentPage === page)}
+                        >
+                            {page}
+                        </button>
+                    ))}
+                </div>
 
-  // Generar array con elipsis
-  const getPagesWithEllipsis = () => {
-    if (visiblePages.length <= maxVisiblePages) {
-      return visiblePages;
-    }
-
-    const pages = [];
-    const firstPage = visiblePages[0];
-    const lastPage = visiblePages[visiblePages.length - 1];
-
-    // Agregar primera página
-    if (firstPage > 1) {
-      pages.push(1);
-      if (firstPage > 2) {
-        pages.push('ellipsis');
-      }
-    }
-
-    // Agregar páginas visibles
-    pages.push(...visiblePages);
-
-    // Agregar última página
-    if (lastPage < totalPages) {
-      if (lastPage < totalPages - 1) {
-        pages.push('ellipsis');
-      }
-      pages.push(totalPages);
-    }
-
-    return pages;
-  };
-
-  const pagesWithEllipsis = getPagesWithEllipsis();
-
-  return (
-    <div className={`flex items-center justify-between ${className}`} {...props}>
-      {/* Info */}
-      <div className="flex items-center gap-4">
-        <Typography variant="caption" className="text-[var(--ln-text-tertiary)]">
-          Página {currentPage} de {totalPages}
-        </Typography>
-
-        {/* Jump to page */}
-        {showJump && totalPages > 10 && (
-          <div className="flex items-center gap-2">
-            <Typography variant="caption" className="text-[var(--ln-text-tertiary)]">
-              Ir a:
-            </Typography>
-            <input
-              type="number"
-              min={1}
-              max={totalPages}
-              value={jumpPage}
-              onChange={(e) => setJumpPage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleJump();
-                }
-              }}
-              className="w-16 px-2 py-1 text-[12px] bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded text-[var(--ln-text-primary)] focus:outline-none focus:border-[var(--ln-accent-violet)]"
-              placeholder="1"
-            />
-            <button
-              onClick={handleJump}
-              disabled={disabled || !jumpPage}
-              className="px-2 py-1 text-[11px] font-[510] bg-[rgba(255,255,255,0.05)] text-[var(--ln-text-secondary)] rounded hover:bg-[rgba(255,255,255,0.08)] hover:text-[var(--ln-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Ir
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Pagination Controls */}
-      <div className={`flex items-center gap-1 ${currentVariant.container}`}>
-        {/* First Page */}
-        {showFirstLast && (
-          renderNavButton(
-            'first',
-            () => handlePageChange(1),
-            currentPage === 1 || disabled
-          )
-        )}
-
-        {/* Previous Page */}
-        {showPrevNext && (
-          renderNavButton(
-            'prev',
-            () => handlePageChange(currentPage - 1),
-            currentPage === 1 || disabled
-          )
-        )}
-
-        {/* Page Numbers */}
-        <div className="flex items-center gap-1">
-          {pagesWithEllipsis.map((page, index) => {
-            if (page === 'ellipsis') {
-              return renderPageButton(null, true);
-            }
-            return <React.Fragment key={page}>{renderPageButton(page)}</React.Fragment>;
-          })}
+                <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={isDisabled || currentPage === totalPages}
+                    className={navBtnClass}
+                >
+                    <CaretRight size={14} weight="bold" className="sm:hidden" />
+                    <span className="hidden sm:inline">Siguiente</span>
+                </button>
+            </div>
         </div>
-
-        {/* Next Page */}
-        {showPrevNext && (
-          renderNavButton(
-            'next',
-            () => handlePageChange(currentPage + 1),
-            currentPage === totalPages || disabled
-          )
-        )}
-
-        {/* Last Page */}
-        {showFirstLast && (
-          renderNavButton(
-            'last',
-            () => handlePageChange(totalPages),
-            currentPage === totalPages || disabled
-          )
-        )}
-      </div>
-    </div>
-  );
+    );
 };
 
-// Compact Pagination - Para espacios reducidos
-export const CompactPagination = ({ 
-  currentPage = 1, 
-  totalPages = 1, 
-  onPageChange, 
-  disabled = false, 
-  className = '', 
-  ...props 
-}) => {
-  return (
-    <div className={`flex items-center gap-2 ${className}`} {...props}>
-      <button
-        type="button"
-        onClick={() => onPageChange?.(currentPage - 1)}
-        disabled={disabled || currentPage === 1}
-        className="p-1 text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
-        aria-label="Previous page"
-      >
-        <CaretLeft className="w-4 h-4" />
-      </button>
-
-      <div className="flex items-center gap-1">
-        <Typography variant="caption" className="text-[var(--ln-text-tertiary)] font-[510]">
-          {currentPage}
-        </Typography>
-        <Typography variant="caption" className="text-[var(--ln-text-quaternary)]">
-          /
-        </Typography>
-        <Typography variant="caption" className="text-[var(--ln-text-tertiary)] font-[510]">
-          {totalPages}
-        </Typography>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => onPageChange?.(currentPage + 1)}
-        disabled={disabled || currentPage === totalPages}
-        className="p-1 text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
-        aria-label="Next page"
-      >
-        <CaretRight className="w-4 h-4" />
-      </button>
-    </div>
-  );
-};
-
-// Load More Pagination - Para infinite scroll
-export const LoadMorePagination = ({ 
-  hasNextPage = true, 
-  isLoading = false, 
-  onLoadMore, 
-  disabled = false, 
-  className = '', 
-  ...props 
-}) => {
-  return (
-    <div className={`flex justify-center py-4 ${className}`} {...props}>
-      <button
-        type="button"
-        onClick={onLoadMore}
-        disabled={disabled || isLoading || !hasNextPage}
-        className="px-6 py-2 text-[13px] font-[510] bg-[rgba(255,255,255,0.02)] text-[var(--ln-text-secondary)] border border-[rgba(255,255,255,0.08)] rounded-md hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--ln-text-primary)] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
-      >
-        {isLoading ? (
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-[var(--ln-accent-violet)] border-t-transparent rounded-full animate-spin" />
-            <span>Cargando...</span>
-          </div>
-        ) : hasNextPage ? (
-          'Cargar más'
-        ) : (
-          'No hay más resultados'
-        )}
-      </button>
-    </div>
-  );
+Pagination.propTypes = {
+    currentPage: PropTypes.number.isRequired,
+    totalPages: PropTypes.number.isRequired,
+    totalItems: PropTypes.number,
+    pageSize: PropTypes.number,
+    onPageChange: PropTypes.func.isRequired,
+    loading: PropTypes.bool,
+    disabled: PropTypes.bool,
+    itemLabel: PropTypes.string,
+    variant: PropTypes.oneOf(['default', 'inline']),
+    className: PropTypes.string,
 };
 
 export default Pagination;
-
