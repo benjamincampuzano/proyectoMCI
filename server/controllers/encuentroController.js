@@ -832,7 +832,7 @@ const getPublicEncuentros = async (req, res) => {
 const createPublicEncuentroRegistration = async (req, res) => {
     try {
         const { encuentroId } = req.params;
-        const { fullName, phone, sex, needsTransport, needsAccommodation } = req.body;
+        const { fullName, phone, sex, needsTransport, needsAccommodation, liderDoceId } = req.body;
 
         const encuentro = await prisma.encuentro.findUnique({
             where: { id: parseInt(encuentroId) },
@@ -927,7 +927,8 @@ const createPublicEncuentroRegistration = async (req, res) => {
                 guestId: guest.id,
                 status: 'PENDING',
                 needsTransport: Boolean(needsTransport),
-                needsAccommodation: Boolean(needsAccommodation)
+                needsAccommodation: Boolean(needsAccommodation),
+                liderDoceId: liderDoceId ? parseInt(liderDoceId) : null
             }
         });
 

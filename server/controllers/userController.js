@@ -1477,10 +1477,10 @@ const getMyNetwork = async (req, res) => {
  */
 const searchPublicUsers = async (req, res) => {
     try {
-        const { search, excludeRoles } = req.query;
+        const { search, role, excludeRoles } = req.query;
 
-        if (!search || search.length < 3) {
-            return res.status(400).json({ message: 'Search term must be at least 3 characters' });
+        if (!search || search.length < 2) {
+            return res.status(400).json({ message: 'Search term must be at least 2 characters' });
         }
 
         let where = {
@@ -1493,10 +1493,24 @@ const searchPublicUsers = async (req, res) => {
             }
         };
 
+        // Add role filter if provided
+        if (role) {
+            const roleFilter = Array.isArray(role)
+                ? { in: role }
+                : role.includes(',')
+                    ? { in: role.split(',') }
+                    : role;
+            where['roles'] = {
+                some: { role: { name: roleFilter } }
+            };
+        }
+
         // Add role exclusions if provided
         if (excludeRoles) {
             const excludedRolesArray = excludeRoles.split(',');
+            const existingRoles = where['roles'] || {};
             where['roles'] = {
+                ...existingRoles,
                 none: {
                     role: {
                         name: {

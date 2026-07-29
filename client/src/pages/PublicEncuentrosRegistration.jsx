@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, CaretDown, CheckCircle, Spinner, Sun, Moon, UserPlus } from '@phosphor-icons/react';
+import { ArrowLeft, Calendar, CaretDown, CheckCircle, Spinner, Sun, Moon, UserPlus, UserCircle, Shield } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
+import AsyncSearchSelect from '../components/ui/AsyncSearchSelect';
 
 const INITIAL_FORM = {
     fullName: '',
     phone: '',
     sex: '',
     needsTransport: false,
-    needsAccommodation: false
+    needsAccommodation: false,
+    liderDoce: null
 };
 
 const PublicEncuentrosRegistration = () => {
@@ -59,6 +61,15 @@ const PublicEncuentrosRegistration = () => {
         setSuccess('');
     };
 
+    const handleLiderDoceSelect = (user) => {
+        setFormData((current) => ({
+            ...current,
+            liderDoce: user
+        }));
+        setError('');
+        setSuccess('');
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
 
@@ -91,11 +102,12 @@ const PublicEncuentrosRegistration = () => {
             await api.post(`/public/encuentros/${selectedEncuentroId}/registrations`, {
                 ...formData,
                 fullName: formData.fullName.trim(),
-                phone: formData.phone.trim()
+                phone: formData.phone.trim(),
+                liderDoceId: formData.liderDoce?.id || null
             });
 
             setSuccess('Tu solicitud quedó registrada y pendiente de aprobación.');
-            setFormData(INITIAL_FORM);
+            setFormData({ ...INITIAL_FORM });
             toast.success('Solicitud enviada');
         } catch (requestError) {
             const apiError = requestError.response?.data?.error || requestError.response?.data?.message;
@@ -311,6 +323,23 @@ const PublicEncuentrosRegistration = () => {
                                     </div>
                                 </div>
                             )}
+
+                            <div>
+                                <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">
+                                    Selecciona tu Líder Doce
+                                </label>
+                                <AsyncSearchSelect
+                                    fetchItems={(term) => {
+                                        const params = { search: term, role: 'LIDER_DOCE' };
+                                        return api.get('/public/users/search', { params })
+                                            .then(res => res.data);
+                                    }}
+                                    onSelect={handleLiderDoceSelect}
+                                    selectedValue={formData.liderDoce}
+                                    placeholder="Buscar líder..."
+                                    labelKey="fullName"
+                                />
+                            </div>
 
                             <div className="bg-white/[0.02] p-4 sm:p-5 rounded-xl border border-[var(--ln-border-standard)] space-y-3">
                                 <label className="flex items-start gap-3 cursor-pointer group">

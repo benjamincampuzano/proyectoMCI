@@ -119,9 +119,11 @@ model User {
   conventionLeaderships    ConventionLeader[]
   registeredConventions    ConventionRegistration[] @relation("ConventionRegistrar")
   conventionRegistrations  ConventionRegistration[]
+  leaderOfConventionRegistrations ConventionRegistration[] @relation("ConventionLiderDoce")
   coordinatedEncuentros    Encuentro[]              @relation("EncuentroCoordinator")
   encuentroLeaderships     EncuentroLeader[]
   encuentroRegistrations   EncuentroRegistration[]
+  leaderOfEncuentroRegistrations EncuentroRegistration[] @relation("EncuentroLiderDoce")
   goals                    Goal[]                   @relation("UserGoals")
   assignedGuests           Guest[]                  @relation("AssignedTo")
   invitedGuests            Guest[]                  @relation("InvitedBy")
@@ -499,12 +501,14 @@ model ConventionRegistration {
   needsTransport     Boolean             @default(false)
   needsAccommodation Boolean             @default(false)
   registeredById     Int?
+  liderDoceId        Int?
   createdAt          DateTime            @default(now()) @db.Timestamptz(6)
   updatedAt          DateTime            @updatedAt @db.Timestamptz(6)
   payments           ConventionPayment[]
   convention         Convention          @relation(fields: [conventionId], references: [id], onDelete: Cascade)
   registeredBy       User?               @relation("ConventionRegistrar", fields: [registeredById], references: [id])
   user               User?               @relation(fields: [userId], references: [id])
+  liderDoce          User?               @relation("ConventionLiderDoce", fields: [liderDoceId], references: [id])
 
   @@unique([userId, conventionId])
   @@index([status])
@@ -512,6 +516,7 @@ model ConventionRegistration {
   @@index([conventionId])
   @@index([conventionId, status])
   @@index([fullName])
+  @@index([liderDoceId])
 }
 
 model ConventionPayment {
@@ -570,17 +575,20 @@ model EncuentroRegistration {
   needsAccommodation Boolean                    @default(false)
   needsTransport     Boolean                    @default(false)
   isBaptized         Boolean                    @default(false)
+  liderDoceId        Int?
   classAttendances   EncuentroClassAttendance[]
   payments           EncuentroPayment[]
   encuentro          Encuentro                  @relation(fields: [encuentroId], references: [id], onDelete: Cascade)
   guest              Guest?                     @relation(fields: [guestId], references: [id], onDelete: Cascade)
   user               User?                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  liderDoce          User?                      @relation("EncuentroLiderDoce", fields: [liderDoceId], references: [id])
 
   @@unique([guestId, encuentroId])
   @@unique([userId, encuentroId])
   @@index([status])
   @@index([createdAt])
   @@index([encuentroId])
+  @@index([liderDoceId])
 }
 
 model EncuentroPayment {

@@ -550,7 +550,7 @@ const getPublicConventions = async (req, res) => {
 const createPublicConventionRegistration = async (req, res) => {
     try {
         const { conventionId } = req.params;
-        const { fullName, phone, sex, needsTransport, needsAccommodation } = req.body;
+        const { fullName, phone, sex, needsTransport, needsAccommodation, liderDoceId } = req.body;
 
         const convention = await prisma.convention.findUnique({
             where: { id: parseInt(conventionId) },
@@ -617,7 +617,8 @@ const createPublicConventionRegistration = async (req, res) => {
                 status: PENDING_REGISTRATION_STATUS,
                 ticketType: 'GENERAL',
                 needsTransport: Boolean(needsTransport),
-                needsAccommodation: Boolean(needsAccommodation)
+                needsAccommodation: Boolean(needsAccommodation),
+                liderDoceId: liderDoceId ? parseInt(liderDoceId) : null
             }
         });
 
