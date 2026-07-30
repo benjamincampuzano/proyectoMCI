@@ -719,6 +719,10 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                                        <span className="text-gray-500 block mb-1">Líder Doce</span>
+                                        <span className="font-medium">{reg.liderDoce?.fullName || 'N/A'}</span>
+                                    </div>
+                                    <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700">
                                         <span className="text-gray-500 block mb-1">Libro U.V.</span>
                                         <span className="font-medium">{reg.needsTransport ? 'Sí' : 'No'}</span>
                                     </div>
@@ -744,6 +748,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nombre</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Teléfono</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Líder Doce</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Incluye libro U. de la V.</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Incluye otros gastos</th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
@@ -757,6 +762,9 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {reg.guest?.phone || reg.user?.phone || reg.phone || 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.liderDoce?.fullName || 'N/A'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {reg.needsTransport ? 'Sí' : 'No'}
@@ -782,7 +790,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     ))}
                                     {filteredPendingRegistrations.length === 0 && (
                                         <tr>
-                                            <td colSpan="5" className="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                                            <td colSpan="6" className="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
                                                 No hay solicitudes pendientes de aprobación.
                                             </td>
                                         </tr>
