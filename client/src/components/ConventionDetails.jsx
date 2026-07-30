@@ -38,6 +38,10 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [selectedHistoryRegistration, setSelectedHistoryRegistration] = useState(null);
 
+    // Reject Confirmation Modal State
+    const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+    const [pendingRegToReject, setPendingRegToReject] = useState(null);
+
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [registrationToDelete, setRegistrationToDelete] = useState(null);
@@ -61,7 +65,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [pendingRegToApprove, setPendingRegToApprove] = useState(null);
     const [approveMode, setApproveMode] = useState('link'); // 'link' | 'create'
-    const [approveUserId, setApproveUserId] = useState(null);
+    const [approveUser, setApproveUser] = useState(null);
     const [approveLeaderId, setApproveLeaderId] = useState(null);
 
     // Registration Form State
@@ -138,7 +142,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const handleOpenApproveModal = (reg) => {
         setPendingRegToApprove(reg);
         setApproveMode('link');
-        setApproveUserId(null);
+        setApproveUser(null);
         setApproveLeaderId(null);
         setShowApproveModal(true);
     };
@@ -148,8 +152,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         setLoading(true);
         try {
             const body = {};
-            if (approveMode === 'link' && approveUserId) {
-                body.userId = approveUserId;
+            if (approveMode === 'link' && approveUser) {
+                body.userId = approveUser.id;
             } else if (approveMode === 'create') {
                 body.createUser = true;
                 if (approveLeaderId) body.leaderId = approveLeaderId;
@@ -168,10 +172,19 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     };
 
     const handleRejectPendingRegistration = async (registrationId) => {
+        const reg = pendingRegistrations.find(r => r.id === registrationId);
+        setPendingRegToReject(reg || { id: registrationId });
+        setShowRejectConfirm(true);
+    };
+
+    const handleConfirmReject = async () => {
+        if (!pendingRegToReject) return;
         setLoading(true);
         try {
-            await api.patch(`/convenciones/registrations/${registrationId}/reject`);
+            await api.patch(`/convenciones/registrations/${pendingRegToReject.id}/reject`);
             toast.success('Solicitud rechazada');
+            setShowRejectConfirm(false);
+            setPendingRegToReject(null);
             onRefresh();
         } catch (error) {
             console.error('Error rejecting registration:', error);
@@ -402,29 +415,29 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg self-start md:self-auto">
+                <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg self-start md:self-auto overflow-x-auto max-w-full">
                     <button
                         onClick={() => setActiveTab('attendees')}
-                        className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'attendees'
+                        className={`flex items-center px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-all ${activeTab === 'attendees'
                             ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                             }`}
                     >
-                        <Users size={16} className="mr-2" />
+                        <Users size={16} className="mr-1.5 md:mr-2" />
                         Asistentes
                     </button>
                     {canReviewPendingRegistrations && (
                         <button
                             onClick={() => setActiveTab('pending')}
-                            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'pending'
+                            className={`flex items-center px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-all ${activeTab === 'pending'
                                 ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                                 }`}
                         >
-                            <Clock size={16} className="mr-2" />
+                            <Clock size={16} className="mr-1.5 md:mr-2" />
                             Pendientes
                             {pendingRegistrations.length > 0 && (
-                                <span className="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                <span className="ml-1.5 md:ml-2 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                                     {pendingRegistrations.length}
                                 </span>
                             )}
@@ -432,89 +445,90 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                     )}
                     <button
                         onClick={() => setActiveTab('report')}
-                        className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'report'
+                        className={`flex items-center px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium whitespace-nowrap transition-all ${activeTab === 'report'
                             ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                             }`}
                     >
-                        <FileTextIcon size={16} className="mr-2" />
+                        <FileTextIcon size={16} className="mr-1.5 md:mr-2" />
                         Reporte Financiero
                     </button>
                 </div>
             </div>
 
             {/* General Stats - Always Visible */}
-            		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                                <MoneyIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Inscritos</span>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-10">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                        <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                            <MoneyIcon size={16} />
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{convention.stats?.registeredCount || 0}</span>
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad Inscritos</span>
-                        </div>
+                        <span className="text-[10px] md:text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Inscritos</span>
                     </div>
-
-                    <div className="bg-purple-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                                <MoneyIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">{formatCurrency(convention.registrations?.reduce((acc, reg) => acc + (reg.totalPaid || 0), 0) || 0)}</span>
-                            </div>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Dinero Recaudado</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                                <MoneyIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente por Cobrar</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">{formatCurrency(convention.registrations?.reduce((acc, reg) => acc + (reg.balance || 0), 0) || 0)}</span>
-                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Dinero Pendiente</span>
-                        </div>
+                    <div className="flex flex-col">
+                        <span className="text-xl md:text-3xl font-extrabold text-blue-900 dark:text-white">{convention.stats?.registeredCount || 0}</span>
+                        <span className="hidden md:block text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5 md:mt-1">Cantidad Inscritos</span>
                     </div>
                 </div>
+
+                <div className="bg-purple-50 dark:bg-emerald-900/20 p-3 md:p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                        <div className="p-1.5 md:p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                            <MoneyIcon size={16} />
+                        </div>
+                        <span className="text-[10px] md:text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-sm md:text-3xl font-extrabold text-emerald-900 dark:text-white">{formatCurrency(convention.registrations?.reduce((acc, reg) => acc + (reg.totalPaid || 0), 0) || 0)}</span>
+                        </div>
+                        <span className="hidden md:block text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 md:mt-1">Dinero Recaudado</span>
+                    </div>
+                </div>
+
+                <div className="bg-red-50 dark:bg-red-900/20 p-3 md:p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                        <div className="p-1.5 md:p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                            <MoneyIcon size={16} />
+                        </div>
+                        <span className="text-[10px] md:text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente por Cobrar</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm md:text-3xl font-extrabold text-red-900 dark:text-white">{formatCurrency(convention.registrations?.reduce((acc, reg) => acc + (reg.balance || 0), 0) || 0)}</span>
+                        <span className="hidden md:block text-xs text-red-600 dark:text-red-400 font-medium mt-0.5 md:mt-1">Dinero Pendiente</span>
+                    </div>
+                </div>
+            </div>
+
             {/* Content for Tabs */}
             {activeTab === 'attendees' ? (
                 <>
                     {/* Actions */}
-                    <div className="flex justify-end gap-3">
+                    <div className="flex flex-wrap justify-end gap-2 md:gap-3">
                         {hasAnyRole(['ADMIN', 'LIDER_DOCE']) && (
                             <button
                                 onClick={handleExportToExcel}
-                                className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                                className="flex items-center px-3 md:px-4 py-2 text-xs md:text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                             >
-                                <MicrosoftExcelLogoIcon size={20} className="mr-2" />
+                                <MicrosoftExcelLogoIcon size={16} className="mr-1.5 md:mr-2" />
                                 Exportar Excel
                             </button>
                         )}
                         {canModify && (
                             <button
                                 onClick={openEditModal}
-                                className="flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
+                                className="flex items-center px-3 md:px-4 py-2 text-xs md:text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
                             >
-                                <Pen size={20} className="mr-2" />
+                                <Pen size={16} className="mr-1.5 md:mr-2" />
                                 Editar Convención
                             </button>
                         )}
                         {canModify && (
                             <button
                                 onClick={() => setShowRegisterModal(true)}
-                                className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                                className="flex items-center px-3 md:px-4 py-2 text-xs md:text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                             >
-                                <UserPlus size={20} className="mr-2" />
+                                <UserPlus size={16} className="mr-1.5 md:mr-2" />
                                 Registrar Asistente
                             </button>
                         )}
@@ -522,7 +536,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
 
                     {/* Registrations List */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                        <div className="overflow-x-auto">
+                        {/* Desktop View */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                                     <tr>
@@ -550,6 +565,9 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                     <div className="text-xs text-gray-500">
                                                         {reg.user?.email || reg.phone || 'Registro público'}
                                                     </div>
+                                                    {reg.liderDoce?.fullName && (
+                                                        <div className="text-xs text-gray-400">Líder: {reg.liderDoce.fullName}</div>
+                                                    )}
                                                 </button>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -642,6 +660,91 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Mobile View */}
+                        <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                            {(!convention.registrations || convention.registrations.length === 0) ? (
+                                <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    No hay inscritos aún.
+                                </div>
+                            ) : (
+                                convention.registrations.map((reg) => (
+                                    <div key={reg.id} className="p-4 space-y-2">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <button
+                                                    onClick={() => openHistoryModal(reg)}
+                                                    className="font-bold text-gray-900 dark:text-white text-sm text-left hover:text-blue-600 transition-colors"
+                                                >
+                                                    {reg.fullName}
+                                                </button>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {reg.user?.email || reg.phone || 'Registro público'}
+                                                </p>
+                                            </div>
+                                            <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                                                reg.ticketType === 'VIP_PLATEA'
+                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                            }`}>
+                                                {reg.ticketType === 'VIP_PLATEA' ? 'VIP Platea' : 'General'}
+                                            </span>
+                                        </div>
+
+                                        {reg.liderDoce?.fullName && (
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                Líder: {reg.liderDoce.fullName}
+                                            </p>
+                                        )}
+
+                                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100 dark:border-gray-700/60 text-xs">
+                                            <div>
+                                                <span className="text-gray-400 block text-[10px] uppercase">Costo</span>
+                                                <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(reg.finalCost)}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-400 block text-[10px] uppercase">Abonado</span>
+                                                <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(reg.totalPaid)}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-400 block text-[10px] uppercase">Saldo</span>
+                                                <span className="font-semibold text-red-500 dark:text-red-400">{formatCurrency(reg.balance)}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                                            {canManagePayments && (
+                                                <button
+                                                    onClick={() => openPaymentModal(reg)}
+                                                    className="px-3 py-1 text-xs font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center gap-1"
+                                                >
+                                                    <MoneyIcon size={14} />
+                                                    Abonar
+                                                </button>
+                                            )}
+                                            {canModify && (
+                                                <button
+                                                    onClick={() => openEditRegModal(reg)}
+                                                    className="p-1.5 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-lg transition-colors"
+                                                    title="Editar Registro"
+                                                >
+                                                    <Pen size={16} />
+                                                </button>
+                                            )}
+                                            {canModify && (
+                                                <button
+                                                    onClick={() => handleDelete(reg.id)}
+                                                    className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                                    title="Eliminar Registro"
+                                                >
+                                                    <Trash size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
                 </>
             ) : activeTab === 'pending' ? (
@@ -660,12 +763,14 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                     </div>
 
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                        <div className="overflow-x-auto">
+                        {/* Desktop View */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nombre</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contacto</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Líder Doce</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Entrada</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Transporte</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hospedaje</th>
@@ -686,6 +791,9 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {reg.phone || 'Sin teléfono'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.liderDoce?.fullName || 'N/A'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -728,13 +836,71 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                     ))}
                                     {pendingRegistrations.length === 0 && (
                                         <tr>
-                                            <td colSpan="7" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                            <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                                 No hay solicitudes pendientes.
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile View */}
+                        <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                            {pendingRegistrations.length === 0 ? (
+                                <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    No hay solicitudes pendientes.
+                                </div>
+                            ) : (
+                                pendingRegistrations.map((reg) => (
+                                    <div key={reg.id} className="p-4 space-y-2">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 dark:text-white text-sm">{reg.fullName}</h4>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">Tel: {reg.phone || 'Sin teléfono'}</p>
+                                            </div>
+                                            <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                                                reg.ticketType === 'VIP_PLATEA'
+                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                            }`}>
+                                                {reg.ticketType === 'VIP_PLATEA' ? 'VIP Platea' : 'General'}
+                                            </span>
+                                        </div>
+
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Líder Doce: {reg.liderDoce?.fullName || 'N/A'}
+                                        </p>
+
+                                        <div className="flex gap-2 text-[11px]">
+                                            <span className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                                Trans: {reg.needsTransport ? 'Sí' : 'No'}
+                                            </span>
+                                            <span className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                                Hosp: {reg.needsAccommodation ? 'Sí' : 'No'}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                                            <button
+                                                onClick={() => handleOpenApproveModal(reg)}
+                                                className="px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center gap-1"
+                                                disabled={loading}
+                                            >
+                                                <CheckCircle size={14} />
+                                                Aprobar
+                                            </button>
+                                            <button
+                                                onClick={() => handleRejectPendingRegistration(reg.id)}
+                                                className="px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors"
+                                                disabled={loading}
+                                            >
+                                                Rechazar
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1056,7 +1222,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                     Vincular existente
                                                 </button>
                                                 <button
-                                                    onClick={() => { setApproveMode('create'); setApproveUserId(null); }}
+                                                    onClick={() => { setApproveMode('create'); setApproveUser(null); }}
                                                     className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${approveMode === 'create'
                                                         ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
                                                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
@@ -1081,8 +1247,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                             return api.get('/users/search', { params })
                                                 .then(res => res.data);
                                         }}
-                                        selectedValue={approveUserId}
-                                        onSelect={(user) => setApproveUserId(user?.id || null)}
+                                        selectedValue={approveUser}
+                                        onSelect={(user) => setApproveUser(user || null)}
                                         placeholder="Buscar por nombre..."
                                         labelKey="fullName"
                                     />
@@ -1132,7 +1298,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                             <div className="pt-2">
                                 <button
                                     onClick={handleConfirmApprove}
-                                    disabled={loading || (approveMode === 'link' && !approveUserId)}
+                                    disabled={loading || (approveMode === 'link' && !approveUser)}
                                     className="w-full py-2 px-4 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
                                 >
                                     {loading ? 'Aprobando...' : 'Confirmar Aprobación'}
@@ -1344,6 +1510,39 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                     </div>
                 </div>
             )}
+
+            {/* Reject Pending Registration Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showRejectConfirm}
+                onClose={() => {
+                    setShowRejectConfirm(false);
+                    setPendingRegToReject(null);
+                }}
+                onConfirm={handleConfirmReject}
+                title="Rechazar Solicitud"
+                message="¿Estás seguro de rechazar esta solicitud pendiente?"
+                confirmText="Rechazar Solicitud"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {pendingRegToReject && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Nombre:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {pendingRegToReject.fullName}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Contacto:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {pendingRegToReject.phone || 'N/A'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </ConfirmationModal>
 
             {/* Delete Confirmation Modal */}
             <ConfirmationModal

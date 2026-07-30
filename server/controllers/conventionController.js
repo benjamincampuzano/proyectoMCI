@@ -63,6 +63,12 @@ const serializeConventionRegistration = (convention, registration) => {
                 phone: registration.user.phone
             }
             : null,
+        liderDoce: registration.liderDoce && registration.liderDoce.id
+            ? {
+                id: registration.liderDoce.id,
+                fullName: registration.liderDoce.profile?.fullName
+            }
+            : null,
         ticketBaseCost,
         baseCost,
         transportCost,
@@ -240,6 +246,12 @@ const getConventionById = async (req, res) => {
                         },
                         registeredBy: {
                             include: { profile: true }
+                        },
+                        liderDoce: {
+                            select: {
+                                id: true,
+                                profile: { select: { fullName: true } }
+                            }
                         },
                         payments: {
                             select: {
@@ -716,7 +728,7 @@ const generateTempPassword = (length = 12) => {
 const approveConventionRegistration = async (req, res) => {
     try {
         const { registrationId } = req.params;
-        const { userId, createUser, leaderId } = req.body;
+        const { userId, createUser, leaderId, guestId } = req.body;
         const currentUserId = req.user?.id;
 
         const registration = await prisma.conventionRegistration.findUnique({
@@ -747,6 +759,28 @@ const approveConventionRegistration = async (req, res) => {
         }
 
         let targetUserId = userId ? parseInt(userId) : null;
+
+        // If guestId is provided, link to existing guest
+        let targetGuestId = guestId ? parseInt(guestId) : null;
+        if (targetGuestId) {
+            const guest = await prisma.guest.findUnique({ where: { id: targetGuestId } });
+            if (!guest) {
+                return res.status(404).json({ error: 'Invitado no encontrado.' });
+            }
+
+            const existingReg = await prisma.conventionRegistration.findFirst({
+                where: {
+                    guestId: targetGuestId,
+                    conventionId: registration.conventionId,
+                    NOT: { id: parseInt(registrationId) }
+                },
+                select: { id: true }
+            });
+
+            if (existingReg) {
+                return res.status(400).json({ error: 'El invitado ya está registrado en esta convención.' });
+            }
+        }
 
         // Create new user from registration data
         if (createUser) {
@@ -843,6 +877,14 @@ const approveConventionRegistration = async (req, res) => {
             }
         }
 
+        if (targetGuestId) {
+            const guest = await prisma.guest.findUnique({ where: { id: targetGuestId } });
+            if (guest) {
+                updateData.fullName = guest.name || updateData.fullName;
+                if (guest.phone) updateData.phone = guest.phone;
+            }
+        }
+
         const updated = await prisma.conventionRegistration.update({
             where: { id: parseInt(registrationId) },
             data: updateData
@@ -853,6 +895,7 @@ const approveConventionRegistration = async (req, res) => {
                 action: 'APPROVE_PUBLIC_REGISTRATION',
                 fullName: registration.fullName,
                 linkedUserId: targetUserId,
+                linkedGuestId: targetGuestId || null,
                 createdUser: createUser || false
             }, req.ip, req.headers['user-agent']);
         }

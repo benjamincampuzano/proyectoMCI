@@ -27,6 +27,7 @@ const Convenciones = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [conventionToDelete, setConventionToDelete] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [showStatsMobile, setShowStatsMobile] = useState(false);
 
     // Edit State
     const [showEditModal, setShowEditModal] = useState(false);
@@ -345,75 +346,89 @@ const Convenciones = () => {
             </div>
 
             {/* Estadísticas Resumidas */}
-            {!showReport && conventions.length > 0 && (
-            		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                                <Users size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Convenciones</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{stats.total}</span>
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad de Personas</span>
-                        </div>
+            {!showReport && (
+                <>
+                    {/* Botón toggle móvil para Estadísticas */}
+                    <div className="md:hidden flex items-center justify-between mb-3 bg-gray-50 dark:bg-gray-800/40 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Estadísticas Generales</span>
+                        <button
+                            type="button"
+                            onClick={() => setShowStatsMobile(!showStatsMobile)}
+                            className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline focus:outline-none"
+                        >
+                            {showStatsMobile ? 'Ocultar' : 'Ver estadísticas'}
+                        </button>
                     </div>
 
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
-                                <UserIcon size={20} />
+                    <div className={`${showStatsMobile ? 'grid' : 'hidden'} md:grid grid-cols-2 lg:grid-cols-5 gap-2 md:gap-4 mb-6`}>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                                    <Users size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Convenciones</span>
                             </div>
-                            <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{stats.inscritos}</span>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-blue-900 dark:text-white">{stats.total}</span>
+                                <span className="hidden md:block text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5 md:mt-1">Cantidad de Convenciones</span>
                             </div>
-                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Total Inscritos</span>
                         </div>
-                    </div>
 
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                                <MoneyIcon size={20} />
+                        <div className="bg-purple-50 dark:bg-purple-900/20 p-3 md:p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                                    <UserIcon size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
                             </div>
-                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
+                            <div className="flex flex-col">
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-xl md:text-3xl font-extrabold text-purple-900 dark:text-white">{stats.inscritos}</span>
+                                </div>
+                                <span className="hidden md:block text-xs text-purple-600 dark:text-purple-400 font-medium mt-0.5 md:mt-1">Total Inscritos</span>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">${stats.recaudado.toLocaleString()}</span>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Dinero Recaudado</span>
-                        </div>
-                    </div>
 
-                    <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                                <MoneyIcon size={20} />
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 md:p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                                    <MoneyIcon size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
                             </div>
-                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente</span>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-emerald-900 dark:text-white">${stats.recaudado.toLocaleString()}</span>
+                                <span className="hidden md:block text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 md:mt-1">Dinero Recaudado</span>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">${stats.pendiente.toLocaleString()}</span>
-                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Pendiente por Recaudar</span>
-                        </div>
-                    </div>
 
-                    <div className="bg-amber-50 dark:bg-amber-900/20 p-5 rounded-xl border border-amber-100 dark:border-amber-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg text-amber-600 dark:text-amber-300">
-                                <Clock size={20} />
+                        <div className="bg-red-50 dark:bg-red-900/20 p-3 md:p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                                    <MoneyIcon size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente</span>
                             </div>
-                            <span className="text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Pendientes</span>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-red-900 dark:text-white">${stats.pendiente.toLocaleString()}</span>
+                                <span className="hidden md:block text-xs text-red-600 dark:text-red-400 font-medium mt-0.5 md:mt-1">Pendiente por Recaudar</span>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-amber-900 dark:text-white">{stats.pendientes}</span>
-                            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">Solicitudes por Aprobar</span>
+
+                        <div className="bg-amber-50 dark:bg-amber-900/20 p-3 md:p-5 rounded-xl border border-amber-100 dark:border-amber-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-amber-100 dark:bg-amber-800 rounded-lg text-amber-600 dark:text-amber-300">
+                                    <Clock size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Pendientes</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-amber-900 dark:text-white">{stats.pendientes}</span>
+                                <span className="hidden md:block text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5 md:mt-1">Solicitudes por Aprobar</span>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </>
             )}
             {/* Reporte */}
             {!showReport && canViewReport && (

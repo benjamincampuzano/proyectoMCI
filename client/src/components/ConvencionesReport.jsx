@@ -111,81 +111,83 @@ const ConvencionesReport = ({ conventions }) => {
             </div>
 
             {/* Stats Cards */}
-            		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                                <Users size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Convenciones</span>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                        <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                            <Users size={16} />
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{filteredData.length}</span>
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad de Convenciones Creadas</span>
-                        </div>
+                        <span className="text-[10px] md:text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Convenciones</span>
                     </div>
-                    
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
-                                <UserCheck size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{filteredData.reduce((acc, conv) => acc + (conv.registeredCount || 0), 0).toLocaleString()}</span>
-                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Total de Consolidados</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                                <TrendUpIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Total Recaudado</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">${totals.paid.toLocaleString()}</span>
-                            </div>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Recaudo Total</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                                <TrendDownIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Total Pendiente</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">${totals.balance.toLocaleString()}</span>
-                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Pendiente por Recaudar</span>
-                        </div>
+                    <div className="flex flex-col">
+                        <span className="text-xl md:text-3xl font-extrabold text-blue-900 dark:text-white">{filteredData.length}</span>
+                        <span className="hidden md:block text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad de Convenciones Creadas</span>
                     </div>
                 </div>
+                
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-3 md:p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                        <div className="p-1.5 md:p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                            <UserCheck size={16} />
+                        </div>
+                        <span className="text-[10px] md:text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-xl md:text-3xl font-extrabold text-purple-900 dark:text-white">{filteredData.reduce((acc, conv) => acc + (conv.registeredCount || 0), 0).toLocaleString()}</span>
+                        <span className="hidden md:block text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Total de Consolidados</span>
+                    </div>
+                </div>
+
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 md:p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                        <div className="p-1.5 md:p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                            <TrendUpIcon size={16} />
+                        </div>
+                        <span className="text-[10px] md:text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Total Recaudado</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-xl md:text-3xl font-extrabold text-emerald-900 dark:text-white">${totals.paid.toLocaleString()}</span>
+                        <span className="hidden md:block text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Recaudo Total</span>
+                    </div>
+                </div>
+
+                <div className="bg-red-50 dark:bg-red-900/20 p-3 md:p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                        <div className="p-1.5 md:p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                            <TrendDownIcon size={16} />
+                        </div>
+                        <span className="text-[10px] md:text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Total Pendiente</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-xl md:text-3xl font-extrabold text-red-900 dark:text-white">${totals.balance.toLocaleString()}</span>
+                        <span className="hidden md:block text-xs text-red-600 dark:text-red-400 font-medium mt-1">Pendiente por Recaudar</span>
+                    </div>
+                </div>
+            </div>
+
             {/* Table Header & Export */}
-            <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <div className="flex justify-between items-center gap-2">
+                <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Users size={20} />
                     Resumen por Convención ({filteredData.length})
                 </h3>
                 {user?.roles?.some(role => ['ADMIN', 'LIDER_DOCE'].includes(role)) && (
                     <button
                         onClick={handleExport}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
+                        className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-xs md:text-sm font-medium shrink-0"
                     >
-                        <MicrosoftExcelLogoIcon size={18} />
-                        Exportar CSV
+                        <MicrosoftExcelLogoIcon size={16} />
+                        <span className="hidden sm:inline">Exportar CSV</span>
+                        <span className="sm:hidden">Exportar</span>
                     </button>
                 )}
             </div>
 
             {/* Data Table */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                <div className="overflow-x-auto">
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
                         <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                             <tr>
@@ -245,6 +247,42 @@ const ConvencionesReport = ({ conventions }) => {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                    {filteredData.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                            No se encontraron convenciones.
+                        </div>
+                    ) : (
+                        filteredData.map((conv) => (
+                            <div key={conv.id} className="p-4 space-y-2">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm">{conv.name}</h4>
+                                        {conv.theme && <p className="text-xs text-gray-500 dark:text-gray-400">{conv.theme}</p>}
+                                    </div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                                        {conv.registeredCount} inscritos
+                                    </span>
+                                </div>
+                                <div className="text-xs text-gray-600 dark:text-gray-300">
+                                    <strong>Coordinador:</strong> {conv.coordinator?.fullName || 'Sin Asignar'}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-700/60 text-xs">
+                                    <div>
+                                        <span className="text-gray-400 block text-[10px] uppercase">Recaudado</span>
+                                        <span className="font-semibold text-green-600 dark:text-green-400">${conv.totalRecaudado.toLocaleString()}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-400 block text-[10px] uppercase">Pendiente</span>
+                                        <span className="font-semibold text-red-600 dark:text-red-400">${conv.totalPendiente.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
         </div>

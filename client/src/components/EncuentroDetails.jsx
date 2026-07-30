@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, UserPlus, MoneyIcon, X, XCircle, Trash, Calendar, BookOpen, FileTextIcon, Clock } from '@phosphor-icons/react';
+import { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, UserPlus, MoneyIcon, X, XCircle, Trash, Calendar, BookOpen, FileTextIcon, Clock, MagnifyingGlass, PencilSimple, Users, Check } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,7 @@ import EncuentroClassTracker from './EncuentroClassTracker';
 import BalanceReport from './BalanceReport';
 import { DATA_POLICY_URL } from '../constants/policies';
 import ConfirmationModal from './ConfirmationModal';
+import GuestRegistrationForm from './GuestRegistrationForm';
 
 const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const { user, isAdmin, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
@@ -16,13 +17,54 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const [activeTab, setActiveTab] = useState('general'); // general | classes | report
     const [reportData, setReportData] = useState([]);
     const [loadingReport, setLoadingReport] = useState(false);
+    const [showStatsMobile, setShowStatsMobile] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Calculated statistics
+    const totalRegistrations = encuentro?.registrations?.length || 0;
+    const totalPaid = useMemo(() => {
+        return encuentro?.registrations?.reduce((acc, reg) => acc + (Number(reg.totalPaid) || 0), 0) || 0;
+    }, [encuentro?.registrations]);
+    const totalBalance = useMemo(() => {
+        return encuentro?.registrations?.reduce((acc, reg) => acc + (Number(reg.balance) || 0), 0) || 0;
+    }, [encuentro?.registrations]);
+
+    // Filtered registrations based on search term
+    const filteredRegistrations = useMemo(() => {
+        if (!encuentro?.registrations) return [];
+        if (!searchTerm.trim()) return encuentro.registrations;
+        const term = searchTerm.toLowerCase();
+        return encuentro.registrations.filter(reg => {
+            const name = (reg.guest?.name || reg.user?.fullName || '').toLowerCase();
+            const phone = (reg.guest?.phone || reg.user?.phone || '').toLowerCase();
+            const leader = (reg.liderDoce?.fullName || '').toLowerCase();
+            return name.includes(term) || phone.includes(term) || leader.includes(term);
+        });
+    }, [encuentro?.registrations, searchTerm]);
+
+    // Filtered pending registrations based on search term
+    const filteredPendingRegistrations = useMemo(() => {
+        if (!encuentro?.pendingRegistrations) return [];
+        if (!searchTerm.trim()) return encuentro.pendingRegistrations;
+        const term = searchTerm.toLowerCase();
+        return encuentro.pendingRegistrations.filter(reg => {
+            const name = (reg.guest?.name || reg.user?.fullName || reg.fullName || '').toLowerCase();
+            const phone = (reg.guest?.phone || reg.user?.phone || reg.phone || '').toLowerCase();
+            const leader = (reg.liderDoce?.fullName || '').toLowerCase();
+            return name.includes(term) || phone.includes(term) || leader.includes(term);
+        });
+    }, [encuentro?.pendingRegistrations, searchTerm]);
 
     // Approve Pending Registration Modal State
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [pendingRegToApprove, setPendingRegToApprove] = useState(null);
     const [approveMode, setApproveMode] = useState('link'); // 'link' | 'create'
-    const [approveUserId, setApproveUserId] = useState(null);
+    const [approveUser, setApproveUser] = useState(null);
+    const [approveGuest, setApproveGuest] = useState(null);
     const [approveLeaderId, setApproveLeaderId] = useState(null);
+    const [createdGuestId, setCreatedGuestId] = useState(null);
+    const [createdGuestName, setCreatedGuestName] = useState('');
+    const [showGuestForm, setShowGuestForm] = useState(false);
 
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -46,6 +88,8 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [registrationToDelete, setRegistrationToDelete] = useState(null);
+    const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+    const [pendingRegToReject, setPendingRegToReject] = useState(null);
 
     // Payment Delete Confirmation State
     const [showPaymentDeleteConfirm, setShowPaymentDeleteConfirm] = useState(false);
@@ -111,19 +155,33 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     const handleOpenApproveModal = (reg) => {
         setPendingRegToApprove(reg);
         setApproveMode('link');
-        setApproveUserId(null);
+        setApproveUser(null);
+        setApproveGuest(null);
         setApproveLeaderId(null);
+        setCreatedGuestId(null);
+        setCreatedGuestName('');
         setShowApproveModal(true);
     };
 
     const handleConfirmApprove = async () => {
         if (!pendingRegToApprove) return;
+
+        // If in 'create' mode, require guest registration first
+        if (approveMode === 'create' && !createdGuestId) {
+            setShowGuestForm(true);
+            return;
+        }
+
         setLoading(true);
         try {
-            const body = { createUser: approveMode === 'create' };
-            if (approveMode === 'link' && approveUserId) {
-                body.userId = approveUserId;
+            const body = {};
+            if (approveMode === 'link' && approveUser) {
+                body.userId = approveUser.id;
+            } else if (approveMode === 'guest' && approveGuest) {
+                body.guestId = approveGuest.id;
             } else if (approveMode === 'create') {
+                body.guestId = createdGuestId;
+                body.createUser = true;
                 if (approveLeaderId) body.leaderId = approveLeaderId;
             }
 
@@ -141,19 +199,25 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         }
     };
 
-    const handleRejectPendingRegistration = async (registrationId) => {
-        const confirmReject = window.confirm('¿Estás seguro de rechazar este registro pendiente?');
-        if (!confirmReject) return;
+    const handleRejectPendingRegistration = (registrationId) => {
+        const reg = filteredPendingRegistrations.find(r => r.id === registrationId);
+        setPendingRegToReject(reg || { id: registrationId });
+        setShowRejectConfirm(true);
+    };
 
+    const handleConfirmReject = async () => {
+        if (!pendingRegToReject) return;
         setLoading(true);
         try {
-            await api.patch(`/encuentros/registrations/${registrationId}/reject`);
-            toast.success('Registro rechazado exitosamente');
+            await api.patch(`/encuentros/registrations/${pendingRegToReject.id}/reject`);
+            toast.success('Solicitud rechazada');
+            setShowRejectConfirm(false);
+            setPendingRegToReject(null);
             onRefresh();
             if (activeTab === 'report') fetchReport();
         } catch (error) {
             console.error('Error rejecting registration:', error);
-            toast.error('Error al rechazar registro');
+            toast.error('Error al rechazar la solicitud');
         } finally {
             setLoading(false);
         }
@@ -397,204 +461,425 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             ) : (
                 <>
                     {/* Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                        <div className="flex items-center space-x-4">
-                    <button
-                        onClick={onBack}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                    >
-                        <ArrowLeft size={24} />
-                    </button>
-                    <div>
-                        <h2 className="text-2xl font-bold dark:text-white">
-                            {encuentro.name}
-                        </h2>
-                        <p className="text-gray-500 dark:text-gray-400">
-                            {formatDateLocal(encuentro.startDate)} - {formatDateLocal(encuentro.endDate)}
-                        </p>
-                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mt-1">
-                            Coordinador: {encuentro.coordinator?.fullName || 'Sin Asignar'}
-                        </p>
-                    </div>
-                </div>
-            </div>
-            {/* Stats Dashboard */}
-                        		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                                <MoneyIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Inscritos</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white"> {encuentro.registrations ? encuentro.registrations.length : 0}</span>
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad Inscritos</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-purple-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                                <MoneyIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">{formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (Number(reg.totalPaid) || 0), 0) || 0)}</span>
-                            </div>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Dinero Recaudado</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                                <MoneyIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente por Cobrar</span>
-                        </div>
-                        <div className="flex flex-col">
-                                <span className="text-3xl font-extrabold text-red-900 dark:text-white">{formatCurrency(encuentro.registrations?.reduce((acc, reg) => acc + (Number(reg.balance) || 0), 0) || 0)}</span>
-                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Dinero Pendiente</span>
-                        </div>
-                    </div>
-                </div>
-            {/* Tabs */}
-            <div className="border-b border-gray-200 dark:border-gray-700">
-                <nav className="-mb-px flex space-x-8 overflow-x-auto">
-                    <button
-                        onClick={() => setActiveTab('general')}
-                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap ${activeTab === 'general'
-                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                            }`}
-                    >
-                        <Calendar size={18} className="mr-2" />
-                        Pagos y Estado
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('classes')}
-                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap ${activeTab === 'classes'
-                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                            }`}
-                    >
-                        <BookOpen size={18} className="mr-2" />
-                        Asistencia a Clases
-                    </button>
-                    {canModify && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 md:mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <div className="flex items-center gap-3">
                         <button
-                            onClick={() => setActiveTab('pending')}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap ${activeTab === 'pending'
-                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                                }`}
+                          onClick={onBack}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors shrink-0 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 shadow-sm"
+                          title="Volver a Encuentros"
                         >
-                            <Clock size={18} className="mr-2" />
+                          <ArrowLeft size={20} />
+                        </button>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">
+                              {encuentro.name}
+                            </h2>
+                            {encuentro.type && (
+                              <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                {encuentro.type}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                            📅 {formatDateLocal(encuentro.startDate)} - {formatDateLocal(encuentro.endDate)}
+                          </p>
+                          <p className="text-[11px] md:text-sm font-medium text-blue-600 dark:text-blue-400 mt-0.5 truncate">
+                            Coordinador: {encuentro.coordinator?.fullName || 'Sin Asignar'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {canModify && (
+                        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                          <button
+                            onClick={openEditModal}
+                            className="px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm flex items-center gap-1.5"
+                          >
+                            <PencilSimple size={16} />
+                            <span>Editar</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {/* Vista Móvil: Barra Sutil y Colapsable de Estadísticas */}
+                    <div className="sm:hidden mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 shadow-sm transition-all">
+                        <button
+                            type="button"
+                            onClick={() => setShowStatsMobile(!showStatsMobile)}
+                            className="w-full flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none"
+                        >
+                            <div className="flex items-center gap-2 truncate">
+                                <Users size={16} className="text-blue-500 shrink-0" />
+                                <span className="truncate">Estadísticas: <strong className="text-blue-600 dark:text-blue-400">{totalRegistrations}</strong> inscritos ({formatCurrency(totalPaid)})</span>
+                            </div>
+                            <span className="text-blue-600 dark:text-blue-400 text-xs font-bold bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full shrink-0 ml-2">
+                                {showStatsMobile ? 'Ocultar ▲' : 'Ver resumen ▼'}
+                            </span>
+                        </button>
+
+                        {showStatsMobile && (
+                            <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-2.5 rounded-lg border border-blue-100 dark:border-blue-800">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <Users size={14} className="text-blue-600 dark:text-blue-300" />
+                                        <span className="text-[10px] font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Inscritos</span>
+                                    </div>
+                                    <span className="text-lg font-extrabold text-blue-900 dark:text-white">{totalRegistrations}</span>
+                                </div>
+
+                                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-800">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <MoneyIcon size={14} className="text-emerald-600 dark:text-emerald-300" />
+                                        <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
+                                    </div>
+                                    <span className="text-sm font-extrabold text-emerald-900 dark:text-white">{formatCurrency(totalPaid)}</span>
+                                </div>
+
+                                <div className="col-span-2 bg-red-50 dark:bg-red-900/20 p-2.5 rounded-lg border border-red-100 dark:border-red-800 flex justify-between items-center">
+                                    <div className="flex items-center gap-1.5">
+                                        <MoneyIcon size={14} className="text-red-600 dark:text-red-300" />
+                                        <span className="text-[10px] font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente por Cobrar</span>
+                                    </div>
+                                    <span className="text-sm font-extrabold text-red-900 dark:text-white">{formatCurrency(totalBalance)}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Vista Desktop: Grid Completo */}
+                    <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-10">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                        <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                          <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                            <MoneyIcon size={16} />
+                          </div>
+                          <span className="text-[10px] md:text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Inscritos</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xl md:text-3xl font-extrabold text-blue-900 dark:text-white">{totalRegistrations}</span>
+                          <span className="hidden md:block text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5 md:mt-1">Cantidad Inscritos</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 md:p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                        <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                          <div className="p-1.5 md:p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                            <MoneyIcon size={16} />
+                          </div>
+                          <span className="text-[10px] md:text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm md:text-3xl font-extrabold text-emerald-900 dark:text-white">{formatCurrency(totalPaid)}</span>
+                          <span className="hidden md:block text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 md:mt-1">Dinero Recaudado</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-red-50 dark:bg-red-900/20 p-3 md:p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                        <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                          <div className="p-1.5 md:p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                            <MoneyIcon size={16} />
+                          </div>
+                          <span className="text-[10px] md:text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente por Cobrar</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm md:text-3xl font-extrabold text-red-900 dark:text-white">{formatCurrency(totalBalance)}</span>
+                          <span className="hidden md:block text-xs text-red-600 dark:text-red-400 font-medium mt-0.5 md:mt-1">Dinero Pendiente</span>
+                        </div>
+                      </div>
+                    </div>
+            {/* Tabs */}
+                    <div className="border-b border-gray-200 dark:border-gray-700">
+                      <nav className="-mb-px flex space-x-2 sm:space-x-8 overflow-x-auto">
+                        <button
+                          onClick={() => setActiveTab('general')}
+                          className={`py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm flex items-center whitespace-nowrap ${activeTab === 'general'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                            }`}
+                        >
+                          <Calendar size={16} className="mr-1.5" />
+                          Pagos y Estado
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('classes')}
+                          className={`py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm flex items-center whitespace-nowrap ${activeTab === 'classes'
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                            }`}
+                        >
+                          <BookOpen size={16} className="mr-1.5" />
+                          Universidad de la Vida
+                        </button>
+                        {canModify && (
+                          <button
+                            onClick={() => setActiveTab('pending')}
+                            className={`py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm flex items-center whitespace-nowrap ${activeTab === 'pending'
+                              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                              }`}
+                          >
+                            <Clock size={16} className="mr-1.5" />
                             Pendientes
                             {encuentro.pendingRegistrations?.length > 0 && (
-                                <span className="ml-2 px-1.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                                    {encuentro.pendingRegistrations.length}
-                                </span>
+                              <span className="ml-1.5 px-1.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                {encuentro.pendingRegistrations.length}
+                              </span>
                             )}
-                        </button>
-                    )}
-                    <button
-                        onClick={() => setActiveTab('report')}
-                        className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center whitespace-nowrap ${activeTab === 'report'
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setActiveTab('report')}
+                          className={`py-3 md:py-4 px-1 border-b-2 font-medium text-xs md:text-sm flex items-center whitespace-nowrap ${activeTab === 'report'
                             ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                             : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                             }`}
-                    >
-                        <FileTextIcon  size={18} className="mr-2" />
-                        Reporte Financiero
-                    </button>
-                </nav>
-            </div>
+                        >
+                          <FileTextIcon size={16} className="mr-1.5" />
+                          Reporte Financiero
+                        </button>
+                      </nav>
+                    </div>
+
+                    {/* Filter & Action Controls Bar */}
+                    {activeTab !== 'report' && (
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mt-4">
+                        <div className="relative flex-1 min-w-[200px]">
+                          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                          <input
+                            type="text"
+                            placeholder="Buscar por nombre, teléfono o líder..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-9 pr-8 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                          />
+                          {searchTerm && (
+                            <button
+                              onClick={() => setSearchTerm('')}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-bold bg-gray-100 dark:bg-gray-700 rounded-full w-5 h-5 flex items-center justify-center"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        {canModify && activeTab === 'general' && (
+                          <button
+                            onClick={() => setShowRegisterModal(true)}
+                            className="flex items-center justify-center px-4 py-2 text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm shrink-0 w-full sm:w-auto"
+                          >
+                            <UserPlus size={16} className="mr-1.5" />
+                            Inscribir Participante
+                          </button>
+                        )}
+                      </div>
+                    )}
 
             {/* Content Switcher */}
             {activeTab === 'pending' && canModify && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 mt-4">
-                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center">
+                <div className="mt-4">
+                    <div className="flex justify-between items-center mb-3 px-1">
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                             Solicitudes de Inscripción Pendientes
                         </h3>
                         <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                            {encuentro.pendingRegistrations?.length || 0} pendientes
+                            {filteredPendingRegistrations.length} pendientes
                         </span>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nombre</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Teléfono</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Incluye libro U. de la V.</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Incluye otros gastos</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {encuentro.pendingRegistrations?.map((reg) => (
-                                    <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+
+                    {/* Mobile Cards */}
+                    <div className="flex flex-col gap-3 sm:hidden">
+                        {filteredPendingRegistrations.map((reg) => (
+                            <div key={reg.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="min-w-0">
+                                        <div className="font-bold text-gray-900 dark:text-white truncate">
                                             {reg.guest?.name || reg.user?.fullName || reg.fullName}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        </div>
+                                        <div className="text-xs text-gray-500 truncate">
                                             {reg.guest?.phone || reg.user?.phone || reg.phone || 'N/A'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {reg.needsTransport ? 'Sí' : 'No'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {reg.needsAccommodation ? 'Sí' : 'No'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                            <button
-                                                onClick={() => handleOpenApproveModal(reg)}
-                                                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none transition-colors"
-                                            >
-                                                Aprobar
-                                            </button>
-                                            <button
-                                                onClick={() => handleRejectPendingRegistration(reg.id)}
-                                                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 focus:outline-none transition-colors"
-                                            >
-                                                Rechazar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {(!encuentro.pendingRegistrations || encuentro.pendingRegistrations.length === 0) && (
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 shrink-0">
+                                        <button
+                                            onClick={() => handleOpenApproveModal(reg)}
+                                            className="p-2 bg-green-600 text-white rounded-lg"
+                                            title="Aprobar"
+                                        >
+                                            <Check size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleRejectPendingRegistration(reg.id)}
+                                            className="p-2 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300 rounded-lg"
+                                            title="Rechazar"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                                        <span className="text-gray-500 block mb-1">Libro U.V.</span>
+                                        <span className="font-medium">{reg.needsTransport ? 'Sí' : 'No'}</span>
+                                    </div>
+                                    <div className="p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                                        <span className="text-gray-500 block mb-1">Otros Gastos</span>
+                                        <span className="font-medium">{reg.needsAccommodation ? 'Sí' : 'No'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {filteredPendingRegistrations.length === 0 && (
+                            <div className="text-center py-10 text-sm text-gray-500 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                                No hay solicitudes pendientes de aprobación.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Tabla desktop — pendientes */}
+                    <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-                                            No hay solicitudes pendientes de aprobación.
-                                        </td>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nombre</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Teléfono</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Incluye libro U. de la V.</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Incluye otros gastos</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {filteredPendingRegistrations.map((reg) => (
+                                        <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                {reg.guest?.name || reg.user?.fullName || reg.fullName}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.guest?.phone || reg.user?.phone || reg.phone || 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.needsTransport ? 'Sí' : 'No'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.needsAccommodation ? 'Sí' : 'No'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                                <button
+                                                    onClick={() => handleOpenApproveModal(reg)}
+                                                    className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none transition-colors"
+                                                >
+                                                    Aprobar
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRejectPendingRegistration(reg.id)}
+                                                    className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 focus:outline-none transition-colors"
+                                                >
+                                                    Rechazar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredPendingRegistrations.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                                                No hay solicitudes pendientes de aprobación.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}
             {activeTab === 'general' && (
                 <>
-                    {/* Actions */}
-                    {canModify && (
-                        <div className="flex justify-end pt-4">
-                            <button
-                                onClick={() => setShowRegisterModal(true)}
-                                className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                            >
-                                <UserPlus size={20} className="mr-2" />
-                                Inscribir Participante
-                            </button>
-                        </div>
-                    )}
-                    {/* Payment/Status Table */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 mt-4">
+                    {/* Payment/Status — Tarjetas móviles */}
+                    <div className="sm:hidden mt-4 space-y-3">
+                        {filteredRegistrations.map((reg) => (
+                            <div key={reg.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                                {/* Nombre y estado */}
+                                <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-700/60">
+                                    <button
+                                        onClick={() => openHistoryModal(reg)}
+                                        className="text-left group flex-1 min-w-0"
+                                    >
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate border-b border-dotted border-gray-300 dark:border-gray-600 pb-0.5">
+                                            {reg.guest?.name || reg.user?.fullName}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-0.5">{reg.guest?.phone || reg.user?.phone || 'Sin teléfono'}</p>
+                                    </button>
+                                    <span className={`ml-2 shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wide ${
+                                        reg.status === 'ATTENDED'
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                    }`}>
+                                        {reg.status}
+                                    </span>
+                                </div>
+
+                                {/* Montos */}
+                                <div className="grid grid-cols-3 gap-0 divide-x divide-gray-100 dark:divide-gray-700/60 px-0 py-2">
+                                    <div className="flex flex-col items-center px-2">
+                                        <span className="text-[10px] text-gray-400 uppercase tracking-wide">Costo</span>
+                                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 mt-0.5">{formatCurrency(Number(reg.finalCost) || 0)}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center px-2">
+                                        <span className="text-[10px] text-emerald-500 uppercase tracking-wide">Pagado</span>
+                                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">{formatCurrency(Number(reg.totalPaid) || 0)}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center px-2">
+                                        <span className="text-[10px] text-red-400 uppercase tracking-wide">Saldo</span>
+                                        <span className="text-xs font-semibold text-red-500 dark:text-red-400 mt-0.5">{formatCurrency(Number(reg.balance) || 0)}</span>
+                                    </div>
+                                </div>
+
+                                {/* Acciones */}
+                                {(canManagePayments || canModify) && (
+                                    <div className="flex items-center gap-2 px-4 py-2 border-t border-gray-100 dark:border-gray-700/60 bg-gray-50/50 dark:bg-gray-900/20">
+                                        {canManagePayments && (
+                                            <button
+                                                onClick={() => openPaymentModal(reg)}
+                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
+                                            >
+                                                <MoneyIcon size={14} />
+                                                Abonar
+                                            </button>
+                                        )}
+                                        {canModify && reg.guest && (
+                                            <button
+                                                onClick={() => openConvertModal(reg)}
+                                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
+                                                title="Convertir a Discípulo"
+                                            >
+                                                <UserPlus size={14} />
+                                                Convertir
+                                            </button>
+                                        )}
+                                        {canModify && (
+                                            <button
+                                                onClick={() => handleDelete(reg.id)}
+                                                className="ml-auto flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                                                title="Eliminar Registro"
+                                            >
+                                                <Trash size={14} />
+                                                Eliminar
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        {filteredRegistrations.length === 0 && (
+                            <div className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                                {searchTerm ? 'Sin resultados para la búsqueda.' : 'No hay inscritos aún.'}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Payment/Status Table — desktop */}
+                    <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 mt-4">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -608,7 +893,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {encuentro.registrations?.map((reg) => (
+                                    {filteredRegistrations.map((reg) => (
                                         <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <button
@@ -695,10 +980,10 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                             </td>
                                         </tr>
                                     ))}
-                                    {(!encuentro.registrations || encuentro.registrations.length === 0) && (
+                                    {filteredRegistrations.length === 0 && (
                                         <tr>
                                             <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                                                No hay inscritos aún.
+                                                {searchTerm ? 'Sin resultados para la búsqueda.' : 'No hay inscritos aún.'}
                                             </td>
                                         </tr>
                                     )}
@@ -964,7 +1249,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                 </div>
                                 {(pendingRegToApprove.guest?.phone || pendingRegToApprove.user?.phone || pendingRegToApprove.phone) && (
                                     <div className="flex justify-between">
-                                        <span className="text-gray-500">Teléfono:</span>
+                                        <span className="text-gray-500">Tel├®fono:</span>
                                         <span className="font-medium text-gray-900 dark:text-white">{pendingRegToApprove.guest?.phone || pendingRegToApprove.user?.phone || pendingRegToApprove.phone}</span>
                                     </div>
                                 )}
@@ -980,7 +1265,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
 
                             <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-900 rounded-lg">
                                 <button
-                                    onClick={() => { setApproveMode('link'); setApproveLeaderId(null); }}
+                                    onClick={() => { setApproveMode('link'); setApproveLeaderId(null); setApproveGuest(null); }}
                                     className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${approveMode === 'link'
                                         ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
                                         : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -989,7 +1274,16 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     Vincular a Cuenta Existente
                                 </button>
                                 <button
-                                    onClick={() => { setApproveMode('create'); setApproveUserId(null); }}
+                                    onClick={() => { setApproveMode('guest'); setApproveUser(null); setApproveLeaderId(null); }}
+                                    className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${approveMode === 'guest'
+                                        ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                        }`}
+                                >
+                                    Vincular a Invitado
+                                </button>
+                                <button
+                                    onClick={() => { setApproveMode('create'); setApproveUser(null); setApproveGuest(null); }}
                                     className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${approveMode === 'create'
                                         ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
                                         : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -1008,31 +1302,71 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                             return api.get('/users/search', { params })
                                                 .then(res => res.data);
                                         }}
-                                        selectedValue={approveUserId}
-                                        onSelect={(user) => setApproveUserId(user?.id || null)}
+                                        selectedValue={approveUser}
+                                        onSelect={(user) => setApproveUser(user || null)}
                                         placeholder="Buscar por nombre o correo..."
                                         labelKey="fullName"
                                     />
                                 </div>
+                            ) : approveMode === 'guest' ? (
+                                <div className="space-y-1">
+                                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Buscar Invitado Existente</label>
+                                    <AsyncSearchSelect
+                                        fetchItems={(term) => {
+                                            const params = { search: term };
+                                            return api.get('/guests', { params })
+                                                .then(res => res.data?.guests || []);
+                                        }}
+                                        selectedValue={approveGuest}
+                                        onSelect={(guest) => setApproveGuest(guest || null)}
+                                        placeholder="Buscar invitado por nombre..."
+                                        labelKey="name"
+                                        renderItem={(guest) => (
+                                            <div>
+                                                <div className="font-medium">{guest.name}</div>
+                                                <div className="text-xs text-gray-500">{guest.phone}</div>
+                                            </div>
+                                        )}
+                                    />
+                                </div>
                             ) : (
                                 <div className="space-y-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-                                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300">
-                                        Se creará un nuevo usuario Discípulo con el nombre del registro y una contraseña temporal.
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asignar Líder *</label>
-                                        <AsyncSearchSelect
-                                            fetchItems={(term) => {
-                                                const params = { search: term, role: 'LIDER_CELULA' };
-                                                return api.get('/users/search', { params })
-                                                    .then(res => res.data);
-                                            }}
-                                            selectedValue={approveLeaderId}
-                                            onSelect={(user) => setApproveLeaderId(user?.id || null)}
-                                            placeholder="Buscar líder de célula..."
-                                            labelKey="fullName"
-                                        />
-                                    </div>
+                                    {!createdGuestId ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 p-3 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+                                                Primero registra a la persona como invitado usando el formulario. Luego se creará su cuenta de Discípulo automáticamente.
+                                            </div>
+                                            <button
+                                                onClick={() => setShowGuestForm(true)}
+                                                className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                            >
+                                                Registrar Invitado
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div className="bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800 p-3 rounded-lg">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-green-600 dark:text-green-400 text-sm font-medium">✓ Invitado registrado:</span>
+                                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{createdGuestName}</span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Asignar Líder *</label>
+                                                <AsyncSearchSelect
+                                                    fetchItems={(term) => {
+                                                        const params = { search: term, role: 'LIDER_CELULA' };
+                                                        return api.get('/users/search', { params })
+                                                            .then(res => res.data);
+                                                    }}
+                                                    selectedValue={approveLeaderId}
+                                                    onSelect={(user) => setApproveLeaderId(user?.id || null)}
+                                                    placeholder="Buscar líder de célula..."
+                                                    labelKey="fullName"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -1045,13 +1379,31 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             </button>
                             <button
                                 onClick={handleConfirmApprove}
-                                disabled={loading || (approveMode === 'link' && !approveUserId)}
+                                disabled={loading || (approveMode === 'link' && !approveUser)}
                                 className="flex-1 py-2 px-4 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 Aprobar Registro
                             </button>
                         </div>
                     </div>
+
+                    {showGuestForm && (
+                        <GuestRegistrationForm
+                            isOpen={showGuestForm}
+                            onClose={() => setShowGuestForm(false)}
+                            onGuestCreated={(guest) => {
+                                setCreatedGuestId(guest.id);
+                                setCreatedGuestName(guest.name);
+                                setShowGuestForm(false);
+                            }}
+                            initialData={{
+                                name: pendingRegToApprove.fullName || '',
+                                phone: pendingRegToApprove.phone || '',
+                                invitedById: user?.id,
+                                assignedToId: user?.id,
+                            }}
+                        />
+                    )}
                 </div>
             )}
 
@@ -1150,7 +1502,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Contraseña
+                                    Contrase├▒a
                                 </label>
                                 <input
                                     type="password"
@@ -1379,7 +1731,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                 }}
                 onConfirm={performDelete}
                 title="Eliminar Registro"
-                message="¿Estás seguro de que deseas eliminar este registro?"
+                message="Estás seguro de que deseas eliminar este registro?"
                 confirmText="Eliminar Registro"
                 confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
             >
@@ -1415,16 +1767,49 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         </div>
                         <div>
                             <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
-                                ⚠️ Acción Irreversible
+                                Acción Irreversible
                             </h4>
                             <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
-                                <li>• Se eliminará el registro del encuentro</li>
-                                <li>• Se perderán todos los abonos asociados</li>
-                                <li>• No se puede deshacer esta acción</li>
+                                <li> Se eliminará el registro del encuentro</li>
+                                <li> Se perderán todos los abonos asociados</li>
+                                <li> No se puede deshacer esta acción</li>
                             </ul>
                         </div>
                     </div>
                 </div>
+            </ConfirmationModal>
+
+            {/* Reject Pending Registration Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showRejectConfirm}
+                onClose={() => {
+                    setShowRejectConfirm(false);
+                    setPendingRegToReject(null);
+                }}
+                onConfirm={handleConfirmReject}
+                title="Rechazar Solicitud"
+                message="¿Estás seguro de rechazar esta solicitud pendiente?"
+                confirmText="Rechazar Solicitud"
+                confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+            >
+                {pendingRegToReject && (
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg mb-4">
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Nombre:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {pendingRegToReject.fullName}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Contacto:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {pendingRegToReject.phone || 'N/A'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </ConfirmationModal>
 
             {/* Payment Delete Confirmation Modal */}
@@ -1436,7 +1821,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                 }}
                 onConfirm={performDeletePayment}
                 title="Eliminar Abono"
-                message="¿Estás seguro de que deseas eliminar este abono?"
+                message="Estás seguro de que deseas eliminar este abono?"
                 confirmText="Eliminar Abono"
                 confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
             >
@@ -1476,12 +1861,12 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                         </div>
                         <div>
                             <h4 className="text-red-800 dark:text-red-200 font-semibold mb-1">
-                                ⚠️ Acción Irreversible
+                                Acción Irreversible
                             </h4>
                             <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
-                                <li>• Se eliminará el abono permanentemente</li>
-                                <li>• El saldo del participante se actualizará</li>
-                                <li>• No se puede deshacer esta acción</li>
+                                <li> Se eliminará el abono permanentemente</li>
+                                <li> El saldo del participante se actualizará</li>
+                                <li> No se puede deshacer esta acción</li>
                             </ul>
                         </div>
                     </div>

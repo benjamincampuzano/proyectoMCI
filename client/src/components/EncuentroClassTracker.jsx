@@ -47,7 +47,8 @@ const EncuentroClassTracker = ({ registrations, onRefresh, onConvert, canModify 
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                         <tr>
@@ -179,6 +180,106 @@ const EncuentroClassTracker = ({ registrations, onRefresh, onConvert, canModify 
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {registrations.map((reg) => (
+                    <div key={reg.id} className="p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                                    {reg.guest?.name || reg.user?.fullName}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{reg.guest?.status || 'Discípulo'}</div>
+                            </div>
+                            {canModify && reg.guest && (
+                                <button
+                                    onClick={() => onConvert && onConvert(reg)}
+                                    className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
+                                    title="Convertir a Discípulo"
+                                >
+                                    <UserPlus size={18} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Pre-Encuentro grid */}
+                        <div>
+                            <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight block mb-1.5">
+                                Pre-Encuentro (Clases 1 - 5)
+                            </span>
+                            <div className="grid grid-cols-5 gap-2">
+                                {[1, 2, 3, 4, 5].map(num => {
+                                    const attended = isAttended(reg, num);
+                                    const loading = updating[`${reg.id}-${num}`];
+                                    return (
+                                        <button
+                                            key={num}
+                                            onClick={() => handleToggle(reg.id, num, attended)}
+                                            disabled={loading || isRestricted}
+                                            className={`h-9 rounded-lg flex flex-col items-center justify-center transition-all ${attended
+                                                ? 'bg-blue-100 text-blue-700 font-bold dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-700'
+                                                : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-400 border border-transparent'
+                                            } ${loading || isRestricted ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+                                        >
+                                            {attended ? <Check size={14} weight="bold" /> : <span className="text-xs font-semibold">{num}</span>}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Pos-Encuentro grid */}
+                        <div>
+                            <span className="text-[11px] font-bold text-green-600 dark:text-green-400 uppercase tracking-tight block mb-1.5">
+                                Pos-Encuentro (Clases 1 - 5)
+                            </span>
+                            <div className="grid grid-cols-5 gap-2">
+                                {[6, 7, 8, 9, 10].map(num => {
+                                    const attended = isAttended(reg, num);
+                                    const loading = updating[`${reg.id}-${num}`];
+                                    return (
+                                        <button
+                                            key={num}
+                                            onClick={() => handleToggle(reg.id, num, attended)}
+                                            disabled={loading || isRestricted}
+                                            className={`h-9 rounded-lg flex flex-col items-center justify-center transition-all ${attended
+                                                ? 'bg-green-100 text-green-700 font-bold dark:bg-green-900/40 dark:text-green-300 border border-green-200 dark:border-green-700'
+                                                : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-400 border border-transparent'
+                                            } ${loading || isRestricted ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+                                        >
+                                            {attended ? <Check size={14} weight="bold" /> : <span className="text-xs font-semibold">{num - 5}</span>}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Bautizo action */}
+                        <div className="pt-2 flex justify-between items-center border-t border-gray-100 dark:border-gray-700/60">
+                            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                                Bautismo:
+                            </span>
+                            <button
+                                onClick={() => handleToggleBaptism(reg.id, reg.isBaptized)}
+                                disabled={updating[`baptism-${reg.id}`] || isRestricted}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${reg.isBaptized
+                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-700'
+                                    : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                                } ${updating[`baptism-${reg.id}`] || isRestricted ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+                            >
+                                <Check size={14} className={reg.isBaptized ? 'opacity-100' : 'opacity-0'} />
+                                <span>{reg.isBaptized ? 'Bautizado' : 'Marcar Bautizo'}</span>
+                            </button>
+                        </div>
+                    </div>
+                ))}
+                {registrations.length === 0 && (
+                    <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                        No hay registros aún.
+                    </div>
+                )}
             </div>
         </div>
     );

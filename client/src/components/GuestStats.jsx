@@ -33,7 +33,7 @@ const GuestStats = ({ refreshTrigger }) => {
         if (canSeeAll) {
             const fetchLideres = async () => {
                 try {
-                    const res = await api.get('/users/by-role/LIDER_DOCE');
+                    const res = await api.get('/network/los-doce');
                     setLideresDoce(res.data);
                 } catch (err) {
                     console.error('Error fetching lideres doce:', err);

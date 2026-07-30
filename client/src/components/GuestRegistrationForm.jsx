@@ -3,25 +3,8 @@ import { FloppyDiskIcon, SpinnerIcon, X, UserPlus } from '@phosphor-icons/react'
 import { AsyncSearchSelect } from './ui';
 import api from '../utils/api';
 
-const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
-    const [formData, setFormData] = useState({
-        documentType: '',
-        documentNumber: '',
-        name: '',
-        birthDate: '',
-        sex: '',
-        phone: '',
-        address: '',
-        neighborhood: '',
-        city: '',
-        prayerRequest: '',
-        observations: '',
-        invitedById: null,
-        assignedToId: null,
-        dataPolicyAccepted: false,
-        dataTreatmentAuthorized: false,
-        minorConsentAuthorized: false,
-    });
+const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated, initialData }) => {
+    const [formData, setFormData] = useState(getInitialFormData(initialData));
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -31,6 +14,35 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated }) => {
         const user = JSON.parse(localStorage.getItem('user'));
         setCurrentUser(user);
     }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            setFormData(getInitialFormData(initialData));
+            setError('');
+            setSuccess('');
+        }
+    }, [isOpen, initialData]);
+
+    function getInitialFormData(data) {
+        return {
+            documentType: '',
+            documentNumber: '',
+            name: data?.name || '',
+            birthDate: '',
+            sex: data?.sex || '',
+            phone: data?.phone || '',
+            address: '',
+            neighborhood: '',
+            city: '',
+            prayerRequest: '',
+            observations: '',
+            invitedById: data?.invitedById || null,
+            assignedToId: data?.assignedToId || null,
+            dataPolicyAccepted: false,
+            dataTreatmentAuthorized: false,
+            minorConsentAuthorized: false,
+        };
+    }
 
     const getAssignedToFetchItems = () => {
         return (term) => api.get('/users/search', { 

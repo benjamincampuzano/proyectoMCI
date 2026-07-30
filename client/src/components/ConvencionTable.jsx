@@ -7,7 +7,8 @@ const formatCurrency = (amount) => {
 const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify }) => {
     return (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                         <tr>
@@ -104,6 +105,82 @@ const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify })
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Vertical Card View */}
+            <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {conventions.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                        No hay convenciones registradas.
+                    </div>
+                ) : (
+                    conventions.map((conv) => (
+                        <div
+                            key={conv.id}
+                            onClick={() => onSelect(conv.id)}
+                            className="p-4 hover:bg-gray-50 dark:hover:bg-gray-750/50 transition-colors cursor-pointer space-y-2.5"
+                        >
+                            <div className="flex items-start justify-between gap-2">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                            {conv.type} {conv.year}
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                            <Calendar size={13} />
+                                            {new Date(conv.startDate).toLocaleDateString()} - {new Date(conv.endDate).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-white leading-snug">
+                                        {conv.theme || `Convención ${conv.type} ${conv.year}`}
+                                    </h3>
+                                </div>
+
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                    {canModify && (
+                                        <>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onEdit(e, conv);
+                                                }}
+                                                className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                                                title="Editar"
+                                            >
+                                                <Pen size={18} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => onDelete(e, conv.id)}
+                                                className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                                title="Eliminar"
+                                            >
+                                                <Trash size={18} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-700/60 text-xs">
+                                <div>
+                                    <span className="text-gray-400 block text-[10px] uppercase font-medium">Coordinador</span>
+                                    <span className="font-semibold text-gray-800 dark:text-gray-200">{conv.coordinator?.fullName || 'Sin Asignar'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 block text-[10px] uppercase font-medium">Costo General</span>
+                                    <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(conv.cost)}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                                    <Users size={13} />
+                                    {conv.stats?.registeredCount || 0} Inscritos
+                                </span>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );

@@ -128,7 +128,10 @@ const getEncuentroById = async (req, res) => {
                                 notes: true
                             }
                         },
-                        classAttendances: true
+                        classAttendances: true,
+                        liderDoce: {
+                            include: { profile: true }
+                        }
                     }
                 }
             }
@@ -197,6 +200,7 @@ const getEncuentroById = async (req, res) => {
             return {
                 ...reg,
                 user: reg.user ? { id: reg.user.id, fullName: reg.user.profile?.fullName, phone: reg.user.phone } : null,
+                liderDoce: reg.liderDoce ? { id: reg.liderDoce.id, fullName: reg.liderDoce.profile?.fullName } : null,
                 paymentsByType,
                 totalPaid,
                 baseCost,
@@ -230,6 +234,7 @@ const getEncuentroById = async (req, res) => {
                 return {
                     ...reg,
                     user: reg.user ? { id: reg.user.id, fullName: reg.user.profile?.fullName, phone: reg.user.phone } : null,
+                    liderDoce: reg.liderDoce ? { id: reg.liderDoce.id, fullName: reg.liderDoce.profile?.fullName } : null,
                     paymentsByType,
                     totalPaid,
                     baseCost,
@@ -872,59 +877,31 @@ const createPublicEncuentroRegistration = async (req, res) => {
             return res.status(400).json({ error: 'Este encuentro es exclusivo para mujeres.' });
         }
 
-        // Find an admin user to serve as the default inviter for the guest
-        const adminUser = await prisma.user.findFirst({
-            where: {
-                roles: { some: { role: { name: 'ADMIN' } } }
-            },
-            select: { id: true }
-        });
-
-        if (!adminUser) {
-            return res.status(500).json({ error: 'No hay usuarios administradores disponibles para procesar el registro.' });
-        }
-
-        // Create or find guest by name+phone
-        let guest = await prisma.guest.findFirst({
-            where: {
-                name: { equals: trimmedName, mode: 'insensitive' },
-                phone: trimmedPhone || undefined,
-                isDeleted: false
-            },
-            select: { id: true }
-        });
-
-        if (!guest) {
-            guest = await prisma.guest.create({
-                data: {
-                    name: trimmedName,
-                    phone: trimmedPhone || 'Sin teléfono',
-                    sex: sex || null,
-                    status: 'NUEVO',
-                    invitedById: adminUser.id,
-                    registeredById: adminUser.id
-                },
-                select: { id: true }
-            });
-        }
-
-        // Check for duplicate registration
-        const existingRegistration = await prisma.encuentroRegistration.findFirst({
+        // Check for duplicate registration by name+phone
+        const duplicateRegistration = await prisma.encuentroRegistration.findFirst({
             where: {
                 encuentroId: parseInt(encuentroId),
-                guestId: guest.id
+                status: {
+                    in: ['PENDING', 'REGISTERED', 'ATTENDED']
+                },
+                fullName: {
+                    equals: trimmedName,
+                    mode: 'insensitive'
+                },
+                ...(trimmedPhone ? { phone: trimmedPhone } : { phone: null })
             },
             select: { id: true }
         });
 
-        if (existingRegistration) {
-            return res.status(400).json({ error: 'Ya estás inscrito en este encuentro.' });
+        if (duplicateRegistration) {
+            return res.status(400).json({ error: 'Ya existe una solicitud o inscripción con este nombre en el encuentro.' });
         }
 
         const registration = await prisma.encuentroRegistration.create({
             data: {
                 encuentroId: parseInt(encuentroId),
-                guestId: guest.id,
+                fullName: trimmedName,
+                phone: trimmedPhone || null,
                 status: 'PENDING',
                 needsTransport: Boolean(needsTransport),
                 needsAccommodation: Boolean(needsAccommodation),
@@ -951,12 +928,22 @@ const createPublicEncuentroRegistration = async (req, res) => {
 const approveEncuentroRegistration = async (req, res) => {
     try {
         const { registrationId } = req.params;
-        const { userId, createUser, leaderId } = req.body;
+        const { userId, createUser, leaderId, guestId } = req.body;
         const currentUserId = req.user?.id;
 
         const registration = await prisma.encuentroRegistration.findUnique({
             where: { id: parseInt(registrationId) },
-            include: { guest: true }
+            select: {
+                id: true,
+                encuentroId: true,
+                status: true,
+                fullName: true,
+                phone: true,
+                userId: true,
+                guestId: true,
+                needsTransport: true,
+                needsAccommodation: true
+            }
         });
 
         if (!registration) {
@@ -974,9 +961,31 @@ const approveEncuentroRegistration = async (req, res) => {
 
         let targetUserId = userId ? parseInt(userId) : null;
 
+        // If guestId is provided, link to existing guest
+        let targetGuestId = guestId ? parseInt(guestId) : null;
+        if (targetGuestId) {
+            const guest = await prisma.guest.findUnique({ where: { id: targetGuestId } });
+            if (!guest) {
+                return res.status(404).json({ error: 'Invitado no encontrado.' });
+            }
+
+            const existingReg = await prisma.encuentroRegistration.findFirst({
+                where: {
+                    guestId: targetGuestId,
+                    encuentroId: registration.encuentroId,
+                    NOT: { id: parseInt(registrationId) }
+                },
+                select: { id: true }
+            });
+
+            if (existingReg) {
+                return res.status(400).json({ error: 'El invitado ya está registrado en este encuentro.' });
+            }
+        }
+
         // If createUser is requested
-        if (createUser && registration.guest) {
-            const cleanPhone = (registration.guest.phone || '').trim();
+        if (createUser) {
+            const cleanPhone = (registration.phone || '').trim();
             const emailLocalPart = cleanPhone
                 ? cleanPhone.replace(/[^a-zA-Z0-9]/g, '_')
                 : `invitado_${registration.id}_${Date.now()}`;
@@ -999,7 +1008,7 @@ const approveEncuentroRegistration = async (req, res) => {
                         mustChangePassword: true,
                         profile: {
                             create: {
-                                fullName: registration.guest.name || 'Invitado'
+                                fullName: registration.fullName || 'Invitado'
                             }
                         }
                     },
@@ -1025,14 +1034,6 @@ const approveEncuentroRegistration = async (req, res) => {
                         }
                     });
                 }
-
-                // Update the guest status to GANADO
-                await tx.guest.update({
-                    where: { id: registration.guest.id },
-                    data: {
-                        status: 'GANADO'
-                    }
-                });
 
                 return user;
             });
@@ -1061,7 +1062,16 @@ const approveEncuentroRegistration = async (req, res) => {
 
         if (targetUserId) {
             updateData.userId = targetUserId;
-            updateData.guestId = null; // Unlink guest since they are now a user
+        }
+
+        if (targetGuestId) {
+            updateData.guestId = targetGuestId;
+
+            // Update guest status to GANADO when linked to a guest
+            await prisma.guest.update({
+                where: { id: targetGuestId },
+                data: { status: 'GANADO' }
+            });
         }
 
         const updated = await prisma.encuentroRegistration.update({
@@ -1069,19 +1079,12 @@ const approveEncuentroRegistration = async (req, res) => {
             data: updateData
         });
 
-        // Also if it remains a guest, update guest status to GANADO
-        if (!targetUserId && registration.guestId) {
-            await prisma.guest.update({
-                where: { id: registration.guestId },
-                data: { status: 'GANADO' }
-            });
-        }
-
         if (currentUserId) {
             await logActivity(currentUserId, 'UPDATE', 'ENCUENTRO_REGISTRATION', updated.id, {
                 action: 'APPROVE_PUBLIC_REGISTRATION',
                 encuentroId: registration.encuentroId,
                 linkedUserId: targetUserId,
+                linkedGuestId: targetGuestId || null,
                 createdUser: createUser || false
             }, req.ip, req.headers['user-agent']);
         }

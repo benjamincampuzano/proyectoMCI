@@ -39,6 +39,8 @@ const Encuentros = () => {
         coordinatorId: null
     });
 
+    const [showStatsMobile, setShowStatsMobile] = useState(false);
+
     useEffect(() => {
         fetchEncuentros();
         fetchModuleCoordinator();
@@ -309,77 +311,147 @@ const Encuentros = () => {
             </div>
 
             {/* Estadísticas Resumidas - Solo cuando no estamos en reporte */}
-                        {!showReport && encuentros.length > 0 && (
-            		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                                <Users size={20} />
+            {/* Estadísticas Resumidas - Solo cuando no estamos en reporte */}
+            {!showReport && encuentros.length > 0 && (
+                <>
+                    {/* Vista Móvil: Barra Sutil y Colapsable */}
+                    <div className="sm:hidden mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 shadow-sm transition-all">
+                        <button
+                            type="button"
+                            onClick={() => setShowStatsMobile(!showStatsMobile)}
+                            className="w-full flex items-center justify-between text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Users size={16} className="text-blue-500" />
+                                <span>Estadísticas: <strong className="text-blue-600 dark:text-blue-400">{stats.total}</strong> encuentros ({stats.inscritos} inscritos)</span>
                             </div>
-                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Encuentros</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{stats.total}</span>
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad de Encuentros Realizados</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
-                                <UserIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{stats.inscritos}</span>
-                            </div>
-                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Total Inscritos</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                                <Users size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Promedio Inscritos</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">{stats.promedioInscritos}</span>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Promedio de Inscritos por Encuentro</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-orange-50 dark:bg-orange-900/20 p-5 rounded-xl border border-orange-100 dark:border-orange-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg text-orange-600 dark:text-orange-300">
-                                <UserIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-orange-800 dark:text-orange-200 uppercase tracking-tight">Conversos</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-orange-900 dark:text-white">{stats.conversos}</span>
-                            <span className="text-xs text-orange-600 dark:text-orange-400 font-medium mt-1">Cantidad de Conversos</span>
-                        </div>
-                    </div>
-
-                    <div className="bg-amber-50 dark:bg-amber-900/20 p-5 rounded-xl border border-amber-100 dark:border-amber-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg text-amber-600 dark:text-amber-300">
-                                <Clock size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Solic. Pendientes</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-amber-900 dark:text-white">{stats.pendientesAprobacion || 0}</span>
-                            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">
-                                Saldo pendiente: {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(stats.saldoPendiente)}
+                            <span className="text-blue-600 dark:text-blue-400 text-xs font-bold bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
+                                {showStatsMobile ? 'Ocultar ▲' : 'Ver resumen ▼'}
                             </span>
+                        </button>
+
+                        {showStatsMobile && (
+                            <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60 animate-fade-in">
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-2.5 rounded-lg border border-blue-100 dark:border-blue-800">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <Users size={14} className="text-blue-600 dark:text-blue-300" />
+                                        <span className="text-[10px] font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total</span>
+                                    </div>
+                                    <span className="text-lg font-extrabold text-blue-900 dark:text-white">{stats.total}</span>
+                                </div>
+
+                                <div className="bg-purple-50 dark:bg-purple-900/20 p-2.5 rounded-lg border border-purple-100 dark:border-purple-800">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <UserIcon size={14} className="text-purple-600 dark:text-purple-300" />
+                                        <span className="text-[10px] font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Inscritos</span>
+                                    </div>
+                                    <span className="text-lg font-extrabold text-purple-900 dark:text-white">{stats.inscritos}</span>
+                                </div>
+
+                                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-800">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <Users size={14} className="text-emerald-600 dark:text-emerald-300" />
+                                        <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Promedio</span>
+                                    </div>
+                                    <span className="text-lg font-extrabold text-emerald-900 dark:text-white">{stats.promedioInscritos}</span>
+                                </div>
+
+                                <div className="bg-orange-50 dark:bg-orange-900/20 p-2.5 rounded-lg border border-orange-100 dark:border-orange-800">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <UserIcon size={14} className="text-orange-600 dark:text-orange-300" />
+                                        <span className="text-[10px] font-bold text-orange-800 dark:text-orange-200 uppercase tracking-tight">Conversos</span>
+                                    </div>
+                                    <span className="text-lg font-extrabold text-orange-900 dark:text-white">{stats.conversos}</span>
+                                </div>
+
+                                <div className="col-span-2 bg-amber-50 dark:bg-amber-900/20 p-2.5 rounded-lg border border-amber-100 dark:border-amber-800 flex justify-between items-center">
+                                    <div>
+                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                            <Clock size={14} className="text-amber-600 dark:text-amber-300" />
+                                            <span className="text-[10px] font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Solic. Pendientes</span>
+                                        </div>
+                                        <span className="text-base font-extrabold text-amber-900 dark:text-white">{stats.pendientesAprobacion || 0}</span>
+                                    </div>
+                                    <span className="text-xs text-amber-700 dark:text-amber-300 font-bold">
+                                        {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(stats.saldoPendiente)}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Vista Desktop: Grid Completo */}
+                    <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6 mb-6 md:mb-10">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                                    <Users size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Encuentros</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-blue-900 dark:text-white">{stats.total}</span>
+                                <span className="hidden md:block text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5 md:mt-1">Cantidad de Encuentros Realizados</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-purple-50 dark:bg-purple-900/20 p-3 md:p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                                    <UserIcon size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-xl md:text-3xl font-extrabold text-purple-900 dark:text-white">{stats.inscritos}</span>
+                                </div>
+                                <span className="hidden md:block text-xs text-purple-600 dark:text-purple-400 font-medium mt-0.5 md:mt-1">Total Inscritos</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 md:p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                                    <Users size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Promedio Inscritos</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-emerald-900 dark:text-white">{stats.promedioInscritos}</span>
+                                <span className="hidden md:block text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 md:mt-1">Promedio de Inscritos por Encuentro</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-orange-50 dark:bg-orange-900/20 p-3 md:p-5 rounded-xl border border-orange-100 dark:border-orange-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-orange-100 dark:bg-orange-800 rounded-lg text-orange-600 dark:text-orange-300">
+                                    <UserIcon size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-orange-800 dark:text-orange-200 uppercase tracking-tight">Conversos</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-orange-900 dark:text-white">{stats.conversos}</span>
+                                <span className="hidden md:block text-xs text-orange-600 dark:text-orange-400 font-medium mt-0.5 md:mt-1">Cantidad de Conversos</span>
+                            </div>
+                        </div>
+
+                        <div className="bg-amber-50 dark:bg-amber-900/20 p-3 md:p-5 rounded-xl border border-amber-100 dark:border-amber-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-amber-100 dark:bg-amber-800 rounded-lg text-amber-600 dark:text-amber-300">
+                                    <Clock size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Solic. Pendientes</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-amber-900 dark:text-white">{stats.pendientesAprobacion || 0}</span>
+                                <span className="text-[10px] md:text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5 md:mt-1">
+                                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(stats.saldoPendiente)}
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </>
             )}
             {/* Acciones: Reporte */}
             {!showReport && (

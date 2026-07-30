@@ -568,6 +568,8 @@ model EncuentroRegistration {
   guestId            Int?
   userId             Int?
   encuentroId        Int
+  fullName           String?
+  phone              String?
   status             RegistrationStatus         @default(PENDING)
   discountPercentage Float                      @default(0)
   createdAt          DateTime                   @default(now()) @db.Timestamptz(6)
@@ -589,6 +591,7 @@ model EncuentroRegistration {
   @@index([createdAt])
   @@index([encuentroId])
   @@index([liderDoceId])
+  @@index([fullName])
 }
 
 model EncuentroPayment {
