@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MicrosoftExcelLogoIcon, SpinnerIcon, Users, Phone, House, Handshake } from '@phosphor-icons/react';
+import { MicrosoftExcelLogoIcon, SpinnerIcon, Users, Phone, House, Handshake, FunnelIcon, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
 import ExcelJS from 'exceljs';
@@ -18,6 +18,8 @@ const GuestStats = ({ refreshTrigger }) => {
     const [endDate, setEndDate] = useState('');
     const [liderDoceId, setLiderDoceId] = useState('');
     const [lideresDoce, setLideresDoce] = useState([]);
+    const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+    const [showCardsMobile, setShowCardsMobile] = useState(false);
 
     useEffect(() => {
         // Set default date range (last 12 months) to avoid hiding older history by default
@@ -177,62 +179,83 @@ const GuestStats = ({ refreshTrigger }) => {
                     </div>
                 )}
 
-                {/* Date Filters */}
-                <div className="flex flex-wrap items-end gap-4 mb-6">
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="startDate" className="text-sm font-medium text-[#1d1d1f] dark:text-white/80">
-                            Desde
-                        </label>
-                        <input
-                            id="startDate"
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm"
-                        />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="endDate" className="text-sm font-medium text-[#1d1d1f] dark:text-white/80">
-                            Hasta
-                        </label>
-                        <input
-                            id="endDate"
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm"
-                        />
-                    </div>
-                    {(currentUser?.roles?.some(r => ['ADMIN', 'PASTOR', 'COORDINADOR'].includes(r)) || isModuleCoordinator) && (
+                {/* Filters Header - Mobile Collapsible */}
+                <div className="bg-white dark:bg-[#272729] rounded-lg border border-[#d1d1d6] dark:border-[#3a3a3c] mb-6">
+                    <button
+                        type="button"
+                        onClick={() => setShowFiltersMobile(!showFiltersMobile)}
+                        className="md:hidden w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[#1d1d1f] dark:text-white focus:outline-none"
+                    >
                         <div className="flex items-center gap-2">
-                            <label htmlFor="liderDoce" className="text-sm font-medium text-[#1d1d1f] dark:text-white/80">
-                                Red Líder 12
-                            </label>
-                            <select
-                                id="liderDoce"
-                                value={liderDoceId}
-                                onChange={(e) => setLiderDoceId(e.target.value)}
-                                className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm min-w-[200px]"
-                            >
-                                <option value="">Todas las Redes</option>
-                                {lideresDoce.map(lider => (
-                                    <option key={lider.id} value={lider.id}>
-                                        {lider.profile?.fullName || lider.email}
-                                    </option>
-                                ))}
-                            </select>
+                            <FunnelIcon size={16} className="text-blue-500" />
+                            <span>Filtros</span>
+                            {(startDate || endDate || liderDoceId) && (
+                                <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
+                                    Activos
+                                </span>
+                            )}
                         </div>
-                    )}
-                    {(currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR', 'COORDINADOR'].includes(r)) || isModuleCoordinator) && (
-                        <button
-                            onClick={exportToExcel}
-                            disabled={!stats || loading}
-                            className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-1.5 rounded-lg transition-colors text-sm"
-                        >
-                            <MicrosoftExcelLogoIcon size={16} />
-                            <span>Exportar</span>
-                        </button>
-                    )}
+                        {showFiltersMobile ? <CaretUp size={14} /> : <CaretDown size={14} />}
+                    </button>
+
+                    <div className={`${showFiltersMobile ? 'block' : 'hidden'} md:block px-4 pb-4 md:px-0 md:pb-0`}>
+                        <div className="flex flex-col md:flex-row md:items-end gap-3">
+                            <div className="flex items-center gap-2">
+                                <label htmlFor="startDate" className="text-sm font-medium text-[#1d1d1f] dark:text-white/80 whitespace-nowrap">
+                                    Desde
+                                </label>
+                                <input
+                                    id="startDate"
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm w-full"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <label htmlFor="endDate" className="text-sm font-medium text-[#1d1d1f] dark:text-white/80 whitespace-nowrap">
+                                    Hasta
+                                </label>
+                                <input
+                                    id="endDate"
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm w-full"
+                                />
+                            </div>
+                            {(currentUser?.roles?.some(r => ['ADMIN', 'PASTOR', 'COORDINADOR'].includes(r)) || isModuleCoordinator) && (
+                                <div className="flex items-center gap-2">
+                                    <label htmlFor="liderDoce" className="text-sm font-medium text-[#1d1d1f] dark:text-white/80 whitespace-nowrap">
+                                        Red
+                                    </label>
+                                    <select
+                                        id="liderDoce"
+                                        value={liderDoceId}
+                                        onChange={(e) => setLiderDoceId(e.target.value)}
+                                        className="px-3 py-1.5 bg-white dark:bg-[#1d1d1f] border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-lg text-[#1d1d1f] dark:text-white focus:outline-none focus:border-[#0071e3] text-sm w-full"
+                                    >
+                                        <option value="">Todas las Redes</option>
+                                        {lideresDoce.map(lider => (
+                                            <option key={lider.id} value={lider.id}>
+                                                {lider.profile?.fullName || lider.email}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                            {(currentUser?.roles?.some(r => ['ADMIN', 'LIDER_DOCE', 'PASTOR', 'COORDINADOR'].includes(r)) || isModuleCoordinator) && (
+                                <button
+                                    onClick={exportToExcel}
+                                    disabled={!stats || loading}
+                                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-1.5 rounded-lg transition-colors text-sm md:self-end"
+                                >
+                                    <MicrosoftExcelLogoIcon size={16} />
+                                    <span className="hidden sm:inline">Exportar</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {loading ? (
@@ -253,8 +276,20 @@ const GuestStats = ({ refreshTrigger }) => {
 
                             return (
                                 <div className="mt-8">
-                                    <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Reporte de Seguimiento</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
+                                    {/* Mobile: Collapsible header */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCardsMobile(!showCardsMobile)}
+                                        className="md:hidden w-full flex items-center justify-between mb-4"
+                                    >
+                                        <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white">Reporte de Seguimiento</h3>
+                                        <span className="text-blue-600 dark:text-blue-400 text-xs font-bold bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full shrink-0">
+                                            {showCardsMobile ? 'Ocultar ▲' : 'Ver resumen ▼'}
+                                        </span>
+                                    </button>
+                                    {/* Desktop: Header normal */}
+                                    <h3 className="hidden md:block text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Reporte de Seguimiento</h3>
+                                    <div className={`${showCardsMobile ? 'block' : 'hidden'} md:grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-6 mb-6`}>
                                         <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
@@ -386,7 +421,8 @@ const GuestStats = ({ refreshTrigger }) => {
                         {stats.topInviters && stats.topInviters.length > 0 && (
                             <div className="bg-white dark:bg-[#272729] rounded-lg p-6 border border-[#d1d1d6] dark:border-[#3a3a3c]">
                                 <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Detalle de Invitadores</h3>
-                                <div className="overflow-x-auto">
+                                {/* Desktop Table */}
+                                <div className="hidden md:block overflow-x-auto">
                                     <table className="w-full">
                                         <thead className="bg-[#f5f5f7] dark:bg-[#272729]">
                                             <tr>
@@ -406,6 +442,21 @@ const GuestStats = ({ refreshTrigger }) => {
                                         </tbody>
                                     </table>
                                 </div>
+                                {/* Mobile Vertical Cards */}
+                                <div className="md:hidden divide-y divide-[#d1d1d6] dark:divide-[#3a3a3c]">
+                                    {stats.topInviters.map((inviter, index) => (
+                                        <div key={inviter.name} className="flex items-center justify-between py-3">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-semibold text-[#86868b] dark:text-[#98989d] w-5 text-center">{index + 1}</span>
+                                                <span className="text-sm text-[#1d1d1f] dark:text-white">{inviter.name}</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-sm font-bold text-[#1d1d1f] dark:text-white">{inviter.count}</span>
+                                                <span className="block text-[10px] text-[#86868b] dark:text-[#98989d]">invitados</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
@@ -413,7 +464,8 @@ const GuestStats = ({ refreshTrigger }) => {
                         {trackingStats && trackingStats.length > 0 && (
                             <div className="bg-white dark:bg-[#272729] rounded-lg p-6 border border-[#d1d1d6] dark:border-[#3a3a3c] mt-6">
                                 <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Reporte de Seguimiento por Líder</h3>
-                                <div className="overflow-x-auto">
+                                {/* Desktop Table */}
+                                <div className="hidden md:block overflow-x-auto">
                                     <table className="min-w-full divide-y divide-[#d1d1d6] dark:divide-[#3a3a3c]">
                                         <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">
                                             <tr>
@@ -464,6 +516,40 @@ const GuestStats = ({ refreshTrigger }) => {
                                             ))}
                                         </tbody>
                                     </table>
+                                </div>
+                                {/* Mobile Vertical Cards */}
+                                <div className="md:hidden divide-y divide-[#d1d1d6] dark:divide-[#3a3a3c]">
+                                    {trackingStats.map((row, idx) => {
+                                        const effectiveness = row.total > 0 ? (((row.withCall + row.withVisit) / (row.total * 2)) * 100).toFixed(1) : 0;
+                                        return (
+                                            <div key={idx} className="py-4 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm font-semibold text-[#1d1d1f] dark:text-white">{row.leaderName}</span>
+                                                    <span className="text-xs text-[#86868b] dark:text-[#98989d]">Total: <strong className="text-[#1d1d1f] dark:text-white">{row.total}</strong></span>
+                                                </div>
+                                                <div className="flex items-center gap-4 text-xs">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[#86868b] dark:text-[#98989d]">Llamadas:</span>
+                                                        <span className="font-bold text-green-600 dark:text-green-400">{row.withCall}</span>
+                                                        <span className="text-gray-300 dark:text-[#3a3a3c]">/</span>
+                                                        <span className="font-bold text-red-400 dark:text-red-500">{row.withoutCall}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[#86868b] dark:text-[#98989d]">Visitas:</span>
+                                                        <span className="font-bold text-purple-600 dark:text-purple-400">{row.withVisit}</span>
+                                                        <span className="text-gray-300 dark:text-[#3a3a3c]">/</span>
+                                                        <span className="font-bold text-red-400 dark:text-red-500">{row.withoutVisit}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                                                        <div className="bg-blue-600 h-full" style={{ width: `${effectiveness}%` }} />
+                                                    </div>
+                                                    <span className="text-xs font-medium text-[#86868b] dark:text-[#98989d]">{effectiveness}%</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}

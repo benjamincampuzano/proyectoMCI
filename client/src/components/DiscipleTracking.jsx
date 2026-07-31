@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { User, Phone, WarningCircle, X, CheckCircle, Funnel, MagnifyingGlass, WhatsappLogo, Eye } from '@phosphor-icons/react';
+import { User, Phone, WarningCircle, X, CheckCircle, Funnel, MagnifyingGlass, WhatsappLogo, Eye, CaretDown, CaretUp } from '@phosphor-icons/react';
+import Pagination from './ui/Pagination';
 import AsyncSearchSelect from './ui/AsyncSearchSelect';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -150,11 +151,11 @@ const DiscipleTracking = ({ refreshTrigger }) => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Seguimiento de Discípulos y Líderes</h2>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">Seguimiento de Discípulos y Líderes</h2>
                 <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${hasActiveFilters
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${hasActiveFilters
                         ? 'bg-indigo-500 text-white shadow-md'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                         }`}
@@ -171,8 +172,8 @@ const DiscipleTracking = ({ refreshTrigger }) => {
 
             {showFilters && (
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-4">
-                    <div className="flex flex-wrap items-end gap-4">
-                        <div className="flex-1 min-w-[200px]">
+                    <div className="flex flex-col md:flex-row md:flex-wrap md:items-end gap-3 md:gap-4">
+                        <div className="w-full md:flex-1 md:min-w-[200px]">
                             <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                                 Buscar
                             </label>
@@ -188,7 +189,7 @@ const DiscipleTracking = ({ refreshTrigger }) => {
                             </form>
                         </div>
 
-                        <div className="flex-1 min-w-[150px]">
+                        <div className="w-full md:flex-1 md:min-w-[150px]">
                             <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                                 Rol
                             </label>
@@ -204,7 +205,7 @@ const DiscipleTracking = ({ refreshTrigger }) => {
                         </div>
 
                         {(!isDoceLeader() || isCoordinator('consolidar')) && (
-                            <div className="flex-[2] min-w-[250px]">
+                            <div className="w-full md:flex-[2] md:min-w-[250px]">
                                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                                     Líder de 12
                                 </label>
@@ -260,58 +261,18 @@ const DiscipleTracking = ({ refreshTrigger }) => {
             )}
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between bg-white dark:bg-gray-800 px-6 py-3 border-b border-gray-200 dark:border-gray-700">
-                        <div className="text-sm text-gray-700 dark:text-gray-300">
-                            Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalUsers)} de {totalUsers} usuarios
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1 || loading}
-                                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Anterior
-                            </button>
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                    let pageNum;
-                                    if (totalPages <= 5) {
-                                        pageNum = i + 1;
-                                    } else if (currentPage <= 3) {
-                                        pageNum = i + 1;
-                                    } else if (currentPage >= totalPages - 2) {
-                                        pageNum = totalPages - 4 + i;
-                                    } else {
-                                        pageNum = currentPage - 2 + i;
-                                    }
-                                    const isActive = currentPage === pageNum;
-                                    return (
-                                        <button
-                                            key={pageNum}
-                                            onClick={() => setCurrentPage(pageNum)}
-                                            disabled={loading}
-                                            className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${isActive
-                                                ? 'bg-indigo-600 text-white shadow-md'
-                                                : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages || loading}
-                                className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Siguiente
-                            </button>
-                        </div>
-                    </div>
-                )}
-                <div className="overflow-x-auto">
+                {/* Top Pagination */}
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalUsers}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    loading={loading}
+                    itemLabel="usuarios"
+                />
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-900/50">
                             <tr>
@@ -421,64 +382,123 @@ const DiscipleTracking = ({ refreshTrigger }) => {
                         </tbody>
                     </table>
                 </div>
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                    {usersList.map((usr) => {
+                        const alerts = getAlerts(usr);
+                        const liderHierarchy = usr.hierarchy?.find(h => h.role === 'LIDER_CELULA' || h.role === 'LIDER_DOCE');
+                        return (
+                            <div key={usr.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors space-y-3">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                            {usr.fullName || 'Sin nombre'}
+                                        </h3>
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                            {usr.roles?.filter(r => r === 'DISCIPULO' || r === 'LIDER_CELULA').map(r => (
+                                                <span key={r} className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${getRoleBadgeClass(r)}`}>
+                                                    {getRoleLabel(r)}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        {usr.phone && (
+                                            <button
+                                                onClick={() => handleOpenModal(usr, 'whatsapp')}
+                                                className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                                                title="Enviar WhatsApp"
+                                            >
+                                                <WhatsappLogo className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => handleOpenModal(usr, 'history')}
+                                            className="p-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                            title="Ver detalle"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center text-xs text-gray-600 dark:text-gray-300">
+                                    <User className="w-3 h-3 mr-1.5 text-gray-400 shrink-0" />
+                                    {usr.email || 'N/A'}
+                                    {usr.phone && <span className="ml-2">· {usr.phone}</span>}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <span className="text-gray-500 dark:text-gray-400 block">Líder</span>
+                                        <span className="text-gray-800 dark:text-gray-200 font-medium">
+                                            {liderHierarchy ? liderHierarchy.parentName : 'Sin asignar'}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500 dark:text-gray-400 block">Célula</span>
+                                        {usr.cell ? (
+                                            <span className="text-gray-800 dark:text-gray-200 font-medium">{usr.cell.name}</span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                                <WarningCircle className="w-3 h-3" />
+                                                Sin célula
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500 dark:text-gray-400 block">Iglesia</span>
+                                        {usr.churchAttendances?.[0] ? (
+                                            <span className="text-gray-800 dark:text-gray-200 font-medium">
+                                                {new Date(usr.churchAttendances[0].date).toLocaleDateString()}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-400 italic">Sin registro</span>
+                                        )}
+                                    </div>
+                                </div>
+                                {alerts.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                        {alerts.map((alert, idx) => (
+                                            <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                                <WarningCircle className="w-3 h-3 mr-0.5" />
+                                                {alert.message}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
                 {!loading && usersList.length === 0 && (
                     <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                         No se encontraron usuarios con los filtros seleccionados.
                     </div>
                 )}
+
+                {/* Mobile Pagination */}
+                <div className="md:hidden">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalUsers}
+                        pageSize={pageSize}
+                        onPageChange={setCurrentPage}
+                        loading={loading}
+                        itemLabel="usuarios"
+                    />
+                </div>
             </div>
 
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between bg-white dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700 rounded-b-xl">
-                    <div className="text-sm text-gray-700 dark:text-gray-300">
-                        Mostrando {(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalUsers)} de {totalUsers} usuarios
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1 || loading}
-                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Anterior
-                        </button>
-                        <div className="flex items-center gap-1">
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                let pageNum;
-                                if (totalPages <= 5) {
-                                    pageNum = i + 1;
-                                } else if (currentPage <= 3) {
-                                    pageNum = i + 1;
-                                } else if (currentPage >= totalPages - 2) {
-                                    pageNum = totalPages - 4 + i;
-                                } else {
-                                    pageNum = currentPage - 2 + i;
-                                }
-                                const isActive = currentPage === pageNum;
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        disabled={loading}
-                                        className={`min-w-[32px] h-8 px-2 text-sm font-medium rounded-md transition-colors ${isActive
-                                            ? 'bg-indigo-600 text-white shadow-md'
-                                            : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                            } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages || loading}
-                            className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Bottom Pagination */}
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalUsers}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                loading={loading}
+                itemLabel="usuarios"
+            />
 
             {/* WhatsApp Modal */}
             {modalType === 'whatsapp' && (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import api from '../utils/api';
-import { Calendar, TrendUp, Users, UserMinus, ClipboardIcon, Percent, X} from '@phosphor-icons/react';
+import { Calendar, TrendUp, Users, UserMinus, ClipboardIcon, Percent, X, Funnel, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { getTodayString, getLocalDateString } from '../utils/dateUtils';
 
 const ChurchAttendanceChart = () => {
@@ -13,6 +13,8 @@ const ChurchAttendanceChart = () => {
     });
     const [endDate, setEndDate] = useState(getTodayString());
     const [loading, setLoading] = useState(false);
+    const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+    const [showCardsMobile, setShowCardsMobile] = useState(false);
 
     useEffect(() => {
         fetchStats();
@@ -59,33 +61,69 @@ const ChurchAttendanceChart = () => {
 
     return (
         <div className="space-y-6">
-            {/* Filters - Home Style */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-100 dark:border-gray-700">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-blue-600" />
-                        Estadísticas de Asistencia
-                    </h2>
-                    <div className="flex items-center gap-3">
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
-                        />
-                        <span className="text-gray-400">a</span>
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
-                        />
+            {/* Filters */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700">
+                {/* Mobile: Collapsible header */}
+                <button
+                    type="button"
+                    onClick={() => setShowFiltersMobile(!showFiltersMobile)}
+                    className="md:hidden w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none"
+                >
+                    <div className="flex items-center gap-2">
+                        <Funnel size={16} className="text-blue-500" />
+                        <span>Filtros de Fecha</span>
+                        {(startDate || endDate) && (
+                            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
+                                Activos
+                            </span>
+                        )}
+                    </div>
+                    {showFiltersMobile ? <CaretUp size={14} /> : <CaretDown size={14} />}
+                </button>
+
+                <div className={`${showFiltersMobile ? 'block' : 'hidden'} md:block p-4 pt-0 md:pt-4`}>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                            <Calendar className="w-5 h-5 text-blue-600" />
+                            Estadísticas de Asistencia
+                        </h2>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
+                            />
+                            <span className="text-gray-400 text-center sm:text-left">a</span>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-transparent dark:text-white"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Summary Cards - Unified Style */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Mobile: Collapsible header */}
+            <div className="md:hidden">
+                <button
+                    type="button"
+                    onClick={() => setShowCardsMobile(!showCardsMobile)}
+                    className="w-full flex items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm"
+                >
+                    <div className="flex items-center gap-2">
+                        <TrendUp size={16} className="text-blue-500" />
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">Resumen de Estadísticas</span>
+                    </div>
+                    <span className="text-blue-600 dark:text-blue-400 text-xs font-bold bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full shrink-0">
+                        {showCardsMobile ? 'Ocultar ▲' : 'Ver resumen ▼'}
+                    </span>
+                </button>
+            </div>
+            <div className={`${showCardsMobile ? 'block' : 'hidden'} md:grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-6`}>
                 <div className="bg-green-50 dark:bg-green-900/20 p-5 rounded-xl border border-green-100 dark:border-green-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">

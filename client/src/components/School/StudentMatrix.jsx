@@ -19,6 +19,7 @@ const StudentMatrix = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLeader, setSelectedLeader] = useState(null);
     const [selectedLevel, setSelectedLevel] = useState('');
+    const [showFiltersMobile, setShowFiltersMobile] = useState(false);
 
     useEffect(() => {
         fetchStudentMatrix();
@@ -109,10 +110,18 @@ const StudentMatrix = () => {
             </div>
 
             {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <button
+                    onClick={() => setShowFiltersMobile(!showFiltersMobile)}
+                    className="flex md:hidden items-center justify-between w-full text-sm font-semibold text-gray-700 dark:text-gray-300"
+                >
+                    <span className="flex items-center gap-2"><Funnel size={16} /> Filtros</span>
+                    <svg className={`w-4 h-4 transition-transform ${showFiltersMobile ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                <div className={`mt-4 md:mt-0 ${showFiltersMobile ? 'block' : 'hidden'} md:block`}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Buscar Estudiante
                         </label>
                         <div className="relative">
@@ -127,7 +136,7 @@ const StudentMatrix = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Líder de Doce
                         </label>
                         <AsyncSearchSelect
@@ -144,11 +153,11 @@ const StudentMatrix = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Nivel
                         </label>
                         <select
-                            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg dark:text-white"
+                            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg dark:text-white text-sm"
                             value={selectedLevel}
                             onChange={(e) => setSelectedLevel(e.target.value)}
                         >
@@ -161,11 +170,18 @@ const StudentMatrix = () => {
                         </select>
                     </div>
                 </div>
+                    </div>
             </div>
 
-            {/* Matrix Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                <div className="overflow-x-auto">
+            {/* Student Count */}
+            <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                <span>{filteredStudents.length} estudiante{filteredStudents.length !== 1 ? 's' : ''}</span>
+            </div>
+
+            {/* Matrix Table (Desktop) */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden hidden md:block">
+                <div className="overflow-x-auto touch-pan-x">
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500 text-center py-1 md:hidden bg-gray-50 dark:bg-gray-700/50 italic">Desliza para ver más columnas →</div>
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
@@ -213,7 +229,6 @@ const StudentMatrix = () => {
                                         );
                                         const status = getClassStatus(enrollment, level);
 
-                                        // Fallback: check discipular* profile booleans when no enrollment exists
                                         const DISCIPULAR_FIELD_MAP = {
                                             1: 'discipular1A',
                                             2: 'discipular1B',
@@ -268,23 +283,79 @@ const StudentMatrix = () => {
                 )}
             </div>
 
+            {/* Mobile Student Cards */}
+            <div className="block md:hidden space-y-3">
+                {filteredStudents.map(student => (
+                    <div key={student.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{student.fullName}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{student.leaderDoce?.fullName || 'Sin líder'}</div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                                {student.encuentro ? (
+                                    <CheckCircle className="text-green-500" size={18} weight="fill" title="Encuentro completado" />
+                                ) : (
+                                    <XCircle className="text-red-400" size={18} title="Encuentro pendiente" />
+                                )}
+                            </div>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                            {SCHOOL_LEVELS.map(level => {
+                                const enrollment = student.enrollments?.find(e =>
+                                    e.module?.moduleNumber === level.moduleNumber
+                                );
+                                const status = getClassStatus(enrollment, level);
+                                const profileField = {1:'discipular1A',2:'discipular1B',3:'discipular2A',4:'discipular2B',5:'discipular3A',6:'discipular3B'}[level.moduleNumber];
+                                const profileCompleted = profileField && student[profileField] === true;
+                                const isCompleted = status ? status.completed : profileCompleted;
+                                const hasData = status !== null || profileCompleted;
+                                return (
+                                    <span key={`${level.nivel}${level.seccion}`} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${hasData ? (isCompleted ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300') : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                                        {hasData ? (isCompleted ? <CheckCircle size={12} weight="fill" /> : <XCircle size={12} weight="fill" />) : <Clock size={12} />}
+                                        {level.nivel}{level.seccion}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                        <div className="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700 pt-2">
+                            <span>Prom: <strong>{getAverageGrade(student.enrollments)}</strong></span>
+                            <span>Asist: <strong>{getAttendanceRate(student.enrollments)}</strong></span>
+                        </div>
+                    </div>
+                ))}
+                {filteredStudents.length === 0 && (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg shadow">
+                        No se encontraron estudiantes
+                    </div>
+                )}
+            </div>
+
             {/* Legend */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Leyenda:</h3>
-                <div className="flex flex-wrap gap-4 text-sm">
-                    <div className="flex items-center">
-                        <CheckCircle className="text-green-500 mr-2" size={16} />
-                        <span className="text-gray-600 dark:text-gray-400">Clase completada (aprobado)</span>
+                <details className="md:open">
+                    <summary className="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer list-none flex items-center justify-between md:hidden">
+                        <span>Leyenda</span>
+                        <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </summary>
+                    <div className="mt-2 md:mt-0">
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 hidden md:block">Leyenda:</h3>
+                        <div className="flex flex-wrap gap-4 text-sm">
+                            <div className="flex items-center">
+                                <CheckCircle className="text-green-500 mr-2" size={16} />
+                                <span className="text-gray-600 dark:text-gray-400">Clase completada (aprobado)</span>
+                            </div>
+                            <div className="flex items-center">
+                                <XCircle className="text-red-500 mr-2" size={16} />
+                                <span className="text-gray-600 dark:text-gray-400">Clase no aprobada</span>
+                            </div>
+                            <div className="flex items-center">
+                                <Clock className="text-red-500 mr-2" size={16} />
+                                <span className="text-gray-600 dark:text-gray-400">No iniciado</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center">
-                        <XCircle className="text-red-500 mr-2" size={16} />
-                        <span className="text-gray-600 dark:text-gray-400">Clase no aprobada</span>
-                    </div>
-                    <div className="flex items-center">
-                        <Clock className="text-red-500 mr-2" size={16} />
-                        <span className="text-gray-600 dark:text-gray-400">No iniciado</span>
-                    </div>
-                </div>
+                </details>
             </div>
         </div>
     );

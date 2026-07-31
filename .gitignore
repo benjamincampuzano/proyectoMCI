@@ -164,3 +164,8 @@ CLAUDE.md
 client/eslint.config.js
 client/lint-output.txt
 client/eslint.config.js
+lint-errors.csv
+client-lint.txt
+count-braces.py
+extract-lint.py
+fix-dup.py

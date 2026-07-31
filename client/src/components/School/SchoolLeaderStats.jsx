@@ -56,6 +56,9 @@ const SchoolLeaderStats = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [retryCount, setRetryCount] = useState(0);
+    const [showCardsMobile, setShowCardsMobile] = useState(true);
+    const [showChartMobile, setShowChartMobile] = useState(true);
+    const [showDetailMobile, setShowDetailMobile] = useState(true);
 
     const safeNum = (val) => {
         const n = parseFloat(val);
@@ -186,12 +189,21 @@ const SchoolLeaderStats = () => {
                         variant="success"
                         icon={Download}
                     >
-                        Exportar Excel
+                        <span className="md:hidden lg:inline">Exportar Excel</span>
                     </Button>
                 )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div className="md:hidden flex items-center justify-between mb-2">
+                <button
+                    onClick={() => setShowCardsMobile(!showCardsMobile)}
+                    className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300"
+                >
+                    <ChartBar size={16} /> Resumen
+                    <svg className={`w-4 h-4 transition-transform ${showCardsMobile ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+            </div>
+            <div className={`${showCardsMobile ? 'block' : 'hidden'} md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10 ${showCardsMobile ? 'space-y-4 md:space-y-0' : ''}`}>
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
@@ -247,39 +259,55 @@ const SchoolLeaderStats = () => {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Estudiantes y Aprobados por Líder</h3>
-                <div className="h-80 w-full">
-                    <ResponsiveContainer width="100%" height="100%" minHeight={300}>
-                        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94a3b8" strokeOpacity={0.2} />
-                            <XAxis
-                                dataKey="leaderName"
-                                angle={-45}
-                                textAnchor="end"
-                                height={80}
-                                interval={0}
-                                tick={{ fontSize: 12 }}
-                                stroke="#64748b"
-                            />
-                            <YAxis stroke="#64748b" />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#1e293b' }}
-                                itemStyle={{ color: '#fff' }}
-                            />
-                            <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                            <Bar dataKey="students" name="Estudiantes" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="passed" name="Aprobados" fill="#10B981" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <button
+                    onClick={() => setShowChartMobile(!showChartMobile)}
+                    className="w-full flex items-center justify-between p-6 pb-0 md:pb-6 md:cursor-default"
+                >
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Estudiantes y Aprobados por Líder</h3>
+                    <svg className={`w-4 h-4 text-gray-400 transition-transform md:hidden ${showChartMobile ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                <div className={`${showChartMobile ? 'block' : 'hidden'} md:block`}>
+                    <div className="p-6">
+                        <div className="h-80 w-full">
+                            <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+                                <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94a3b8" strokeOpacity={0.2} />
+                                    <XAxis
+                                        dataKey="leaderName"
+                                        angle={-45}
+                                        textAnchor="end"
+                                        height={80}
+                                        interval={0}
+                                        tick={{ fontSize: 12 }}
+                                        stroke="#64748b"
+                                    />
+                                    <YAxis stroke="#64748b" />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#1e293b' }}
+                                        itemStyle={{ color: '#fff' }}
+                                    />
+                                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                    <Bar dataKey="students" name="Estudiantes" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="passed" name="Aprobados" fill="#10B981" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <button
+                    onClick={() => setShowDetailMobile(!showDetailMobile)}
+                    className="w-full flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 md:cursor-default"
+                >
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Detalle por Red</h3>
-                </div>
-                <div className="overflow-x-auto">
+                    <svg className={`w-4 h-4 text-gray-400 transition-transform md:hidden ${showDetailMobile ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                <div className={`${showDetailMobile ? 'block' : 'hidden'} md:block`}>
+                {/* Desktop Table */}
+                <div className="overflow-x-auto hidden md:block">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700">
                             <tr>
@@ -317,6 +345,29 @@ const SchoolLeaderStats = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+                {/* Mobile Cards */}
+                <div className="block md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                    {data.map((item) => (
+                        <div key={item.leaderName} className="p-4 space-y-2 text-sm">
+                            <div className="font-medium text-gray-900 dark:text-white">{item.leaderName}</div>
+                            <div className="grid grid-cols-2 gap-2 text-gray-500 dark:text-gray-400">
+                                <div>Estudiantes: <span className="text-gray-700 dark:text-gray-300 font-medium">{item.students}</span></div>
+                                <div>Aprobados: <span className="text-gray-700 dark:text-gray-300 font-medium">{item.passed}</span></div>
+                                <div>
+                                    Nota Promedio:
+                                    <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold ${safeNum(item.avgGrade) >= 4.0 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                        safeNum(item.avgGrade) >= 3.0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                            'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                                        }`}>
+                                        {safeNum(item.avgGrade).toFixed(1)}
+                                    </span>
+                                </div>
+                                <div>Asistencia: <span className="text-gray-700 dark:text-gray-300 font-medium">{safeNum(item.avgAttendance).toFixed(1)}%</span></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
                 </div>
             </div>
         </div>

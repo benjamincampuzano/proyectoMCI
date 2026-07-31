@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Calendar, Check, X, Trash, Desktop, Users, MagnifyingGlass, UserMinus, Funnel, User } from '@phosphor-icons/react';
+import { Calendar, Check, X, Trash, Desktop, Users, MagnifyingGlass, UserMinus, Funnel, User, CaretDown, CaretUp } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import ModalAttendance from './ModalAttendance';
@@ -48,6 +48,7 @@ const ChurchAttendance = (props) => {
     // Estados para filtros
     const { user } = useAuth();
     const [showFilters, setShowFilters] = useState(false);
+    const [showStatsMobile, setShowStatsMobile] = useState(false);
     const [liderDoceFilter, setLiderDoceFilter] = useState(null);
     const [liderCelulaFilter, setLiderCelulaFilter] = useState(null);
     const [rolFilter, setRolFilter] = useState('');
@@ -340,7 +341,23 @@ const ChurchAttendance = (props) => {
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+            {/* Mobile: Collapsible header */}
+            <div className="md:hidden">
+                <button
+                    type="button"
+                    onClick={() => setShowStatsMobile(!showStatsMobile)}
+                    className="w-full flex items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm"
+                >
+                    <div className="flex items-center gap-2">
+                        <Users size={16} className="text-blue-500" />
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">Resumen de Asistencia</span>
+                    </div>
+                    <span className="text-blue-600 dark:text-blue-400 text-xs font-bold bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full shrink-0">
+                        {showStatsMobile ? 'Ocultar ▲' : 'Ver resumen ▼'}
+                    </span>
+                </button>
+            </div>
+            <div className={`${showStatsMobile ? 'block' : 'hidden'} md:grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4`}>
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm col-span-2 md:col-span-1">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300">
@@ -444,9 +461,9 @@ const ChurchAttendance = (props) => {
                 {/* Filters Panel */}
                 {showFilters && (
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40">
-                        <div className="flex flex-wrap items-end gap-4">
+                        <div className="flex flex-col md:flex-row md:flex-wrap md:items-end gap-3 md:gap-4">
                             {/* Filtro por Líder de 12 */}
-                            <div className="flex-[2] min-w-[250px]">
+                            <div className="w-full md:flex-[2] md:min-w-[250px]">
                                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                                     Líder de 12
                                 </label>
@@ -466,7 +483,7 @@ const ChurchAttendance = (props) => {
                             </div>
 
                             {/* Filtro por Líder de Célula */}
-                            <div className="flex-[2] min-w-[250px]">
+                            <div className="w-full md:flex-[2] md:min-w-[250px]">
                                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                                     Líder de Célula
                                 </label>
@@ -483,7 +500,7 @@ const ChurchAttendance = (props) => {
                             </div>
 
                             {/* Filtro por Rol */}
-                            <div className="flex-1 min-w-[180px]">
+                            <div className="w-full md:flex-1 md:min-w-[180px]">
                                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                                     Rol
                                 </label>
@@ -501,7 +518,7 @@ const ChurchAttendance = (props) => {
                             </div>
 
                             {/* Filtro por Red */}
-                            <div className="flex-1 min-w-[180px]">
+                            <div className="w-full md:flex-1 md:min-w-[180px]">
                                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">
                                     Red
                                 </label>

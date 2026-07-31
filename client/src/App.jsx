@@ -179,7 +179,7 @@ import { Toaster } from 'react-hot-toast';
 function App() {
   // Initialize mobile debugging in development only if enabled
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && import.meta.env.VITE_DEBUG_MOBILE) {
+    if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_MOBILE) {
       mobileDebug.init();
     }
   }, []);

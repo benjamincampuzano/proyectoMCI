@@ -55,7 +55,7 @@ const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange =
     <div className={`space-y-6 ${className}`}>
       {/* Tab Navigation */}
       <div className="border-b border-[var(--ln-border-standard)]">
-        <nav className="flex space-x-1" aria-label="Tabs">
+        <nav className="flex space-x-1 overflow-x-auto flex-nowrap scrollbar-none touch-pan-x" aria-label="Tabs">
           {allowedTabs.map((tab) => (
             <button
               key={tab.id}
