@@ -120,6 +120,17 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         type: ''
     });
 
+    // Edit Pending Registration Modal State
+    const [showEditPendingModal, setShowEditPendingModal] = useState(false);
+    const [editPendingData, setEditPendingData] = useState({
+        id: null,
+        fullName: '',
+        phone: '',
+        liderDoce: null,
+        needsTransport: false,
+        needsAccommodation: false
+    });
+
     // Registration Form State
     const [registrationType, setRegistrationType] = useState('GUEST'); // GUEST or USER
     const [selectedGuest, setSelectedGuest] = useState(null);
@@ -434,6 +445,40 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         }
     };
 
+    const openEditPendingModal = (reg) => {
+        setEditPendingData({
+            id: reg.id,
+            fullName: reg.fullName || reg.guest?.name || reg.user?.fullName || '',
+            phone: reg.phone || reg.guest?.phone || reg.user?.phone || '',
+            liderDoce: reg.liderDoce ? { id: reg.liderDoce.id, fullName: reg.liderDoce.fullName } : null,
+            needsTransport: reg.needsTransport || false,
+            needsAccommodation: reg.needsAccommodation || false
+        });
+        setShowEditPendingModal(true);
+    };
+
+    const handleUpdatePendingRegistration = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            await api.put(`/encuentros/registrations/${editPendingData.id}`, {
+                fullName: editPendingData.fullName,
+                phone: editPendingData.phone,
+                liderDoceId: editPendingData.liderDoce?.id || null,
+                needsTransport: editPendingData.needsTransport,
+                needsAccommodation: editPendingData.needsAccommodation
+            });
+            setShowEditPendingModal(false);
+            toast.success('Preinscripción actualizada exitosamente');
+            onRefresh();
+        } catch (error) {
+            console.error('Error updating pending registration:', error);
+            toast.error('Error al actualizar: ' + (error.response?.data?.error || 'Error desconocido'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const openHistoryModal = (registration) => {
         setSelectedHistoryRegistration(registration);
         setShowHistoryModal(true);
@@ -703,6 +748,13 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     </div>
                                     <div className="flex gap-2 shrink-0">
                                         <button
+                                            onClick={() => openEditPendingModal(reg)}
+                                            className="p-2 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300 rounded-lg"
+                                            title="Editar"
+                                        >
+                                            <PencilSimple size={16} />
+                                        </button>
+                                        <button
                                             onClick={() => handleOpenApproveModal(reg)}
                                             className="p-2 bg-green-600 text-white rounded-lg"
                                             title="Aprobar"
@@ -774,6 +826,12 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                 {reg.needsAccommodation ? 'Sí' : 'No'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                                <button
+                                                    onClick={() => openEditPendingModal(reg)}
+                                                    className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 focus:outline-none transition-colors"
+                                                >
+                                                    Editar
+                                                </button>
                                                 <button
                                                     onClick={() => handleOpenApproveModal(reg)}
                                                     className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none transition-colors"
@@ -1233,6 +1291,94 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                                 >
                                     Registrar Pago
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Pending Registration Modal */}
+            {showEditPendingModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Editar Preinscripción</h3>
+                            <button onClick={() => setShowEditPendingModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleUpdatePendingRegistration} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Nombre Completo
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editPendingData.fullName}
+                                    onChange={(e) => setEditPendingData({ ...editPendingData, fullName: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Teléfono
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={editPendingData.phone}
+                                    onChange={(e) => setEditPendingData({ ...editPendingData, phone: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Número de contacto"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Líder Doce
+                                </label>
+                                <AsyncSearchSelect
+                                    fetchItems={(term) => {
+                                        const params = { search: term, role: 'LIDER_DOCE' };
+                                        return api.get('/users/search', { params }).then(res => res.data);
+                                    }}
+                                    selectedValue={editPendingData.liderDoce}
+                                    onSelect={(user) => setEditPendingData({ ...editPendingData, liderDoce: user || null })}
+                                    placeholder="Buscar líder de 12..."
+                                    labelKey="fullName"
+                                />
+                            </div>
+                            <div className="flex items-center space-x-2 pt-2">
+                                <input
+                                    type="checkbox"
+                                    id="editPendingNeedsTransport"
+                                    checked={editPendingData.needsTransport}
+                                    onChange={(e) => setEditPendingData({ ...editPendingData, needsTransport: e.target.checked })}
+                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="editPendingNeedsTransport" className="text-sm text-gray-700 dark:text-gray-300">
+                                    Incluye libro U. de la V.
+                                </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id="editPendingNeedsAccommodation"
+                                    checked={editPendingData.needsAccommodation}
+                                    onChange={(e) => setEditPendingData({ ...editPendingData, needsAccommodation: e.target.checked })}
+                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="editPendingNeedsAccommodation" className="text-sm text-gray-700 dark:text-gray-300">
+                                    Incluye otros gastos
+                                </label>
+                            </div>
+                            <div className="pt-4">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+                                >
+                                    {loading ? 'Guardando...' : 'Guardar Cambios'}
                                 </button>
                             </div>
                         </form>

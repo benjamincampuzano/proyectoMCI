@@ -645,7 +645,7 @@ const updateClassAttendance = async (req, res) => {
 const updateRegistration = async (req, res) => {
     try {
         const { registrationId } = req.params;
-        const { isBaptized } = req.body;
+        const { isBaptized, fullName, phone, liderDoceId, needsTransport, needsAccommodation } = req.body;
         const { id: userId } = req.user;
 
         const registration = await prisma.encuentroRegistration.findUnique({
@@ -662,12 +662,56 @@ const updateRegistration = async (req, res) => {
             return res.status(403).json({ error: 'No tienes permisos para actualizar el registro.' });
         }
 
+        const data = {};
+
+        if (typeof isBaptized === 'boolean') {
+            data.isBaptized = isBaptized;
+        }
+
+        if (fullName !== undefined) {
+            const trimmedName = String(fullName).trim();
+            if (!trimmedName) {
+                return res.status(400).json({ error: 'El nombre completo es obligatorio.' });
+            }
+            data.fullName = trimmedName;
+        }
+
+        if (phone !== undefined) {
+            data.phone = String(phone).trim() || null;
+        }
+
+        if (needsTransport !== undefined) data.needsTransport = Boolean(needsTransport);
+        if (needsAccommodation !== undefined) data.needsAccommodation = Boolean(needsAccommodation);
+
+        if (liderDoceId !== undefined) {
+            const parsedLeaderId = liderDoceId ? parseInt(liderDoceId) : null;
+            if (parsedLeaderId) {
+                const leader = await prisma.user.findFirst({
+                    where: {
+                        id: parsedLeaderId,
+                        roles: { some: { role: { name: 'LIDER_DOCE' } } }
+                    },
+                    select: { id: true }
+                });
+                if (!leader) {
+                    return res.status(400).json({ error: 'El líder seleccionado no existe o no tiene el rol de Líder Doce.' });
+                }
+                data.liderDoceId = parsedLeaderId;
+            } else {
+                data.liderDoceId = null;
+            }
+        }
+
+        if (Object.keys(data).length === 0) {
+            return res.status(400).json({ error: 'No hay campos para actualizar.' });
+        }
+
         const updated = await prisma.encuentroRegistration.update({
             where: { id: parseInt(registrationId) },
-            data: { isBaptized }
+            data
         });
 
-        await logActivity(userId, 'UPDATE', 'ENCUENTRO_REGISTRATION', updated.id, { isBaptized }, req.ip, req.headers['user-agent']);
+        await logActivity(userId, 'UPDATE', 'ENCUENTRO_REGISTRATION', updated.id, data, req.ip, req.headers['user-agent']);
 
         res.json(updated);
     } catch (error) {
