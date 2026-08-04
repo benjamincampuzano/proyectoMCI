@@ -3,6 +3,19 @@
   "outputDirectory": "client/dist",
   "installCommand": "pnpm install",
   "framework": "vite",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "proyecto-mci.vercel.app"
+        }
+      ],
+      "destination": "https://somos.mcimanizales.com/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
