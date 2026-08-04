@@ -29,10 +29,12 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
     };
 
     useEffect(() => {
-        if (isOpen && user) {
-            setTempPassword(generateTempPassword());
-            setCopied(false);
-        }
+        void Promise.resolve().then(() => {
+            if (isOpen && user) {
+                setTempPassword(generateTempPassword());
+                setCopied(false);
+            }
+        });
     }, [isOpen, user]);
 
     const copyToClipboard = async (event) => {

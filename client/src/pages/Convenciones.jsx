@@ -12,16 +12,15 @@ import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ROLES } from '../constants/roles';
 
 const Convenciones = () => {
-    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
+    const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const [conventions, setConventions] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
     const [selectedConvention, setSelectedConvention] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showReport, setShowReport] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
-    const hasAdminOrPastor = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]);
 
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -62,13 +61,6 @@ const Convenciones = () => {
         coordinatorId: null,
         coordinator: null
     });
-
-    useEffect(() => {
-        fetchConventions();
-        fetchModuleCoordinator();
-        fetchModuleSubCoordinator();
-        fetchModuleTreasurer();
-    }, []);
 
     const fetchModuleCoordinator = async () => {
         try {
@@ -111,6 +103,13 @@ const Convenciones = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        void Promise.resolve().then(fetchConventions);
+        void Promise.resolve().then(fetchModuleCoordinator);
+        void Promise.resolve().then(fetchModuleSubCoordinator);
+        void Promise.resolve().then(fetchModuleTreasurer);
+    }, []);
 
     const fetchConventionDetails = async (id) => {
         try {
@@ -221,13 +220,13 @@ const Convenciones = () => {
     };
 
     const canModify = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE]) 
-        || isCoordinator('convenciones') 
-        || isSubCoordinator('convenciones');
+        || isCoordinator('convencion') 
+        || isSubCoordinator('convencion');
 
     const canViewReport = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE]) 
-        || isCoordinator('convenciones') 
-        || isSubCoordinator('convenciones')
-        || isTreasurer('convenciones');
+        || isCoordinator('convencion') 
+        || isSubCoordinator('convencion')
+        || isTreasurer('convencion');
 
     // Calculo de estadísticas para reporte
     const stats = useMemo(() => {

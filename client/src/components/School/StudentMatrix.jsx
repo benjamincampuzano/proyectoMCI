@@ -21,11 +21,6 @@ const StudentMatrix = () => {
     const [selectedLevel, setSelectedLevel] = useState('');
     const [showFiltersMobile, setShowFiltersMobile] = useState(false);
 
-    useEffect(() => {
-        fetchStudentMatrix();
-
-    }, []);
-
     const fetchStudentMatrix = async () => {
         try {
             setLoading(true);
@@ -37,6 +32,11 @@ const StudentMatrix = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        void Promise.resolve().then(fetchStudentMatrix);
+
+    }, []);
 
     const getClassStatus = (enrollment, level) => {
         if (!enrollment) return null;

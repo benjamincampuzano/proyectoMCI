@@ -12,25 +12,6 @@ import { ROLE_GROUPS } from '../constants/roles';
 import { useAuth } from '../context/AuthContext';
 import { PageHeader, Button } from '../components/ui';
 
-const getGoalStatus = (goal, percent) => {
-    const isMet = percent >= 100;
-    let deadline = null;
-
-    if (goal.encuentro) {
-        deadline = new Date(goal.encuentro.startDate);
-    } else if (goal.convention) {
-        deadline = new Date(goal.convention.startDate);
-    } else if (goal.month && goal.year) {
-        deadline = new Date(goal.year, goal.month, 0);
-    }
-
-    const isPastDeadline = deadline && new Date() > deadline;
-
-    if (isMet) return { label: 'CUMPLIÓ', color: 'green', icon: CheckCircle };
-    if (isPastDeadline) return { label: 'NO CUMPLIÓ', color: 'red', icon: XCircle };
-    return { label: 'EN PROGRESO', color: 'blue', icon: Clock };
-};
-
 // Mapeos de colores estáticos para Tailwind
 // Mapeos de colores estáticos para Tailwind actualizados a Linear
 const COLOR_CLASSES = {
@@ -72,30 +53,69 @@ const COLOR_CLASSES = {
     }
 };
 
-const getDeadlineText = (goal) => {
-    if (goal.encuentro) return new Date(goal.encuentro.startDate).toLocaleDateString('es-ES');
-    if (goal.convention) return new Date(goal.convention.startDate).toLocaleDateString('es-ES');
-    if (goal.month && goal.year) return `${goal.month}/${goal.year}`;
-    return 'N/A';
+const StatCard = ({ title, value, subtitle, icon: Icon, color }) => {
+    const colorData = COLOR_CLASSES[color] || COLOR_CLASSES.blue;
+
+    return (
+        <div className="relative group px-6 py-5 bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-2xl border border-[var(--ln-border-standard)] hover:border-[var(--ln-border-primary)] transition-all duration-300 shadow-sm overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="flex items-start justify-between relative z-10">
+                <div className="flex-1 space-y-1">
+                    <p className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-[0.05em]">{title}</p>
+                    <div className="flex items-baseline gap-2">
+                        <p className="text-3xl weight-590 text-[var(--ln-text-primary)] tracking-tight">{value}</p>
+                    </div>
+                    {subtitle && (
+                        <p className="text-[12px] weight-510 text-[var(--ln-text-tertiary)] opacity-70">{subtitle}</p>
+                    )}
+                </div>
+                <div className={`p-3 ${colorData.bgLight} ${colorData.border} border rounded-xl transition-all group-hover:scale-110 group-hover:rotate-3`}>
+                    <Icon size={20} weight="bold" className={colorData.text} />
+                </div>
+            </div>
+            
+            {/* Background accent */}
+            <div className={`absolute -right-4 -bottom-4 w-24 h-24 ${colorData.bg} opacity-[0.03] rounded-full blur-3xl`} />
+        </div>
+    );
 };
 
-const getTimeRemaining = (goal) => {
-    let deadline = null;
-    if (goal.encuentro) deadline = new Date(goal.encuentro.startDate);
-    else if (goal.convention) deadline = new Date(goal.convention.startDate);
-    else if (goal.month && goal.year) deadline = new Date(goal.year, goal.month, 0);
-    
-    if (!deadline) return null;
-    
-    const now = new Date();
-    const diff = deadline - now;
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-    
-    if (days < 0) return { text: `Venció hace ${Math.abs(days)} días`, urgent: true };
-    if (days === 0) return { text: '¡Vence hoy!', urgent: true };
-    if (days === 1) return { text: 'Vence mañana', urgent: true };
-    if (days <= 7) return { text: `Faltan ${days} días`, urgent: false };
-    return { text: `Faltan ${days} días`, urgent: false };
+const CircularProgress = ({ percentage, size = 120, strokeWidth = 8 }) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const offset = circumference - (Math.min(percentage, 100) / 100) * circumference;
+
+    let colorKey = 'blue';
+    if (percentage >= 100) colorKey = 'green';
+    else if (percentage < 50) colorKey = 'amber';
+    const colorData = COLOR_CLASSES[colorKey];
+
+    return (
+        <div className="relative inline-flex items-center justify-center animate-in fade-in duration-1000">
+            <svg width={size} height={size} className="transform -rotate-90 filter drop-shadow-sm">
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    strokeWidth={strokeWidth}
+                    className="stroke-[var(--ln-border-standard)] fill-none"
+                />
+                <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    strokeWidth={strokeWidth}
+                    className={`${colorData.stroke} fill-none transition-all duration-1000 ease-out`}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={offset}
+                    strokeLinecap="round"
+                />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pt-1">
+                <span className="text-2xl weight-590 text-[var(--ln-text-primary)] leading-none tracking-tight">{percentage}%</span>
+                <span className="text-[9px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-widest mt-1">Cumplimiento</span>
+            </div>
+        </div>
+    );
 };
 
 const Metas = () => {
@@ -185,71 +205,6 @@ const Metas = () => {
             promedioCumplimiento: Math.round(sumaPorcentajes / (goals.length || 1))
         };
     }, [goals]);
-
-    const StatCard = ({ title, value, subtitle, icon: Icon, color, trend }) => {
-        const colorData = COLOR_CLASSES[color] || COLOR_CLASSES.blue;
-
-        return (
-            <div className="relative group px-6 py-5 bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-2xl border border-[var(--ln-border-standard)] hover:border-[var(--ln-border-primary)] transition-all duration-300 shadow-sm overflow-hidden animate-in fade-in zoom-in-95">
-                <div className="flex items-start justify-between relative z-10">
-                    <div className="flex-1 space-y-1">
-                        <p className="text-[11px] weight-590 text-[var(--ln-text-quaternary)] uppercase tracking-[0.05em]">{title}</p>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-3xl weight-590 text-[var(--ln-text-primary)] tracking-tight">{value}</p>
-                        </div>
-                        {subtitle && (
-                            <p className="text-[12px] weight-510 text-[var(--ln-text-tertiary)] opacity-70">{subtitle}</p>
-                        )}
-                    </div>
-                    <div className={`p-3 ${colorData.bgLight} ${colorData.border} border rounded-xl transition-all group-hover:scale-110 group-hover:rotate-3`}>
-                        <Icon size={20} weight="bold" className={colorData.text} />
-                    </div>
-                </div>
-                
-                {/* Background accent */}
-                <div className={`absolute -right-4 -bottom-4 w-24 h-24 ${colorData.bg} opacity-[0.03] rounded-full blur-3xl`} />
-            </div>
-        );
-    };
-
-    const CircularProgress = ({ percentage, size = 120, strokeWidth = 8 }) => {
-        const radius = (size - strokeWidth) / 2;
-        const circumference = radius * 2 * Math.PI;
-        const offset = circumference - (Math.min(percentage, 100) / 100) * circumference;
-
-        let colorKey = 'blue';
-        if (percentage >= 100) colorKey = 'green';
-        else if (percentage < 50) colorKey = 'amber';
-        const colorData = COLOR_CLASSES[colorKey];
-
-        return (
-            <div className="relative inline-flex items-center justify-center animate-in fade-in duration-1000">
-                <svg width={size} height={size} className="transform -rotate-90 filter drop-shadow-sm">
-                    <circle
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        strokeWidth={strokeWidth}
-                        className="stroke-[var(--ln-border-standard)] fill-none"
-                    />
-                    <circle
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        strokeWidth={strokeWidth}
-                        className={`${colorData.stroke} fill-none transition-all duration-1000 ease-out`}
-                        strokeDasharray={circumference}
-                        strokeDashoffset={offset}
-                        strokeLinecap="round"
-                    />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pt-1">
-                    <span className="text-2xl weight-590 text-[var(--ln-text-primary)] leading-none tracking-tight">{percentage}%</span>
-                    <span className="text-[9px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-widest mt-1">Cumplimiento</span>
-                </div>
-            </div>
-        );
-    };
 
     return (
         <div className="space-y-10 pb-32 animate-in fade-in duration-700">

@@ -78,8 +78,8 @@ const AsyncSearchSelect = ({
     // Cargar datos iniciales al abrir el dropdown
     useEffect(() => {
         if (isOpen && !initialDataLoaded && !searchTerm) {
-            handleSearch('');
-            setInitialDataLoaded(true);
+            void Promise.resolve().then(() => handleSearch(''));
+            void Promise.resolve().then(() => setInitialDataLoaded(true));
         }
     }, [isOpen, initialDataLoaded, searchTerm, handleSearch]);
 

@@ -30,11 +30,13 @@ const UserFormModal = ({
     const [passwordErrors, setPasswordErrors] = useState([]);
 
     useEffect(() => {
-        if (isOpen && formData.password && mode === 'create') {
-            setPasswordErrors(validatePasswordRealTime(formData.password, formData.fullName));
-        } else if (!isOpen) {
-            setPasswordErrors([]);
-        }
+        void Promise.resolve().then(() => {
+            if (isOpen && formData.password && mode === 'create') {
+                setPasswordErrors(validatePasswordRealTime(formData.password, formData.fullName));
+            } else if (!isOpen) {
+                setPasswordErrors([]);
+            }
+        });
     }, [isOpen, formData.password, formData.fullName, mode, validatePasswordRealTime]);
 
     const handleSubmit = (e) => {

@@ -106,7 +106,6 @@ const PublicEncuentrosRegistration = () => {
                 liderDoceId: formData.liderDoce?.id || null
             });
 
-            const liderDoceName = formData.liderDoce?.fullName || formData.liderDoce?.label || null;
             setSuccess('Tu solicitud quedó registrada y pendiente de aprobación.');
             setFormData({ ...INITIAL_FORM });
             toast.success('Solicitud enviada');

@@ -1,6 +1,5 @@
 import { UserCheck, AngularLogoIcon } from '@phosphor-icons/react';
 import PropTypes from 'prop-types';
-import { useAuth } from '../context/AuthContext';
 import { ROLES } from '../constants/roles';
 
 /**
@@ -8,8 +7,6 @@ import { ROLES } from '../constants/roles';
  * Shows who is the coordinator for a specific module
  */
 const CoordinatorBadge = ({ moduleCoordinator, moduleName }) => {
-    const { user, isCoordinator } = useAuth();
-
     if (!moduleCoordinator) return null;
 
     return (

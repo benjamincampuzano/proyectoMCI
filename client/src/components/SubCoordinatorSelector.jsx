@@ -14,7 +14,7 @@ const normalizeModule = (name) => {
     return name.toLowerCase().trim().replace(/\s+/g, '-');
 };
 
-const SubCoordinatorSelector = ({ moduleSubCoordinator, moduleName, onSubCoordinatorChange, disabled = false, currentUserId, isModuleCoordinator }) => {
+const SubCoordinatorSelector = ({ moduleSubCoordinator, moduleName, onSubCoordinatorChange, disabled = false, isModuleCoordinator }) => {
     const [isAssigning, setIsAssigning] = useState(false);
     const [selectedSubCoordinator, setSelectedSubCoordinator] = useState(null);
 

@@ -6,10 +6,6 @@ import Input from './ui/Input';
 import toast from 'react-hot-toast';
 import { getTodayString, formatDateSpanish } from '../utils/dateUtils';
 
-const dateFormatSpanish = (dateStr) => {
-  return formatDateSpanish(dateStr);
-};
-
 const reportTypeLabels = {
   church: 'Iglesia',
   cell: 'Célula',

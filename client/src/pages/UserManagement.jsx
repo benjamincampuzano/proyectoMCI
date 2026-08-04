@@ -110,7 +110,8 @@ const UserManagement = () => {
         validatePasswordRealTime,
         calculateAge,
         relatedUsersCache,
-        fetchRelatedUsers
+        fetchRelatedUsers,
+        fetchUsers
     } = useUserManagement();
 
     const handleEditUser = (user) => {

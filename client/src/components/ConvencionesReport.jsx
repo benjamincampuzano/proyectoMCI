@@ -28,14 +28,8 @@ const ConvencionesReport = ({ conventions }) => {
             registeredCount: conv.stats?.registeredCount || 0,
             totalRecaudado: conv.stats?.totalCollected || 0,
             totalPendiente: (conv.stats?.expectedIncome || 0) - (conv.stats?.totalCollected || 0),
-        })).filter(item => {
-            return (
-                (filterPastor === '' || true) && // Simplified - no pastor filter available at this level
-                (filterDoce === '' || true) &&
-                (filterCelula === '' || true)
-            );
-        });
-    }, [conventions, filterPastor, filterDoce, filterCelula]);
+        }));
+    }, [conventions]);
 
     // Calculate totals
     const totals = useMemo(() => {

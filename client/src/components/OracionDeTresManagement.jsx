@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Users, Calendar, Phone, CheckCircle, Clock, Pen, Trash, X } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -7,7 +7,6 @@ import MultiUserSelect from './MultiUserSelect';
 import { Button } from './ui';
 import ConfirmationModal from './ConfirmationModal';
 import PropTypes from 'prop-types';
-import { getTodayString, getLocalDateString } from '../utils/dateUtils';
 
 const OracionDeTresManagement = ({ refreshTrigger: externalRefresh }) => {
     const { user, hasRole, hasAnyRole } = useAuth();
@@ -22,11 +21,7 @@ const OracionDeTresManagement = ({ refreshTrigger: externalRefresh }) => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [groupToDelete, setGroupToDelete] = useState(null);
 
-    useEffect(() => {
-        fetchGroups();
-    }, [refreshTrigger, externalRefresh]);
-
-    const fetchGroups = async () => {
+    const fetchGroups = useCallback(async () => {
         setLoading(true);
         try {
             const res = await api.get('/oracion-de-tres');
@@ -36,7 +31,11 @@ const OracionDeTresManagement = ({ refreshTrigger: externalRefresh }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        void Promise.resolve().then(fetchGroups);
+    }, [refreshTrigger, externalRefresh, fetchGroups]);
 
     const handleCreateGroup = async (formData) => {
         try {

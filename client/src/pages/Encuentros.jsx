@@ -13,7 +13,7 @@ import CoordinatorDisplay from '../components/CoordinatorDisplay';
 import { ROLES } from '../constants/roles';
 
 const Encuentros = () => {
-    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
+    const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const [encuentros, setEncuentros] = useState([]);
     const [selectedEncuentro, setSelectedEncuentro] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -40,13 +40,6 @@ const Encuentros = () => {
     });
 
     const [showStatsMobile, setShowStatsMobile] = useState(false);
-
-    useEffect(() => {
-        fetchEncuentros();
-        fetchModuleCoordinator();
-        fetchModuleSubCoordinator();
-        fetchModuleTreasurer();
-    }, []);
 
     const fetchModuleCoordinator = async () => {
         try {
@@ -86,6 +79,23 @@ const Encuentros = () => {
             console.error('Error fetching encuentros:', error);
         }
     };
+
+    const handleRefresh = async () => {
+        await Promise.allSettled([
+            fetchEncuentros(),
+            fetchModuleCoordinator(),
+            fetchModuleSubCoordinator(),
+            fetchModuleTreasurer()
+        ]);
+        toast.success('Datos actualizados');
+    };
+
+    useEffect(() => {
+        void Promise.resolve().then(fetchEncuentros);
+        void Promise.resolve().then(fetchModuleCoordinator);
+        void Promise.resolve().then(fetchModuleSubCoordinator);
+        void Promise.resolve().then(fetchModuleTreasurer);
+    }, []);
 
     const fetchEncuentroDetails = async (id, openEdit = false) => {
         try {
@@ -303,7 +313,7 @@ const Encuentros = () => {
                     variant="primary"
                     size="sm"
                     icon={ArrowsClockwise}
-                    onClick={fetchEncuentros}
+                    onClick={handleRefresh}
                     className="shadow-xl"
                 >
                     Actualizar

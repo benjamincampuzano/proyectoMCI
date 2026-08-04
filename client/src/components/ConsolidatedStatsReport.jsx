@@ -27,16 +27,16 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
 
-    useEffect(() => {
+    if (!mounted) {
         setMounted(true);
-    }, []);
+    }
 
     const fetchStats = useCallback(async () => {
         try {
             setLoading(true);
             const response = await api.get('/consolidar/stats/general');
             setStats(response.data);
-        } catch (error) {
+        } catch {
             toast.error('Error al cargar estadísticas consolidadas.');
         } finally {
             setLoading(false);
@@ -50,7 +50,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                 params: { month: reportMonth },
             });
             setLeaderStats(response.data);
-        } catch (error) {
+        } catch {
             toast.error('Error al cargar el ranking mensual de líderes.');
         } finally {
             setLeaderStatsLoading(false);
@@ -58,11 +58,11 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
     }, [reportMonth]);
 
     useEffect(() => {
-        fetchStats();
+        void Promise.resolve().then(() => fetchStats());
     }, [fetchStats]);
 
     useEffect(() => {
-        fetchLeaderStats();
+        void Promise.resolve().then(() => fetchLeaderStats());
     }, [fetchLeaderStats]);
 
     const handlePrint = () => {

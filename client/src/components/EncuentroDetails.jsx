@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { ArrowLeft, UserPlus, MoneyIcon, X, XCircle, Trash, Calendar, BookOpen, FileTextIcon, Clock, MagnifyingGlass, PencilSimple, Users, Check } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -11,8 +11,18 @@ import { DATA_POLICY_URL } from '../constants/policies';
 import ConfirmationModal from './ConfirmationModal';
 import GuestRegistrationForm from './GuestRegistrationForm';
 
+// Fix timezone offset - formats date as YYYY-MM-DD without timezone shift
+const formatDateLocal = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
-    const { user, isAdmin, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
+    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     
     const [activeTab, setActiveTab] = useState('general'); // general | classes | report
     const [reportData, setReportData] = useState([]);
@@ -22,38 +32,40 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
 
     // Calculated statistics
     const totalRegistrations = encuentro?.registrations?.length || 0;
+    const registrations = encuentro?.registrations;
     const totalPaid = useMemo(() => {
-        return encuentro?.registrations?.reduce((acc, reg) => acc + (Number(reg.totalPaid) || 0), 0) || 0;
-    }, [encuentro?.registrations]);
+        return registrations?.reduce((acc, reg) => acc + (Number(reg.totalPaid) || 0), 0) || 0;
+    }, [registrations]);
     const totalBalance = useMemo(() => {
-        return encuentro?.registrations?.reduce((acc, reg) => acc + (Number(reg.balance) || 0), 0) || 0;
-    }, [encuentro?.registrations]);
+        return registrations?.reduce((acc, reg) => acc + (Number(reg.balance) || 0), 0) || 0;
+    }, [registrations]);
 
     // Filtered registrations based on search term
     const filteredRegistrations = useMemo(() => {
-        if (!encuentro?.registrations) return [];
-        if (!searchTerm.trim()) return encuentro.registrations;
+        if (!registrations) return [];
+        if (!searchTerm.trim()) return registrations;
         const term = searchTerm.toLowerCase();
-        return encuentro.registrations.filter(reg => {
+        return registrations.filter(reg => {
             const name = (reg.guest?.name || reg.user?.fullName || '').toLowerCase();
             const phone = (reg.guest?.phone || reg.user?.phone || '').toLowerCase();
             const leader = (reg.liderDoce?.fullName || '').toLowerCase();
             return name.includes(term) || phone.includes(term) || leader.includes(term);
         });
-    }, [encuentro?.registrations, searchTerm]);
+    }, [registrations, searchTerm]);
 
     // Filtered pending registrations based on search term
+    const pendingRegistrations = encuentro?.pendingRegistrations;
     const filteredPendingRegistrations = useMemo(() => {
-        if (!encuentro?.pendingRegistrations) return [];
-        if (!searchTerm.trim()) return encuentro.pendingRegistrations;
+        if (!pendingRegistrations) return [];
+        if (!searchTerm.trim()) return pendingRegistrations;
         const term = searchTerm.toLowerCase();
-        return encuentro.pendingRegistrations.filter(reg => {
+        return pendingRegistrations.filter(reg => {
             const name = (reg.guest?.name || reg.user?.fullName || reg.fullName || '').toLowerCase();
             const phone = (reg.guest?.phone || reg.user?.phone || reg.phone || '').toLowerCase();
             const leader = (reg.liderDoce?.fullName || '').toLowerCase();
             return name.includes(term) || phone.includes(term) || leader.includes(term);
         });
-    }, [encuentro?.pendingRegistrations, searchTerm]);
+    }, [pendingRegistrations, searchTerm]);
 
     // Approve Pending Registration Modal State
     const [showApproveModal, setShowApproveModal] = useState(false);
@@ -132,13 +144,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
     
     const canModify = canManageEncuentro;
 
-    useEffect(() => {
-        if (activeTab === 'report' && encuentro) {
-            fetchReport();
-        }
-    }, [activeTab, encuentro]);
-
-    const fetchReport = async () => {
+    const fetchReport = useCallback(async () => {
         if (!encuentro) return;
         setLoadingReport(true);
         try {
@@ -150,7 +156,13 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         } finally {
             setLoadingReport(false);
         }
-    };
+    }, [encuentro]);
+
+    useEffect(() => {
+        if (activeTab === 'report' && encuentro) {
+            void Promise.resolve().then(fetchReport);
+        }
+    }, [activeTab, encuentro, fetchReport]);
 
     const handleOpenApproveModal = (reg) => {
         setPendingRegToApprove(reg);
@@ -348,7 +360,6 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const guestId = selectedRegistration?.guest?.id;
 
             if (!guestId) {
@@ -381,17 +392,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         }
     };
 
-    // Fix timezone offset - formats date as YYYY-MM-DD without timezone shift
-    const formatDateLocal = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const year = date.getUTCFullYear();
-        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(date.getUTCDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    const openEditModal = () => {
+    const openEditModal = useCallback(() => {
         setEditData({
             name: encuentro.name,
             description: encuentro.description || '',
@@ -404,14 +405,14 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
             coordinatorId: encuentro.coordinator || null
         });
         setShowEditModal(true);
-    };
+    }, [encuentro]);
 
     // Auto-open edit modal if requested from parent
     useEffect(() => {
         if (encuentro?.openEditModal && canModify) {
-            openEditModal();
+            void Promise.resolve().then(openEditModal);
         }
-    }, [encuentro?.openEditModal, canModify]);
+    }, [encuentro?.openEditModal, canModify, openEditModal]);
 
     const handleUpdateEncuentro = async (e) => {
         e.preventDefault();
@@ -1257,7 +1258,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                 </div>
                                 {(pendingRegToApprove.guest?.phone || pendingRegToApprove.user?.phone || pendingRegToApprove.phone) && (
                                     <div className="flex justify-between">
-                                        <span className="text-gray-500">Tel├®fono:</span>
+                                        <span className="text-gray-500">Teléfono:</span>
                                         <span className="font-medium text-gray-900 dark:text-white">{pendingRegToApprove.guest?.phone || pendingRegToApprove.user?.phone || pendingRegToApprove.phone}</span>
                                     </div>
                                 )}
@@ -1510,7 +1511,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Contrase├▒a
+                                    Contraseña
                                 </label>
                                 <input
                                     type="password"

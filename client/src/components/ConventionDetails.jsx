@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, UserPlus, MoneyIcon, XCircle, Trash, FileTextIcon, Users, Pen, MicrosoftExcelLogoIcon, CheckCircle, Clock } from '@phosphor-icons/react';
 import { ROLES } from '../constants/roles';
 import toast from 'react-hot-toast';
@@ -14,14 +14,14 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const { user, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
 
     // Permissions
-    const hasAdminPower = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isCoordinator('Convenciones');
+    const hasAdminPower = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isCoordinator('convencion');
     const isLocalCoordinator = convention.coordinatorId === parseInt(user?.id);
     
     // Can edit the convention itself or register people
     const canManageConvention = hasAdminPower || isLocalCoordinator;
     
     // Can register payments
-    const canManagePayments = hasAdminPower || isTreasurer('Convenciones');
+    const canManagePayments = hasAdminPower || isTreasurer('convencion');
     const canReviewPendingRegistrations = canManageConvention;
 
     // Maintain compatibility with existing code
@@ -93,13 +93,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
 
     const pendingRegistrations = convention.pendingRegistrations || [];
 
-    useEffect(() => {
-        if (activeTab === 'report') {
-            fetchReport();
-        }
-    }, [activeTab]);
-
-    const fetchReport = async () => {
+    const fetchReport = useCallback(async () => {
         setLoadingReport(true);
         try {
             const response = await api.get(`/convenciones/${convention.id}/report/balance`);
@@ -110,7 +104,13 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         } finally {
             setLoadingReport(false);
         }
-    };
+    }, [convention]);
+
+    useEffect(() => {
+        if (activeTab === 'report') {
+            void Promise.resolve().then(() => fetchReport());
+        }
+    }, [activeTab, fetchReport]);
 
     const handleRegister = async (e) => {
         e.preventDefault();

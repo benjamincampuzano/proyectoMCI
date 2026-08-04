@@ -9,7 +9,6 @@ import Typography from './Typography';
 
 const Breadcrumb = ({ 
   items = [], 
-  separator = '/', 
   showHome = true, 
   maxItems = 5, 
   className = '', 
@@ -172,7 +171,6 @@ export const BreadcrumbSeparator = ({
 // Collapsible Breadcrumb - Para mobile
 export const CollapsibleBreadcrumb = ({ 
   items = [], 
-  breakpoint = 'md', 
   className = '', 
   ...props 
 }) => {

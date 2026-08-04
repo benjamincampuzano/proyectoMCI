@@ -21,9 +21,6 @@ const CoordinatorSelector = ({ moduleCoordinator, moduleName, onCoordinatorChang
     const [isAssigning, setIsAssigning] = useState(false);
     const [selectedCoordinator, setSelectedCoordinator] = useState(null);
     
-    // Permission check for coordinator assignment: must be Admin or Pastor (disabled=false)
-    const canManageCoordinator = !disabled;
-
     // Fetch LIDER_DOCE users for coordinator selection
     const fetchLiderDoceUsers = async (searchTerm) => {
         try {

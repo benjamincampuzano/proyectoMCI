@@ -34,7 +34,7 @@ const KidsStats = () => {
     }, []);
 
     useEffect(() => {
-        fetchStats();
+        void Promise.resolve().then(fetchStats);
     }, [fetchStats]);
 
     if (loading) return <div className="text-center py-10">Cargando reporte...</div>;

@@ -35,7 +35,7 @@ const CourseManagement = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState(null);
     const [showMaterialModal, setShowMaterialModal] = useState(false);
-    const [selectedMaterialModuleId, setSelectedMaterialModuleId] = useState(null);
+    const [selectedMaterialModuleId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showFiltersMobile, setShowFiltersMobile] = useState(false);
 
@@ -52,11 +52,6 @@ const CourseManagement = () => {
     });
 
 
-    useEffect(() => {
-        fetchCourses();
-
-    }, [user.roles]);
-
     const fetchCourses = async () => {
         try {
             const res = await api.get('/school/modules');
@@ -66,6 +61,11 @@ const CourseManagement = () => {
             toast.error('Error al cargar cursos. Por favor intenta nuevamente.');
         }
     };
+
+    useEffect(() => {
+        void Promise.resolve().then(fetchCourses);
+
+    }, [user.roles]);
 
     const handleDelete = async (e, id) => {
         e.stopPropagation();
@@ -88,7 +88,7 @@ const CourseManagement = () => {
         try {
             await api.delete(`/school/modules/${courseToDelete.id}`);
             fetchCourses();
-        } catch (error) {
+        } catch {
             toast.error('Error, No se puede eliminar la clase porque existen estudiantes inscritos y notas asociadas. Primero debe desvincular a todos los estudiantes.');
         }
     };

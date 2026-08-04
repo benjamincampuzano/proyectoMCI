@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { List, X, Command } from '@phosphor-icons/react';
-import { useTheme } from './context/ThemeContext';
 import Button from './ui/Button';
 import Typography from './ui/Typography';
 
@@ -16,7 +15,6 @@ const Navigation = ({
   showSearch = true,
   className = ''
 }) => {
-  const { theme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -28,7 +26,7 @@ const Navigation = ({
     setIsSearchOpen(!isSearchOpen);
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = useCallback((e) => {
     if ((e.key === '/' || (e.key === 'k' && e.metaKey)) && !isSearchOpen) {
       e.preventDefault();
       setIsSearchOpen(true);
@@ -36,14 +34,14 @@ const Navigation = ({
     if (e.key === 'Escape' && isSearchOpen) {
       setIsSearchOpen(false);
     }
-  };
+  }, [isSearchOpen]);
 
   React.useEffect(() => {
     document.addEventListener('keydown', handleKeyPress);
     return () => {
       document.removeEventListener('keydown', handleKeyPress);
     };
-  }, [isSearchOpen]);
+  }, [handleKeyPress]);
 
   return (
     <>

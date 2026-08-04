@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import api from '../utils/api';
 
 const useGuestManagement = ({ refreshTrigger } = {}) => {
@@ -32,8 +32,10 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
     }, [searchTerm]);
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        setCurrentUser(user);
+        void Promise.resolve().then(() => {
+            const user = JSON.parse(localStorage.getItem('user'));
+            setCurrentUser(user);
+        });
     }, []);
 
     const fetchGuests = useCallback(async (page = 1) => {
@@ -100,7 +102,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
 
             return res.data.guests || [];
         } catch (err) {
-            throw new Error(err.userMessage || err.response?.data?.message || 'Error al cargar invitados');
+            throw new Error(err.userMessage || err.response?.data?.message || 'Error al cargar invitados', { cause: err });
         }
     }, [invitedByFilter, liderDoceFilter, debouncedSearchTerm, statusFilter, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited]);
 
@@ -118,13 +120,16 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
     }, []);
 
     // Cuando cambian los filtros, volvemos a la página 1
-    useEffect(() => {
+    const filterKey = [statusFilter, invitedByFilter?.id, liderDoceFilter?.id, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, debouncedSearchTerm, refreshTrigger].join('|');
+    const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+    if (prevFilterKey !== filterKey) {
+        setPrevFilterKey(filterKey);
         setCurrentPage(1);
-    }, [statusFilter, invitedByFilter, liderDoceFilter, startDate, endDate, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, debouncedSearchTerm, refreshTrigger]);
+    }
 
     // Efecto principal para hacer fetch cada vez que cambian los filtros o la página
     useEffect(() => {
-        fetchGuests(currentPage);
+        void Promise.resolve().then(() => fetchGuests(currentPage));
     }, [currentPage, fetchGuests]);
 
     const updateGuest = useCallback(async (guestId, updates) => {

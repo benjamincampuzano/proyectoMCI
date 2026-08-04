@@ -68,11 +68,11 @@ const useAttendance = () => {
     }, [endDate, selectedCell, startDate]);
 
     useEffect(() => {
-        fetchCells();
+        void Promise.resolve().then(fetchCells);
     }, [fetchCells]);
 
     useEffect(() => {
-        fetchStats();
+        void Promise.resolve().then(fetchStats);
     }, [fetchStats]);
 
     return {

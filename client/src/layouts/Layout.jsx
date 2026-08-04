@@ -31,9 +31,11 @@ const Layout = () => {
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [hasKidsAccess, setHasKidsAccess] = useState(false);
 
-    useEffect(() => {
+    const [prevPath, setPrevPath] = useState(location.pathname);
+    if (prevPath !== location.pathname) {
+        setPrevPath(location.pathname);
         setIsMobileOpen(false);
-    }, [location.pathname]);
+    }
 
     // Check if user has access to KIDS module
     useEffect(() => {

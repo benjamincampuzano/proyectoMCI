@@ -52,7 +52,7 @@ const formatDeadlineText = (goal) => {
     return 'N/A';
 };
 
-const GoalRow = ({ goal, onEdit, onDelete, onRequestDelete }) => {
+const GoalRow = ({ goal, onEdit, onRequestDelete }) => {
     const percent = Math.min(Math.round((goal.currentValue / goal.targetValue) * 100), 100);
     const status = calculateGoalStatus(goal, percent);
     const StatusIcon = status.icon;

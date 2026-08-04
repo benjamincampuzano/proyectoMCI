@@ -25,7 +25,7 @@ const LegalDocuments = ({ canEdit: canEditProp }) => {
             setLoading(true);
             const res = await api.get('/legal-documents');
             setDocuments(res.data);
-        } catch (err) {
+        } catch {
             setError('Error al cargar los documentos legales.');
         } finally {
             setLoading(false);
@@ -33,7 +33,7 @@ const LegalDocuments = ({ canEdit: canEditProp }) => {
     };
 
     useEffect(() => {
-        fetchDocuments();
+        void Promise.resolve().then(fetchDocuments);
     }, []);
 
     const handleSubmit = async (e) => {
@@ -65,7 +65,7 @@ const LegalDocuments = ({ canEdit: canEditProp }) => {
         try {
             await api.delete(`/legal-documents/${documentToDelete.id}`);
             fetchDocuments();
-        } catch (err) {
+        } catch {
             setError('Error al eliminar el documento');
         }
     };

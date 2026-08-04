@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Users, UserPlus, X, Check } from '@phosphor-icons/react';
 import api from '../utils/api';
 
@@ -12,13 +12,7 @@ const NetworkAssignment = () => {
     const [selectedLeader, setSelectedLeader] = useState('');
     const [currentUser, setCurrentUser] = useState(null);
 
-    useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        setCurrentUser(user);
-        fetchUsers();
-    }, []);
-
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
@@ -66,7 +60,13 @@ const NetworkAssignment = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user'));
+        void Promise.resolve().then(() => setCurrentUser(user));
+        void Promise.resolve().then(fetchUsers);
+    }, [fetchUsers]);
 
     const handleAssignLeader = async (userId, leaderId) => {
         try {

@@ -27,26 +27,28 @@ const GuestEditModal = ({ isOpen, onClose, guest, onGuestUpdated }) => {
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
-        setCurrentUser(user);
+        void Promise.resolve().then(() => setCurrentUser(user));
     }, []);
 
     // Load guest data when modal opens
     useEffect(() => {
         if (guest && isOpen) {
-            setFormData({
-                name: guest.name || '',
-                phone: guest.phone || '',
-                address: guest.address || '',
-                city: guest.city || '',
-                birthDate: guest.birthDate ? getLocalDateString(guest.birthDate) : '',
-                sex: guest.sex || '',
-                status: guest.status || 'NUEVO',
-                prayerRequest: guest.prayerRequest || '',
-                observations: guest.observations || '',
-                invitedById: guest.invitedBy?.id || null,
-                assignedToId: guest.assignedTo?.id || null,
-                invitedBy: guest.invitedBy || null,
-                assignedTo: guest.assignedTo || null,
+            void Promise.resolve().then(() => {
+                setFormData({
+                    name: guest.name || '',
+                    phone: guest.phone || '',
+                    address: guest.address || '',
+                    city: guest.city || '',
+                    birthDate: guest.birthDate ? getLocalDateString(guest.birthDate) : '',
+                    sex: guest.sex || '',
+                    status: guest.status || 'NUEVO',
+                    prayerRequest: guest.prayerRequest || '',
+                    observations: guest.observations || '',
+                    invitedById: guest.invitedBy?.id || null,
+                    assignedToId: guest.assignedTo?.id || null,
+                    invitedBy: guest.invitedBy || null,
+                    assignedTo: guest.assignedTo || null,
+                });
             });
         }
     }, [guest, isOpen]);

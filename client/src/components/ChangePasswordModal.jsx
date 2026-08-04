@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Lock, Eye, EyeClosedIcon, CheckCircle, WarningCircle, ShieldCheck } from '@phosphor-icons/react';
 
-const validatePassword = (password, email = '', fullName = '') => {
+const validatePassword = (password, email = '') => {
     const requirements = [];
 
     if (password.length >= 8) {
@@ -64,16 +64,18 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    const { requirements, allMet } = validatePassword(newPassword, user?.email, user?.fullName);
+    const { requirements, allMet } = validatePassword(newPassword, user?.email);
     const passwordsMatch = newPassword === confirmPassword && newPassword.length > 0;
 
     useEffect(() => {
         if (isOpen) {
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-            setError('');
-            setSuccess(false);
+            void Promise.resolve().then(() => {
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+                setError('');
+                setSuccess(false);
+            });
         }
     }, [isOpen]);
 

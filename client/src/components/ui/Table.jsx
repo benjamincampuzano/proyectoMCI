@@ -92,8 +92,6 @@ const Table = ({
 };
 
 const TableSkeleton = ({ rows = 5, columns = 4, compact = false }) => {
-  const sizeClasses = compact ? 'h-10' : 'h-14';
-  
   return (
     <div className="w-full border border-[var(--ln-border-standard)] rounded-xl overflow-hidden bg-[var(--ln-bg-surface)]">
       <table className="w-full border-collapse">

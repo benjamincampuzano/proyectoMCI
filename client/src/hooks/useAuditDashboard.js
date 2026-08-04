@@ -29,7 +29,7 @@ const useAuditDashboard = () => {
                 setLogs(data.logs);
                 setPagination(data.pagination);
             }
-        } catch (error) {
+        } catch {
             toast.error('Error al cargar logs de auditoría. Por favor intenta nuevamente.');
         } finally {
             setLoading(false);
@@ -40,17 +40,17 @@ const useAuditDashboard = () => {
         try {
             const response = await api.get('/audit/stats?days=30');
             setStats(response.data);
-        } catch (error) {
+        } catch {
             toast.error('Error al cargar estadísticas de auditoría. Por favor intenta nuevamente.');
         }
     }, []);
 
     useEffect(() => {
-        fetchStats();
+        void Promise.resolve().then(fetchStats);
     }, [fetchStats]);
 
     useEffect(() => {
-        fetchLogs();
+        void Promise.resolve().then(fetchLogs);
     }, [fetchLogs]);
 
     const handleFilterChange = useCallback((e) => {

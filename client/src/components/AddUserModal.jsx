@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, MagnifyingGlass, UserPlus, Spinner } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -9,49 +9,42 @@ import api from '../utils/api';
  */
 const AddUserModal = ({ isOpen, onClose, leaderId, leaderName, onUserAdded }) => {
     const [availableUsers, setAvailableUsers] = useState([]);
-    const [filteredUsers, setFilteredUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
 
-    // Fetch available users when modal opens
-    useEffect(() => {
-        if (isOpen && leaderId) {
-            fetchAvailableUsers();
-        }
-    }, [isOpen, leaderId]);
-
-    // Filter users based on search term
-    useEffect(() => {
-        if (searchTerm.trim() === '') {
-            setFilteredUsers(availableUsers);
-        } else {
-            const term = searchTerm.toLowerCase();
-            const filtered = availableUsers.filter(user =>
-                (user.fullName && user.fullName.toLowerCase().includes(term)) ||
-                (user.email && user.email.toLowerCase().includes(term)) ||
-                (user.phone && user.phone.includes(term))
-            );
-            setFilteredUsers(filtered);
-        }
-    }, [searchTerm, availableUsers]);
-
-    const fetchAvailableUsers = async () => {
+    const fetchAvailableUsers = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
             const response = await api.get(`/network/available-users/${leaderId}`);
             const data = response.data;
             setAvailableUsers(data);
-            setFilteredUsers(data);
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    };
+    }, [leaderId]);
+
+    // Fetch available users when modal opens
+    useEffect(() => {
+        if (isOpen && leaderId) {
+            void Promise.resolve().then(() => fetchAvailableUsers());
+        }
+    }, [isOpen, leaderId, fetchAvailableUsers]);
+
+    const filteredUsers = useMemo(() => {
+        if (searchTerm.trim() === '') return availableUsers;
+        const term = searchTerm.toLowerCase();
+        return availableUsers.filter(user =>
+            (user.fullName && user.fullName.toLowerCase().includes(term)) ||
+            (user.email && user.email.toLowerCase().includes(term)) ||
+            (user.phone && user.phone.includes(term))
+        );
+    }, [searchTerm, availableUsers]);
 
     const handleAssignUser = async () => {
         if (!selectedUserId) {

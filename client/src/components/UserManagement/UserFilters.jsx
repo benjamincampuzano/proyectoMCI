@@ -4,6 +4,12 @@ import PropTypes from 'prop-types';
 import { AsyncSearchSelect } from '../ui';
 import api from '../../utils/api';
 
+const FilterBadge = ({ color, children }) => (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] weight-700 text-white ${color} shadow-lg`}>
+        {children}
+    </span>
+);
+
 const UserFilters = ({
     nombreFilter,
     setNombreFilter,
@@ -49,12 +55,6 @@ const UserFilters = ({
     const getIconClass = () => {
         return 'absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500';
     };
-
-    const FilterBadge = ({ color, children }) => (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] weight-700 text-white ${color} shadow-lg`}>
-            {children}
-        </span>
-    );
 
     return (
         <div className="bg-gradient-to-br from-white via-white to-gray-50/50 dark:from-[var(--ln-bg-panel)] dark:via-[var(--ln-bg-panel)] dark:to-[var(--ln-bg-panel)]/80 backdrop-blur-xl rounded-[24px] shadow-xl shadow-black/5 dark:shadow-none overflow-hidden animate-in fade-in slide-in-from-top-2 duration-500">

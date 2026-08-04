@@ -195,12 +195,6 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose, readOnly = false
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-    
-    useEffect(() => {
-        fetchMaterials();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [moduleId, classNumber]);
-
     const fetchMaterials = async () => {
         try {
             const res = await api.get(`/school/modules/${moduleId}/materials`);
@@ -235,6 +229,11 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose, readOnly = false
         }
     };
 
+    useEffect(() => {
+        void Promise.resolve().then(fetchMaterials);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [moduleId, classNumber]);
+
     const handleSave = async () => {
         try {
             setSaving(true);
@@ -257,7 +256,7 @@ const ClassMaterialManager = ({ moduleId, classNumber, onClose, readOnly = false
             await api.post(`/school/modules/${moduleId}/materials/${classNumber}`, materialToSave);
             setSaving(false);
             onClose();
-        } catch (error) {
+        } catch {
             toast.error('Error saving materials');
             setSaving(false);
         }

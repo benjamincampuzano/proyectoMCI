@@ -15,7 +15,7 @@ const normalizeModule = (name) => {
     return name.toLowerCase().trim().replace(/\s+/g, '-');
 };
 
-const TreasurerSelector = ({ moduleTreasurer, moduleName, onTreasurerChange, disabled = false, currentUserId, isModuleCoordinator }) => {
+const TreasurerSelector = ({ moduleTreasurer, moduleName, onTreasurerChange, disabled = false, isModuleCoordinator }) => {
     const [isAssigning, setIsAssigning] = useState(false);
     const [selectedTreasurer, setSelectedTreasurer] = useState(null);
 

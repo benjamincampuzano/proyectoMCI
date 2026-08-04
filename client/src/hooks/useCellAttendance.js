@@ -79,13 +79,15 @@ const useCellAttendance = () => {
     }, [date, selectedCell]);
 
     useEffect(() => {
-        fetchCells();
+        void Promise.resolve().then(fetchCells);
     }, [fetchCells]);
 
     useEffect(() => {
         if (selectedCell) {
-            fetchCellMembers();
-            fetchCellAttendance();
+            void Promise.resolve().then(() => {
+                fetchCellMembers();
+                fetchCellAttendance();
+            });
         }
     }, [fetchCellAttendance, fetchCellMembers, selectedCell, date]);
 

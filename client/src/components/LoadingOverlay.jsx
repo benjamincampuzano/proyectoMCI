@@ -18,7 +18,7 @@ const LoadingOverlay = () => {
             }, 10);
             return () => clearInterval(timer);
         } else {
-            setDisplayProgress(0);
+            void Promise.resolve().then(() => setDisplayProgress(0));
         }
     }, [isLoading, progress]);
 

@@ -48,7 +48,7 @@ const AttendanceTracker = () => {
             });
             toast.success('Asistencia actualizada');
             fetchClassData(selectedClassId); // refresh data
-        } catch (_error) {
+        } catch {
             toast.error('Error al actualizar asistencia');
         }
     };

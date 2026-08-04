@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, Button, Input } from '../ui';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -8,18 +8,18 @@ const ClassManagement = () => {
     const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState({ name: '', description: '', cost: '', professorId: '', startDate: '', endDate: '' });
 
-    useEffect(() => {
-        fetchClasses();
-    }, []);
-
-    const fetchClasses = async () => {
+    const fetchClasses = useCallback(async () => {
         try {
             const res = await api.get('/arts/classes');
             setClasses(res.data);
         } catch (error) {
             console.error('Error fetching classes', error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        void Promise.resolve().then(fetchClasses);
+    }, [fetchClasses]);
 
     const handleCreateClass = async (e) => {
         e.preventDefault();

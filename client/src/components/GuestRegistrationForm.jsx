@@ -4,25 +4,6 @@ import { AsyncSearchSelect } from './ui';
 import api from '../utils/api';
 
 const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated, initialData }) => {
-    const [formData, setFormData] = useState(getInitialFormData(initialData));
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-    const [currentUser, setCurrentUser] = useState(null);
-
-    useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        setCurrentUser(user);
-    }, []);
-
-    useEffect(() => {
-        if (isOpen) {
-            setFormData(getInitialFormData(initialData));
-            setError('');
-            setSuccess('');
-        }
-    }, [isOpen, initialData]);
-
     function getInitialFormData(data) {
         return {
             documentType: '',
@@ -43,6 +24,27 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated, initialData })
             minorConsentAuthorized: false,
         };
     }
+
+    const [formData, setFormData] = useState(getInitialFormData(initialData));
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [currentUser, setCurrentUser] = useState(null);
+
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user'));
+        void Promise.resolve().then(() => setCurrentUser(user));
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            void Promise.resolve().then(() => {
+                setFormData(getInitialFormData(initialData));
+                setError('');
+                setSuccess('');
+            });
+        }
+    }, [isOpen, initialData]);
 
     const getAssignedToFetchItems = () => {
         return (term) => api.get('/users/search', { 
@@ -102,29 +104,6 @@ const GuestRegistrationForm = ({ isOpen, onClose, onGuestCreated, initialData })
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleReset = () => {
-        setFormData({
-            documentType: '',
-            documentNumber: '',
-            name: '',
-            birthDate: '',
-            sex: '',
-            phone: '',
-            address: '',
-            neighborhood: '',
-            city: '',
-            prayerRequest: '',
-            observations: '',
-            invitedById: null,
-            assignedToId: null,
-            dataPolicyAccepted: false,
-            dataTreatmentAuthorized: false,
-            minorConsentAuthorized: false,
-        });
-        setError('');
-        setSuccess('');
     };
 
     if (!isOpen) return null;

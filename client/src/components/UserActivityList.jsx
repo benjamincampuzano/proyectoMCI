@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Users,
     Calendar,
@@ -39,11 +39,7 @@ const ASISTENCIA_TIPOS = [
     const [totalItems, setTotalItems] = useState(0);
     const limit = 50;
 
-    useEffect(() => {
-        fetchActivityData();
-    }, [page]);
-
-    const fetchActivityData = async () => {
+    const fetchActivityData = useCallback(async () => {
         try {
             setLoading(true);
             const response = await api.get('/network/activity-list', { params: { page, limit } });
@@ -55,7 +51,11 @@ const ASISTENCIA_TIPOS = [
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, limit]);
+
+    useEffect(() => {
+        void Promise.resolve().then(fetchActivityData);
+    }, [page, fetchActivityData]);
 
     const filteredData = useMemo(() => {
         return data.filter(item => {

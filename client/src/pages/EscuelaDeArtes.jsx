@@ -55,13 +55,6 @@ const EscuelaDeArtes = () => {
         coordinatorId: null
     });
 
-    useEffect(() => {
-        fetchClasses();
-        fetchModuleCoordinator();
-        fetchModuleSubCoordinator();
-        fetchModuleTreasurer();
-    }, []);
-
     const fetchModuleCoordinator = async () => {
         try {
             const res = await api.get('/coordinators/module/escuela-de-artes');
@@ -100,6 +93,13 @@ const EscuelaDeArtes = () => {
             console.error('Error fetching classes:', error);
         }
     };
+
+    useEffect(() => {
+        void Promise.resolve().then(fetchClasses);
+        void Promise.resolve().then(fetchModuleCoordinator);
+        void Promise.resolve().then(fetchModuleSubCoordinator);
+        void Promise.resolve().then(fetchModuleTreasurer);
+    }, []);
 
     const fetchClassDetails = async (id) => {
         try {

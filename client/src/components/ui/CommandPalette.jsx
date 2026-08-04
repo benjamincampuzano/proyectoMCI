@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Command, MagnifyingGlass,Faders, ArrowRight, Clock, FileText, Users, Calendar } from '@phosphor-icons/react';
+import { Command, MagnifyingGlass, ArrowRight, Clock, FileText, Users, Calendar, GearSix } from '@phosphor-icons/react';
 import Typography from './Typography';
 
 /**
@@ -13,9 +13,7 @@ const CommandPalette = ({
   commands = [], 
   placeholder = 'Escribe un comando o busca...', 
   showRecent = true, 
-  maxRecent = 5, 
-  className = '', 
-  ...props 
+  maxRecent = 5
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -31,7 +29,8 @@ const CommandPalette = ({
       const saved = localStorage.getItem('commandPaletteRecent');
       if (saved) {
         try {
-          setRecentCommands(JSON.parse(saved).slice(0, maxRecent));
+          const parsed = JSON.parse(saved).slice(0, maxRecent);
+          void Promise.resolve().then(() => setRecentCommands(parsed));
         } catch (e) {
           console.error('Error loading recent commands:', e);
         }
@@ -49,8 +48,11 @@ const CommandPalette = ({
   // Filtrar comandos basados en query
   useEffect(() => {
     if (!query.trim()) {
-      setFilteredCommands(showRecent ? recentCommands : []);
-      setSelectedIndex(0);
+      const recent = showRecent ? recentCommands : [];
+      void Promise.resolve().then(() => {
+        setFilteredCommands(recent);
+        setSelectedIndex(0);
+      });
       return;
     }
 
@@ -63,8 +65,10 @@ const CommandPalette = ({
       );
     });
 
-    setFilteredCommands(filtered);
-    setSelectedIndex(0);
+    void Promise.resolve().then(() => {
+      setFilteredCommands(filtered);
+      setSelectedIndex(0);
+    });
   }, [query, commands, recentCommands, showRecent]);
 
   // Guardar comando en recientes
@@ -129,7 +133,7 @@ const CommandPalette = ({
       file: <FileText className="w-4 h-4" />,
       users: <Users className="w-4 h-4" />,
       calendar: <Calendar className="w-4 h-4" />,
-      settings: <Settings className="w-4 h-4" />,
+      settings: <GearSix className="w-4 h-4" />,
       recent: <Clock className="w-4 h-4" />
     };
     return icons[category] || <ArrowRight className="w-4 h-4" />;
@@ -250,6 +254,7 @@ const CommandPalette = ({
 };
 
 // Hook para usar Command Palette
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCommandPalette = () => {
   const [isOpen, setIsOpen] = useState(false);
 

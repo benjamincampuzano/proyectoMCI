@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar, CheckCircle, XCircle, Clock, UserPlus, BookOpen, GuitarIcon, Pencil, Trash } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -19,13 +19,7 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, canModify }) => {
     const [sessionTopic, setSessionTopic] = useState('');
     const [attendanceData, setAttendanceData] = useState({});
 
-    useEffect(() => {
-        if (classId) {
-            fetchSessions();
-        }
-    }, [classId]);
-
-    const fetchSessions = async () => {
+    const fetchSessions = useCallback(async () => {
         setLoading(true);
         try {
             const response = await api.get(`/arts/classes/${classId}/sessions`);
@@ -36,7 +30,13 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, canModify }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [classId]);
+
+    useEffect(() => {
+        if (classId) {
+            void Promise.resolve().then(() => fetchSessions());
+        }
+    }, [classId, fetchSessions]);
 
     const handleOpenCreateModal = () => {
         setIsEditing(false);
@@ -132,19 +132,6 @@ const ArtClassAttendanceTracker = ({ classId, enrollments, canModify }) => {
     const getAttendanceStatus = (session, enrollmentId) => {
         const attendance = session.attendances?.find(a => a.enrollmentId === enrollmentId);
         return attendance?.status || 'AUSENTE';
-    };
-
-    const getAttendanceIcon = (status) => {
-        switch (status) {
-            case 'PRESENTE':
-                return <CheckCircle size={16} className="text-emerald-500" />;
-            case 'AUSENTE':
-                return <XCircle size={16} className="text-red-500" />;
-            case 'TARDE':
-                return <Clock size={16} className="text-amber-500" />;
-            default:
-                return <XCircle size={16} className="text-gray-400" />;
-        }
     };
 
     const getAttendanceBadge = (status) => {

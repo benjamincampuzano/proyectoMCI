@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, UserPlus, MoneyIcon, CheckCircle, XCircle, Trash, Calendar, BookOpen, Pen, FileTextIcon, GuitarIcon, GraduationCap } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -26,14 +26,7 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
     const [selectedHistoryEnrollment, setSelectedHistoryEnrollment] = useState(null);
     const [historyPayments, setHistoryPayments] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
-    const [showConvertModal, setShowConvertModal] = useState(false);
-    const [convertData, setConvertData] = useState({
-        email: '',
-        password: '',
-        dataPolicyAccepted: false,
-        dataTreatmentAuthorized: false,
-        minorConsentAuthorized: false
-    });
+    const [, setShowConvertModal] = useState(false);
 
     // Delete Confirmation Modal State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -72,13 +65,7 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
     const hasFullEditAccess = hasAdminOrPastor || isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
     const canModify = hasFullEditAccess || parseInt(user?.id) === parseInt(artClass?.professorId);
 
-    useEffect(() => {
-        if (activeTab === 'report' && artClass) {
-            fetchReport();
-        }
-    }, [activeTab, artClass]);
-
-    const fetchReport = async () => {
+    const fetchReport = useCallback(async () => {
         if (!artClass) return;
         setLoadingReport(true);
         try {
@@ -90,7 +77,13 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
         } finally {
             setLoadingReport(false);
         }
-    };
+    }, [artClass]);
+
+    useEffect(() => {
+        if (activeTab === 'report' && artClass) {
+            void Promise.resolve().then(() => fetchReport());
+        }
+    }, [activeTab, artClass, fetchReport]);
 
     const handleRegister = async (e) => {
         e.preventDefault();
@@ -156,42 +149,6 @@ const ArtClassDetails = ({ artClass, onBack, onRefresh }) => {
         } catch (error) {
             console.error('Error deleting enrollment:', error);
             toast.error('Error al eliminar');
-        }
-    };
-
-    const handleConvertMember = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const guestId = selectedEnrollment?.guest?.id;
-
-            if (!guestId) {
-                toast.error('No guest selected');
-                return;
-            }
-
-            await api.post(`/guests/${guestId}/convert-to-member`, {
-                email: convertData.email,
-                password: convertData.password,
-                dataPolicyAccepted: convertData.dataPolicyAccepted,
-                dataTreatmentAuthorized: convertData.dataTreatmentAuthorized,
-                minorConsentAuthorized: convertData.minorConsentAuthorized,
-            });
-            setShowConvertModal(false);
-            setConvertData({
-                email: '',
-                password: '',
-                dataPolicyAccepted: false,
-                dataTreatmentAuthorized: false,
-                minorConsentAuthorized: false
-            });
-            toast.success('Invitado convertido a Discípulo exitosamente!');
-            onRefresh();
-        } catch (error) {
-            console.error('Error converting guest:', error);
-            toast.error('Error al convertir: ' + (error.response?.data?.message || 'Error desconocido'));
-        } finally {
-            setLoading(false);
         }
     };
 

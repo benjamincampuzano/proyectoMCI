@@ -1,9 +1,11 @@
-import { createContext, useState, useEffect, useContext, useMemo } from 'react';
+import { createContext, useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -29,6 +31,37 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isInitialized, setIsInitialized] = useState(false);
+
+    const logout = useCallback(async () => {
+        const refreshToken = localStorage.getItem('refreshToken');
+        
+        try {
+            if (refreshToken) {
+                await api.post('/auth/logout', { refreshToken });
+            }
+        } catch (error) {
+            console.error('Logout API error:', error);
+        }
+
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        setUser(null);
+        
+        const checkInitAfterLogout = async () => {
+            try {
+                const res = await api.get('/auth/init-status');
+                setIsInitialized(res.data.isInitialized);
+            } catch (error) {
+                if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+                    setIsInitialized(false);
+                } else {
+                    console.error('Error checking init status after logout:', error);
+                }
+            }
+        };
+        checkInitAfterLogout();
+    }, []);
 
     useEffect(() => {
         const checkInit = async () => {
@@ -91,7 +124,7 @@ export const AuthProvider = ({ children }) => {
 
         checkInit();
         checkAuth();
-    }, []);
+    }, [logout]);
 
     const login = async (email, password) => {
         try {
@@ -148,37 +181,6 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             return { success: false, message: error.response?.data?.message || 'Setup failed' };
         }
-    };
-
-    const logout = async () => {
-        const refreshToken = localStorage.getItem('refreshToken');
-        
-        try {
-            if (refreshToken) {
-                await api.post('/auth/logout', { refreshToken });
-            }
-        } catch (error) {
-            console.error('Logout API error:', error);
-        }
-
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        setUser(null);
-        
-        const checkInitAfterLogout = async () => {
-            try {
-                const res = await api.get('/auth/init-status');
-                setIsInitialized(res.data.isInitialized);
-            } catch (error) {
-                if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-                    setIsInitialized(false);
-                } else {
-                    console.error('Error checking init status after logout:', error);
-                }
-            }
-        };
-        checkInitAfterLogout();
     };
 
     const getSessions = async () => {

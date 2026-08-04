@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MicrosoftExcelLogoIcon, SpinnerIcon, Users, Phone, House, Handshake, FunnelIcon, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
@@ -27,10 +27,14 @@ const GuestStats = ({ refreshTrigger }) => {
         const start = new Date();
         start.setFullYear(start.getFullYear() - 1);
 
-        setStartDate(start.toISOString().split('T')[0]);
-        setEndDate(end.toISOString().split('T')[0]);
+        void Promise.resolve().then(() => {
+            setStartDate(start.toISOString().split('T')[0]);
+            setEndDate(end.toISOString().split('T')[0]);
+        });
+    }, []);
 
-        // Fetch Lideres Doce if user has permission
+    // Fetch Lideres Doce if user has permission
+    useEffect(() => {
         const canSeeAll = currentUser?.roles?.some(r => ['ADMIN', 'PASTOR', 'COORDINADOR'].includes(r)) || isModuleCoordinator;
         if (canSeeAll) {
             const fetchLideres = async () => {
@@ -43,15 +47,9 @@ const GuestStats = ({ refreshTrigger }) => {
             };
             fetchLideres();
         }
-    }, [currentUser]);
+    }, [currentUser, isModuleCoordinator]);
 
-    useEffect(() => {
-        if (startDate && endDate) {
-            fetchStats();
-        }
-    }, [startDate, endDate, liderDoceId, refreshTrigger]);
-
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
@@ -76,23 +74,13 @@ const GuestStats = ({ refreshTrigger }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [startDate, endDate, liderDoceId]);
 
-    const calculateMonthlyAverage = () => {
-        if (!stats || !stats.totalGuests || !startDate || !endDate) return 0;
-        
-        // Calculate the number of days in the date range
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-        
-        // Calculate months (approximately 30.44 days per month)
-        const months = daysDiff / 30.44;
-        
-        if (months === 0) return 0;
-        
-        return Math.round(stats.totalGuests / months * 10) / 10; // Round to 1 decimal place
-    };
+    useEffect(() => {
+        if (startDate && endDate) {
+            void Promise.resolve().then(() => fetchStats());
+        }
+    }, [startDate, endDate, liderDoceId, refreshTrigger, fetchStats]);
 
     const exportToExcel = async () => {
         try {

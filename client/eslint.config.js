@@ -23,11 +23,17 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' }],
     },
   },
   {
-    files: ['tests/**/*.{js,jsx}', 'tests/*.{js,jsx}', '**/*.cy.{js,jsx}'],
+    files: [
+      'tests/**/*.{js,jsx}',
+      'tests/*.{js,jsx}',
+      '**/*.cy.{js,jsx}',
+      '**/__tests__/**/*.{js,jsx}',
+      '**/*.test.{js,jsx}',
+    ],
     languageOptions: {
       globals: {
         ...globals.browser,

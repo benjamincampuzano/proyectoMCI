@@ -316,6 +316,7 @@ export const CollapsiblePanel = ({
 };
 
 // Hook para manejar drawers
+// eslint-disable-next-line react-refresh/only-export-components
 export const useDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
 

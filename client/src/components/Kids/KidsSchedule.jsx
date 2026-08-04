@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { CaretDown, CaretUp, Plus, Pen, Trash, Calendar, BookOpen, ShieldSlash } from '@phosphor-icons/react';
@@ -116,9 +116,29 @@ const KidsSchedule = ({ moduleCoordinator }) => {
         isSubCoordinator('kids') ||
         isTreasurer('kids');
 
+    const fetchCourses = useCallback(async () => {
+        // Check if user has permission to view kids schedule before making the request
+        if (!canViewSchedule) {
+            console.warn('User does not have permission to view kids schedule');
+            return;
+        }
+        try {
+            const res = await api.get('/kids/modules');
+            setCourses(res.data);
+            // Start with no courses expanded to prevent overwhelming requests
+            setExpandedCourseIds(new Set());
+        } catch (error) {
+            console.error('Error fetching courses:', error);
+            // Only show toast for unexpected errors, not permission errors (403)
+            if (error.response?.status !== 403) {
+                toast.error('Error al cargar los cursos');
+            }
+        }
+    }, [canViewSchedule]);
+
     useEffect(() => {
-        fetchCourses();
-    }, []);
+        void Promise.resolve().then(fetchCourses);
+    }, [fetchCourses]);
 
     const handleCreateCourse = async (e) => {
         e.preventDefault();
@@ -146,26 +166,6 @@ const KidsSchedule = ({ moduleCoordinator }) => {
             if (error.response?.status !== 403) {
                 const errorMessage = error.response?.data?.message || error.message || 'Error creating course';
                 toast.error(errorMessage);
-            }
-        }
-    };
-
-    const fetchCourses = async () => {
-        // Check if user has permission to view kids schedule before making the request
-        if (!canViewSchedule) {
-            console.warn('User does not have permission to view kids schedule');
-            return;
-        }
-        try {
-            const res = await api.get('/kids/modules');
-            setCourses(res.data);
-            // Start with no courses expanded to prevent overwhelming requests
-            setExpandedCourseIds(new Set());
-        } catch (error) {
-            console.error('Error fetching courses:', error);
-            // Only show toast for unexpected errors, not permission errors (403)
-            if (error.response?.status !== 403) {
-                toast.error('Error al cargar los cursos');
             }
         }
     };

@@ -210,7 +210,7 @@ export const useAnimation = (animation, dependencies = []) => {
       cleanup();
       setIsAnimating(false);
     };
-  }, [animation, ...dependencies]);
+  }, [animation, dependencies]);
   
   return { elementRef, isAnimating };
 };

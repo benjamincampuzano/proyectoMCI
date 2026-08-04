@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import ExcelJS from 'exceljs';
@@ -113,7 +113,7 @@ const useUserManagement = () => {
     }, [relatedUsersCache]);
 
     // Function to categorize and handle errors
-    const handleError = (error, operation = 'general') => {
+    const handleError = useCallback((error) => {
         const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
         
         let title = 'Error';
@@ -149,7 +149,7 @@ const useUserManagement = () => {
         setShowErrorModal(true);
         
         return { title, message, type };
-    };
+    }, []);
 
     // Fetch leaders separately - independent of filters
     const fetchAllLeaders = useCallback(async () => {
@@ -218,22 +218,22 @@ const useUserManagement = () => {
             }
 
             setTotalUsers(pagination?.total || 0);
-        } catch (err) {
+        } catch {
             setError('Error al cargar usuarios');
             setUsers([]);
             setTotalUsers(0);
         } finally {
             setLoading(false);
         }
-    }, [currentPage, nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, usersPerPage, currentUser, auth]);
+    }, [currentPage, nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, unassignedFilter, usersPerPage, currentUser, auth]);
 
     useEffect(() => {
-        fetchUsers();
+        void Promise.resolve().then(fetchUsers);
     }, [fetchUsers]);
 
     // Fetch leaders once on mount
     useEffect(() => {
-        fetchAllLeaders();
+        void Promise.resolve().then(fetchAllLeaders);
     }, [fetchAllLeaders]);
 
     const handleCreateUser = useCallback(async (e) => {
@@ -304,7 +304,7 @@ const useUserManagement = () => {
         } finally {
             setSubmitting(false);
         }
-    }, [fetchUsers, fetchAllLeaders, formData]);
+    }, [fetchUsers, fetchAllLeaders, formData, handleError]);
 
     const handleUpdateUser = useCallback(async (userId) => {
         if (!editingUser) return;
@@ -355,7 +355,7 @@ const useUserManagement = () => {
         } finally {
             setSubmitting(false);
         }
-    }, [editingUser, fetchUsers, fetchAllLeaders]);
+    }, [editingUser, fetchUsers, fetchAllLeaders, handleError]);
 
     const handleDeleteUser = useCallback(async (userId, confirmCallback) => {
         // If confirmCallback is provided, call it to trigger confirmation
@@ -377,14 +377,14 @@ const useUserManagement = () => {
         } catch (err) {
             handleError(err, 'delete');
         }
-    }, [fetchUsers]);
+    }, [fetchUsers, handleError]);
 
     const resetPassword = async (user, tempPassword) => {
         setError('');
         setSuccess('');
         
         try {
-            const response = await api.post(`/auth/force-password-change/${user.id}`, { newTempPassword: tempPassword });
+            await api.post(`/auth/force-password-change/${user.id}`, { newTempPassword: tempPassword });
             
             setSuccess(`Contraseña de ${user.fullName} reseteada exitosamente. Contraseña temporal: ${tempPassword}`);
             setPasswordResetUser(null);
@@ -456,9 +456,12 @@ const useUserManagement = () => {
     };
 
     // Resetear página cuando cambian los filtros
-    useEffect(() => {
+    const filterKey = [nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, unassignedFilter].join('|');
+    const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+    if (prevFilterKey !== filterKey) {
+        setPrevFilterKey(filterKey);
         setCurrentPage(1);
-    }, [nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, unassignedFilter]);
+    }
 
     const validatePasswordRealTime = useCallback((password, fullName = '') => {
         const result = validatePassword(password, { fullName });

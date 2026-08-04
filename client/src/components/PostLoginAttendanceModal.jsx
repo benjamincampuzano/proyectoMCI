@@ -17,12 +17,12 @@ const PostLoginAttendanceModal = () => {
       const today = format(new Date(), 'yyyy-MM-dd');
       const key = `${STORAGE_PREFIX}${user.id}_${today}`;
       if (!localStorage.getItem(key)) {
-        setShowModal(true);
+        void Promise.resolve().then(() => setShowModal(true));
       }
-      setHasChecked(true);
+      void Promise.resolve().then(() => setHasChecked(true));
     }
     if (!loading && !user) {
-      setHasChecked(false);
+      void Promise.resolve().then(() => setHasChecked(false));
     }
   }, [loading, user, hasChecked]);
 

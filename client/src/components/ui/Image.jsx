@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Image as ImageIcon, Spinner } from '@phosphor-icons/react';
 
 /**
@@ -24,11 +24,12 @@ const Image = ({
   const [imageState, setImageState] = useState('loading');
   const [currentSrc, setCurrentSrc] = useState(src);
   const imgRef = useRef(null);
-
-  useEffect(() => {
+  const [prevSrc, setPrevSrc] = useState(src);
+  if (prevSrc !== src) {
+    setPrevSrc(src);
     setCurrentSrc(src);
     setImageState(src ? 'loading' : 'empty');
-  }, [src]);
+  }
 
   const handleLoad = (e) => {
     setImageState('loaded');
@@ -228,7 +229,7 @@ export const GalleryImage = ({
   className = '', 
   ...props 
 }) => {
-  const [imageState, setImageState] = useState('loading');
+  const [, setImageState] = useState('loading');
 
   return (
     <div 
@@ -284,7 +285,7 @@ export const HeroImage = ({
   className = '', 
   ...props 
 }) => {
-  const [imageState, setImageState] = useState('loading');
+  const [, setImageState] = useState('loading');
 
   return (
     <div className={`relative overflow-hidden ${className}`} {...props}>

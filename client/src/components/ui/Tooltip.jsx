@@ -152,23 +152,17 @@ const Tooltip = ({
     return rotations[calculatedPosition] || rotations.top;
   };
 
-  const triggerProps = {
-    ref: triggerRef,
-    className: 'inline-block'
-  };
-
-  if (trigger === 'click') {
-    triggerProps.onClick = () => setIsVisible(!isVisible);
-  } else {
-    triggerProps.onMouseEnter = showTooltip;
-    triggerProps.onMouseLeave = hideTooltip;
-    triggerProps.onFocus = showTooltip;
-    triggerProps.onBlur = hideTooltip;
-  }
-
   return (
     <div className={`relative inline-block ${className}`} {...props}>
-      <div {...triggerProps}>
+      <div
+        ref={triggerRef}
+        className="inline-block"
+        onClick={trigger === 'click' ? () => setIsVisible(!isVisible) : undefined}
+        onMouseEnter={trigger !== 'click' ? showTooltip : undefined}
+        onMouseLeave={trigger !== 'click' ? hideTooltip : undefined}
+        onFocus={trigger !== 'click' ? showTooltip : undefined}
+        onBlur={trigger !== 'click' ? hideTooltip : undefined}
+      >
         {children}
       </div>
       

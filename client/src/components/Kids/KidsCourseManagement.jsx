@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/api';
-import toast from 'react-hot-toast';
 import { Plus, Calendar, Users, Trash, Pen, List, SquaresFour } from '@phosphor-icons/react';
 import { AsyncSearchSelect, Button } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
@@ -28,23 +27,23 @@ const CATEGORY_INFO = {
 };
 
 const KidsCourseManagement = () => {
-    const { user, hasAnyRole } = useAuth();
+    const { user } = useAuth();
     const [courses, setCourses] = useState([]);
     const [selectedCourseId, setSelectedCourseId] = useState(null);
     const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
 
-    useEffect(() => {
-        fetchCourses();
-    }, [user.roles]);
-
-    const fetchCourses = async () => {
+    const fetchCourses = useCallback(async () => {
         try {
             const res = await api.get('/kids/modules');
             setCourses(res.data);
         } catch (error) {
             console.error('Error fetching courses', error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        void Promise.resolve().then(fetchCourses);
+    }, [user.roles, fetchCourses]);
 
     if (selectedCourseId) {
         return (

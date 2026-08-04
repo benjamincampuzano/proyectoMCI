@@ -62,7 +62,6 @@ const Badge = ({
     'square-lg': 'px-4 py-1.5 text-[14px] font-[510] rounded-[2px]'
   };
 
-  const isPill = !size.startsWith('square-');
   const baseClasses = `
     inline-flex items-center gap-1.5 
     transition-all duration-200

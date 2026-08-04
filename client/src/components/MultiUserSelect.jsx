@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { MagnifyingGlassIcon, X, UserPlusIcon} from '@phosphor-icons/react';
 import api from '../utils/api';
 
@@ -10,38 +10,7 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
     const [selectedUsers, setSelectedUsers] = useState([]);
     const dropdownRef = useRef(null);
 
-    useEffect(() => {
-        if (isOpen) {
-            fetchUsers();
-        }
-    }, [isOpen, searchTerm, roleFilter]);
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isOpen]);
-
-    // Load selected users details when value changes
-    useEffect(() => {
-        if (value && value.length > 0) {
-            fetchSelectedUsers(value);
-        } else {
-            setSelectedUsers([]);
-        }
-    }, [value]);
-
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         if (!searchTerm && !isOpen) return; // Don't fetch if closed and no search
         
         setLoading(true);
@@ -67,9 +36,9 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchTerm, isOpen, roleFilter, value]);
 
-    const fetchSelectedUsers = async (userIds) => {
+    const fetchSelectedUsers = useCallback(async (userIds) => {
         if (!userIds || userIds.length === 0) return;
         
         try {
@@ -87,7 +56,38 @@ const MultiUserSelect = ({ value = [], onChange, label, placeholder = "Seleccion
         } catch (error) {
             console.error('Error fetching selected users:', error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            void Promise.resolve().then(fetchUsers);
+        }
+    }, [isOpen, fetchUsers]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
+
+    // Load selected users details when value changes
+    useEffect(() => {
+        if (value && value.length > 0) {
+            void Promise.resolve().then(() => fetchSelectedUsers(value));
+        } else {
+            void Promise.resolve().then(() => setSelectedUsers([]));
+        }
+    }, [value, fetchSelectedUsers]);
 
     const handleSelect = (user) => {
         const newValue = [...value, user.id];

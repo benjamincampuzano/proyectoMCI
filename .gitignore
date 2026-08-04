@@ -169,3 +169,6 @@ client-lint.txt
 count-braces.py
 extract-lint.py
 fix-dup.py
+.vercel
+.env*
+client/eslint.config.js

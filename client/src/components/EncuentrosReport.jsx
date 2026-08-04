@@ -26,13 +26,6 @@ const EncuentrosReport = ({ encuentros }) => {
             totalRecaudado: enc.stats?.totalCollected || 0,
             totalPendiente: (enc.stats?.expectedIncome || 0) - (enc.stats?.totalCollected || 0),
         })).filter(item => {
-            const matchesFilters =
-                (filterPastor === '' || true) &&
-                (filterDoce === '' || true) &&
-                (filterCelula === '' || true);
-
-            if (!matchesFilters) return false;
-
             if (!searchTerm.trim()) return true;
             const term = searchTerm.toLowerCase();
             return (
@@ -41,7 +34,7 @@ const EncuentrosReport = ({ encuentros }) => {
                 (item.type || '').toLowerCase().includes(term)
             );
         });
-    }, [encuentros, filterPastor, filterDoce, filterCelula, searchTerm]);
+    }, [encuentros, searchTerm]);
 
     const totals = useMemo(() => {
         return filteredData.reduce((acc, curr) => ({

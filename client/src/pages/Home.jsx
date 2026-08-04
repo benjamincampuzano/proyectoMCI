@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import LosDoceGrid from '../components/LosDoceGrid';
 import api from '../utils/api';
@@ -18,10 +18,10 @@ import {
 const ConsolidatedStatsReport = lazy(() => import('../components/ConsolidatedStatsReport'));
 
 const Home = () => {
-    const { user, hasRole, hasAnyRole, isAdmin } = useAuth();
+    const { user, hasAnyRole, isAdmin } = useAuth();
     const [activeTab, setActiveTab] = useState('red');
     const [pastores, setPastores] = useState([]);
-    const [lideresDoce, setLideresDoce] = useState([]);
+    const [, setLideresDoce] = useState([]);
     const [selectedLeader, setSelectedLeader] = useState(null);
     const [network, setNetwork] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -31,7 +31,7 @@ const Home = () => {
     // Refs so BroadcastChannel effect can always access latest functions/state
     const liveRefs = useRef({});
 
-    const fetchPastores = async () => {
+    const fetchPastores = useCallback(async () => {
         try {
             setLoading(true);
             const response = await api.get('/network/pastores');
@@ -41,9 +41,30 @@ const Home = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const fetchLideresDoce = async () => {
+    const handleSelectLeader = useCallback(async (leader) => {
+        try {
+            setNetworkLoading(true);
+            setSelectedLeader(leader);
+            if (isAdmin()) {
+                sessionStorage.setItem('home_selected_leader', JSON.stringify(leader));
+            }
+            setError(null);
+            const response = await api.get(`/network/${leader.id}`);
+            setNetwork(response.data);
+        } catch (err) {
+            if (err.response?.status === 404) {
+                setError('Líder no encontrado o red no disponible');
+            } else {
+                setError(err.response?.data?.error || err.message);
+            }
+        } finally {
+            setNetworkLoading(false);
+        }
+    }, [isAdmin]);
+
+    const fetchLideresDoce = useCallback(async () => {
         setLoading(true);
         try {
             if (hasAnyRole(['PASTOR'])) {
@@ -86,28 +107,7 @@ const Home = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleSelectLeader = async (leader) => {
-        try {
-            setNetworkLoading(true);
-            setSelectedLeader(leader);
-            if (isAdmin()) {
-                sessionStorage.setItem('home_selected_leader', JSON.stringify(leader));
-            }
-            setError(null);
-            const response = await api.get(`/network/${leader.id}`);
-            setNetwork(response.data);
-        } catch (err) {
-            if (err.response?.status === 404) {
-                setError('Líder no encontrado o red no disponible');
-            } else {
-                setError(err.response?.data?.error || err.message);
-            }
-        } finally {
-            setNetworkLoading(false);
-        }
-    };
+    }, [user, hasAnyRole, handleSelectLeader]);
 
     // Keep refs in sync so BroadcastChannel handler has latest values
     useEffect(() => {
@@ -115,29 +115,29 @@ const Home = () => {
             handleSelectLeader, fetchPastores, fetchLideresDoce,
             hasAnyRole, isAdmin, user, selectedLeader
         };
-    }, [user, selectedLeader]);
+    }, [user, selectedLeader, fetchPastores, fetchLideresDoce, handleSelectLeader, hasAnyRole, isAdmin]);
 
     useEffect(() => {
         if (isAdmin()) {
-            fetchPastores();
+            void Promise.resolve().then(fetchPastores);
             const stored = sessionStorage.getItem('home_selected_leader');
             if (stored) {
                 try {
                     const leader = JSON.parse(stored);
                     if (leader?.id) {
-                        handleSelectLeader(leader);
+                        void Promise.resolve().then(() => handleSelectLeader(leader));
                     }
                 } catch { /* ignore parse errors */ }
             }
         } else if (hasAnyRole(['PASTOR'])) {
-            fetchLideresDoce();
+            void Promise.resolve().then(fetchLideresDoce);
         } else if (hasAnyRole(['LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'])) {
-            handleSelectLeader({ id: user.id, fullName: user.fullName, roles: user.roles });
-            setLoading(false);
+            void Promise.resolve().then(() => handleSelectLeader({ id: user.id, fullName: user.fullName, roles: user.roles }));
+            void Promise.resolve().then(() => setLoading(false));
         } else {
-            setLoading(false);
+            void Promise.resolve().then(() => setLoading(false));
         }
-    }, [user]);
+    }, [user, fetchPastores, fetchLideresDoce, handleSelectLeader, hasAnyRole, isAdmin]);
 
     const refreshNetwork = () => {
         if (selectedLeader) {

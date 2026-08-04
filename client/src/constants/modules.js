@@ -9,8 +9,8 @@ export const MODULES = {
   ENVIAR: 'enviar',
   DISCIPULAR: 'discipular',
   KIDS: 'kids',
-  CONVENCIONES: 'convenciones',
-  ENCUENTROS: 'encuentros',
+  CONVENCIONES: 'convencion',
+  ENCUENTROS: 'encuentro',
   ARTES: 'escuela-de-artes',
 };
 

@@ -1,11 +1,10 @@
 import PropTypes from 'prop-types';
-import { UserCircle, Shield, Money, User } from '@phosphor-icons/react';
+import { UserCircle, Money, User } from '@phosphor-icons/react';
 
 const CoordinatorDisplay = ({ 
     coordinator, 
     subCoordinator, 
-    treasurer, 
-    moduleName 
+    treasurer 
 }) => {
     const renderCoordinatorBadge = (data, Icon, label, color) => {
         if (!data) return null;

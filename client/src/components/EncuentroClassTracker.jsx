@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { Check, X, UserPlus } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
-import { useAuth } from '../context/AuthContext';
 
 const EncuentroClassTracker = ({ registrations, onRefresh, onConvert, canModify }) => {
-    const { user } = useAuth();
     const [updating, setUpdating] = useState({});
     const isRestricted = !canModify;
 
@@ -18,7 +16,7 @@ const EncuentroClassTracker = ({ registrations, onRefresh, onConvert, canModify 
                 attended: !currentStatus
             });
             onRefresh();
-        } catch (error) {
+        } catch {
             toast.error('Error al actualizar asistencia. Por favor intenta nuevamente.');
         } finally {
             setUpdating(prev => ({ ...prev, [key]: false }));
@@ -34,7 +32,7 @@ const EncuentroClassTracker = ({ registrations, onRefresh, onConvert, canModify 
                 isBaptized: !currentStatus
             });
             onRefresh();
-        } catch (error) {
+        } catch {
             toast.error('Error al actualizar bautismo. Por favor intenta nuevamente.');
         } finally {
             setUpdating(prev => ({ ...prev, [key]: false }));

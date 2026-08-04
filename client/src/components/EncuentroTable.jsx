@@ -4,16 +4,6 @@ const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(amount);
 };
 
-// Fix timezone offset - formats date as YYYY-MM-DD without timezone shift
-const formatDateLocal = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
-
 // Display date for table - uses UTC to avoid day shift
 const displayDate = (dateString) => {
     if (!dateString) return '';

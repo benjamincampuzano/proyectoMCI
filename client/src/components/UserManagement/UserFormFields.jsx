@@ -13,7 +13,6 @@ const UserFormFields = ({
     lideresDoce,
     lideresCelula,
     users = [],
-    isAdmin,
     currentUser,
     showPassword,
     setShowPassword,

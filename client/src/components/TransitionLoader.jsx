@@ -1,11 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useLoading } from '../context/LoadingContext';
 
 const TransitionLoader = () => {
     const { startLoading, stopLoading, updateProgress } = useLoading();
 
+    const loadingRef = useRef({ startLoading, stopLoading, updateProgress });
+
     useEffect(() => {
-        startLoading();
+        const { startLoading: start, stopLoading: stop, updateProgress: update } = loadingRef.current;
+        start();
 
         let progress = 0;
         const interval = setInterval(() => {
@@ -14,12 +17,12 @@ const TransitionLoader = () => {
                 progress = 95;
                 clearInterval(interval);
             }
-            updateProgress(Math.floor(progress));
+            update(Math.floor(progress));
         }, 200);
 
         return () => {
             clearInterval(interval);
-            stopLoading();
+            stop();
         };
     }, []);
 

@@ -185,14 +185,16 @@ const useCoordinatorManagement = () => {
     };
 
     useEffect(() => {
-        fetchCoordinators();
-        fetchSubCoordinators();
-        fetchTreasurers();
+        void Promise.resolve().then(() => {
+            fetchCoordinators();
+            fetchSubCoordinators();
+            fetchTreasurers();
+        });
     }, [fetchCoordinators, fetchSubCoordinators, fetchTreasurers]);
 
     useEffect(() => {
         if (selectedModule) {
-            fetchModuleData(selectedModule);
+            void Promise.resolve().then(() => fetchModuleData(selectedModule));
         }
     }, [selectedModule, fetchModuleData]);
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import api from '../utils/api';
 import { Calendar, TrendUp, Users, UserMinus, ClipboardIcon, Percent, X, Funnel, CaretDown, CaretUp } from '@phosphor-icons/react';
@@ -16,11 +16,7 @@ const ChurchAttendanceChart = () => {
     const [showFiltersMobile, setShowFiltersMobile] = useState(false);
     const [showCardsMobile, setShowCardsMobile] = useState(false);
 
-    useEffect(() => {
-        fetchStats();
-    }, [startDate, endDate]);
-
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
             setLoading(true);
 
@@ -39,11 +35,14 @@ const ChurchAttendanceChart = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [startDate, endDate]);
+
+    useEffect(() => {
+        void Promise.resolve().then(() => fetchStats());
+    }, [startDate, endDate, fetchStats]);
 
     const formatDate = (dateString) => {
         if (!dateString) return '';
-        const date = new Date(dateString);
         // Ajustar para mostrar la fecha local correctamente
         // Dado que la fecha viene como YYYY-MM-DD, creamos la fecha usando componentes locales para evitar desfase de zona horaria
         const [year, month, day] = dateString.split('-').map(Number);

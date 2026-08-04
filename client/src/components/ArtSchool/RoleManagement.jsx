@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, Button, Input } from '../ui';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';

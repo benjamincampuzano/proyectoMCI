@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, Button, Input } from '../ui';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -12,7 +12,7 @@ const PaymentManager = () => {
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
 
-    const canManagePayments = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isCoordinator('Escuela de Artes') || isTreasurer('Escuela de Artes');
+    const canManagePayments = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isCoordinator('escuela-de-artes') || isTreasurer('escuela-de-artes');
 
     if (!canManagePayments) {
         return (

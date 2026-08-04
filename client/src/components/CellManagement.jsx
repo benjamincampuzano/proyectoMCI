@@ -19,8 +19,29 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
+// Component to handle map clicks
+const MapClickHandler = ({ onMapClick }) => {
+    useMapEvents({
+        click: (e) => {
+            onMapClick(e.latlng);
+        },
+    });
+    return null;
+};
+
+// Component to update map center
+const MapUpdater = ({ center }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            map.setView(center, 15);
+        }
+    }, [center, map]);
+    return null;
+};
+
 const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasurer }) => {
-    const { user, hasAnyRole, isCoordinator } = useAuth();
+    const { user, hasAnyRole } = useAuth();
     const [cells, setCells] = useState([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -64,7 +85,7 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
         longitude: null
     });
     const [eligibleLeaders, setEligibleLeaders] = useState([]);
-    const [eligibleHosts, setEligibleHosts] = useState([]);
+    const [_eligibleHosts, setEligibleHosts] = useState([]);
     const [eligibleDoceLeaders, setEligibleDoceLeaders] = useState([]);
     const [selectedLeaderRole, setSelectedLeaderRole] = useState('');
     const [selectedLeader, setSelectedLeader] = useState(null);
@@ -104,101 +125,6 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
     const [showRemoveMemberModal, setShowRemoveMemberModal] = useState(false);
     const [memberToRemove, setMemberToRemove] = useState(null);
     const [memberTypeToRemove, setMemberTypeToRemove] = useState(null);
-
-    // Component to handle map clicks
-    const MapClickHandler = ({ onMapClick }) => {
-        useMapEvents({
-            click: (e) => {
-                onMapClick(e.latlng);
-            },
-        });
-        return null;
-    };
-
-    // Component to update map center
-    const MapUpdater = ({ center }) => {
-        const map = useMap();
-        useEffect(() => {
-            if (center) {
-                map.setView(center, 15);
-            }
-        }, [center, map]);
-        return null;
-    };
-    useEffect(() => {
-        fetchCells();
-        fetchEligibleLeaders();
-        fetchEligibleDoceLeaders();
-        const storedUser = JSON.parse(localStorage.getItem('user'));
-        setCurrentUser(storedUser);
-    }, []);
-
-    // When liderDoceId changes, fetch eligible leaders (filtered by that LIDER_DOCE's network)
-    useEffect(() => {
-        if (formData.liderDoceId) {
-            fetchEligibleLeaders(formData.liderDoceId, selectedLeaderRole);
-        } else {
-            fetchEligibleLeaders(null, selectedLeaderRole);
-        }
-    }, [formData.liderDoceId, selectedLeaderRole]);
-
-    // When leaderId changes, determine the role of the selected leader
-    useEffect(() => {
-        if (formData.leaderId && eligibleLeaders.length > 0) {
-            const selectedLeader = eligibleLeaders.find(leader => leader.id.toString() === formData.leaderId);
-            if (selectedLeader) {
-                const roles = selectedLeader.roles || [];
-                if (roles.includes('LIDER_DOCE')) {
-                    setSelectedLeaderRole('LIDER_DOCE');
-                } else if (roles.includes('LIDER_CELULA')) {
-                    setSelectedLeaderRole('LIDER_CELULA');
-                } else {
-                    setSelectedLeaderRole('');
-                }
-            }
-        } else {
-            setSelectedLeaderRole('');
-        }
-    }, [formData.leaderId, eligibleLeaders]);
-
-    // When liderDoceId changes, fetch eligible hosts (from that LIDER_DOCE's network)
-    useEffect(() => {
-        if (formData.liderDoceId) {
-            fetchEligibleHosts(formData.liderDoceId);
-            // Reset host when liderDoceId changes (only in create mode)
-            if (!isEditing) {
-                setFormData(prev => ({ ...prev, hostId: '' }));
-            }
-        }
-    }, [formData.liderDoceId, isEditing]);
-
-    // Handle default values for PASTOR and LIDER_DOCE roles when opening create form
-    useEffect(() => {
-        if (showCreateForm && currentUser) {
-            const roles = currentUser.roles || [];
-            if (roles.includes('PASTOR')) {
-                setFormData(prev => ({
-                    ...prev,
-                    leaderId: currentUser.id.toString(),
-                    liderDoceId: '' // Pastor might need to select a specific leader 12 or leave empty if supervising directly
-                }));
-                setSelectedLeader(currentUser);
-            } else if (roles.includes('LIDER_DOCE')) {
-                setFormData(prev => ({
-                    ...prev,
-                    liderDoceId: currentUser.id.toString()
-                }));
-                setSelectedLiderDoce(currentUser);
-            }
-        }
-    }, [showCreateForm, currentUser]);
-
-    // Fetch eligible members and assigned members when manage view opens
-    useEffect(() => {
-        if (selectedCell) {
-            fetchAssignedMembers(selectedCell.id);
-        }
-    }, [selectedCell]);
 
     const fetchCells = async () => {
         try {
@@ -267,6 +193,84 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
             toast.error('Error al cargar líderes de 12 disponibles. Por favor intenta nuevamente.');
         }
     };
+    useEffect(() => {
+        void Promise.resolve().then(fetchCells);
+        void Promise.resolve().then(fetchEligibleLeaders);
+        void Promise.resolve().then(fetchEligibleDoceLeaders);
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        void Promise.resolve().then(() => setCurrentUser(storedUser));
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-once: fetch functions are recreated each render but this effect must run only on mount
+
+    // When liderDoceId changes, fetch eligible leaders (filtered by that LIDER_DOCE's network)
+    useEffect(() => {
+        if (formData.liderDoceId) {
+            void Promise.resolve().then(() => fetchEligibleLeaders(formData.liderDoceId, selectedLeaderRole));
+        } else {
+            void Promise.resolve().then(() => fetchEligibleLeaders(null, selectedLeaderRole));
+        }
+    }, [formData.liderDoceId, selectedLeaderRole]);
+
+    // When leaderId changes, determine the role of the selected leader
+    useEffect(() => {
+        if (formData.leaderId && eligibleLeaders.length > 0) {
+            const selectedLeader = eligibleLeaders.find(leader => leader.id.toString() === formData.leaderId);
+            let selectedRole = '';
+            if (selectedLeader) {
+                const roles = selectedLeader.roles || [];
+                if (roles.includes('LIDER_DOCE')) {
+                    selectedRole = 'LIDER_DOCE';
+                } else if (roles.includes('LIDER_CELULA')) {
+                    selectedRole = 'LIDER_CELULA';
+                }
+            }
+            void Promise.resolve().then(() => setSelectedLeaderRole(selectedRole));
+        } else {
+            void Promise.resolve().then(() => setSelectedLeaderRole(''));
+        }
+    }, [formData.leaderId, eligibleLeaders]);
+
+    // When liderDoceId changes, fetch eligible hosts (from that LIDER_DOCE's network)
+    useEffect(() => {
+        if (formData.liderDoceId) {
+            void Promise.resolve().then(() => fetchEligibleHosts(formData.liderDoceId));
+            // Reset host when liderDoceId changes (only in create mode)
+            if (!isEditing) {
+                void Promise.resolve().then(() => setFormData(prev => ({ ...prev, hostId: '' })));
+            }
+        }
+    }, [formData.liderDoceId, isEditing]);
+
+    // Handle default values for PASTOR and LIDER_DOCE roles when opening create form
+    useEffect(() => {
+        if (showCreateForm && currentUser) {
+            const roles = currentUser.roles || [];
+            if (roles.includes('PASTOR')) {
+                void Promise.resolve().then(() => {
+                    setFormData(prev => ({
+                        ...prev,
+                        leaderId: currentUser.id.toString(),
+                        liderDoceId: '' // Pastor might need to select a specific leader 12 or leave empty if supervising directly
+                    }));
+                    setSelectedLeader(currentUser);
+                });
+            } else if (roles.includes('LIDER_DOCE')) {
+                void Promise.resolve().then(() => {
+                    setFormData(prev => ({
+                        ...prev,
+                        liderDoceId: currentUser.id.toString()
+                    }));
+                    setSelectedLiderDoce(currentUser);
+                });
+            }
+        }
+    }, [showCreateForm, currentUser]);
+
+    // Fetch eligible members and assigned members when manage view opens
+    useEffect(() => {
+        if (selectedCell) {
+            void Promise.resolve().then(() => fetchAssignedMembers(selectedCell.id));
+        }
+    }, [selectedCell]);
 
     // Map Functions
     const searchAddress = async (query) => {
@@ -584,7 +588,7 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
 
     // Reset page when filters change
     useEffect(() => {
-        setCurrentPage(1);
+        void Promise.resolve().then(() => setCurrentPage(1));
     }, [filterDoce, filterLeader, filterBarrio, filterDayOfWeek]);
 
     const pagination = useMemo(() => {

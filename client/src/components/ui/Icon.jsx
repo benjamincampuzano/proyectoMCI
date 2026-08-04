@@ -170,7 +170,7 @@ export const LazyIcon = ({
   ...props 
 }) => {
   const [isLoaded, setIsLoaded] = React.useState(false);
-  const [hasError, setHasError] = React.useState(false);
+  const [hasError, _setHasError] = React.useState(false);
 
   React.useEffect(() => {
     // Simular carga lazy
@@ -312,6 +312,7 @@ export const IconStack = ({
 };
 
 // Utilidades para iconos
+// eslint-disable-next-line react-refresh/only-export-components
 export const iconUtils = {
   // Obtener todos los nombres de iconos disponibles
   getAvailableIcons: () => Object.keys(iconSprite),

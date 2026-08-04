@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     MagnifyingGlass, User, Phone, Users, Funnel,
     X, FileXls, Spinner, IdentificationCard, Trash,
@@ -32,7 +32,7 @@ const UnassignedPeople = () => {
         pages: 0
     });
 
-    const fetchPeople = async (page = 1) => {
+    const fetchPeople = useCallback(async (page = 1) => {
         setLoading(true);
         try {
             const response = await api.get('/users/without-cell', {
@@ -53,14 +53,14 @@ const UnassignedPeople = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchTerm, pagination.limit, liderDoceFilter, roleFilter, networkFilter]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchPeople(1);
         }, 500);
         return () => clearTimeout(timer);
-    }, [searchTerm, liderDoceFilter, roleFilter, networkFilter]);
+    }, [searchTerm, liderDoceFilter, roleFilter, networkFilter, fetchPeople]);
 
     const clearFilters = () => {
         setSearchTerm('');

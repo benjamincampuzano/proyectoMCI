@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { LockIcon, User, DotIcon, Calendar, Check, Shield, X, EyeIcon, EyeClosedIcon, Plus, Envelope, ArrowsClockwiseIcon, Sun, Moon, ArrowLeft } from '@phosphor-icons/react';
 import api from '../utils/api';
@@ -7,7 +7,6 @@ import { useTheme } from '../context/ThemeContext';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import { DATA_POLICY_URL } from '../constants/policies';
 import toast from 'react-hot-toast';
-import logo from '../assets/logo.jpg';
 import AsyncSearchSelect from '../components/ui/AsyncSearchSelect';
 
 const Register = () => {
@@ -31,7 +30,7 @@ const Register = () => {
         minorConsentAuthorized: false,
         captchaAnswer: ''
     });
-    const [lideresDoce, setLideresDoce] = useState([]);
+    const [, setLideresDoce] = useState([]);
     const [selectedLeader, setSelectedLeader] = useState(null);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +40,7 @@ const Register = () => {
     const navigate = useNavigate();
 
     // Generate random captcha
-    const generateCaptcha = () => {
+    const generateCaptcha = useCallback(() => {
         const operators = ['+', '-'];
         const operator = operators[Math.floor(Math.random() * operators.length)];
         let num1 = Math.floor(Math.random() * 9) + 1;
@@ -53,8 +52,8 @@ const Register = () => {
         }
 
         setCaptcha({ num1, num2, operator });
-        setFormData({ ...formData, captchaAnswer: '' });
-    };
+        setFormData((prev) => ({ ...prev, captchaAnswer: '' }));
+    }, []);
 
     // Fetch leaders for AsyncSearchSelect
     const fetchLeaders = async (searchTerm) => {
@@ -75,13 +74,13 @@ const Register = () => {
             try {
                 const response = await api.get('/auth/leaders');
                 setLideresDoce(response.data);
-            } catch (err) {
+            } catch {
                 toast.error('Error al cargar líderes. Por favor intenta nuevamente.');
             }
         };
         fetchLeaders();
-        generateCaptcha();
-    }, []);
+        void Promise.resolve().then(generateCaptcha);
+    }, [generateCaptcha]);
 
     const calculateAge = (birthDate) => {
         if (!birthDate) return null;

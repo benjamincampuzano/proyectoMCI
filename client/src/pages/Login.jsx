@@ -33,7 +33,7 @@ const Login = () => {
     };
 
     useEffect(() => {
-        generateCaptcha();
+        void Promise.resolve().then(generateCaptcha);
     }, []);
 
     const handleSubmit = async (e) => {
@@ -82,7 +82,7 @@ const Login = () => {
                 }
                 generateCaptcha();
             }
-        } catch (error) {
+        } catch {
             setError('❌ No se puede conectar al servidor.');
             generateCaptcha();
         }

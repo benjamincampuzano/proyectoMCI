@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 /**
  * Spinner Component - Animaciones Linear completas
@@ -115,6 +115,8 @@ export const Skeleton = ({
   className = '', 
   ...props 
 }) => {
+  const [randomWidth] = useState(() => Math.random() * 40 + 60);
+
   const heightClasses = {
     sm: 'h-3',
     default: 'h-4',
@@ -149,7 +151,7 @@ export const Skeleton = ({
             animate-pulse
           `}
           style={{
-            width: width === 'random' ? `${Math.random() * 40 + 60}%` : undefined
+            width: width === 'random' ? `${randomWidth}%` : undefined
           }}
         />
       ))}

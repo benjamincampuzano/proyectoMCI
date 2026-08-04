@@ -90,7 +90,24 @@ const checkConventionAccess = async (user, conventionId) => {
     });
 
     if (!convention) return false;
-    return convention.coordinatorId === parseInt(user.id);
+    if (convention.coordinatorId === parseInt(user.id)) return true;
+
+    if (!user.moduleCoordinations || !user.moduleSubCoordinations || !user.moduleTreasurers) {
+        const [coordinations, subCoordinations, treasurers] = await Promise.all([
+            prisma.moduleCoordinator.findMany({ where: { userId: user.id, isDeleted: false }, select: { moduleName: true } }),
+            prisma.moduleSubCoordinator.findMany({ where: { userId: user.id, isDeleted: false }, select: { moduleName: true } }),
+            prisma.moduleTreasurer.findMany({ where: { userId: user.id, isDeleted: false }, select: { moduleName: true } })
+        ]);
+        user.moduleCoordinations = coordinations.map(c => c.moduleName.toLowerCase());
+        user.moduleSubCoordinations = subCoordinations.map(sc => sc.moduleName.toLowerCase());
+        user.moduleTreasurers = treasurers.map(t => t.moduleName.toLowerCase());
+    }
+
+    const isModuleCoordinator = user.moduleCoordinations?.includes('convencion');
+    const isModuleSubCoordinator = user.moduleSubCoordinations?.includes('convencion');
+    const isModuleTreasurer = user.moduleTreasurers?.includes('convencion');
+
+    return isModuleCoordinator || isModuleSubCoordinator || isModuleTreasurer;
 };
 
 const getConventions = async (req, res) => {

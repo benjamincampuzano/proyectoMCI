@@ -44,7 +44,6 @@ const GuestList = ({ refreshTrigger }) => {
         currentUser,
         fetchGuests,
         fetchAllGuests,
-        updateGuest,
         deleteGuest,
         convertGuestToMember,
         // Paginación
@@ -110,6 +109,10 @@ const GuestList = ({ refreshTrigger }) => {
         setActiveModal({ type, guest, data });
     }, []);
 
+    const updateModalData = useCallback((newData) => {
+        setActiveModal((prev) => (prev ? { ...prev, data: { ...prev.data, ...newData } } : prev));
+    }, []);
+
     const handleGuestUpdated = useCallback(() => {
         fetchGuests(1);
         setActiveModal(null);
@@ -155,7 +158,7 @@ const GuestList = ({ refreshTrigger }) => {
         return colors[status] || 'bg-[var(--ln-bg-secondary)] text-[var(--ln-text-tertiary)] border border-[var(--ln-border-subtle)]';
     };
 
-    const getStatusLabel = (status) => {
+    const getStatusLabel = useCallback((status) => {
         const labels = {
             NUEVO: 'Nuevo',
             CONTACTADO: 'Llamado',
@@ -163,7 +166,7 @@ const GuestList = ({ refreshTrigger }) => {
             GANADO: 'Consolidado',
         };
         return labels[status] || status;
-    };
+    }, []);
 
     const calculateAge = useCallback((birthDate) => {
         if (!birthDate) return null;

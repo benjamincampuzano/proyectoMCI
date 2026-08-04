@@ -1,7 +1,7 @@
 
 // components/common/AssignConfirmDialog.jsx
 import React from 'react';
-import { X, Warning, UserCircleMinusIcon } from '@phosphor-icons/react';
+import { X, Warning, UserCircleMinusIcon, ArrowBendUpLeft } from '@phosphor-icons/react';
 
 export default function AssignConfirmDialog({ 
   open, 
@@ -55,7 +55,7 @@ export default function AssignConfirmDialog({
             {/* Arrow indicator */}
             <div className="flex justify-center">
               <div className="w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
-                <UserArrowBendUpLeft size={16} className="text-amber-600 dark:text-amber-400" />
+                <ArrowBendUpLeft size={16} className="text-amber-600 dark:text-amber-400" />
               </div>
             </div>
 
@@ -103,7 +103,7 @@ export default function AssignConfirmDialog({
               </>
             ) : (
               <>
-                <UserArrowBendUpLeft size={16} />
+                <ArrowBendUpLeft size={16} />
                 Confirmar Asignación
               </>
             )}

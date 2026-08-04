@@ -74,7 +74,7 @@ const AuditDashboard = () => {
                     const text = await error.response.data.text();
                     const json = JSON.parse(text);
                     errorMsg = json.error || errorMsg;
-                } catch (e) {
+                } catch {
                     // Ignorar si no se puede parsear
                 }
             } else if (error.response?.data?.error) {

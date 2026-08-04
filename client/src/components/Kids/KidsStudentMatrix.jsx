@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { MagnifyingGlass, Camera, X, Upload, Link, Download } from '@phosphor-icons/react';
@@ -23,7 +23,7 @@ const CATEGORY_INFO = {
 };
 
 const KidsStudentMatrix = () => {
-    const { user, hasRole } = useAuth();
+    const { user } = useAuth();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -128,12 +128,7 @@ const KidsStudentMatrix = () => {
         });
     };
 
-    useEffect(() => {
-        fetchStudentMatrix();
-         
-    }, []);
-
-    const fetchStudentMatrix = async () => {
+    const fetchStudentMatrix = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get('/kids/student-matrix');
@@ -143,36 +138,11 @@ const KidsStudentMatrix = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const getClassStatus = (enrollment, level) => {
-        if (!enrollment) return null;
-
-        if (enrollment.module?.moduleNumber !== level.moduleNumber) return null;
-
-        const finalGrade = enrollment.finalGrade;
-
-        if (finalGrade !== null && finalGrade >= 7) {
-            return { completed: true, grade: finalGrade };
-        } else if (finalGrade !== null) {
-            return { completed: false, grade: finalGrade };
-        }
-
-        return { completed: false, grade: null };
-    };
-
-    const getAverageGrade = (enrollments) => {
-        if (!enrollments || enrollments.length === 0) return '-';
-
-        const completedGrades = enrollments
-            .filter(e => e.finalGrade !== null)
-            .map(e => e.finalGrade);
-
-        if (completedGrades.length === 0) return '-';
-
-        const average = completedGrades.reduce((sum, grade) => sum + grade, 0) / completedGrades.length;
-        return average.toFixed(1);
-    };
+    useEffect(() => {
+        void Promise.resolve().then(fetchStudentMatrix);
+    }, [fetchStudentMatrix]);
 
     const getAttendanceRate = (enrollments) => {
         if (!enrollments || enrollments.length === 0) return '-';
@@ -214,10 +184,6 @@ const KidsStudentMatrix = () => {
         } finally {
             setUploading(false);
         }
-    };
-
-    const openPhotoModal = () => {
-        setShowPhotoModal(true);
     };
 
     const closePhotoModal = () => {
@@ -391,9 +357,11 @@ const KidsStudentMatrix = () => {
     });
 
     // Reset page when search term changes
-    useEffect(() => {
+    const [prevSearchTerm, setPrevSearchTerm] = useState(searchTerm);
+    if (prevSearchTerm !== searchTerm) {
+        setPrevSearchTerm(searchTerm);
         setCurrentPage(1);
-    }, [searchTerm]);
+    }
 
     const pagination = useMemo(() => {
         const totalPages = Math.max(1, Math.ceil(filteredStudents.length / PAGE_SIZE));
@@ -784,7 +752,7 @@ const KidsStudentMatrix = () => {
                                             // La API devuelve {users: [...], pagination: {...}}
                                             const usersArray = res.data?.users || res.data || [];
                                             return Array.isArray(usersArray) ? usersArray : [];
-                                        } catch (error) {
+                                        } catch {
                                             return [];
                                         }
                                     }}

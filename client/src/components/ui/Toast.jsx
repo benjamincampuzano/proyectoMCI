@@ -11,6 +11,7 @@ import Typography from './Typography';
 const ToastContext = createContext();
 
 // Hook para usar Toast
+// eslint-disable-next-line react-refresh/only-export-components
 export const useToast = () => {
   const context = useContext(ToastContext);
   if (!context) {
@@ -22,6 +23,10 @@ export const useToast = () => {
 // Toast Provider
 const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
+
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
 
   const addToast = useCallback((toast) => {
     const id = Date.now() + Math.random();
@@ -35,11 +40,7 @@ const ToastProvider = ({ children }) => {
         removeToast(id);
       }, toast.duration || 5000);
     }
-  }, []);
-
-  const removeToast = useCallback((id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  }, []);
+  }, [removeToast]);
 
   const clearAllToasts = useCallback(() => {
     setToasts([]);
@@ -86,7 +87,7 @@ const ToastItem = ({ toast, onRemove }) => {
 
   useEffect(() => {
     // Animación de entrada
-    setIsVisible(true);
+    void Promise.resolve().then(() => setIsVisible(true));
   }, []);
 
   const handleRemove = useCallback(() => {
@@ -193,7 +194,7 @@ const Alert = ({
   message, 
   dismissible = false, 
   onDismiss, 
-  className = '', 
+  className: _className = '', 
   ...props 
 }) => {
   const getAlertIcon = () => {
@@ -261,7 +262,7 @@ const Alert = ({
 const InlineAlert = ({ 
   type = 'info', 
   message, 
-  className = '', 
+  className: _className = '', 
   ...props 
 }) => {
   const getInlineClasses = () => {

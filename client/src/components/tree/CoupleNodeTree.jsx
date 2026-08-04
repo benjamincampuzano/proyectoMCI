@@ -17,12 +17,12 @@ export default memo(function CoupleNodeTree({
   onSelectLeader,
   selectedLeader
 }) {
+  const [localExpanded, setLocalExpanded] = useState(false);
+
   if (!node) return null;
 
   // Inicia siempre contraído; el padre (NetworkTree) controla la expansión
   // cuando lo necesita. Esto evita renders costosos en redes grandes.
-  const [localExpanded, setLocalExpanded] = useState(false);
-
   const hasControlledExpansion = expandedNodes instanceof Set;
   const isExpanded = hasControlledExpansion ? expandedNodes.has(node.id) : localExpanded;
   const canAdd = canAddToNode({ node, ancestors, currentUser });

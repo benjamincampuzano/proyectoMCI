@@ -50,13 +50,98 @@ const getModuleDisplayName = (normalizedName) => {
     return MODULE_NAME_MAP[key] || normalizedName;
 };
 
+const AssignmentCard = ({ 
+    title, 
+    icon: Icon, 
+    color,
+    data, 
+    type,
+    placeholder = "Buscar usuario...",
+    role = 'LIDER_DOCE',
+    isAdminOrPastor,
+    selectedUser,
+    assigning,
+    onSelectUser,
+    onAssign,
+    onRemove,
+    onSearch,
+    renderUserItem
+}) => (
+    <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[24px] border border-[var(--ln-border-standard)] overflow-hidden shadow-lg">
+        <div className="px-6 py-5 border-b border-[var(--ln-border-standard)] bg-white/[0.02] flex items-center gap-3">
+            <div className={`p-2 rounded-xl bg-${color}-500/10 text-${color}-500`}>
+                <Icon size={20} weight="bold" />
+            </div>
+            <div>
+                <h3 className="text-base font-semibold text-[var(--ln-text-primary)]">{title}</h3>
+            </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+            {data ? (
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full bg-${color}-500/20 flex items-center justify-center`}>
+                                <Icon size={20} className={`text-${color}-500`} />
+                            </div>
+                            <div>
+                                <p className="font-medium text-gray-900 dark:text-white">{data.fullName}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{data.email}</p>
+                            </div>
+                        </div>
+                        {isAdminOrPastor && (
+                            <button
+                                onClick={() => onRemove(type, data.fullName)}
+                                className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                title="Remover"
+                            >
+                                <Trash size={18} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-700 border-dashed">
+                    <Icon size={32} className="text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Sin {title.toLowerCase()} asignado
+                    </p>
+                </div>
+            )}
+
+            {isAdminOrPastor && !data && (
+                <div className="space-y-3 pt-2">
+                    <AsyncSearchSelect
+                        fetchItems={(term) => onSearch(term, role)}
+                        onSelect={(user) => onSelectUser(type, user)}
+                        selectedValue={selectedUser[type]}
+                        placeholder={placeholder}
+                        labelKey="fullName"
+                        renderItem={renderUserItem}
+                    />
+                    <Button
+                        variant="primary"
+                        onClick={() => onAssign(type)}
+                        disabled={!selectedUser[type] || assigning[type]}
+                        loading={assigning[type]}
+                        className="w-full"
+                        icon={UserPlus}
+                    >
+                        Asignar {title}
+                    </Button>
+                </div>
+            )}
+        </div>
+    </div>
+);
+
 const CoordinatorManagement = () => {
     const { hasAnyRole } = useAuth();
     const isAdminOrPastor = hasAnyRole(['ADMIN', 'PASTOR']);
 
     const {
         allCoordinators,
-        coordinators,
         loading,
         selectedModule,
         setSelectedModule,
@@ -116,7 +201,7 @@ const CoordinatorManagement = () => {
                     break;
             }
             setSelectedUser(prev => ({ ...prev, [type]: null }));
-        } catch (error) {
+        } catch {
             // Error already handled in hook
         } finally {
             setAssigning(prev => ({ ...prev, [type]: false }));
@@ -144,7 +229,7 @@ const CoordinatorManagement = () => {
                 default:
                     break;
             }
-        } catch (error) {
+        } catch {
             // Error already handled in hook
         } finally {
             setShowConfirmModal(false);
@@ -166,84 +251,6 @@ const CoordinatorManagement = () => {
             <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
                 <Shield size={12} />
                 <span>{user.roles?.[0] || 'USUARIO'}</span>
-            </div>
-        </div>
-    );
-
-    const AssignmentCard = ({ 
-        title, 
-        icon: Icon, 
-        color,
-        data, 
-        type,
-        placeholder = "Buscar usuario...",
-        role = 'LIDER_DOCE'
-    }) => (
-        <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[24px] border border-[var(--ln-border-standard)] overflow-hidden shadow-lg">
-            <div className="px-6 py-5 border-b border-[var(--ln-border-standard)] bg-white/[0.02] flex items-center gap-3">
-                <div className={`p-2 rounded-xl bg-${color}-500/10 text-${color}-500`}>
-                    <Icon size={20} weight="bold" />
-                </div>
-                <div>
-                    <h3 className="text-base font-semibold text-[var(--ln-text-primary)]">{title}</h3>
-                </div>
-            </div>
-
-            <div className="p-6 space-y-4">
-                {data ? (
-                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-full bg-${color}-500/20 flex items-center justify-center`}>
-                                    <Icon size={20} className={`text-${color}-500`} />
-                                </div>
-                                <div>
-                                    <p className="font-medium text-gray-900 dark:text-white">{data.fullName}</p>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{data.email}</p>
-                                </div>
-                            </div>
-                            {isAdminOrPastor && (
-                                <button
-                                    onClick={() => openConfirmRemove(type, data.fullName)}
-                                    className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                    title="Remover"
-                                >
-                                    <Trash size={18} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-700 border-dashed">
-                        <Icon size={32} className="text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Sin {title.toLowerCase()} asignado
-                        </p>
-                    </div>
-                )}
-
-                {isAdminOrPastor && !data && (
-                    <div className="space-y-3 pt-2">
-                        <AsyncSearchSelect
-                            fetchItems={(term) => handleSearchUsers(term, role)}
-                            onSelect={(user) => setSelectedUser(prev => ({ ...prev, [type]: user }))}
-                            selectedValue={selectedUser[type]}
-                            placeholder={placeholder}
-                            labelKey="fullName"
-                            renderItem={renderUserItem}
-                        />
-                        <Button
-                            variant="primary"
-                            onClick={() => handleAssign(type)}
-                            disabled={!selectedUser[type] || assigning[type]}
-                            loading={assigning[type]}
-                            className="w-full"
-                            icon={UserPlus}
-                        >
-                            Asignar {title}
-                        </Button>
-                    </div>
-                )}
             </div>
         </div>
     );
@@ -334,6 +341,14 @@ const CoordinatorManagement = () => {
                         type="coordinator"
                         placeholder="Buscar Líder de 12..."
                         role="LIDER_DOCE"
+                        isAdminOrPastor={isAdminOrPastor}
+                        selectedUser={selectedUser}
+                        assigning={assigning}
+                        onSelectUser={(type, user) => setSelectedUser(prev => ({ ...prev, [type]: user }))}
+                        onAssign={handleAssign}
+                        onRemove={openConfirmRemove}
+                        onSearch={handleSearchUsers}
+                        renderUserItem={renderUserItem}
                     />
                     <AssignmentCard
                         title="Subcoordinador"
@@ -343,6 +358,14 @@ const CoordinatorManagement = () => {
                         type="subCoordinator"
                         placeholder="Buscar usuario..."
                         role=""
+                        isAdminOrPastor={isAdminOrPastor}
+                        selectedUser={selectedUser}
+                        assigning={assigning}
+                        onSelectUser={(type, user) => setSelectedUser(prev => ({ ...prev, [type]: user }))}
+                        onAssign={handleAssign}
+                        onRemove={openConfirmRemove}
+                        onSearch={handleSearchUsers}
+                        renderUserItem={renderUserItem}
                     />
                     <AssignmentCard
                         title="Tesorero"
@@ -352,6 +375,14 @@ const CoordinatorManagement = () => {
                         type="treasurer"
                         placeholder="Buscar usuario..."
                         role=""
+                        isAdminOrPastor={isAdminOrPastor}
+                        selectedUser={selectedUser}
+                        assigning={assigning}
+                        onSelectUser={(type, user) => setSelectedUser(prev => ({ ...prev, [type]: user }))}
+                        onAssign={handleAssign}
+                        onRemove={openConfirmRemove}
+                        onSearch={handleSearchUsers}
+                        renderUserItem={renderUserItem}
                     />
                 </div>
             )}

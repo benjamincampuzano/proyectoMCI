@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Phone, House, User, WhatsappLogoIcon, ChatCircle, ChatCircleDots, WarningCircleIcon, X, Clock, CheckCircle, ClockCounterClockwiseIcon, HandsPrayingIcon, Plus, Trash, Calendar, Funnel, MagnifyingGlass } from '@phosphor-icons/react';
 import AsyncSearchSelect from './ui/AsyncSearchSelect';
 import Pagination from './ui/Pagination';
@@ -50,9 +50,11 @@ const GuestTracking = ({ refreshTrigger }) => {
     // Auto-apply filter for LIDER_DOCE who are not coordinators
     useEffect(() => {
         if (isDoceLeader() && !isModuleCoordinator && user) {
-            setLiderDoceFilter({
-                id: user.id,
-                fullName: user.profile?.fullName || user.email
+            void Promise.resolve().then(() => {
+                setLiderDoceFilter({
+                    id: user.id,
+                    fullName: user.profile?.fullName || user.email
+                });
             });
         }
 
@@ -61,11 +63,7 @@ const GuestTracking = ({ refreshTrigger }) => {
         };
     }, [isDoceLeader, isModuleCoordinator, user]);
 
-    useEffect(() => {
-        fetchGuests();
-    }, [currentPage, startDate, endDate, liderDoceFilter, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, refreshTrigger]);
-
-    const fetchGuests = async () => {
+    const fetchGuests = useCallback(async () => {
         try {
             setLoading(true);
             const params = {
@@ -96,7 +94,11 @@ const GuestTracking = ({ refreshTrigger }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentPage, startDate, endDate, liderDoceFilter, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, pageSize]);
+
+    useEffect(() => {
+        void Promise.resolve().then(() => fetchGuests());
+    }, [currentPage, startDate, endDate, liderDoceFilter, pendingCalls, pendingVisits, alreadyCalled, alreadyVisited, refreshTrigger, fetchGuests]);
 
     // Check if liderDoceFilter is auto-applied (for non-coordinator LIDER_DOCE)
     const isLiderDoceFilterAutoApplied = isDoceLeader() && !isModuleCoordinator && liderDoceFilter?.id === user?.id;

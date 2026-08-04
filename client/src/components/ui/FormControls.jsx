@@ -242,7 +242,7 @@ export const Select = ({
         </label>
       )}
       <select
-        className={`w-full px-3.5 py-3 font-[var(--font-sans)] text-[16px] font-[400] leading-[1.50] bg-[rgba(255,255,255,0.02)] text-[#d0d6e0] border border-[rgba(255,255,255,0.08)] rounded-md focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all duration-200 appearance-none bg-image-[url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d0d6e0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e\")] bg-no-repeat bg-right-[12px] bg-center ${errorClasses} ${disabled ? 'opacity-40 cursor-not-allowed' : ''} ${className}`}
+        className={`w-full px-3.5 py-3 font-[var(--font-sans)] text-[16px] font-[400] leading-[1.50] bg-[rgba(255,255,255,0.02)] text-[#d0d6e0] border border-[rgba(255,255,255,0.08)] rounded-md focus:border-[var(--ln-accent-violet)] focus:shadow-[rgba(0,0,0,0.1)_0px_4px_12px,rgba(113,112,255,0.4)_0px_0px_0px_2px] transition-all duration-200 appearance-none bg-image-[url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23d0d6e0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")] bg-no-repeat bg-right-[12px] bg-center ${errorClasses} ${disabled ? 'opacity-40 cursor-not-allowed' : ''} ${className}`}
         disabled={disabled}
         {...props}
       >

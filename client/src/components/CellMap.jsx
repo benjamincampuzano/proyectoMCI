@@ -40,17 +40,15 @@ const CellMap = ({ cells = [] }) => {
     // Filter cells that have coordinates
     const georeferencedCells = cells.filter(c => c.latitude !== null && c.longitude !== null && !isNaN(c.latitude) && !isNaN(c.longitude));
 
-    useEffect(() => {
-        if (georeferencedCells.length > 0) {
-            const avgLat = georeferencedCells.reduce((sum, c) => sum + parseFloat(c.latitude), 0) / georeferencedCells.length;
-            const avgLon = georeferencedCells.reduce((sum, c) => sum + parseFloat(c.longitude), 0) / georeferencedCells.length;
+    if (georeferencedCells.length > 0) {
+        const avgLat = georeferencedCells.reduce((sum, c) => sum + parseFloat(c.latitude), 0) / georeferencedCells.length;
+        const avgLon = georeferencedCells.reduce((sum, c) => sum + parseFloat(c.longitude), 0) / georeferencedCells.length;
 
-            if (!isNaN(avgLat) && !isNaN(avgLon)) {
-                setCenter([avgLat, avgLon]);
-                setZoom(13);
-            }
+        if (!isNaN(avgLat) && !isNaN(avgLon) && (center[0] !== avgLat || center[1] !== avgLon || zoom !== 13)) {
+            setCenter([avgLat, avgLon]);
+            setZoom(13);
         }
-    }, [cells]);
+    }
 
     return (
         <div className="w-full h-[250px] rounded-xl overflow-hidden shadow-lg border border-gray-200 relative z-10">

@@ -17,14 +17,14 @@ const PendingTasksPanel = () => {
         unfinishedModulesCount: 0
     });
     const [loading, setLoading] = useState(true);
-    const { user, hasAnyRole } = useAuth();
+    const { hasAnyRole } = useAuth();
     const menuRef = useRef(null);
 
     const isAuthorized = hasAnyRole(['LIDER_DOCE', 'ADMIN']);
 
     useEffect(() => {
         if (!isAuthorized) {
-            setLoading(false);
+            void Promise.resolve().then(() => setLoading(false));
             return;
         }
 

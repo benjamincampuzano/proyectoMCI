@@ -146,7 +146,7 @@ const getAllGuests = async (req, res) => {
             ...treasurerRecords.map(t => String(t.moduleName).toLowerCase())
         ];
         const isGuestModuleCoordinator = allModuleRoles.some(m =>
-            ['ganar', 'consolidar'].includes(m)
+            ['ganar', 'consolidar', 'encuentro', 'convencion'].includes(m)
         );
         
         if (roles.includes('ADMIN')) {

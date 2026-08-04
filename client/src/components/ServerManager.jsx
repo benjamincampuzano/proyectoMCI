@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Users, Trash, X, Copy, CheckCircle, MagnifyingGlass, Lightbulb, Shield, Lock } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -30,11 +30,7 @@ const ServerManager = ({ refreshTrigger: externalRefresh }) => {
     const [showStatusConfirm, setShowStatusConfirm] = useState(false);
     const [servidorToToggle, setServidorToToggle] = useState(null);
 
-    useEffect(() => {
-        fetchServidores();
-    }, [refreshTrigger, externalRefresh]);
-
-    const fetchServidores = async () => {
+    const fetchServidores = useCallback(async () => {
         setLoading(true);
         try {
             const res = await api.get('/servidores');
@@ -45,7 +41,11 @@ const ServerManager = ({ refreshTrigger: externalRefresh }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        void Promise.resolve().then(fetchServidores);
+    }, [refreshTrigger, externalRefresh, fetchServidores]);
 
     const handleCreateServidor = async () => {
         if (!selectedUser) {

@@ -13,10 +13,8 @@ const UserMenu = ({ onOpenProfile }) => {
     const [sessions, setSessions] = useState([]);
     const [loadingSessions, setLoadingSessions] = useState(false);
     const [showLogoutAllConfirm, setShowLogoutAllConfirm] = useState(false);
-    const { user, logout, getSessions, logoutAll, isAdmin: contextIsAdmin } = useAuth();
+    const { user, logout, getSessions, logoutAll } = useAuth();
     const menuRef = useRef(null);
-
-    const isAdmin = contextIsAdmin();
 
     useEffect(() => {
         const handleClickOutside = (event) => {

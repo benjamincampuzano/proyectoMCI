@@ -60,8 +60,8 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
                                 const isPastor = user.roles?.includes('PASTOR');
                                 const isLiderDoce = user.roles?.includes('LIDER_DOCE');
 
-                                let displayValue = null;
-                                let label = 'L12';
+                                let displayValue;
+                                let label;
 
                                 if (isPastor) {
                                     displayValue = user.fullName;
@@ -179,7 +179,7 @@ const UserTable = ({ users, loading, canEdit, pagination, onEdit, onDelete, onRe
         {
             key: 'secondaryRoles',
             title: 'Asignaciones',
-            render: (value, user) => {
+            render: (value) => {
                 const secondary = value || [];
                 if (secondary.length === 0) {
                     return <span className="text-[11px] weight-510 text-[var(--ln-text-quaternary)] italic opacity-40">Funciones generales</span>;

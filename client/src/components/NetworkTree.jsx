@@ -231,7 +231,7 @@ export default function NetworkTree({ network, currentUser, onNetworkChange }) {
     });
 
     return cards;
-  }, [normalizedNetwork, currentUser, getPartnerDisplayName]);
+  }, [normalizedNetwork, getPartnerDisplayName]);
 
   const authorityCards = getAuthorityCards();
 

@@ -76,17 +76,14 @@ const UserManagementRoute = ({ children }) => {
 
 const KidsModuleRoute = ({ children }) => {
   const { user, loading, hasAnyRole } = useAuth();
-  if (loading) return <div>Loading...</div>;
-
-  // ADMIN, PASTOR, and LIDER_DOCE always have access
-  if (hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE'])) {
-    return children;
-  }
 
   // For others, check if they have specific Kids module assignments
   const [hasKidsAccess, setHasKidsAccess] = useState(null);
 
   useEffect(() => {
+    // ADMIN, PASTOR, and LIDER_DOCE always have access
+    if (!user || hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE'])) return;
+
     const checkKidsAccess = async () => {
       try {
         // Use consolidated endpoint to get all roles in one call
@@ -118,7 +115,14 @@ const KidsModuleRoute = ({ children }) => {
     if (user) {
       checkKidsAccess();
     }
-  }, [user]);
+  }, [user, hasAnyRole]);
+
+  if (loading) return <div>Loading...</div>;
+
+  // ADMIN, PASTOR, and LIDER_DOCE always have access
+  if (hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE'])) {
+    return children;
+  }
 
   if (hasKidsAccess === null) {
     return <div>Loading...</div>;

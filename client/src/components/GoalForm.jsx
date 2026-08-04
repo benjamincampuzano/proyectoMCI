@@ -28,16 +28,18 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
 
     useEffect(() => {
         if (initialData) {
-            setFormData({
-                ...initialData,
-                targetValue: (initialData.targetValue ?? '').toString(),
-                targetValues: initialData.userId ? { [initialData.userId]: (initialData.targetValue ?? '').toString() } : {},
-                encuentroId: (initialData.encuentroId ?? '').toString(),
-                conventionId: (initialData.conventionId ?? '').toString(),
-                userIds: initialData.userId ? [initialData.userId] : [], // Handle legacy/edit mode
-                month: initialData.month || new Date().getMonth() + 1,
-                year: initialData.year || new Date().getFullYear(),
-                type: initialData.type || 'ENCUENTRO_REGISTRATIONS'
+            void Promise.resolve().then(() => {
+                setFormData({
+                    ...initialData,
+                    targetValue: (initialData.targetValue ?? '').toString(),
+                    targetValues: initialData.userId ? { [initialData.userId]: (initialData.targetValue ?? '').toString() } : {},
+                    encuentroId: (initialData.encuentroId ?? '').toString(),
+                    conventionId: (initialData.conventionId ?? '').toString(),
+                    userIds: initialData.userId ? [initialData.userId] : [], // Handle legacy/edit mode
+                    month: initialData.month || new Date().getMonth() + 1,
+                    year: initialData.year || new Date().getFullYear(),
+                    type: initialData.type || 'ENCUENTRO_REGISTRATIONS'
+                });
             });
         }
     }, [initialData]);
@@ -54,17 +56,20 @@ const GoalForm = ({ isOpen, onClose, onSuccess, initialData = null }) => {
                 setSelectedUsersDetails(selected);
 
                 // Initialize targetValues for new selections if they don't exist
-                const newTargetValues = { ...formData.targetValues };
-                let modified = false;
-                formData.userIds.forEach(id => {
-                    if (newTargetValues[id] === undefined) {
-                        newTargetValues[id] = formData.targetValue || '';
-                        modified = true;
+                setFormData(prev => {
+                    const newTargetValues = { ...prev.targetValues };
+                    let modified = false;
+                    formData.userIds.forEach(id => {
+                        if (newTargetValues[id] === undefined) {
+                            newTargetValues[id] = prev.targetValue || '';
+                            modified = true;
+                        }
+                    });
+                    if (modified) {
+                        return { ...prev, targetValues: newTargetValues };
                     }
+                    return prev;
                 });
-                if (modified) {
-                    setFormData(prev => ({ ...prev, targetValues: newTargetValues }));
-                }
             } catch (err) {
                 console.error('Error fetching selected users:', err);
             }

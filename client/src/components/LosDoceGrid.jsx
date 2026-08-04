@@ -46,7 +46,7 @@ const LosDoceGrid = React.memo(({ losDoce, onSelectLeader }) => {
                             </h3>
                             {leader.isCouple && leader.partners ? (
                                 <div className="flex flex-col gap-0.5">
-                                    {leader.partners.map((partner, idx) => (
+                                    {leader.partners.map((partner) => (
                                         <p key={partner.id} className="text-[11px] text-[var(--ln-text-tertiary)] truncate opacity-60 font-mono">
                                             {partner.fullName?.split(' ')[0]}: {partner.phone || 'Sin teléfono'}
                                         </p>

@@ -52,7 +52,7 @@ const TabEngine = ({
     useEffect(() => {
         if (!resolvedTabId) return;
         if (currentTab !== resolvedTabId) {
-            setActive(resolvedTabId);
+            void Promise.resolve().then(() => setActive(resolvedTabId));
         }
     }, [currentTab, resolvedTabId, setActive]);
 

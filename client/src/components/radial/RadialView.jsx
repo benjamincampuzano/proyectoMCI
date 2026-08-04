@@ -109,7 +109,7 @@ function layoutRadial(root, expandedNodes, radiusStep = 160) {
  * - Position change : slide to new coords
  * - Opacity change : crossfade dim ↔ bright
  */
-function AnimatedNode({ tx, ty, opacity = 1, nodeKey, children, onClick }) {
+function AnimatedNode({ tx, ty, opacity = 1, children, onClick }) {
   const ref = useRef(null);
   const prevPos = useRef({ x: tx, y: ty });
   const prevOpacity = useRef(opacity);
@@ -160,7 +160,7 @@ function AnimatedNode({ tx, ty, opacity = 1, nodeKey, children, onClick }) {
 /**
  * AnimatedLine: animates opacity changes smoothly via WAAPI.
  */
-function AnimatedLine({ x1, y1, x2, y2, strokeWidth, opacity = 1, lineKey }) {
+function AnimatedLine({ x1, y1, x2, y2, strokeWidth, opacity = 1 }) {
   const ref = useRef(null);
   const prev = useRef({ x1, y1, x2, y2, opacity });
   const mounted = useRef(false);
@@ -209,7 +209,7 @@ function AnimatedLine({ x1, y1, x2, y2, strokeWidth, opacity = 1, lineKey }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function RadialView({ root, currentUser, onAddUser, onRemoveUser, size = 1000 }) {
+export default function RadialView({ root, currentUser, size = 1000 }) {
   // Inicia sin nodos expandidos: el usuario debe pulsar para ver los hijos.
   // Así el primer render solo dibuja el nodo raíz y no todos los descendientes.
   const [expandedNodes, setExpandedNodes] = useState(new Set());
@@ -280,17 +280,6 @@ export default function RadialView({ root, currentUser, onAddUser, onRemoveUser,
 
   const handleMouseUp = () => setIsDragging(false);
 
-  const canCache = useRef(new Map());
-  function computePerms(n) {
-    if (canCache.current.has(n.id)) return canCache.current.get(n.id);
-    const perms = {
-      add: canAddToNode({ node: n, ancestors: [], currentUser }),
-      remove: canRemoveFromNode({ node: n, ancestors: [], currentUser, level: 0 })
-    };
-    canCache.current.set(n.id, perms);
-    return perms;
-  }
-
   return (
     <div
       className="w-full h-[800px] overflow-hidden bg-white dark:bg-gray-900 rounded-xl shadow-inner border border-gray-100 dark:border-gray-800 relative cursor-grab active:cursor-grabbing"
@@ -344,7 +333,6 @@ export default function RadialView({ root, currentUser, onAddUser, onRemoveUser,
               return (
                 <AnimatedLine
                   key={key}
-                  lineKey={key}
                   x1={l.source.x} y1={l.source.y}
                   x2={l.target.x} y2={l.target.y}
                   strokeWidth={1.5 / transform.scale}
@@ -361,7 +349,12 @@ export default function RadialView({ root, currentUser, onAddUser, onRemoveUser,
               const label = n.node.partners
                 ? n.node.partners.map(p => p.fullName).join(' y ')
                 : n.node.name;
-              const perms = isGuest ? { add: false, remove: false } : computePerms(n.node);
+              const perms = isGuest
+                ? { add: false, remove: false }
+                : {
+                    add: canAddToNode({ node: n.node, ancestors: [], currentUser }),
+                    remove: canRemoveFromNode({ node: n.node, ancestors: [], currentUser, level: 0 })
+                  };
               const r = isGuest ? 12 : 20;
               const isExpanded = expandedNodes.has(n.node.id);
               const isFocused = n.node.id === focusedNodeId;
@@ -379,7 +372,6 @@ export default function RadialView({ root, currentUser, onAddUser, onRemoveUser,
               return (
                 <AnimatedNode
                   key={nodeKey}
-                  nodeKey={nodeKey}
                   tx={n.x}
                   ty={n.y}
                   opacity={nodeOpacity}

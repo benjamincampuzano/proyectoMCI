@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, FloppyDisk, Spinner, Check } from '@phosphor-icons/react';
 import { validatePassword, getPasswordStrength } from '../utils/passwordValidator';
 import { useAuth } from '../hooks/useAuth';
@@ -25,13 +25,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
     const [success, setSuccess] = useState('');
     const [showPasswordFields, setShowPasswordFields] = useState(false);
 
-    useEffect(() => {
-        if (isOpen) {
-            fetchProfile();
-        }
-    }, [isOpen]);
-
-    const fetchProfile = async () => {
+    const fetchProfile = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get('/users/profile');
@@ -54,7 +48,7 @@ const UserProfileModal = ({ isOpen, onClose }) => {
                 localStorage.setItem('user', JSON.stringify(userData));
                 updateProfile(userData);
             }
-        } catch (err) {
+        } catch {
             if (user) {
                 setFormData(prev => ({
                     ...prev,
@@ -72,7 +66,13 @@ const UserProfileModal = ({ isOpen, onClose }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user, updateProfile]);
+
+    useEffect(() => {
+        if (isOpen) {
+            void Promise.resolve().then(fetchProfile);
+        }
+    }, [isOpen, fetchProfile]);
 
     if (!isOpen) return null;
 

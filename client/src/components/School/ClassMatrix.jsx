@@ -23,19 +23,13 @@ const ClassMatrix = ({ courseId }) => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [enrollmentToDelete, setEnrollmentToDelete] = useState(null);
 
-    useEffect(() => {
-        fetchMatrix();
-        fetchMaterials();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [courseId]);
-
     const fetchMatrix = async () => {
         try {
             setLoading(true);
             const res = await api.get(`/school/modules/${courseId}/matrix`);
             setData(res.data);
             setLoading(false);
-        } catch (err) {
+        } catch {
             setError('Error loading matrix');
             setLoading(false);
         }
@@ -50,6 +44,12 @@ const ClassMatrix = ({ courseId }) => {
         }
     };
 
+    useEffect(() => {
+        void Promise.resolve().then(fetchMatrix);
+        void Promise.resolve().then(fetchMaterials);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [courseId]);
+
     // fetchUsers removed - using AsyncSearchSelect
 
     const handleUpdate = async (enrollmentId, type, key, value) => {
@@ -57,7 +57,7 @@ const ClassMatrix = ({ courseId }) => {
             await api.post('/school/matrix/update', {
                 enrollmentId, type, key, value
             });
-        } catch (err) {
+        } catch {
             toast.error('Error guarding change');
         }
     };
@@ -90,7 +90,7 @@ const ClassMatrix = ({ courseId }) => {
         try {
             await api.delete(`/school/enrollments/${enrollmentToDelete.id}`);
             fetchMatrix();
-        } catch (error) {
+        } catch {
             toast.error('Error deleting student');
         }
     };
