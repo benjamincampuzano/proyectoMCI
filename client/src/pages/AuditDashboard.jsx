@@ -208,7 +208,6 @@ const AuditDashboard = () => {
             'CONVENTION': 'bg-purple-500/10 text-purple-500 border-purple-500/20',
             'ENCUENTRO': 'bg-pink-500/10 text-pink-500 border-pink-500/20',
             'USER': 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-            'SESSION': 'bg-[var(--ln-text-tertiary)]/10 text-[var(--ln-text-tertiary)] border-[var(--ln-border-standard)]',
             'GOAL': 'bg-amber-500/10 text-amber-500 border-amber-500/20'
         };
         return colors[type] || 'bg-white/5 text-[var(--ln-text-tertiary)] border-[var(--ln-border-standard)]';
@@ -372,7 +371,6 @@ const AuditDashboard = () => {
                         <option value="CELL">Células</option>
                         <option value="ENCUENTRO">Encuentros</option>
                         <option value="CONVENTION">Convenciones</option>
-                        <option value="SESSION">Sesiones de Clase</option>
                     </select>
                 </div>
                 <div className="flex-1 min-w-[150px]">

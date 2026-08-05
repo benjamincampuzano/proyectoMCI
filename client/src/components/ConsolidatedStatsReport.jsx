@@ -73,6 +73,11 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
     };
 
+    const toTwoDecimals = (value) => {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return value;
+        return Number(Number(value).toFixed(2));
+    };
+
     const buildAttendanceShareText = () => {
         if (!leaderStats) return '';
 
@@ -231,7 +236,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                         <div className="flex flex-col">
                             <div className="flex items-baseline gap-2">
                                 <span className="text-4xl weight-590 text-[var(--ln-text-primary)] tracking-tighter">{stats.summary.totalConversions}</span>
-                                <span className="text-lg weight-590 text-emerald-500">{stats.summary.conversionRate}%</span>
+                                <span className="text-lg weight-590 text-emerald-500">{toTwoDecimals(stats.summary.conversionRate)}%</span>
                             </div>
                             <span className="text-[11px] text-[var(--ln-text-tertiary)] weight-510 mt-1">Invitados Ganados</span>
                         </div>
@@ -265,8 +270,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                 </div>
 
                 {/* Ranking mensual de líderes */}
-                <div className="p-8 bg-white/5 rounded-[32px] border border-[var(--ln-border-standard)] shadow-sm mb-16">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+                <div className="rounded-[24px] border border-[var(--ln-border-standard)] bg-[var(--ln-bg-panel)]/30 mb-16">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-8 py-6 border-b border-[var(--ln-border-standard)]">
                         <div>
                             <h3 className="text-sm weight-590 text-[var(--ln-text-primary)] uppercase tracking-widest opacity-60 flex items-center gap-3">
                                 <Users className="text-[var(--ln-brand-indigo)]" size={18} weight="bold" />
@@ -276,50 +281,44 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                 Asistencia, ausencias y virtuales del mes seleccionado.
                             </p>
                         </div>
-                        <div className="flex flex-wrap gap-3 text-[12px] weight-590 text-[var(--ln-text-tertiary)]">
-                            <span className="px-3 py-1.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">
+                        <div className="flex flex-wrap gap-2 text-[12px] weight-590">
+                            <span className="px-3 py-1.5 rounded-full border border-green-500/20 text-green-500">
                                 {leaderStats?.summary?.totalPresent ?? 0} presentes
                             </span>
-                            <span className="px-3 py-1.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
+                            <span className="px-3 py-1.5 rounded-full border border-red-500/20 text-red-500">
                                 {leaderStats?.summary?.totalAbsent ?? 0} ausencias
                             </span>
-                            <span className="px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                            <span className="px-3 py-1.5 rounded-full border border-purple-500/20 text-purple-500">
                                 {leaderStats?.summary?.totalVirtual ?? 0} virtuales
                             </span>
                         </div>
                     </div>
 
                     {leaderStatsLoading ? (
-                        <p className="text-[var(--ln-text-tertiary)] weight-510">Cargando ranking mensual...</p>
+                        <p className="text-[var(--ln-text-tertiary)] weight-510 px-8 py-10">Cargando ranking mensual...</p>
                     ) : (leaderStats?.leaders?.length || 0) > 0 ? (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                            <LeaderRankingCard
+                        <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-[var(--ln-border-standard)]">
+                            <LeaderRankingColumn
                                 title="Más asistencias"
                                 toneClass="text-green-500"
-                                borderClass="border-green-500/20"
-                                bgClass="bg-green-500/10"
                                 rows={leaderStats.rankings?.present?.slice(0, 5) || []}
                                 metricLabel="present"
                             />
-                            <LeaderRankingCard
+                            <LeaderRankingColumn
                                 title="Más ausencias"
                                 toneClass="text-red-500"
-                                borderClass="border-red-500/20"
-                                bgClass="bg-red-500/10"
                                 rows={leaderStats.rankings?.absent?.slice(0, 5) || []}
                                 metricLabel="absent"
                             />
-                            <LeaderRankingCard
+                            <LeaderRankingColumn
                                 title="Más virtuales"
                                 toneClass="text-purple-500"
-                                borderClass="border-purple-500/20"
-                                bgClass="bg-purple-500/10"
                                 rows={leaderStats.rankings?.virtual?.slice(0, 5) || []}
                                 metricLabel="virtual"
                             />
                         </div>
                     ) : (
-                        <p className="text-[var(--ln-text-tertiary)] weight-510">No hay registros para el mes seleccionado.</p>
+                        <p className="text-[var(--ln-text-tertiary)] weight-510 px-8 py-10">No hay registros para el mes seleccionado.</p>
                     )}
                 </div>
 
@@ -334,24 +333,24 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                             <div>
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="text-[13px] weight-590 text-[var(--ln-text-primary)] opacity-80">Llamada de Contacto</span>
-                                    <span className="text-[13px] weight-700">{Math.round((stats.trackingStats.withCall / stats.summary.totalGuests * 100) || 0)}%</span>
+                                    <span className="text-[13px] weight-700">{toTwoDecimals(stats.trackingStats.withCall / stats.summary.totalGuests * 100 || 0)}%</span>
                                 </div>
                                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                                    <div 
-                                        className="h-full bg-[var(--ln-brand-indigo)] transition-all duration-1000 shadow-[0_0_8px_var(--ln-brand-indigo)]" 
-                                        style={{ width: `${(stats.trackingStats.withCall / stats.summary.totalGuests * 100) || 0}%` }} 
+                                    <div
+                                        className="h-full bg-[var(--ln-brand-indigo)] transition-all duration-1000 shadow-[0_0_8px_var(--ln-brand-indigo)]"
+                                        style={{ width: `${(stats.trackingStats.withCall / stats.summary.totalGuests * 100) || 0}%` }}
                                     />
                                 </div>
                             </div>
                             <div>
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="text-[13px] weight-590 text-[var(--ln-text-primary)] opacity-80">Visita en Hogar</span>
-                                    <span className="text-[13px] weight-700">{Math.round((stats.trackingStats.withVisit / stats.summary.totalGuests * 100) || 0)}%</span>
+                                    <span className="text-[13px] weight-700">{toTwoDecimals(stats.trackingStats.withVisit / stats.summary.totalGuests * 100 || 0)}%</span>
                                 </div>
                                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                                    <div 
-                                        className="h-full bg-emerald-500 transition-all duration-1000 shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
-                                        style={{ width: `${(stats.trackingStats.withVisit / stats.summary.totalGuests * 100) || 0}%` }} 
+                                    <div
+                                        className="h-full bg-emerald-500 transition-all duration-1000 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                                        style={{ width: `${(stats.trackingStats.withVisit / stats.summary.totalGuests * 100) || 0}%` }}
                                     />
                                 </div>
                             </div>
@@ -366,7 +365,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                         <div className="relative w-full max-w-[240px]">
                             <div className="aspect-square rounded-full border-[12px] border-emerald-500/10 flex items-center justify-center relative">
                                 <div className="text-center">
-                                    <span className="text-5xl weight-590 text-[var(--ln-text-primary)] tracking-tighter">{stats.summary.conversionRate}%</span>
+                                    <span className="text-5xl weight-590 text-[var(--ln-text-primary)] tracking-tighter">{toTwoDecimals(stats.summary.conversionRate)}%</span>
                                     <p className="text-[10px] weight-590 uppercase tracking-widest text-[var(--ln-text-tertiary)] mt-1">Éxito Total</p>
                                 </div>
                                 <svg className="absolute inset-0 w-full h-full -rotate-90">
@@ -378,7 +377,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                         stroke="var(--ln-brand-indigo)"
                                         strokeWidth="12"
                                         strokeDasharray="290"
-                                        strokeDashoffset={290 - (290 * stats.summary.conversionRate / 100)}
+                                        strokeDashoffset={290 - (290 * toTwoDecimals(stats.summary.conversionRate) / 100)}
                                         strokeLinecap="round"
                                         className="transition-all duration-1000"
                                     />
@@ -460,8 +459,8 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                         <tr key={index} className="hover:bg-white/5 transition-colors">
                                             <td className="px-6 py-5 weight-590">{item.moduleName}</td>
                                             <td className="px-6 py-5 text-center">{item.studentCount}</td>
-                                            <td className="px-6 py-5 text-center"><span className="px-3 py-1 bg-blue-500/10 text-blue-500 rounded-lg weight-700">{item.avgGrade}</span></td>
-                                            <td className="px-6 py-5 text-center">{item.avgAttendance}%</td>
+                                            <td className="px-6 py-5 text-center"><span className="px-3 py-1 bg-blue-500/10 text-blue-500 rounded-lg weight-700">{toTwoDecimals(item.avgGrade)}</span></td>
+                                            <td className="px-6 py-5 text-center">{toTwoDecimals(item.avgAttendance)}%</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -489,7 +488,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
                                             <tr key={index} className="hover:bg-white/5 transition-colors">
                                                 <td className="px-4 py-4 weight-590">{leader}</td>
                                                 <td className="px-4 py-4 text-center">{stats.cellsByLeader[leader].count}</td>
-                                                <td className="px-4 py-4 text-center">{stats.cellsByLeader[leader].avgAttendance}</td>
+                                                <td className="px-4 py-4 text-center">{toTwoDecimals(stats.cellsByLeader[leader].avgAttendance)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -619,7 +618,7 @@ const ConsolidatedStatsReport = ({ simpleMode = false }) => {
 
 export default ConsolidatedStatsReport;
 
-function LeaderRankingCard({ title, toneClass, borderClass, bgClass, rows, metricLabel }) {
+function LeaderRankingColumn({ title, toneClass, rows, metricLabel }) {
     const formatMetric = (row) => {
         if (metricLabel === 'present') return `${row.present} asistencias`;
         if (metricLabel === 'absent') return `${row.absent} ausencias`;
@@ -628,34 +627,44 @@ function LeaderRankingCard({ title, toneClass, borderClass, bgClass, rows, metri
     };
 
     return (
-        <div className={`rounded-[24px] border ${borderClass} bg-white/5 p-5`}>
-            <div className="flex items-center justify-between mb-4">
-                <h4 className={`text-[13px] weight-590 uppercase tracking-widest ${toneClass}`}>
+        <div className="flex flex-col">
+            <div className="flex items-center justify-between px-6 pt-6 pb-3">
+                <h4 className={`text-[11px] weight-590 uppercase tracking-widest ${toneClass}`}>
                     {title}
                 </h4>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] weight-700 uppercase ${bgClass} ${toneClass}`}>
+                <span className="text-[10px] weight-700 uppercase tracking-widest text-[var(--ln-text-tertiary)] opacity-50">
                     Top 5
                 </span>
             </div>
-            <div className="space-y-3">
-                {rows.length > 0 ? rows.map((row, index) => (
-                    <div key={`${row.leaderId || row.leaderName}-${index}`} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[var(--ln-bg-panel)]/40 border border-[var(--ln-border-standard)]">
-                        <div className="min-w-0">
-                            <p className="text-[13px] weight-590 text-[var(--ln-text-primary)] truncate">
-                                {index + 1}. {row.leaderName}
-                            </p>
-                            <p className="text-[11px] text-[var(--ln-text-tertiary)]">
-                                {row.attendanceRate}% de asistencia
-                            </p>
-                        </div>
-                        <span className={`shrink-0 text-[12px] weight-700 ${toneClass}`}>
-                            {formatMetric(row)}
-                        </span>
-                    </div>
-                )) : (
-                    <p className="text-[12px] text-[var(--ln-text-tertiary)] italic">Sin datos.</p>
-                )}
-            </div>
+            {rows.length > 0 ? (
+                <ul className="divide-y divide-[var(--ln-border-standard)]">
+                    {rows.map((row, index) => (
+                        <li
+                            key={`${row.leaderId || row.leaderName}-${index}`}
+                            className="flex items-center justify-between gap-3 px-6 py-3.5 hover:bg-white/[0.02] transition-colors"
+                        >
+                            <div className="flex items-center gap-3 min-w-0">
+                                <span className="shrink-0 w-6 text-[12px] weight-700 text-[var(--ln-text-tertiary)] tabular-nums">
+                                    {String(index + 1).padStart(2, '0')}
+                                </span>
+                                <div className="min-w-0">
+                                    <p className="text-[13px] weight-590 text-[var(--ln-text-primary)] truncate">
+                                        {row.leaderName}
+                                    </p>
+                                    <p className="text-[11px] text-[var(--ln-text-tertiary)] opacity-70">
+                                        {row.attendanceRate}% de asistencia
+                                    </p>
+                                </div>
+                            </div>
+                            <span className={`shrink-0 text-[12px] weight-700 tabular-nums ${toneClass}`}>
+                                {formatMetric(row)}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="px-6 pb-6 text-[12px] text-[var(--ln-text-tertiary)] italic">Sin datos.</p>
+            )}
         </div>
     );
 }

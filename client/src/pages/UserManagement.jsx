@@ -136,6 +136,7 @@ const UserManagement = () => {
             discipular2B: user.discipular2B || false,
             discipular3A: user.discipular3A || false,
             discipular3B: user.discipular3B || false,
+            baptized: user.baptized || false,
         });
     };
 

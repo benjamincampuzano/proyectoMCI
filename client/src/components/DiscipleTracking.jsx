@@ -43,6 +43,7 @@ const DiscipleTracking = ({ refreshTrigger }) => {
 
             if (search) params.search = search;
             if (liderDoceFilter) params.liderDoceId = liderDoceFilter.id;
+            if (noCell) params.noCell = true;
 
             const response = await api.get('/consolidar/stats/disciple-users', { params });
 
@@ -61,7 +62,7 @@ const DiscipleTracking = ({ refreshTrigger }) => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchUsers();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, roleFilter, liderDoceFilter, noCell, refreshTrigger]);
+    }, [currentPage, roleFilter, liderDoceFilter, noCell, search, refreshTrigger]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -106,8 +107,30 @@ const DiscipleTracking = ({ refreshTrigger }) => {
             alerts.push({ type: 'attendance', message: 'Sin asistencia registrada' });
         }
 
+        if (!hasEncuentro(usr)) {
+            alerts.push({ type: 'noencuentro', message: 'Sin encuentro' });
+        }
+
+        if (!hasBaptism(usr)) {
+            alerts.push({ type: 'nobautismo', message: 'No bautizado' });
+        }
+
         return alerts;
     };
+
+    const DISCIPULAR_MODULES = [
+        { key: 'discipular1A', short: '1A', label: '1A - Pastoreados en su amor' },
+        { key: 'discipular1B', short: '1B', label: '1B - El poder de una Visión' },
+        { key: 'discipular2A', short: '2A', label: '2A - La estrategia del Ganar' },
+        { key: 'discipular2B', short: '2B', label: '2B - Familias con Propósito' },
+        { key: 'discipular3A', short: '3A', label: '3A - Liderazgo Eficaz' },
+        { key: 'discipular3B', short: '3B', label: '3B - El Espíritu Santo en Mí' },
+    ];
+
+    const getCompletedModules = (usr) => DISCIPULAR_MODULES.filter(m => usr[m.key]);
+
+    const hasEncuentro = (usr) => !!(usr?.encuentro || usr?.hasAttendedEncuentro);
+    const hasBaptism = (usr) => !!(usr?.baptized || usr?.isBaptized);
 
     const getRoleBadgeClass = (roleName) => {
         switch (roleName) {
@@ -123,6 +146,19 @@ const DiscipleTracking = ({ refreshTrigger }) => {
             case 'DISCIPULO': return 'Discípulo';
             default: return roleName;
         }
+    };
+
+    const formatEncuentroType = (type) => {
+        if (!type) return '';
+        const map = { MUJERES: 'Mujeres', HOMBRES: 'Hombres', JOVENES: 'Jóvenes' };
+        return map[type] || type;
+    };
+
+    const formatDateShort = (value) => {
+        if (!value) return '';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '';
+        return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
     if (loading && usersList.length === 0) {
@@ -280,6 +316,9 @@ const DiscipleTracking = ({ refreshTrigger }) => {
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contacto</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Líder</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Célula</th>
+                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Módulos</th>
+                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Bautismo</th>
+                                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Encuentro</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Iglesia</th>
                                 <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                             </tr>
@@ -287,6 +326,7 @@ const DiscipleTracking = ({ refreshTrigger }) => {
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {usersList.map((usr) => {
                                 const alerts = getAlerts(usr);
+                                const completedModules = getCompletedModules(usr);
                                 const liderHierarchy = usr.hierarchy?.find(h => h.role === 'LIDER_CELULA' || h.role === 'LIDER_DOCE');
 
                                 return (
@@ -348,6 +388,55 @@ const DiscipleTracking = ({ refreshTrigger }) => {
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-center">
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${completedModules.length > 0
+                                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
+                                                    : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                                                    {completedModules.length}/6 módulos
+                                                </span>
+                                                {completedModules.length > 0 && (
+                                                    <div className="flex flex-wrap justify-center gap-1">
+                                                        {completedModules.map(m => (
+                                                            <span key={m.key} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300" title={m.label}>
+                                                                {m.short}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            {hasBaptism(usr) ? (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                                    Sí
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                                    No
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex flex-col items-center gap-1">
+                                                {hasEncuentro(usr) ? (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                                        Sí
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                                        No
+                                                    </span>
+                                                )}
+                                                {usr.hasAttendedEncuentro && (
+                                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                        {usr.encuentrosCount} encuentro(s)
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
                                             {usr.churchAttendances?.[0] ? (
                                                 <span className="text-xs text-gray-600 dark:text-gray-400">
                                                     {new Date(usr.churchAttendances[0].date).toLocaleDateString()}
@@ -386,6 +475,7 @@ const DiscipleTracking = ({ refreshTrigger }) => {
                 <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
                     {usersList.map((usr) => {
                         const alerts = getAlerts(usr);
+                        const completedModules = getCompletedModules(usr);
                         const liderHierarchy = usr.hierarchy?.find(h => h.role === 'LIDER_CELULA' || h.role === 'LIDER_DOCE');
                         return (
                             <div key={usr.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors space-y-3">
@@ -455,6 +545,50 @@ const DiscipleTracking = ({ refreshTrigger }) => {
                                         )}
                                     </div>
                                 </div>
+
+                                <div className="grid grid-cols-3 gap-2 text-xs">
+                                    <div>
+                                        <span className="text-gray-500 dark:text-gray-400 block">Módulos</span>
+                                        <span className={`inline-flex items-center mt-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${completedModules.length > 0
+                                            ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
+                                            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                                            {completedModules.length}/6
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500 dark:text-gray-400 block">Bautismo</span>
+                                        {hasBaptism(usr) ? (
+                                            <span className="inline-flex items-center mt-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                Sí
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center mt-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                                No
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-500 dark:text-gray-400 block">Encuentro</span>
+                                        {hasEncuentro(usr) ? (
+                                            <span className="inline-flex items-center mt-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                                                Sí
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center mt-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                                No
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                {completedModules.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                        {completedModules.map(m => (
+                                            <span key={m.key} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300" title={m.label}>
+                                                {m.short}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                                 {alerts.length > 0 && (
                                     <div className="flex flex-wrap gap-1">
                                         {alerts.map((alert, idx) => (
@@ -615,7 +749,10 @@ const DiscipleTracking = ({ refreshTrigger }) => {
                                         {selectedUser.hierarchy.map((h, idx) => (
                                             <div key={idx} className="flex items-center gap-2 text-sm">
                                                 <span className="text-gray-500 dark:text-gray-400 capitalize">{h.role.toLowerCase().replace(/_/g, ' ')}:</span>
-                                                <span className="font-medium text-gray-900 dark:text-white">{h.parentName}</span>
+                                                <span className="font-medium text-gray-900 dark:text-white">
+                                                    {h.parentName}
+                                                    {h.spouseName && <span className="text-gray-500 dark:text-gray-400"> y {h.spouseName}</span>}
+                                                </span>
                                             </div>
                                         ))}
                                     </div>
@@ -650,6 +787,82 @@ const DiscipleTracking = ({ refreshTrigger }) => {
                                     </div>
                                 ) : (
                                     <p className="text-sm text-gray-400 italic">Sin asistencias registradas</p>
+                                )}
+                            </div>
+
+                            {/* Discipular - Módulos Completados */}
+                            <div className="bg-gray-50 dark:bg-gray-900/30 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="font-bold text-gray-900 dark:text-white">Discipular - Módulos Completados</h4>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${getCompletedModules(selectedUser).length > 0
+                                        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
+                                        : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                                        {getCompletedModules(selectedUser).length}/6
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {DISCIPULAR_MODULES.map((m) => {
+                                        const done = !!selectedUser?.[m.key];
+                                        return (
+                                            <div key={m.key} className={`flex items-center justify-between text-sm rounded-lg p-2 border ${done
+                                                ? 'bg-white dark:bg-gray-800 border-indigo-100 dark:border-indigo-900/40'
+                                                : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}>
+                                                <span className="text-gray-800 dark:text-gray-200 font-medium">{m.label}</span>
+                                                {done ? (
+                                                    <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 ml-2" weight="fill" />
+                                                ) : (
+                                                    <span className="text-xs text-gray-400 shrink-0 ml-2">Pendiente</span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Bautismo y encuentros */}
+                            <div className="bg-gray-50 dark:bg-gray-900/30 rounded-xl p-4 border border-gray-100 dark:border-gray-800">
+                                <h4 className="font-bold text-gray-900 dark:text-white mb-3">Bautismo y Encuentros</h4>
+                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                    <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-2 border border-gray-100 dark:border-gray-700">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">Bautizado</span>
+                                        {hasBaptism(selectedUser) ? (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                <CheckCircle className="w-3 h-3 mr-1" /> Sí
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">No</span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-2 border border-gray-100 dark:border-gray-700">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">Encuentro</span>
+                                        {hasEncuentro(selectedUser) ? (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                                                <CheckCircle className="w-3 h-3 mr-1" /> Sí
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">No</span>
+                                        )}
+                                    </div>
+                                </div>
+                                {selectedUser?.encuentros?.length > 0 && (
+                                    <div className="space-y-2">
+                                        {selectedUser.encuentros.map((er) => (
+                                            <div key={er.id} className="flex items-center justify-between text-sm bg-white dark:bg-gray-800 rounded-lg p-2 border border-gray-100 dark:border-gray-700">
+                                                <div className="flex-1 min-w-0">
+                                                    <span className="text-gray-800 dark:text-gray-200 font-medium truncate block">{er.encuentroName}</span>
+                                                    <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                        {formatEncuentroType(er.encuentroType)}
+                                                        {er.startDate && ` · ${formatDateShort(er.startDate)}`}
+                                                    </span>
+                                                </div>
+                                                <span className={`ml-2 text-[10px] font-semibold ${er.isBaptized
+                                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                                    : 'text-gray-500 dark:text-gray-400'}`}>
+                                                    {er.isBaptized ? 'Bautizado' : er.status}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </div>

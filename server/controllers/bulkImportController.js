@@ -4,6 +4,7 @@ const prisma = require('../utils/database');
 const { logActivity } = require('../utils/auditLogger');
 const { generateTempPassword } = require('../utils/passwordGenerator');
 const { validateExcelHeaders, validateRow, HEADER_LABELS } = require('../utils/excelValidator');
+const { checkCycle } = require('../utils/networkUtils');
 
 const downloadTemplate = (req, res) => {
   const wb = XLSX.utils.book_new();
@@ -125,12 +126,21 @@ const bulkImport = async (req, res) => {
     });
 
     let leaderMap = {};
+    let leaderRolesMap = {};
+    let leaderSpouseMap = {};
     if (leaderEmails.size > 0) {
       const leaders = await prisma.user.findMany({
         where: { email: { in: Array.from(leaderEmails) }, isDeleted: false },
-        select: { id: true, email: true },
+        select: {
+          id: true,
+          email: true,
+          spouseId: true,
+          roles: { include: { role: true } },
+        },
       });
       leaderMap = Object.fromEntries(leaders.map(l => [l.email.toLowerCase(), l.id]));
+      leaderRolesMap = Object.fromEntries(leaders.map(l => [l.email.toLowerCase(), l.roles.map(r => r.role.name)]));
+      leaderSpouseMap = Object.fromEntries(leaders.map(l => [l.email.toLowerCase(), l.spouseId]));
 
       const missingLeaders = Array.from(leaderEmails).filter(e => !leaderMap[e]);
       if (missingLeaders.length > 0) {
@@ -192,9 +202,32 @@ const bulkImport = async (req, res) => {
 
           for (const entry of hierarchyEntries) {
             if (entry.email && leaderMap[entry.email]) {
+              const parentId = leaderMap[entry.email];
+
+              if (parentId === newUser.id) {
+                console.warn(`[bulk-import] Skip ${entry.role} parent=${parentId} for child=${newUser.id}: self-assignment`);
+                continue;
+              }
+              if (leaderSpouseMap[entry.email] === newUser.id) {
+                console.warn(`[bulk-import] Skip ${entry.role} parent=${parentId} for child=${newUser.id}: spouse cannot be leader`);
+                continue;
+              }
+              if (await checkCycle(newUser.id, parentId)) {
+                console.warn(`[bulk-import] Skip ${entry.role} parent=${parentId} for child=${newUser.id}: would create cycle`);
+                continue;
+              }
+              const leaderRoles = leaderRolesMap[entry.email] || [];
+              const spouseHasRole = leaderSpouseMap[entry.email]
+                ? await prisma.userRole.findFirst({ where: { userId: leaderSpouseMap[entry.email], role: { name: entry.role } } })
+                : null;
+              if (['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(entry.role) && !leaderRoles.includes(entry.role) && !spouseHasRole) {
+                console.warn(`[bulk-import] Skip ${entry.role} parent=${parentId} for child=${newUser.id}: leader lacks role ${entry.role}`);
+                continue;
+              }
+
               await tx.userHierarchy.create({
                 data: {
-                  parentId: leaderMap[entry.email],
+                  parentId,
                   childId: newUser.id,
                   role: entry.role,
                 },

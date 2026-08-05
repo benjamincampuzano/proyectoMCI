@@ -533,7 +533,7 @@ const deleteRegistration = async (req, res) => {
 
         const registration = await prisma.encuentroRegistration.findUnique({
             where: { id: parseInt(registrationId) },
-            select: { id: true, guestId: true, userId: true, encuentroId: true }
+            select: { encuentroId: true, userId: true }
         });
 
         if (!registration) {
@@ -706,9 +706,21 @@ const updateRegistration = async (req, res) => {
             return res.status(400).json({ error: 'No hay campos para actualizar.' });
         }
 
-        const updated = await prisma.encuentroRegistration.update({
-            where: { id: parseInt(registrationId) },
-            data
+        const updated = await prisma.$transaction(async (tx) => {
+            const updatedReg = await tx.encuentroRegistration.update({
+                where: { id: parseInt(registrationId) },
+                data
+            });
+
+            // Mantener sincronizado el campo de perfil 'baptized' del usuario
+            if (typeof isBaptized === 'boolean' && registration.userId) {
+                await tx.userProfile.update({
+                    where: { userId: registration.userId },
+                    data: { baptized: isBaptized }
+                });
+            }
+
+            return updatedReg;
         });
 
         await logActivity(userId, 'UPDATE', 'ENCUENTRO_REGISTRATION', updated.id, data, req.ip, req.headers['user-agent']);

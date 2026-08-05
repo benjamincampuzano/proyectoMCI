@@ -877,7 +877,7 @@ const logoutAll = async (req, res) => {
             data: { isRevoked: true }
         });
 
-        await logActivity(userId, 'LOGOUT_ALL', 'SESSION', userId, { message: 'Cierre de todas las sesiones' }, req.ip, req.headers['user-agent']);
+        await logActivity(userId, 'LOGOUT_ALL', 'USER', userId, { message: 'Cierre de todas las sesiones' }, req.ip, req.headers['user-agent']);
 
         res.json({ message: 'Todas las sesiones han sido cerradas' });
     } catch (error) {

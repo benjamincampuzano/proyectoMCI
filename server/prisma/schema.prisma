@@ -185,6 +185,7 @@ model UserProfile {
   discipular2B            Boolean        @default(false)
   discipular3A            Boolean        @default(false)
   discipular3B            Boolean        @default(false)
+  baptized                Boolean        @default(false)
   user                    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([documentType, documentNumber])

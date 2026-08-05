@@ -73,6 +73,7 @@ const useUserManagement = () => {
         discipular2B: false,
         discipular3A: false,
         discipular3B: false,
+        baptized: false,
         dataPolicyAccepted: false,
         dataTreatmentAuthorized: false,
         minorConsentAuthorized: false
@@ -295,6 +296,7 @@ const useUserManagement = () => {
                 spouseId: '',
                 encuentro: false, discipular1A: false, discipular1B: false,
                 discipular2A: false, discipular2B: false, discipular3A: false, discipular3B: false,
+                baptized: false,
                 dataPolicyAccepted: false, dataTreatmentAuthorized: false, minorConsentAuthorized: false
             });
             fetchUsers();
@@ -340,7 +342,8 @@ const useUserManagement = () => {
                 discipular2A: editingUser.discipular2A || false,
                 discipular2B: editingUser.discipular2B || false,
                 discipular3A: editingUser.discipular3A || false,
-                discipular3B: editingUser.discipular3B || false
+                discipular3B: editingUser.discipular3B || false,
+                baptized: editingUser.baptized || false
             };
             await api.put(`/users/${userId}`, payload);
             setSuccess('Usuario actualizado');

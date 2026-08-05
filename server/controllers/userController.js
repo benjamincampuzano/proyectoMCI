@@ -34,7 +34,7 @@ const geocodeAddress = async (address, city) => {
     return { lat: null, lng: null };
 };
 
-const { getUserNetwork, getUserAncestors } = require('../utils/networkUtils');
+const { getUserNetwork, getUserAncestors, checkCycle } = require('../utils/networkUtils');
 const { getUserNetworkId } = require('../middleware/coordinatorAuth');
 
 /**
@@ -176,6 +176,57 @@ const formatUser = (user) => {
         }))
     };
 };
+
+// Roles de liderazgo que deben validarse contra el rol real del usuario asignado
+const HIERARCHY_LEADER_ROLES = ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'];
+
+/**
+ * Valida que un usuario pueda ser asignado como líder jerárquico de otro.
+ * Evita auto-liderazgo, cónyuge-como-líder, ciclos y roles incoherentes.
+ * @param {import('@prisma/client').Prisma.TransactionClient} tx
+ * @param {number} parentId - ID del posible líder
+ * @param {number} childId - ID del usuario que se está asignando
+ * @param {string} role - Rol jerárquico (PASTOR, LIDER_DOCE, LIDER_CELULA, etc.)
+ */
+const validateHierarchyParent = async (tx, parentId, childId, role) => {
+    const pId = parseInt(parentId);
+    const cId = parseInt(childId);
+    if (isNaN(pId) || isNaN(cId) || pId === cId) {
+        return { ok: false, reason: 'no se puede asignar a sí mismo como líder' };
+    }
+
+    const child = await tx.user.findUnique({ where: { id: cId }, select: { spouseId: true } });
+    if (child?.spouseId && pId === child.spouseId) {
+        return { ok: false, reason: 'el cónyuge no puede ser el líder del usuario' };
+    }
+
+    if (await checkCycle(cId, pId)) {
+        return { ok: false, reason: 'la asignación generaría un ciclo en la jerarquía' };
+    }
+
+    const parent = await tx.user.findUnique({
+        where: { id: pId },
+        select: {
+            isDeleted: true,
+            roles: { include: { role: true } },
+            spouse: { include: { roles: { include: { role: true } } } },
+        },
+    });
+    if (!parent || parent.isDeleted) {
+        return { ok: false, reason: 'el líder no existe o está eliminado' };
+    }
+
+    if (HIERARCHY_LEADER_ROLES.includes(role)) {
+        const hasRole = parent.roles.some(r => r.role.name === role);
+        const spouseHasRole = parent.spouse?.roles?.some(r => r.role.name === role) || false;
+        if (!hasRole && !spouseHasRole) {
+            return { ok: false, reason: `el líder no tiene el rol ${role} (ni su cónyuge)` };
+        }
+    }
+
+    return { ok: true, id: pId };
+};
+
 const getProfile = async (req, res) => {
     try {
         const userId = parseInt(req.user.id);
@@ -752,7 +803,7 @@ const updateUser = async (req, res) => {
             return res.status(403).json({ message: permission.reason });
         }
 
-        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, isCoordinator, spouseId, encuentro, discipular1A, discipular1B, discipular2A, discipular2B, discipular3A, discipular3B, responsible } = req.body;
+        const { fullName, email, role, sex, phone, address, city, neighborhood, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, isCoordinator, spouseId, encuentro, discipular1A, discipular1B, discipular2A, discipular2B, discipular3A, discipular3B, baptized, responsible } = req.body;
 
         if (role && !req.user.roles.includes('ADMIN') && ['ADMIN', 'PASTOR'].includes(role)) {
             return res.status(403).json({ message: `No tienes permisos para asignar el rol ${role}` });
@@ -817,6 +868,7 @@ const updateUser = async (req, res) => {
                             ...(discipular2B !== undefined && { discipular2B }),
                             ...(discipular3A !== undefined && { discipular3A }),
                             ...(discipular3B !== undefined && { discipular3B }),
+                            ...(baptized !== undefined && { baptized }),
                         }
                     }
                 },
@@ -865,18 +917,24 @@ const updateUser = async (req, res) => {
             ];
 
             // If any of these are explicitly passed (even as null/empty to remove), we update
+            const hierarchySkipped = [];
             if (pastorId !== undefined || liderDoceId !== undefined || liderCelulaId !== undefined || pastorIds !== undefined || liderDoceIds !== undefined || liderCelulaIds !== undefined || parentId !== undefined || pastorSpouseIds !== undefined || liderDoceSpouseIds !== undefined || liderCelulaSpouseIds !== undefined) {
                 // For backward compatibility or general cleanup, if parentId is passed as the primary way
                 if (parentId !== undefined && !pastorId && !liderDoceId && !liderCelulaId && !pastorIds && !liderDoceIds && !liderCelulaIds) {
                     await tx.userHierarchy.deleteMany({ where: { childId: userId } });
                     if (parentId) {
-                        await tx.userHierarchy.create({
-                            data: {
-                                parentId: parseInt(parentId),
-                                childId: userId,
-                                role: roleInHierarchy || 'DISCIPULO'
-                            }
-                        });
+                        const check = await validateHierarchyParent(tx, parentId, userId, roleInHierarchy || 'DISCIPULO');
+                        if (check.ok) {
+                            await tx.userHierarchy.create({
+                                data: {
+                                    parentId: check.id,
+                                    childId: userId,
+                                    role: roleInHierarchy || 'DISCIPULO'
+                                }
+                            });
+                        } else {
+                            hierarchySkipped.push({ role: roleInHierarchy || 'DISCIPULO', parentId: parseInt(parentId), reason: check.reason });
+                        }
                     }
                 } else {
                     // Modern multi-leader approach
@@ -887,43 +945,33 @@ const updateUser = async (req, res) => {
                                 where: { childId: userId, role: entry.role }
                             });
 
-                            // Process main leaders
-                            const ids = Array.isArray(entry.ids) ? entry.ids : [entry.ids];
-                            for (const idToAssign of ids.filter(Boolean)) {
-                                await tx.userHierarchy.upsert({
-                                    where: {
-                                        parentId_childId_role: {
-                                            parentId: parseInt(idToAssign),
-                                            childId: userId,
-                                            role: entry.role
-                                        }
-                                    },
-                                    update: {},
-                                    create: {
-                                        parentId: parseInt(idToAssign),
-                                        childId: userId,
-                                        role: entry.role
-                                    }
-                                });
-                            }
+                            // Combine main leaders and their spouses, then validate each candidate
+                            const mainIds = (Array.isArray(entry.ids) ? entry.ids : [entry.ids])
+                                .filter(Boolean)
+                                .map(id => parseInt(id));
+                            const spouseIds = (Array.isArray(entry.spouseIds) ? entry.spouseIds : [entry.spouseIds])
+                                .filter(Boolean)
+                                .map(id => parseInt(id));
+                            const candidates = [...new Set([...mainIds, ...spouseIds])];
 
-                            // Process spouse IDs - filter out duplicates with main leaders
-                            const spouseIds = Array.isArray(entry.spouseIds) ? entry.spouseIds : [entry.spouseIds];
-                            const mainIds = (Array.isArray(entry.ids) ? entry.ids : [entry.ids]).map(id => parseInt(id));
-                            for (const spouseIdToAssign of spouseIds.filter(Boolean)) {
-                                // Skip if this spouse is already in the main IDs (compare as integers)
-                                if (mainIds.includes(parseInt(spouseIdToAssign))) continue;
+                            for (const candidateId of candidates) {
+                                const check = await validateHierarchyParent(tx, candidateId, userId, entry.role);
+                                if (!check.ok) {
+                                    hierarchySkipped.push({ role: entry.role, parentId: candidateId, reason: check.reason });
+                                    console.warn(`[hierarchy] Skip ${entry.role} parent=${candidateId} for child=${userId}: ${check.reason}`);
+                                    continue;
+                                }
                                 await tx.userHierarchy.upsert({
                                     where: {
                                         parentId_childId_role: {
-                                            parentId: parseInt(spouseIdToAssign),
+                                            parentId: check.id,
                                             childId: userId,
                                             role: entry.role
                                         }
                                     },
                                     update: {},
                                     create: {
-                                        parentId: parseInt(spouseIdToAssign),
+                                        parentId: check.id,
                                         childId: userId,
                                         role: entry.role
                                     }
@@ -1006,7 +1054,8 @@ const updateUser = async (req, res) => {
         await logActivity(req.user.id, 'UPDATE', 'USER', userId, { targetUser: finalUpdated.profile?.fullName }, req.ip, req.headers['user-agent']);
 
         res.status(200).json({
-            user: formatUser(finalUpdated)
+            user: formatUser(finalUpdated),
+            hierarchySkipped
         });
     } catch (error) {
         console.error('Error updating user:', error);
@@ -1036,7 +1085,7 @@ const updateUser = async (req, res) => {
 // Admin: Crear nuevo usuario
 const createUser = async (req, res) => {
     try {
-        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, generateTempPassword, mustChangePassword, spouseId, encuentro, discipular1A, discipular1B, discipular2A, discipular2B, discipular3A, discipular3B } = req.body;
+        const { email, password, fullName, role, sex, phone, address, city, parentId, roleInHierarchy, documentType, documentNumber, birthDate, pastorId, liderDoceId, liderCelulaId, pastorIds, liderDoceIds, liderCelulaIds, pastorSpouseIds, liderDoceSpouseIds, liderCelulaSpouseIds, maritalStatus, network, generateTempPassword, mustChangePassword, spouseId, encuentro, discipular1A, discipular1B, discipular2A, discipular2B, discipular3A, discipular3B, baptized } = req.body;
 
         if (!email || !fullName) {
             return res.status(400).json({ message: 'Email and full name are required' });
@@ -1133,6 +1182,7 @@ const createUser = async (req, res) => {
                             discipular2B: discipular2B || false,
                             discipular3A: discipular3A || false,
                             discipular3B: discipular3B || false,
+                            baptized: baptized || false,
                         }
                     }
                 },
@@ -1154,28 +1204,24 @@ const createUser = async (req, res) => {
                 { ids: liderCelulaIds || (liderCelulaId ? [liderCelulaId] : []), spouseIds: liderCelulaSpouseIds || [], role: 'LIDER_CELULA' }
             ];
 
-            for (const entry of hierarchyEntries) {
-                // Process main leaders
-                const ids = Array.isArray(entry.ids) ? entry.ids : [entry.ids];
-                for (const idToAssign of ids.filter(Boolean)) {
-                    await tx.userHierarchy.create({
-                        data: {
-                            parentId: parseInt(idToAssign),
-                            childId: newUser.id,
-                            role: entry.role
-                        }
-                    });
-                }
+            const hierarchySkipped = [];
 
-                // Process spouse IDs - filter out duplicates with main leaders
+            for (const entry of hierarchyEntries) {
+                const ids = Array.isArray(entry.ids) ? entry.ids : [entry.ids];
                 const spouseIds = Array.isArray(entry.spouseIds) ? entry.spouseIds : [entry.spouseIds];
-                const mainIds = (Array.isArray(entry.ids) ? entry.ids : [entry.ids]).map(id => parseInt(id));
-                for (const spouseIdToAssign of spouseIds.filter(Boolean)) {
-                    // Skip if this spouse is already in the main IDs (compare as integers)
-                    if (mainIds.includes(parseInt(spouseIdToAssign))) continue;
+                const mainIds = ids.map(id => parseInt(id));
+                const candidates = [...new Set([...mainIds, ...spouseIds.map(id => parseInt(id))])];
+
+                for (const candidateId of candidates.filter(Boolean)) {
+                    const check = await validateHierarchyParent(tx, candidateId, newUser.id, entry.role);
+                    if (!check.ok) {
+                        hierarchySkipped.push({ role: entry.role, parentId: candidateId, reason: check.reason });
+                        console.warn(`[hierarchy] Skip ${entry.role} parent=${candidateId} for child=${newUser.id}: ${check.reason}`);
+                        continue;
+                    }
                     await tx.userHierarchy.create({
                         data: {
-                            parentId: parseInt(spouseIdToAssign),
+                            parentId: check.id,
                             childId: newUser.id,
                             role: entry.role
                         }
@@ -1186,13 +1232,18 @@ const createUser = async (req, res) => {
             // Fallback for parentId if none of the specific ones were used
             const hasSpecificLeaders = hierarchyEntries.some(e => Array.isArray(e.ids) ? e.ids.length > 0 : !!e.ids);
             if (!hasSpecificLeaders && parentId) {
-                await tx.userHierarchy.create({
-                    data: {
-                        parentId: parseInt(parentId),
-                        childId: newUser.id,
-                        role: roleInHierarchy || 'DISCIPULO'
-                    }
-                });
+                const check = await validateHierarchyParent(tx, parentId, newUser.id, roleInHierarchy || 'DISCIPULO');
+                if (check.ok) {
+                    await tx.userHierarchy.create({
+                        data: {
+                            parentId: check.id,
+                            childId: newUser.id,
+                            role: roleInHierarchy || 'DISCIPULO'
+                        }
+                    });
+                } else {
+                    hierarchySkipped.push({ role: roleInHierarchy || 'DISCIPULO', parentId: parseInt(parentId), reason: check.reason });
+                }
             }
 
             // Ensure spouse symmetry
@@ -1215,7 +1266,8 @@ const createUser = async (req, res) => {
         await logActivity(req.user.id, 'CREATE', 'USER', createdUser.id, { targetUser: createdUser.profile?.fullName }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({
-            user: formatUser(createdUser)
+            user: formatUser(createdUser),
+            hierarchySkipped
         });
     } catch (error) {
         console.error('Error creating user:', error);

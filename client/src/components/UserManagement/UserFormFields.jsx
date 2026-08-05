@@ -25,6 +25,13 @@ const UserFormFields = ({
     fetchRelatedUsers
 }) => {
     const autoFilledRole = useRef(null);
+
+    const filterLeaderSuggestions = (users) => {
+        if (!currentUser) return users;
+        const excludedIds = new Set([currentUser.id]);
+        if (currentUser.spouseId) excludedIds.add(currentUser.spouseId);
+        return (users || []).filter(u => !excludedIds.has(u.id) && !excludedIds.has(parseInt(u.id)));
+    };
     // Fetch related users when editing to avoid "Cargando..." issue
     useEffect(() => {
         if (mode === 'edit' && fetchRelatedUsers) {
@@ -75,12 +82,6 @@ const UserFormFields = ({
 
             if (!newLiderDoceIds[0]) {
                 newLiderDoceIds[0] = currentUser.id?.toString() || currentUser.id;
-                newLiderDoceSpouseIds[0] = currentUser.spouseId?.toString() || '';
-
-                if (currentUser.spouseId) {
-                    newLiderDoceIds[1] = currentUser.spouseId?.toString() || currentUser.spouseId;
-                    newLiderDoceSpouseIds[1] = (currentUser.id?.toString() || currentUser.id);
-                }
 
                 setFormData(prev => ({ ...prev, liderDoceIds: newLiderDoceIds, liderDoceSpouseIds: newLiderDoceSpouseIds }));
                 autoFilledRole.current = 'DISCIPULO';
@@ -319,6 +320,18 @@ const UserFormFields = ({
                 </select>
             )}
 
+            {inputGroup("Bautizado",
+                <select
+                    className="ln-input appearance-none"
+                    value={formData.baptized === true ? 'true' : formData.baptized === false ? 'false' : ''}
+                    onChange={e => setFormData({ ...formData, baptized: e.target.value === 'true' })}
+                >
+                    <option value="">Seleccionar...</option>
+                    <option value="true">Si</option>
+                    <option value="false">No</option>
+                </select>
+            )}
+
             <div className="sm:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 p-4 rounded-2xl bg-[var(--ln-bg-panel)]/30 border border-[var(--ln-border-standard)]">
                 <div className="sm:col-span-2 sm:col-span-3">
                     <label className="text-[11px] weight-700 text-[var(--ln-text-secondary)] uppercase tracking-wider flex items-center gap-1.5 px-1">
@@ -413,7 +426,7 @@ const UserFormFields = ({
                                     <div key={`pastor-${index}`}>
                                         {inputGroup(`Pastor Liderazgo (${index + 1})`, 
                                             <AsyncSearchSelect
-                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'PASTOR' } }).then(res => res.data)}
+                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'PASTOR' } }).then(res => filterLeaderSuggestions(res.data))}
                                                 selectedValue={
                                                     pastores.find(p => p.id === parseInt((formData.pastorIds || [])[index])) ||
                                                     relatedUsersCache[(formData.pastorIds || [])[index]] ||
@@ -442,7 +455,7 @@ const UserFormFields = ({
                                     <div key={`ld-${index}`}>
                                         {inputGroup(`Líder 12 (${index + 1})`, 
                                             <AsyncSearchSelect
-                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => res.data)}
+                                                fetchItems={(term) => api.get('/users/search', { params: { search: term, role: 'LIDER_DOCE' } }).then(res => filterLeaderSuggestions(res.data))}
                                                 selectedValue={
                                                     lideresDoce.find(l => l.id === parseInt((formData.liderDoceIds || [])[index])) ||
                                                     relatedUsersCache[(formData.liderDoceIds || [])[index]] ||
@@ -475,7 +488,7 @@ const UserFormFields = ({
                                                     const params = { search: term, role: 'LIDER_CELULA' };
                                                     const parentId = (formData.liderDoceIds || []).find(id => id);
                                                     if (parentId) params.liderDoceId = parentId;
-                                                    return api.get('/users/search', { params }).then(res => res.data);
+                                                    return api.get('/users/search', { params }).then(res => filterLeaderSuggestions(res.data));
                                                 }}
                                                 selectedValue={
                                                     lideresCelula.find(lc => lc.id === parseInt((formData.liderCelulaIds || [])[index])) ||

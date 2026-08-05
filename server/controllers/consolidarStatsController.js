@@ -24,6 +24,62 @@ const formatUser = (user) => {
         liderDoceName = liderDoceParent?.parent?.profile?.fullName || null;
     }
 
+    // Módulos del discipular aprobados (estado COMPLETADO o nota final >= 70)
+    const passedModules = (user.seminarEnrollments || [])
+        .filter(se => se.status === 'COMPLETADO' || (se.finalGrade != null && se.finalGrade >= 70))
+        .map(se => ({
+            id: se.module?.id,
+            name: se.module?.name || null,
+            moduleNumber: se.module?.moduleNumber ?? null,
+            finalGrade: se.finalGrade,
+            status: se.status,
+        }))
+        .sort((a, b) => (a.moduleNumber ?? 0) - (b.moduleNumber ?? 0));
+
+    // Inscripciones a encuentros (cualquier estado que no sea cancelado)
+    const encuentros = (user.encuentroRegistrations || [])
+        .filter(er => er.status !== 'CANCELLED')
+        .map(er => ({
+            id: er.id,
+            encuentroId: er.encuentroId,
+            encuentroName: er.encuentro?.name || null,
+            encuentroType: er.encuentro?.type || null,
+            startDate: er.encuentro?.startDate || null,
+            status: er.status,
+            isBaptized: er.isBaptized,
+        }))
+        .sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+
+    const isBaptized = encuentros.some(er => er.isBaptized === true);
+    const hasAttendedEncuentro = encuentros.length > 0;
+
+    // Agrupar jerarquía por rol, fusionando la pareja del líder en una sola entrada
+    const hierarchyRoles = ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'MIEMBRO'];
+    const hierarchy = [];
+    for (const role of hierarchyRoles) {
+        const roleParents = parents.filter(p => p.role === role);
+        if (roleParents.length === 0) continue;
+
+        const main = roleParents[0];
+        const mainId = main.parentId;
+        const spouse = roleParents.find(p =>
+            p.parentId !== mainId &&
+            ((p.parent?.spouseId != null && p.parent.spouseId === mainId) ||
+             (main.parent?.spouseId != null && main.parent.spouseId === p.parentId))
+        );
+
+        const entry = {
+            parentId: main.parentId,
+            parentName: main.parent?.profile?.fullName || '(sin nombre)',
+            role: main.role,
+        };
+        if (spouse) {
+            entry.spouseId = spouse.parentId;
+            entry.spouseName = spouse.parent?.profile?.fullName || '(sin nombre)';
+        }
+        hierarchy.push(entry);
+    }
+
     return {
         ...(user.profile || {}),
         id: user.id,
@@ -41,13 +97,15 @@ const formatUser = (user) => {
         lastWhatsAppDate: user.lastWhatsAppDate,
         lastWhatsAppMessage: user.lastWhatsAppMessage,
         spouseId: user.spouseId,
-        hierarchy: parents.map(p => ({
-            parentId: p.parentId,
-            parentName: p.parent?.profile?.fullName || '(sin nombre)',
-            role: p.role
-        })),
+        hierarchy,
         churchAttendances: user.churchAttendances || [],
         cellAttendances: user.cellAttendances || [],
+        passedModules,
+        passedModulesCount: passedModules.length,
+        encuentros,
+        encuentrosCount: encuentros.length,
+        isBaptized,
+        hasAttendedEncuentro,
     };
 };
 
@@ -142,7 +200,7 @@ const getGeneralStats = async (req, res) => {
                     ) AS has_visit
                 FROM "Guest" g
                 JOIN "User" u ON u.id = g."invitedById"
-                LEFT JOIN "UserHierarchy" uh ON uh."childId" = u.id AND uh.role IN ('LIDER_DOCE', 'PASTOR', 'LIDER_CELULA')
+                LEFT JOIN "UserHierarchy" uh ON uh."childId" = u.id AND uh.role = 'LIDER_DOCE'
                 LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
                 WHERE g."createdAt" BETWEEN ${start} AND ${end}
                   AND g."isDeleted" = false
@@ -292,7 +350,7 @@ const getGeneralStats = async (req, res) => {
             JOIN "Encuentro" e ON e.id = er."encuentroId"
             LEFT JOIN "Guest" g ON g.id = er."guestId"
             LEFT JOIN "User" u ON u.id = COALESCE(er."userId", g."assignedToId")
-            LEFT JOIN "UserHierarchy" uh ON uh."childId" = COALESCE(er."userId", g."assignedToId")
+            LEFT JOIN "UserHierarchy" uh ON uh."childId" = COALESCE(er."userId", g."assignedToId") AND uh.role = 'LIDER_DOCE'
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             LEFT JOIN "EncuentroPayment" ep ON ep."registrationId" = er.id
             WHERE er.status != 'CANCELLED'
@@ -325,7 +383,7 @@ const getGeneralStats = async (req, res) => {
             FROM "ConventionRegistration" cr
             JOIN "Convention" conv ON conv.id = cr."conventionId"
             LEFT JOIN "User" u ON u.id = cr."userId"
-            LEFT JOIN "UserHierarchy" uh ON uh."childId" = cr."userId"
+            LEFT JOIN "UserHierarchy" uh ON uh."childId" = cr."userId" AND uh.role = 'LIDER_DOCE'
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             LEFT JOIN "ConventionPayment" cp ON cp."registrationId" = cr.id
             WHERE cr.status != 'CANCELLED'
@@ -420,7 +478,13 @@ const getChurchAttendanceLeadersStats = async (req, res) => {
                   FROM "UserRole" ur
                   JOIN "Role" r ON r.id = ur."roleId"
                   WHERE ur."userId" = u.id
-                    AND r.name = 'ADMIN'
+                    AND r.name IN ('ADMIN', 'PASTOR')
+              )
+              AND uh."parentId" NOT IN (
+                  SELECT ur2."userId"
+                  FROM "UserRole" ur2
+                  JOIN "Role" r2 ON r2.id = ur2."roleId"
+                  WHERE r2.name = 'PASTOR'
               )
             GROUP BY uh."parentId", up."fullName"
             ORDER BY present_count DESC, total_records DESC, leader_name ASC
@@ -439,7 +503,7 @@ const getChurchAttendanceLeadersStats = async (req, res) => {
                 absent,
                 virtual,
                 total,
-                attendanceRate: total > 0 ? Number(((present / total) * 100).toFixed(1)) : 0,
+                attendanceRate: total > 0 ? Number(((present / total) * 100).toFixed(2)) : 0,
             };
         });
 
@@ -511,7 +575,7 @@ const getSeminarStatsByLeader = async (req, res) => {
                 )::float AS avg_attendance_pct
             FROM "SeminarEnrollment" se
             JOIN "User" u ON u.id = se."userId"
-            LEFT JOIN "UserHierarchy" uh ON uh."childId" = se."userId"
+            LEFT JOIN "UserHierarchy" uh ON uh."childId" = se."userId" AND uh.role = 'LIDER_DOCE'
             LEFT JOIN "UserProfile" up ON up."userId" = uh."parentId"
             LEFT JOIN "ClassAttendance" ca ON ca."enrollmentId" = se.id
             WHERE 1=1
@@ -535,7 +599,7 @@ const getSeminarStatsByLeader = async (req, res) => {
 
 const getDiscipleUsers = async (req, res) => {
     try {
-        const { page = 1, limit = 15, search, role, liderDoceId } = req.query;
+        const { page = 1, limit = 15, search, role, liderDoceId, noCell } = req.query;
         const pageNum = Math.max(1, parseInt(page));
         const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
         const skip = (pageNum - 1) * limitNum;
@@ -583,6 +647,11 @@ const getDiscipleUsers = async (req, res) => {
             }
         }
 
+        // Filter users without a cell assigned
+        if (noCell === 'true') {
+            whereClause.cellId = null;
+        }
+
         const [total, users] = await Promise.all([
             prisma.user.count({ where: whereClause }),
             prisma.user.findMany({
@@ -595,7 +664,7 @@ const getDiscipleUsers = async (req, res) => {
                     roles: { include: { role: true } },
                     parents: {
                         include: {
-                            parent: { include: { profile: true } }
+                            parent: { include: { profile: true, spouse: { include: { profile: true } } } }
                         }
                     },
                     cell: { select: { id: true, name: true } },
@@ -610,6 +679,37 @@ const getDiscipleUsers = async (req, res) => {
                         orderBy: { date: 'desc' },
                         take: 5,
                         select: { id: true, date: true }
+                    },
+                    seminarEnrollments: {
+                        select: {
+                            id: true,
+                            status: true,
+                            finalGrade: true,
+                            module: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    moduleNumber: true,
+                                },
+                            },
+                        },
+                    },
+                    encuentroRegistrations: {
+                        where: { status: { not: 'CANCELLED' } },
+                        select: {
+                            id: true,
+                            status: true,
+                            isBaptized: true,
+                            encuentroId: true,
+                            encuentro: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    type: true,
+                                    startDate: true,
+                                },
+                            },
+                        },
                     },
                 },
             }),
