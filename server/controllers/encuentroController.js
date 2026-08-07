@@ -735,7 +735,7 @@ const updateRegistration = async (req, res) => {
 const getEncuentroBalanceReport = async (req, res) => {
     try {
         const { id } = req.params;
-        const { roles, id: userId } = req.user;
+        const { id: userId } = req.user;
 
         const encuentro = await prisma.encuentro.findUnique({
             where: { id: parseInt(id) },
@@ -782,10 +782,9 @@ const getEncuentroBalanceReport = async (req, res) => {
 
         let visibleRegistrations = encuentro.registrations;
 
-        const isAdmin = roles.includes('ADMIN');
-        const isCoordinator = encuentro.coordinatorId === parseInt(userId);
+        const hasFullAccess = await checkEncuentroAccess(req.user, id);
 
-        if (!isAdmin && !isCoordinator) {
+        if (!hasFullAccess) {
             const networkIds = await getUserNetwork(userId);
             const allowedIds = new Set([...networkIds, parseInt(userId)]);
 

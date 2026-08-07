@@ -1183,10 +1183,9 @@ const getConventionBalanceReport = async (req, res) => {
         // Apply Network Filter
         let visibleRegistrations = convention.registrations || [];
 
-        const isAdmin = roles.includes('ADMIN');
-        const isCoordinator = convention.coordinatorId === parseInt(userId);
+        const hasFullAccess = await checkConventionAccess(req.user, id);
 
-        if (isAdmin || isCoordinator) {
+        if (hasFullAccess) {
             // All
         } else if (roles.some(r => ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r))) {
             if (userId) {

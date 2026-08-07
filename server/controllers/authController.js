@@ -409,7 +409,11 @@ const login = async (req, res) => {
                 email: user.email,
                 fullName: user.profile?.fullName,
                 roles: user.roles.map(r => r.role.name),
-                mustChangePassword: user.mustChangePassword
+                mustChangePassword: user.mustChangePassword,
+                isCoordinator: user.isCoordinator || (user.moduleCoordinations && user.moduleCoordinations.length > 0),
+                moduleCoordinations: user.moduleCoordinations?.map(c => normalizeModuleName(c.moduleName)) || [],
+                moduleSubCoordinations: user.moduleSubCoordinations?.map(sc => normalizeModuleName(sc.moduleName)) || [],
+                moduleTreasurers: user.moduleTreasurers?.map(t => normalizeModuleName(t.moduleName)) || []
             }
         });
     } catch (error) {
