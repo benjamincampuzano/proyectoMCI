@@ -82,8 +82,8 @@ const BalanceReport = ({ data, title }) => {
                 { header: 'Costo Final', key: 'cost', width: 15 },
                 { header: 'Pagado', key: 'paid', width: 15 },
                 { header: `Saldo ${baseLabel}`, key: 'baseBalance', width: 15 },
-                { header: 'Saldo Trans.', key: 'transportBalance', width: 15 },
-                { header: 'Saldo Hosp.', key: 'accommodationBalance', width: 15 },
+                { header: 'Saldo Libro', key: 'transportBalance', width: 15 },
+                { header: 'Saldo Otros Gastos.', key: 'accommodationBalance', width: 15 },
                 { header: 'Saldo Total', key: 'totalBalance', width: 15 }
             ];
 
@@ -333,10 +333,10 @@ const BalanceReport = ({ data, title }) => {
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">LIDER DOCE</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo Final</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pagado</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo {baseLabel}</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Trans.</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Hosp.</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo Total</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{baseLabel}</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Libro</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Otros Gastos</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
