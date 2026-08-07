@@ -28,6 +28,8 @@ cypress/screenshots/
 **/*.spec.ts
 **/*.spec.tsx
 test-results/
+playwright-report/
+e2e/
 jest/
 __tests__/
 *.lcov
@@ -172,3 +174,9 @@ fix-dup.py
 .vercel
 .env*
 client/eslint.config.js
+server/scripts/create-e2e-users.js
+server/scripts/delete-e2e-users.js
+tests/client/setup.js
+tests/server/setup.js
+tests/README.md
+tests/server/_helpers/requireServer.js

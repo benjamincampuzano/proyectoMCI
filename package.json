@@ -16,8 +16,14 @@
     "check-roles": "node scripts/check-roles.js",
     "manage-users": "node scripts/manage-test-users.js",
     "menu-usuarios": "node scripts/menu-usuarios.js",
-    "test:open": "cypress open",
-    "test:run": "cypress run"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:client": "pnpm --filter client run test",
+    "test:server": "pnpm --filter server run test",
+    "test:e2e": "playwright test --config=e2e/playwright.config.js",
+    "test:e2e:ui": "playwright test --config=e2e/playwright.config.js --ui"
   },
   "keywords": [],
   "author": "Benjamin Campuzano Castañeda",
@@ -26,10 +32,13 @@
     "node": ">=20.19.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@vitest/coverage-v8": "^2.1.8",
     "concurrently": "^9.2.1",
     "cypress": "^15.15.0",
     "puppeteer": "^25.3.0",
-    "vite": "^8.0.13"
+    "vite": "^8.0.13",
+    "vitest": "^2.1.8"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

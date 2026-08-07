@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run --project=server",
+    "test:watch": "vitest --project=server",
+    "test:coverage": "vitest run --project=server --coverage",
+    "test:ui": "vitest --project=server --ui",
     "generate": "prisma generate",
     "dev": "prisma generate && nodemon index.js",
     "migrate": "prisma generate && prisma migrate deploy --schema=prisma/schema.prisma",
@@ -52,6 +55,8 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@vitest/coverage-v8": "^2.1.8",
+    "nodemon": "^3.1.14",
+    "vitest": "^2.1.8"
   }
 }

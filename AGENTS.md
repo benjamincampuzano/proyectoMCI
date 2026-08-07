@@ -43,6 +43,15 @@ pnpm run manage-users        # Interactive menu for test user management
 pnpm run test:open    # Interactive GUI
 pnpm run test:run     # Full suite (headless)
 
+# Playwright E2E suite (per-role sidebar, route access, and API permission checks)
+pnpm run test:e2e     # Full suite (headless)
+pnpm run test:e2e:ui  # Interactive GUI
+#   Requires both servers running (pnpm start) and the 9 E2E users from
+#   e2e/test-users.json in the database (see e2e/global-setup.js and e2e/utils/api.js).
+#   Sessions are cached in e2e/.auth-state/tokens.json (gitignored) and refreshed
+#   via POST /api/auth/refresh-token when the 30-min JWT nears expiry.
+
+
 # Linting
 #   Client: pnpm run lint (from client directory or root via pnpm -C client run lint)
 #   Server: ESLint configuration exists but no npm script; run manually with:

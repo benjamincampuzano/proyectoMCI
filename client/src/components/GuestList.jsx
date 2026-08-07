@@ -79,10 +79,12 @@ const GuestList = ({ refreshTrigger }) => {
         const isModuleRole = isModuleCoordinator || isSubCoordGanar || isTreasurerGanar;
 
         if (isDoceLeaderRole && !isModuleRole && userId) {
-            setLiderDoceFilter({
-                id: userId,
-                fullName: userFullName || userEmail
-            });
+            if (liderDoceFilter?.id !== userId) {
+                setLiderDoceFilter({
+                    id: userId,
+                    fullName: userFullName || userEmail
+                });
+            }
             autoLiderDoceFilterAppliedRef.current = true;
             return;
         }
