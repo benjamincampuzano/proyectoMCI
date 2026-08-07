@@ -1156,6 +1156,7 @@ const getConventionBalanceReport = async (req, res) => {
                         user: {
                             include: {
                                 profile: true,
+                                roles: { include: { role: true } },
                                 parents: {
                                     include: {
                                         parent: { include: { profile: true } }
@@ -1213,6 +1214,9 @@ const getConventionBalanceReport = async (req, res) => {
 
             // Simplified hierarchy display for the report
             const getParentName = (role) => {
+                if (reg.user?.roles?.some(r => r.role?.name === role)) {
+                    return reg.user.profile?.fullName || 'N/A';
+                }
                 const parent = reg.user?.parents?.find(p => p.role === role);
                 return parent?.parent?.profile?.fullName || 'N/A';
             };

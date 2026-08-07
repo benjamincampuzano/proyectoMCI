@@ -147,7 +147,7 @@ const BalanceReport = ({ data, title }) => {
                 >
                     <div className="flex items-center gap-2">
                         <FunnelIcon size={18} className="text-blue-500" />
-                        <span>Filtros de Jerarquía</span>
+                        <span>Filtros de LIDER DOCE</span>
                         {(filterPastor || filterDoce || filterCelula) && (
                             <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
                                 {[filterPastor, filterDoce, filterCelula].filter(Boolean).length} activos
@@ -162,7 +162,7 @@ const BalanceReport = ({ data, title }) => {
                 {/* Desktop: Header normal */}
                 <div className="hidden md:flex items-center gap-2 mb-4 text-gray-700 dark:text-gray-300 font-medium">
                     <FunnelIcon size={20} />
-                    <span>Filtros de Jerarquía</span>
+                    <span>Filtros de LIDER DOCE</span>
                 </div>
 
                 <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${showFiltersMobile ? 'mt-4' : 'hidden md:grid'}`}>
@@ -330,7 +330,7 @@ const BalanceReport = ({ data, title }) => {
                         <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                             <tr>
                                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nombre / Rol</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Jerarquía</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">LIDER DOCE</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo Final</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pagado</th>
                                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Saldo {baseLabel}</th>
@@ -426,7 +426,7 @@ const BalanceReport = ({ data, title }) => {
                                         </span>
                                     </div>
 
-                                    {/* Jerarquía */}
+                                    {/* LIDER DOCE */}
                                     <div className="text-xs text-gray-600 dark:text-gray-300 space-y-0.5">
                                         <div>
                                             <strong className="text-gray-700 dark:text-gray-200">12:</strong>{' '}

@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowLeft, UserPlus, MoneyIcon, X, XCircle, Trash, Calendar, BookOpen, FileTextIcon, Clock, MagnifyingGlass, PencilSimple, Users, Check } from '@phosphor-icons/react';
+import { ArrowLeft, UserPlus, MoneyIcon, X, XCircle, Trash, Calendar, BookOpen, FileTextIcon, Clock, MagnifyingGlass, PencilSimple, Users, Check, MicrosoftExcelLogoIcon } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { ROLES } from '../constants/roles';
@@ -498,6 +500,72 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(amount);
     };
 
+    const styleExcelHeaders = (worksheet) => {
+        const headerRow = worksheet.getRow(1);
+        headerRow.eachCell((cell) => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+    };
+
+    const handleExportExcel = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+
+            // Hoja 1: Inscritos
+            const wsInscritos = workbook.addWorksheet('Inscritos');
+            wsInscritos.columns = [
+                { header: 'Nombre', key: 'nombre', width: 30 },
+                { header: 'Teléfono', key: 'telefono', width: 18 },
+                { header: 'Líder Doce', key: 'liderDoce', width: 25 },
+                { header: 'Estado', key: 'estado', width: 15 },
+                { header: 'Costo', key: 'costo', width: 15 },
+                { header: 'Pagado', key: 'pagado', width: 15 },
+                { header: 'Saldo', key: 'saldo', width: 15 }
+            ];
+            filteredRegistrations.forEach(reg => {
+                wsInscritos.addRow({
+                    nombre: reg.guest?.name || reg.user?.fullName || 'N/A',
+                    telefono: reg.guest?.phone || reg.user?.phone || 'N/A',
+                    liderDoce: reg.liderDoce?.fullName || 'N/A',
+                    estado: reg.status || 'N/A',
+                    costo: Number(reg.finalCost) || 0,
+                    pagado: Number(reg.totalPaid) || 0,
+                    saldo: Number(reg.balance) || 0
+                });
+            });
+            styleExcelHeaders(wsInscritos);
+
+            // Hoja 2: Preinscritos
+            const wsPreinscritos = workbook.addWorksheet('Preinscritos');
+            wsPreinscritos.columns = [
+                { header: 'Nombre', key: 'nombre', width: 30 },
+                { header: 'Teléfono', key: 'telefono', width: 18 },
+                { header: 'Líder Doce', key: 'liderDoce', width: 25 },
+                { header: 'Incluye Libro U. de la V.', key: 'libro', width: 25 },
+                { header: 'Incluye Otros Gastos', key: 'otros', width: 25 }
+            ];
+            pendingRegistrations.forEach(reg => {
+                wsPreinscritos.addRow({
+                    nombre: reg.guest?.name || reg.user?.fullName || reg.fullName || 'N/A',
+                    telefono: reg.guest?.phone || reg.user?.phone || reg.phone || 'N/A',
+                    liderDoce: reg.liderDoce?.fullName || 'N/A',
+                    libro: reg.needsTransport ? 'Sí' : 'No',
+                    otros: reg.needsAccommodation ? 'Sí' : 'No'
+                });
+            });
+            styleExcelHeaders(wsPreinscritos);
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(blob, `${encuentro.name.replace(/\s+/g, '_')}_Inscritos_y_Preinscritos.xlsx`);
+        } catch (error) {
+            console.error('Error exporting Encuentro registrations to Excel:', error);
+            toast.error('Error al exportar a Excel');
+        }
+    };
+
     return (
         <div className="space-y-6">
             {!encuentro ? (
@@ -709,6 +777,17 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                           )}
                         </div>
 
+                        {(filteredRegistrations.length > 0 || pendingRegistrations?.length > 0) && (
+                          <button
+                            onClick={handleExportExcel}
+                            className="flex items-center justify-center px-4 py-2 text-xs sm:text-sm font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-sm shrink-0 w-full sm:w-auto"
+                            title="Descargar inscritos y preinscritos en Excel"
+                          >
+                            <MicrosoftExcelLogoIcon size={16} className="mr-1.5" />
+                            Exportar Excel
+                          </button>
+                        )}
+
                         {canModify && activeTab === 'general' && (
                           <button
                             onClick={() => setShowRegisterModal(true)}
@@ -876,6 +955,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                             {reg.guest?.name || reg.user?.fullName}
                                         </p>
                                         <p className="text-xs text-gray-500 mt-0.5">{reg.guest?.phone || reg.user?.phone || 'Sin teléfono'}</p>
+                                        <p className="text-xs text-gray-400 mt-0.5">Líder 12: {reg.liderDoce?.fullName || 'N/A'}</p>
                                     </button>
                                     <span className={`ml-2 shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wide ${
                                         reg.status === 'ATTENDED'
@@ -952,6 +1032,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                 <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Participante</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Líder Doce</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pagado</th>
@@ -972,6 +1053,9 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                                     </div>
                                                     <div className="text-xs text-gray-500">{reg.guest?.phone || reg.user?.phone || 'N/A'}</div>
                                                 </button>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {reg.liderDoce?.fullName || 'N/A'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${reg.status === 'ATTENDED' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
@@ -1049,7 +1133,7 @@ const EncuentroDetails = ({ encuentro, onBack, onRefresh }) => {
                                     ))}
                                     {filteredRegistrations.length === 0 && (
                                         <tr>
-                                            <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                            <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
                                                 {searchTerm ? 'Sin resultados para la búsqueda.' : 'No hay inscritos aún.'}
                                             </td>
                                         </tr>

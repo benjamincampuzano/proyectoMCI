@@ -180,6 +180,48 @@ const formatUser = (user) => {
 // Roles de liderazgo que deben validarse contra el rol real del usuario asignado
 const HIERARCHY_LEADER_ROLES = ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'];
 
+// Valores válidos para los enums de UserProfile (deben coincidir con server/prisma/schema.prisma)
+const VALID_SEX = ['HOMBRE', 'MUJER'];
+const VALID_MARITAL_STATUSES = ['SOLTERO', 'CASADO', 'DIVORCIADO', 'VIUDO', 'UNION_LIBRE', 'SEPARADO'];
+const VALID_NETWORKS = ['MUJERES', 'HOMBRES', 'JOVENES', 'KIDS', 'ROCAS', 'TEENS'];
+
+/**
+ * Valida que los campos de perfil que son enums en la BBDD tengan valores válidos.
+ * Evita errores 500 del generador Prisma por valores inválidos.
+ */
+const validateEnumFields = (fields = {}) => {
+    const errors = [];
+    if (fields.sex && !VALID_SEX.includes(fields.sex)) {
+        errors.push(`El sexo "${fields.sex}" no es válido. Use: ${VALID_SEX.join(', ')}.`);
+    }
+    if (fields.maritalStatus && !VALID_MARITAL_STATUSES.includes(fields.maritalStatus)) {
+        errors.push(`El estado civil "${fields.maritalStatus}" no es válido.`);
+    }
+    if (fields.network && !VALID_NETWORKS.includes(fields.network)) {
+        errors.push(`La red "${fields.network}" no es válida. Use: ${VALID_NETWORKS.join(', ')}.`);
+    }
+    return errors;
+};
+
+/**
+ * Verifica que el cónyuge asignado exista y no esté eliminado.
+ * Evita errores 500 por cónyuges inexistentes o borrados.
+ */
+const validateSpouseExists = async (db, spouseId, excludeUserId) => {
+    if (!spouseId) return null;
+    const sId = parseInt(spouseId);
+    if (isNaN(sId)) return { error: 'El ID del cónyuge es inválido.' };
+    if (sId === excludeUserId) return { error: 'Un usuario no puede ser cónyuge de sí mismo.' };
+    const spouse = await db.user.findUnique({
+        where: { id: sId },
+        select: { id: true, isDeleted: true }
+    });
+    if (!spouse || spouse.isDeleted) {
+        return { error: `El cónyuge seleccionado no existe (ID ${sId}). Por favor seleccione otro usuario.` };
+    }
+    return null;
+};
+
 /**
  * Valida que un usuario pueda ser asignado como líder jerárquico de otro.
  * Evita auto-liderazgo, cónyuge-como-líder, ciclos y roles incoherentes.
@@ -824,6 +866,18 @@ const updateUser = async (req, res) => {
             }
         }
 
+        // Validar valores de enums para evitar errores 500 de Prisma
+        const enumErrors = validateEnumFields({ sex, maritalStatus, network });
+        if (enumErrors.length > 0) {
+            return res.status(400).json({ message: enumErrors.join(' ') });
+        }
+
+        // Validar que el cónyuge exista antes de actualizar
+        if (spouseId) {
+            const spouseError = await validateSpouseExists(prisma, spouseId, userId);
+            if (spouseError) return res.status(400).json({ message: spouseError.error });
+        }
+
         let latitude = undefined;
         let longitude = undefined;
         if (address || city) {
@@ -833,6 +887,10 @@ const updateUser = async (req, res) => {
 
         // Clean phone number before updating
         const cleanPhone = phone && phone.trim() !== '' ? phone.trim() : null;
+
+        // Keep this outside the transaction callback because it is also returned
+        // in the HTTP response after the transaction completes.
+        const hierarchySkipped = [];
 
         const updatedUser = await prisma.$transaction(async (tx) => {
             const newUser = await tx.user.update({
@@ -917,7 +975,6 @@ const updateUser = async (req, res) => {
             ];
 
             // If any of these are explicitly passed (even as null/empty to remove), we update
-            const hierarchySkipped = [];
             if (pastorId !== undefined || liderDoceId !== undefined || liderCelulaId !== undefined || pastorIds !== undefined || liderDoceIds !== undefined || liderCelulaIds !== undefined || parentId !== undefined || pastorSpouseIds !== undefined || liderDoceSpouseIds !== undefined || liderCelulaSpouseIds !== undefined) {
                 // For backward compatibility or general cleanup, if parentId is passed as the primary way
                 if (parentId !== undefined && !pastorId && !liderDoceId && !liderCelulaId && !pastorIds && !liderDoceIds && !liderCelulaIds) {
@@ -1078,7 +1135,22 @@ const updateUser = async (req, res) => {
             }
         }
 
-        res.status(500).json({ message: 'Error del servidor al actualizar usuario' });
+        // Registro referenciado no encontrado (p.ej. cónyuge o líder inexistente/eliminado)
+        if (error.code === 'P2025') {
+            return res.status(400).json({
+                message: 'No se encontró el registro a actualizar. Verifique que el usuario, su cónyuge y sus líderes existan.'
+            });
+        }
+
+        // Violación de llave foránea
+        if (error.code === 'P2003') {
+            return res.status(400).json({
+                message: 'La asignación viola una relación de datos existente. Verifique los líderes y cónyuges seleccionados.'
+            });
+        }
+
+        const detail = process.env.NODE_ENV === 'production' ? '' : ` ${error.message}`;
+        res.status(500).json({ message: `Error del servidor al actualizar usuario.${detail}` });
     }
 };
 
@@ -1143,6 +1215,18 @@ const createUser = async (req, res) => {
             if (existingProfile) {
                 return res.status(400).json({ message: 'Ya existe un usuario registrado con este tipo y número de documento.' });
             }
+        }
+
+        // Validar valores de enums para evitar errores 500 de Prisma
+        const enumErrors = validateEnumFields({ sex, maritalStatus, network });
+        if (enumErrors.length > 0) {
+            return res.status(400).json({ message: enumErrors.join(' ') });
+        }
+
+        // Validar que el cónyuge exista antes de crear
+        if (spouseId) {
+            const spouseError = await validateSpouseExists(prisma, spouseId);
+            if (spouseError) return res.status(400).json({ message: spouseError.error });
         }
 
         const hashedPassword = await bcrypt.hash(finalPassword, 10);
@@ -1290,7 +1374,22 @@ const createUser = async (req, res) => {
             }
         }
 
-        res.status(500).json({ message: 'Error del servidor al crear usuario' });
+        // Registro referenciado no encontrado (p.ej. cónyuge inexistente/eliminado)
+        if (error.code === 'P2025') {
+            return res.status(400).json({
+                message: 'No se encontró el registro referenciado. Verifique el cónyuge y los líderes seleccionados.'
+            });
+        }
+
+        // Violación de llave foránea
+        if (error.code === 'P2003') {
+            return res.status(400).json({
+                message: 'La asignación viola una relación de datos existente. Verifique los líderes y cónyuges seleccionados.'
+            });
+        }
+
+        const detail = process.env.NODE_ENV === 'production' ? '' : ` ${error.message}`;
+        res.status(500).json({ message: `Error del servidor al crear usuario.${detail}` });
     }
 };
 

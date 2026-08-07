@@ -43,7 +43,7 @@ const Home = () => {
         }
     }, []);
 
-    const handleSelectLeader = useCallback(async (leader) => {
+    const handleSelectLeader = useCallback(async (leader, silent = false) => {
         try {
             setNetworkLoading(true);
             setSelectedLeader(leader);
@@ -55,8 +55,9 @@ const Home = () => {
             setNetwork(response.data);
         } catch (err) {
             if (err.response?.status === 404) {
-                setError('Líder no encontrado o red no disponible');
-            } else {
+                sessionStorage.removeItem('home_selected_leader');
+                if (!silent) setError('Líder no encontrado o red no disponible');
+            } else if (!silent) {
                 setError(err.response?.data?.error || err.message);
             }
         } finally {
@@ -125,7 +126,7 @@ const Home = () => {
                 try {
                     const leader = JSON.parse(stored);
                     if (leader?.id) {
-                        void Promise.resolve().then(() => handleSelectLeader(leader));
+                        void Promise.resolve().then(() => handleSelectLeader(leader, true));
                     }
                 } catch { /* ignore parse errors */ }
             }

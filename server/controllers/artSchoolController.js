@@ -809,6 +809,7 @@ exports.getClassBalanceReport = async (req, res) => {
             user: {
               include: {
                 profile: true,
+                roles: { include: { role: true } },
                 parents: {
                   include: {
                     parent: {
@@ -823,6 +824,7 @@ exports.getClassBalanceReport = async (req, res) => {
                 invitedBy: {
                   include: {
                     profile: true,
+                    roles: { include: { role: true } },
                     parents: {
                       include: {
                         parent: {
@@ -852,6 +854,9 @@ exports.getClassBalanceReport = async (req, res) => {
 
       const getParentName = (role) => {
         if (!responsibleUser) return 'N/A';
+        if (responsibleUser.roles?.some(r => r.role?.name === role)) {
+          return responsibleUser.profile?.fullName || 'N/A';
+        }
         const parentRecord = responsibleUser.parents?.find(p => p.role === role);
         return parentRecord?.parent?.profile?.fullName || 'N/A';
       };

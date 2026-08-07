@@ -753,12 +753,14 @@ const getEncuentroBalanceReport = async (req, res) => {
                                 assignedTo: {
                                     include: {
                                         profile: true,
+                                        roles: { include: { role: true } },
                                         parents: { include: { parent: { include: { profile: true } } } }
                                     }
                                 },
                                 invitedBy: {
                                     include: {
                                         profile: true,
+                                        roles: { include: { role: true } },
                                         parents: { include: { parent: { include: { profile: true } } } }
                                     }
                                 }
@@ -767,6 +769,7 @@ const getEncuentroBalanceReport = async (req, res) => {
                         user: {
                             include: {
                                 profile: true,
+                                roles: { include: { role: true } },
                                 parents: { include: { parent: { include: { profile: true } } } }
                             }
                         },
@@ -816,6 +819,9 @@ const getEncuentroBalanceReport = async (req, res) => {
 
             const getParentName = (role) => {
                 if (!responsibleUser) return 'N/A';
+                if (responsibleUser.roles?.some(r => r.role?.name === role)) {
+                    return responsibleUser.profile?.fullName || 'N/A';
+                }
                 const parent = responsibleUser.parents?.find(p => p.role === role);
                 return parent?.parent?.profile?.fullName || 'N/A';
             };
