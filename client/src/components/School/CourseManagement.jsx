@@ -18,6 +18,19 @@ const SCHOOL_LEVELS = [
     { nivel: '3', seccion: 'B', name: 'El Espiritu Santo en Mi', moduleNumber: 6 }
 ];
 
+const MODULE_GROUPS = [
+    { module: 1, label: 'Módulo 1', classLabels: ['1A', '1B'], description: 'Aprobar 1A y 1B para avanzar al Módulo 2' },
+    { module: 2, label: 'Módulo 2', classLabels: ['2A', '2B'], description: 'Requiere aprobar el Módulo 1 (1A y 1B)' },
+    { module: 3, label: 'Módulo 3', classLabels: ['3A', '3B'], description: 'Requiere aprobar el Módulo 2 (2A y 2B)' }
+];
+
+const getCourseModule = (course) => {
+    if (!course) return null;
+    const level = SCHOOL_LEVELS.find(l => l.moduleNumber === course.moduleNumber);
+    if (!level) return null;
+    return MODULE_GROUPS.find(g => g.module === parseInt(level.nivel)) || null;
+};
+
 const CourseManagement = () => {
     const { user, hasAnyRole, isCoordinator } = useAuth();
     const isModuleCoordinator = isCoordinator('discipular');
@@ -235,131 +248,157 @@ const CourseManagement = () => {
                 </div>
             )}
 
-            {/* Desktop Table */}
+            {/* Desktop Tables (agrupadas por módulo) */}
             {filteredCourses.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden hidden md:block">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-900/50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Nombre
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Profesor/Auxiliar
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Fecha Inicio
-                            </th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Estudiantes
-                            </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Acciones
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {filteredCourses.map(course => (
-                            <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div>
-                                        <div className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600" onClick={() => setSelectedCourseId(course.id)}>
-                                            {course.name}
-                                        </div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{course.description}</p>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {course.professor?.fullName || 'N/A'} / {course.auxiliaries?.[0]?.fullName || 'N/A'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-                                        {course._count?.enrollments || 0}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                     <div className="flex justify-end gap-2">
-                                            {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
-                                                <>
-                                                    <Button
-                                                        onClick={(e) => openEditModal(e, course)}
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-amber-600 hover:text-amber-800"
-                                                        icon={Pencil}
-                                                    >
-                                                        <span className="md:hidden lg:inline">Editar</span>
-                                                    </Button>
-                                                    <Button
-                                                        onClick={(e) => handleDelete(e, course.id)}
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-red-500 hover:text-red-700"
-                                                        icon={Trash}
-                                                    >
-                                                        <span className="md:hidden lg:inline">Eliminar</span>
-                                                    </Button>
-                                                </>
-                                            )}
-                                        </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            <div className="space-y-6">
+                {MODULE_GROUPS.map(group => {
+                    const groupCourses = filteredCourses.filter(course => getCourseModule(course)?.module === group.module);
+                    if (groupCourses.length === 0) return null;
+                    return (
+                        <div key={group.module} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden hidden md:block">
+                            <div className="flex items-center justify-between px-6 py-3 bg-purple-50 dark:bg-purple-900/20 border-b border-gray-200 dark:border-gray-700">
+                                <div className="flex items-center gap-3">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-600 text-white">{group.label}</span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">{group.classLabels.join(' + ')} · {group.description}</span>
+                                </div>
+                            </div>
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-gray-50 dark:bg-gray-900/50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Nombre
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Profesor/Auxiliar
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Fecha Inicio
+                                        </th>
+                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Estudiantes
+                                        </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Acciones
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {groupCourses.map(course => (
+                                        <tr key={course.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div>
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white cursor-pointer hover:text-blue-600" onClick={() => setSelectedCourseId(course.id)}>
+                                                        {course.name}
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{course.description}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {course.professor?.fullName || 'N/A'} / {course.auxiliaries?.[0]?.fullName || 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                                                    {course._count?.enrollments || 0}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                 <div className="flex justify-end gap-2">
+                                                        {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
+                                                            <>
+                                                                <Button
+                                                                    onClick={(e) => openEditModal(e, course)}
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-amber-600 hover:text-amber-800"
+                                                                    icon={Pencil}
+                                                                >
+                                                                    <span className="md:hidden lg:inline">Editar</span>
+                                                                </Button>
+                                                                <Button
+                                                                    onClick={(e) => handleDelete(e, course.id)}
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-red-500 hover:text-red-700"
+                                                                    icon={Trash}
+                                                                >
+                                                                    <span className="md:hidden lg:inline">Eliminar</span>
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                })}
             </div>)}
 
-            {/* Mobile Course Cards */}
+            {/* Mobile Course Cards (agrupadas por módulo) */}
             {filteredCourses.length > 0 && (
-            <div className="block md:hidden space-y-3">
-                {filteredCourses.map(course => (
-                    <div key={course.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                    {course.name}
-                                    <span className="inline-block ml-1 text-xs text-blue-500" onClick={() => setSelectedCourseId(course.id)}>↗</span>
+            <div className="block md:hidden space-y-6">
+                {MODULE_GROUPS.map(group => {
+                    const groupCourses = filteredCourses.filter(course => getCourseModule(course)?.module === group.module);
+                    if (groupCourses.length === 0) return null;
+                    return (
+                        <div key={group.module} className="space-y-3">
+                            <div className="flex items-center gap-2 px-1">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-600 text-white">{group.label}</span>
+                                <span className="text-[11px] text-gray-500 dark:text-gray-400">{group.classLabels.join(' + ')} · {group.description}</span>
+                            </div>
+                            {groupCourses.map(course => (
+                                <div key={course.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                {course.name}
+                                                <span className="inline-block ml-1 text-xs text-blue-500" onClick={() => setSelectedCourseId(course.id)}>↗</span>
+                                            </div>
+                                            {course.description && (
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{course.description}</p>
+                                            )}
+                                        </div>
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 shrink-0">
+                                            {course._count?.enrollments || 0} est.
+                                        </span>
+                                    </div>
+                                    <button className="w-full text-left mt-1 text-xs text-blue-500 hover:text-blue-600" onClick={() => setSelectedCourseId(course.id)}>
+                                        Ver estudiantes &rarr;
+                                    </button>
+                                    <div className="mt-2 space-y-1 text-sm text-gray-500 dark:text-gray-400">
+                                        <div className="flex justify-between">
+                                            <span>Profesor:</span>
+                                            <span className="text-gray-700 dark:text-gray-300 text-right">{course.professor?.fullName || 'N/A'}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Auxiliar:</span>
+                                            <span className="text-gray-700 dark:text-gray-300 text-right">{course.auxiliaries?.[0]?.fullName || 'N/A'}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>Inicio:</span>
+                                            <span className="text-gray-700 dark:text-gray-300">{course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}</span>
+                                        </div>
+                                    </div>
+                                    {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
+                                        <div className="mt-2 flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                            <Button onClick={(e) => openEditModal(e, course)} variant="ghost" size="sm" className="text-amber-600 hover:text-amber-800" icon={Pencil}>
+                                                <span className="md:hidden lg:inline">Editar</span>
+                                            </Button>
+                                            <Button onClick={(e) => handleDelete(e, course.id)} variant="ghost" size="sm" className="text-red-500 hover:text-red-700" icon={Trash}>
+                                                <span className="md:hidden lg:inline">Eliminar</span>
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
-                                {course.description && (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1">{course.description}</p>
-                                )}
-                            </div>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 shrink-0">
-                                {course._count?.enrollments || 0} est.
-                            </span>
+                            ))}
                         </div>
-                        <button className="w-full text-left mt-1 text-xs text-blue-500 hover:text-blue-600" onClick={() => setSelectedCourseId(course.id)}>
-                            Ver estudiantes &rarr;
-                        </button>
-                        <div className="mt-2 space-y-1 text-sm text-gray-500 dark:text-gray-400">
-                            <div className="flex justify-between">
-                                <span>Profesor:</span>
-                                <span className="text-gray-700 dark:text-gray-300 text-right">{course.professor?.fullName || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Auxiliar:</span>
-                                <span className="text-gray-700 dark:text-gray-300 text-right">{course.auxiliaries?.[0]?.fullName || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Inicio:</span>
-                                <span className="text-gray-700 dark:text-gray-300">{course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}</span>
-                            </div>
-                        </div>
-                        {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
-                            <div className="mt-2 flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                                <Button onClick={(e) => openEditModal(e, course)} variant="ghost" size="sm" className="text-amber-600 hover:text-amber-800" icon={Pencil}>
-                                    <span className="md:hidden lg:inline">Editar</span>
-                                </Button>
-                                <Button onClick={(e) => handleDelete(e, course.id)} variant="ghost" size="sm" className="text-red-500 hover:text-red-700" icon={Trash}>
-                                    <span className="md:hidden lg:inline">Eliminar</span>
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                ))}
+                    );
+                })}
             </div>
             )}
 
@@ -380,9 +419,8 @@ const CourseManagement = () => {
                                 <div className="grid grid-cols-1 gap-4">
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                            {showEditModal ? 'Cambiar Nivel (Clase)' : 'Seleccionar Nivel (Clase)'}
-                                        </label>
-                                        <select
+                                            {showEditModal ? 'Cambiar Clase (Nivel / Módulo)' : 'Seleccionar Clase (agrupada en Módulos)'}
+                                        </label>                                        <select
                                             className="w-full px-4 py-2 bg-gray-50/50 dark:bg-gray-700/50 rounded-lg dark:text-white border border-gray-200 dark:border-gray-600"
                                             value={`${formData.nivel}${formData.seccion}`}
                                             onChange={e => {
@@ -398,11 +436,14 @@ const CourseManagement = () => {
                                                 });
                                             }}
                                         >
-                                            {SCHOOL_LEVELS.map(level => (
-                                                <option key={`${level.nivel}${level.seccion}`} value={`${level.nivel}${level.seccion}`}>
-                                                    {level.nivel}{level.seccion} - {level.name}
-                                                </option>
-                                            ))}
+                                            {SCHOOL_LEVELS.map(level => {
+                                                const group = MODULE_GROUPS.find(g => g.module === parseInt(level.nivel));
+                                                return (
+                                                    <option key={`${level.nivel}${level.seccion}`} value={`${level.nivel}${level.seccion}`}>
+                                                        {group?.label || `Módulo ${level.nivel}`} · {level.nivel}{level.seccion} - {level.name}
+                                                    </option>
+                                                );
+                                            })}
                                         </select>
                                     </div>
                                 </div>

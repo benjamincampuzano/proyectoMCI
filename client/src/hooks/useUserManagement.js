@@ -20,7 +20,7 @@ const useUserManagement = () => {
     const [unassignedFilter, setUnassignedFilter] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalUsers, setTotalUsers] = useState(0);
-    const [usersPerPage] = useState(50); // Límite para no ADMIN
+    const [usersPerPage] = useState(10); // Límite de usuarios por página (mejora la velocidad)
     const [editingUser, setEditingUser] = useState(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -173,18 +173,10 @@ const useUserManagement = () => {
         try {
             setLoading(true);
 
-            // Para ADMIN, obtener todos los usuarios sin límite
-            // Para otros roles, usar paginación
-            const isAdminUser = currentUser?.roles?.includes('ADMIN') ||
-                               currentUser?.role === 'ADMIN' ||
-                               auth.isAdmin?.();
-
+            // Paginación server-side para todos los roles (mejora la velocidad)
             const params = new URLSearchParams();
             params.append('page', currentPage);
-
-            if (!isAdminUser) {
-                params.append('limit', usersPerPage);
-            }
+            params.append('limit', usersPerPage);
 
             // Enviar filtros al backend
             if (nombreFilter) params.append('search', nombreFilter);
@@ -226,7 +218,7 @@ const useUserManagement = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, unassignedFilter, usersPerPage, currentUser, auth]);
+    }, [currentPage, nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, unassignedFilter, usersPerPage]);
 
     useEffect(() => {
         void Promise.resolve().then(fetchUsers);
@@ -452,10 +444,12 @@ const useUserManagement = () => {
         page: currentPage,
         pages: totalPages,
         total: totalUsers,
+        pageSize: usersPerPage,
         hasNext: currentPage < totalPages,
         hasPrev: currentPage > 1,
         onNext: handleNextPage,
-        onPrev: handlePrevPage
+        onPrev: handlePrevPage,
+        onPageChange: handlePageChange
     };
 
     // Resetear página cuando cambian los filtros

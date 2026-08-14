@@ -59,8 +59,6 @@ export {
     getPaymentPercentage,
     getPaymentStatusLabel,
     getPaymentStatusColor,
-    applyMultipleClassesDiscount,
-    isEnrollmentOverdue,
 };
 
 export default {

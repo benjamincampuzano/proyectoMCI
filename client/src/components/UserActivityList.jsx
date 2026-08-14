@@ -231,31 +231,31 @@ const ASISTENCIA_TIPOS = [
 
     return (
         <div className="bg-[var(--ln-bg-panel)]/50 backdrop-blur-xl rounded-[24px] border border-[var(--ln-border-standard)] shadow-2xl overflow-hidden animate-in fade-in duration-700">
-            <div className="p-8 border-b border-[var(--ln-border-standard)] bg-white/[0.02]">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+            <div className="p-6 sm:p-8 border-b border-[var(--ln-border-standard)] bg-white/[0.02]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 mb-4 sm:mb-8">
                     <div>
-                        <h3 className="text-lg weight-590 text-[var(--ln-text-primary)] flex items-center gap-3 tracking-tight">
-                            <Medal className="text-amber-500" size={24} weight="bold" />
+                        <h3 className="text-base sm:text-lg weight-590 text-[var(--ln-text-primary)] flex items-center gap-2 sm:gap-3 tracking-tight">
+                            <Medal className="text-amber-500" size={20} sm:size={24} weight="bold" />
                             Reporte de Actividad Ministerial
                         </h3>
-                        <p className="text-[13px] text-[var(--ln-text-tertiary)] mt-1 opacity-70">Monitoreo preciso de progresos, asistencias y cobertura espiritual.</p>
+                        <p className="text-xs sm:text-[13px] text-[var(--ln-text-tertiary)] mt-1 opacity-70">Monitoreo preciso de progresos, asistencias y cobertura espiritual.</p>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
                         {hasActiveFilters && (
-                            <button 
-                                onClick={() => setSearchTerm('')} 
-                                className="text-[12px] weight-590 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] transition-colors px-3 py-1.5"
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="text-[10px] sm:text-[12px] weight-590 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] transition-colors px-2 sm:px-3 py-1 sm:py-1.5"
                             >
                                 Limpiar Filtros
                             </button>
                         )}
-                        <div className="relative group min-w-[300px]">
-                            <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ln-text-tertiary)] w-4 h-4 transition-colors group-focus-within:text-[var(--ln-brand-indigo)]" weight="bold" />
+                        <div className="relative group min-w-[0] sm:min-w-[300px] flex-1">
+                            <MagnifyingGlass className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-[var(--ln-text-tertiary)] w-3.5 sm:w-4 h-3.5 sm:h-4 transition-colors group-focus-within:text-[var(--ln-brand-indigo)]" weight="bold" />
                             <input
                                 type="text"
                                 placeholder="Filtrar por nombre o rol..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-xl text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/40"
+                                className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-lg sm:rounded-xl text-[10px] sm:text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/40"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -263,51 +263,55 @@ const ASISTENCIA_TIPOS = [
                     </div>
                 </div>
 
-                <div className="flex items-center gap-6 text-[10px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest opacity-60">
-                    <div className="flex items-center gap-2"><House size={14} weight="bold" className="text-indigo-500" /> Iglesia</div>
-                    <div className="flex items-center gap-2"><Heart size={14} weight="bold" className="text-pink-500" /> Célula</div>
-                    <div className="flex items-center gap-2"><BookOpen size={14} weight="bold" className="text-emerald-500" /> Escuela</div>
-                    <div className="flex items-center gap-2"><GraduationCap size={14} weight="bold" className="text-amber-500" /> Encuentro</div>
-                    <div className="flex items-center gap-2"><PhoneCall size={14} weight="bold" className="text-sky-500" /> Ganar</div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-[9px] sm:text-[10px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest opacity-60">
+                    <div className="flex items-center gap-1.5 sm:gap-2"><House size={12} sm:size={14} weight="bold" className="text-indigo-500" /> Iglesia</div>
+                    <div className="flex items-center gap-1.5 sm:gap-2"><Heart size={12} sm:size={14} weight="bold" className="text-pink-500" /> Célula</div>
+                    <div className="flex items-center gap-1.5 sm:gap-2"><BookOpen size={12} sm:size={14} weight="bold" className="text-emerald-500" /> Escuela</div>
+                    <div className="flex items-center gap-1.5 sm:gap-2"><GraduationCap size={12} sm:size={14} weight="bold" className="text-amber-500" /> Encuentro</div>
+                    <div className="flex items-center gap-1.5 sm:gap-2"><PhoneCall size={12} sm:size={14} weight="bold" className="text-sky-500" /> Ganar</div>
                 </div>
             </div>
 
             <div className="relative">
                 {loading ? (
-                    <div className="p-8">
-                        <Table.Skeleton rows={6} columns={7} />
+                    <div className="overflow-x-auto">
+                        <div className="p-4 sm:p-6">
+                            <Table.Skeleton rows={6} columns={7} />
+                        </div>
                     </div>
                 ) : (
-                    <Table
-                        data={filteredData}
-                        columns={columns}
-                        emptyMessage="No se encontraron registros activos para los criterios seleccionados."
-                        rowClassName="hover:bg-white/[0.02] border-b border-[var(--ln-border-standard)]/50 transition-all duration-300 group"
-                        headerClassName="uppercase text-[10px] weight-590 tracking-widest text-[var(--ln-text-tertiary)] py-5 px-6 opacity-60 border-b border-[var(--ln-border-standard)]"
-                    />
+                    <div className="overflow-x-auto">
+                        <Table
+                            data={filteredData}
+                            columns={columns}
+                            emptyMessage="No se encontraron registros activos para los criterios seleccionados."
+                            rowClassName="hover:bg-white/[0.02] border-b border-[var(--ln-border-standard)]/50 transition-all duration-300 group"
+                            headerClassName="uppercase text-[9px] sm:text-[10px] weight-590 tracking-widest text-[var(--ln-text-tertiary)] py-3 sm:py-5 px-4 sm:px-6 opacity-60 border-b border-[var(--ln-border-standard)]"
+                        />
+                    </div>
                 )}
             </div>
 
             {!loading && data.length > 0 && (
-                <div className="px-8 py-5 border-t border-[var(--ln-border-standard)] bg-white/[0.01] flex items-center justify-between">
-                    <span className="text-[12px] weight-510 text-[var(--ln-text-tertiary)]">
+                <div className="px-4 sm:px-8 py-3 sm:py-5 border-t border-[var(--ln-border-standard)] bg-white/[0.01] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6">
+                    <span className="text-[9px] sm:text-[12px] weight-510 text-[var(--ln-text-tertiary)]">
                         Mostrando <span className="text-[var(--ln-text-primary)] weight-590">{data.length}</span> de <span className="text-[var(--ln-text-primary)] weight-590">{totalItems}</span> resultados
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         <button
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                             disabled={page <= 1}
-                            className="px-3 py-1.5 text-[12px] weight-590 rounded-lg bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            className="px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[12px] weight-590 rounded-lg sm:rounded-xl bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                         >
                             Anterior
                         </button>
-                        <span className="text-[12px] weight-590 text-[var(--ln-text-tertiary)] px-2">
+                        <span className="text-[9px] sm:text-[12px] weight-590 text-[var(--ln-text-tertiary)] px-1 sm:px-2">
                             {page} / {totalPages}
                         </span>
                         <button
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                             disabled={page >= totalPages}
-                            className="px-3 py-1.5 text-[12px] weight-590 rounded-lg bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            className="px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[12px] weight-590 rounded-lg sm:rounded-xl bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-secondary)] hover:text-[var(--ln-text-primary)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                         >
                             Siguiente
                         </button>

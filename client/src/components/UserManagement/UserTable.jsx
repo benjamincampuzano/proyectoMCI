@@ -241,13 +241,16 @@ UserTable.propTypes = {
     users: PropTypes.array.isRequired,
     loading: PropTypes.bool.isRequired,
     canEdit: PropTypes.bool.isRequired,
-    pagination: PropTypes.shape({
-        page: PropTypes.number.isRequired,
-        pages: PropTypes.number.isRequired,
-        total: PropTypes.number.isRequired,
-        onNext: PropTypes.func.isRequired,
-        onPrev: PropTypes.func.isRequired
-    }),
+    pagination: PropTypes.oneOfType([
+        PropTypes.shape({
+            page: PropTypes.number.isRequired,
+            pages: PropTypes.number.isRequired,
+            total: PropTypes.number.isRequired,
+            onNext: PropTypes.func.isRequired,
+            onPrev: PropTypes.func.isRequired
+        }),
+        PropTypes.bool
+    ]),
     onEdit: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
     onResetPassword: PropTypes.func.isRequired,

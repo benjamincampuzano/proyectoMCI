@@ -1,7 +1,13 @@
 const prisma = require('../utils/database');
-const { SCHOOL_LEVELS } = require('../utils/levelConstants');
+const { SCHOOL_LEVELS, getLevelByModuleNumber } = require('../utils/levelConstants');
 const { getUserNetwork } = require('../utils/networkUtils');
-const { isModuleCompleted } = require('../utils/schoolUtils');
+const {
+    isModuleCompleted,
+    getModuleGroup,
+    getModuleInfo,
+    getPreviousModuleGroup,
+    getModuleClassNumbers
+} = require('../utils/schoolUtils');
  
 // Helper to check if a user is a coordinator for a specific module
 const isUserCoordinator = async (userId, moduleName = 'discipular') => {
@@ -155,6 +161,7 @@ const getModules = async (req, res) => {
         // Format
         const formattedModules = modules.map(m => ({
             ...m,
+            moduleGroup: getModuleGroup(m.moduleNumber),
             professor: m.professors && m.professors.length > 0 ? { 
                 id: m.professors[0].id, 
                 fullName: m.professors[0].profile?.fullName || 'Sin Asignar' 
@@ -295,17 +302,63 @@ const enrollStudent = async (req, res) => {
             return res.status(403).json({ error: 'Solo los administradores o coordinadores pueden inscribir estudiantes.' });
         }
 
+        const moduleData = await prisma.seminarModule.findUnique({
+            where: { id: parseInt(moduleId) },
+            select: { id: true, moduleNumber: true, auxiliaries: true }
+        });
+
+        if (!moduleData) {
+            return res.status(404).json({ error: 'Clase no encontrada.' });
+        }
+
+        // Secuencia de módulos: Módulo 1 (1A+1B) -> Módulo 2 (2A+2B) -> Módulo 3 (3A+3B).
+        // Para inscribirse en un módulo, el estudiante debe haber aprobado TODAS las clases
+        // del módulo anterior.
+        const moduleGroup = getModuleGroup(moduleData.moduleNumber);
+        const previousGroup = getPreviousModuleGroup(moduleGroup);
+        if (previousGroup !== null) {
+            const previousClassNumbers = getModuleClassNumbers(previousGroup);
+            const previousModules = await prisma.seminarModule.findMany({
+                where: { moduleNumber: { in: previousClassNumbers }, type: 'ESCUELA' }
+            });
+            const previousModuleIds = previousModules.map(m => m.id);
+
+            if (previousModuleIds.length > 0) {
+                const previousEnrollments = await prisma.seminarEnrollment.findMany({
+                    where: {
+                        userId: parseInt(studentId),
+                        moduleId: { in: previousModuleIds }
+                    }
+                });
+
+                const completedModuleIds = previousEnrollments
+                    .filter(isModuleCompleted)
+                    .map(e => e.moduleId);
+                const missingModuleIds = previousModuleIds.filter(id => !completedModuleIds.includes(id));
+
+                if (missingModuleIds.length > 0) {
+                    const missingLabels = previousModules
+                        .filter(m => missingModuleIds.includes(m.id))
+                        .map(m => {
+                            const level = getLevelByModuleNumber(m.moduleNumber);
+                            return level ? `${level.nivel}${level.seccion} (${level.name})` : m.name;
+                        })
+                        .join(', ');
+
+                    const previousInfo = getModuleInfo(previousGroup);
+                    return res.status(400).json({
+                        error: `Para inscribirse en el ${getModuleInfo(moduleGroup)?.label || `Módulo ${moduleGroup}`}, el estudiante debe haber aprobado primero el ${previousInfo?.label || `Módulo ${previousGroup}`} completo. Clases pendientes: ${missingLabels}.`
+                    });
+                }
+            }
+        }
+
         let finalAuxiliarId = assignedAuxiliarId;
 
         // Si no se proporcionó un auxiliar, intentar asignar el primero de la clase automáticamente
         if (!finalAuxiliarId) {
-            const module = await prisma.seminarModule.findUnique({
-                where: { id: parseInt(moduleId) },
-                select: { auxiliaries: true }
-            });
-
-            if (module && module.auxiliaries && module.auxiliaries.length > 0) {
-                finalAuxiliarId = module.auxiliaries[0].id;
+            if (moduleData && moduleData.auxiliaries && moduleData.auxiliaries.length > 0) {
+                finalAuxiliarId = moduleData.auxiliaries[0].id;
             }
         }
 
@@ -469,6 +522,7 @@ const getModuleMatrix = async (req, res) => {
         res.json({
             module: {
                 ...moduleData,
+                moduleGroup: getModuleGroup(moduleData.moduleNumber),
                 professor: moduleData.professor ? { ...moduleData.professor, fullName: moduleData.professor.profile?.fullName || 'Sin Nombre' } : null,
                 auxiliaries: moduleData.auxiliaries.map(a => ({ ...a, fullName: a.profile?.fullName || 'Sin Nombre' }))
             },

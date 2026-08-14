@@ -5,7 +5,7 @@ import { Users, UserPlus, Download, Upload, Shield, UserList, WhatsappLogo, X } 
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { getWhatsAppPhone } from '../utils/phone';
-import { PageHeader, Button } from '../components/ui';
+import { PageHeader, Button, Pagination } from '../components/ui';
 import UserFilters from '../components/UserManagement/UserFilters';
 import UserTable from '../components/UserManagement/UserTable';
 import UserFormModal from '../components/UserManagement/UserFormModal';
@@ -104,7 +104,10 @@ const UserManagement = () => {
         showErrorModal,
         setShowErrorModal,
         errorDetails,
-        pagination,
+        currentPage,
+        setCurrentPage,
+        totalPages,
+        usersPerPage,
         totalUsers,
         exportToExcel,
         validatePasswordRealTime,
@@ -342,24 +345,39 @@ const UserManagement = () => {
                                     <p className="text-[12px] text-[var(--ln-text-tertiary)] opacity-60">Resultados de búsqueda y jerarquía ministerial.</p>
                                 </div>
                             </div>
-                            
-                            {!loading && users.length > 0 && (
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] text-[11px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-widest shadow-sm">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    Base de Datos Dinámica
-                                </div>
-                            )}
                         </div>
+
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={totalUsers}
+                            pageSize={usersPerPage}
+                            onPageChange={setCurrentPage}
+                            loading={loading}
+                            itemLabel="usuarios"
+                            variant="inline"
+                            className="px-10 pt-6"
+                        />
 
                         <UserTable
                             users={users}
                             loading={loading}
                             canEdit={canEdit}
-                            pagination={pagination}
+                            pagination={false}
                             onEdit={handleEditUser}
                             onDelete={handleDeleteUser}
                             onResetPassword={setPasswordResetUser}
                             onWhatsApp={handleWhatsAppClick}
+                        />
+
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={totalUsers}
+                            pageSize={usersPerPage}
+                            onPageChange={setCurrentPage}
+                            loading={loading}
+                            itemLabel="usuarios"
                         />
                         
                         <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--ln-brand-indigo)] opacity-[0.02] blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />

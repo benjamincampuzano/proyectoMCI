@@ -12,6 +12,12 @@ const SCHOOL_LEVELS = [
     { nivel: '3', seccion: 'B', name: 'El Espiritu Santo en Mi', moduleNumber: 6 }
 ];
 
+const MODULE_GROUPS = [
+    { module: 1, label: 'Módulo 1', classLabels: ['1A', '1B'] },
+    { module: 2, label: 'Módulo 2', classLabels: ['2A', '2B'] },
+    { module: 3, label: 'Módulo 3', classLabels: ['3A', '3B'] }
+];
+
 
 const StudentMatrix = () => {
     const [students, setStudents] = useState([]);
@@ -185,26 +191,40 @@ const StudentMatrix = () => {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th rowSpan={2} className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Nombre
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th rowSpan={2} className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Líder de Doce
                         </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th rowSpan={2} className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Encuentro
                         </th>
+                        {MODULE_GROUPS.map(group => (
+                            <th key={group.module} colSpan={group.classLabels.length} className="px-4 py-3 text-center text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                                <div className="flex flex-col items-center">
+                                    <span>{group.label}</span>
+                                    {group.module > 1 && (
+                                        <span className="text-[9px] font-medium text-gray-400 dark:text-gray-500 normal-case">
+                                            Requiere {MODULE_GROUPS[group.module - 2].label}
+                                        </span>
+                                    )}
+                                </div>
+                            </th>
+                        ))}
+                        <th rowSpan={2} className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Promedio
+                        </th>
+                        <th rowSpan={2} className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Asistencia
+                        </th>
+                    </tr>
+                    <tr>
                         {SCHOOL_LEVELS.map(level => (
                             <th key={`${level.nivel}${level.seccion}`} className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 {level.nivel}{level.seccion}
                             </th>
                         ))}
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Promedio
-                        </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Asistencia
-                        </th>
                     </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -300,21 +320,31 @@ const StudentMatrix = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                            {SCHOOL_LEVELS.map(level => {
-                                const enrollment = student.enrollments?.find(e =>
-                                    e.module?.moduleNumber === level.moduleNumber
-                                );
-                                const status = getClassStatus(enrollment, level);
-                                const profileField = {1:'discipular1A',2:'discipular1B',3:'discipular2A',4:'discipular2B',5:'discipular3A',6:'discipular3B'}[level.moduleNumber];
-                                const profileCompleted = profileField && student[profileField] === true;
-                                const isCompleted = status ? status.completed : profileCompleted;
-                                const hasData = status !== null || profileCompleted;
+                        <div className="mt-2 flex flex-col gap-1.5">
+                            {MODULE_GROUPS.map(group => {
+                                const groupLevels = SCHOOL_LEVELS.filter(l => parseInt(l.nivel) === group.module);
                                 return (
-                                    <span key={`${level.nivel}${level.seccion}`} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${hasData ? (isCompleted ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300') : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
-                                        {hasData ? (isCompleted ? <CheckCircle size={12} weight="fill" /> : <XCircle size={12} weight="fill" />) : <Clock size={12} />}
-                                        {level.nivel}{level.seccion}
-                                    </span>
+                                    <div key={group.module} className="flex flex-wrap items-center gap-1.5">
+                                        <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wide shrink-0 w-16">
+                                            {group.label}
+                                        </span>
+                                        {groupLevels.map(level => {
+                                            const enrollment = student.enrollments?.find(e =>
+                                                e.module?.moduleNumber === level.moduleNumber
+                                            );
+                                            const status = getClassStatus(enrollment, level);
+                                            const profileField = {1:'discipular1A',2:'discipular1B',3:'discipular2A',4:'discipular2B',5:'discipular3A',6:'discipular3B'}[level.moduleNumber];
+                                            const profileCompleted = profileField && student[profileField] === true;
+                                            const isCompleted = status ? status.completed : profileCompleted;
+                                            const hasData = status !== null || profileCompleted;
+                                            return (
+                                                <span key={`${level.nivel}${level.seccion}`} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${hasData ? (isCompleted ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300') : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
+                                                    {hasData ? (isCompleted ? <CheckCircle size={12} weight="fill" /> : <XCircle size={12} weight="fill" />) : <Clock size={12} />}
+                                                    {level.nivel}{level.seccion}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
                                 );
                             })}
                         </div>

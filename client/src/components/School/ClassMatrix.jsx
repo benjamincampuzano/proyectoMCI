@@ -6,6 +6,17 @@ import ClassMaterialManager from './ClassMaterialManager';
 import { AsyncSearchSelect, Button } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
 
+const MODULE_GROUPS = [
+    { module: 1, label: 'Módulo 1', classLabels: ['1A', '1B'] },
+    { module: 2, label: 'Módulo 2', classLabels: ['2A', '2B'] },
+    { module: 3, label: 'Módulo 3', classLabels: ['3A', '3B'] }
+];
+
+const getModuleLabel = (group) => MODULE_GROUPS[group - 1]?.label || `Módulo ${group}`;
+
+const getPreviousModuleLabel = (group) => group > 1 ? MODULE_GROUPS[group - 2]?.label : null;
+const getPreviousModuleClasses = (group) => group > 1 ? (MODULE_GROUPS[group - 2]?.classLabels || []) : [];
+
 const ClassMatrix = ({ courseId }) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -110,7 +121,14 @@ const ClassMatrix = ({ courseId }) => {
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{module.name}</h2>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{module.name}</h2>
+                        {module.moduleGroup && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-600 text-white">
+                                {getModuleLabel(module.moduleGroup)}
+                            </span>
+                        )}
+                    </div>
                     <p className="text-sm text-gray-500">
                         Profesor: {module.professor?.fullName} | {module.auxiliaries?.length} Auxiliares
                     </p>
@@ -296,6 +314,15 @@ const ClassMatrix = ({ courseId }) => {
                     <div className="bg-white/90 dark:bg-gray-800/90 backdrop-filter backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 max-w-lg w-full p-8 transform transition-all scale-100">
                         <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Inscribir Estudiante</h3>
                         <form onSubmit={handleEnroll} className="space-y-5">
+                            {module.moduleGroup === 1 ? (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-xs text-blue-800 dark:text-blue-300">
+                                    {getModuleLabel(1)} · Primer módulo de la escuela, no requiere módulos previos.
+                                </div>
+                            ) : module.moduleGroup > 1 ? (
+                                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-300">
+                                    Esta clase pertenece al {getModuleLabel(module.moduleGroup)}. Solo se puede inscribir a estudiantes que hayan aprobado el {getPreviousModuleLabel(module.moduleGroup)} completo ({getPreviousModuleClasses(module.moduleGroup).join(' y ')}).
+                                </div>
+                            ) : null}
                             <div>
                                 <AsyncSearchSelect
                                     fetchItems={(term) => {
