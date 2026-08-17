@@ -53,10 +53,8 @@ const createGuest = async (req, res) => {
             });
         }
 
-        if (roles.some(r => ['LIDER_CELULA', 'DISCIPULO', 'DISCIPULO'].includes(r))) {
-            invitedById = currentUserId;
-        } else if (!invitedById) {
-            invitedById = currentUserId;
+        if (!invitedById) {
+            return res.status(400).json({ message: 'Debe seleccionar quién invitó al invitado' });
         }
 
         const guest = await prisma.guest.create({
