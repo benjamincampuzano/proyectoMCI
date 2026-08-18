@@ -183,27 +183,53 @@ const getGuestStats = async (req, res) => {
             : (canSeeAllGuests && !liderDoceId ? Prisma.empty : Prisma.sql`AND (g."invitedById" = ${currentUserId} OR g."assignedToId" = ${currentUserId})`);
 
         const guestLeaderRaw = await prisma.$queryRaw`
-            WITH resolved_leaders AS (
+            WITH RECURSIVE
+            guest_base AS (
                 SELECT
                     g.id AS guest_id,
-                    COALESCE(
-                        (SELECT uh."parentId" FROM "UserHierarchy" uh
-                         WHERE uh."parentId" = g."invitedById" AND uh.role = 'LIDER_DOCE' LIMIT 1),
-                        (SELECT uh."parentId" FROM "UserHierarchy" uh
-                         WHERE uh."childId" = g."invitedById" AND uh.role = 'LIDER_DOCE' LIMIT 1)
-                    ) AS lider_doce_id,
+                    g."invitedById" AS start_user_id,
                     TO_CHAR(g."createdAt", 'YYYY-MM') AS month_key
                 FROM "Guest" g
                 WHERE g."isDeleted" = false
                   ${networkFilterStats}
+            ),
+            ancestor_walk AS (
+                SELECT
+                    gb.guest_id,
+                    gb.start_user_id AS current_user_id,
+                    gb.month_key,
+                    1 AS depth
+                FROM guest_base gb
+
+                UNION ALL
+
+                SELECT
+                    aw.guest_id,
+                    uh."parentId" AS current_user_id,
+                    aw.month_key,
+                    aw.depth + 1
+                FROM ancestor_walk aw
+                INNER JOIN "UserHierarchy" uh ON uh."childId" = aw.current_user_id
+                WHERE aw.depth < 12
+            ),
+            lider_doce_matches AS (
+                SELECT
+                    aw.guest_id,
+                    aw.current_user_id AS lider_doce_id,
+                    aw.month_key,
+                    ROW_NUMBER() OVER (PARTITION BY aw.guest_id ORDER BY aw.depth ASC) AS rn
+                FROM ancestor_walk aw
+                INNER JOIN "UserRole" ur ON ur."userId" = aw.current_user_id
+                INNER JOIN "Role" r ON r.id = ur."roleId" AND r.name = 'LIDER_DOCE'
             )
             SELECT
                 COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
-                COUNT(rl.guest_id)::int AS count,
-                rl.month_key
-            FROM resolved_leaders rl
-            LEFT JOIN "UserProfile" up ON up."userId" = rl.lider_doce_id
-            GROUP BY leader_name, rl.month_key
+                COUNT(gb.guest_id)::int AS count,
+                gb.month_key
+            FROM guest_base gb
+            LEFT JOIN lider_doce_matches lm ON lm.guest_id = gb.guest_id AND lm.rn = 1
+            LEFT JOIN "UserProfile" up ON up."userId" = lm.lider_doce_id
+            GROUP BY leader_name, gb.month_key
             ORDER BY count DESC
         `;
 

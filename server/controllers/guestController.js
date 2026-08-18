@@ -831,6 +831,16 @@ const convertGuestToMember = async (req, res) => {
         const bcrypt = require('bcryptjs');
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Check if the guest's phone is already used by another user
+        const phoneToUse = phone || guest.phone;
+        let finalPhone = phoneToUse;
+        if (phoneToUse) {
+            const phoneOwner = await prisma.user.findFirst({ where: { phone: phoneToUse } });
+            if (phoneOwner) {
+                finalPhone = null;
+            }
+        }
+
         // Atomic transaction to create user and clean up guest
         const newUser = await prisma.$transaction(async (tx) => {
             // 1. Create User and Profile
@@ -838,7 +848,7 @@ const convertGuestToMember = async (req, res) => {
                 data: {
                     email,
                     password: hashedPassword,
-                    phone: phone || guest.phone,
+                    phone: finalPhone,
                     profile: {
                         create: {
                             fullName: guest.name,
@@ -871,10 +881,10 @@ const convertGuestToMember = async (req, res) => {
                 }
             });
 
-            // 3. Establish Discipleship Hierarchy (InvitedBy becomes Parent)
+            // 3. Establish Discipleship Hierarchy (AssignedTo becomes Parent, fallback to InvitedBy)
             await tx.userHierarchy.create({
                 data: {
-                    parentId: guest.invitedById,
+                    parentId: guest.assignedToId || guest.invitedById,
                     childId: user.id,
                     role: 'DISCIPULO'
                 }
