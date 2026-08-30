@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Check, X, Users, MapPin, Clock, Info, List, SquaresFour, User, XCircle } from '@phosphor-icons/react';
+import { Calendar, Check, X, Users, MapPin, Clock, User, XCircle } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import useCellAttendance from '../hooks/useCellAttendance';
@@ -22,7 +22,6 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
         saveAttendance,
     } = useCellAttendance();
     const [showMap, setShowMap] = useState(false);
-    const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
     const [showReportModal, setShowReportModal] = useState(false);
     const { user, isAdmin, hasAnyRole } = useAuth();
 
@@ -117,55 +116,37 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                 </div>
             )}
 
-            <div className="flex items-center justify-between flex-wrap gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-4">
-                    <Users className="w-6 h-6 text-blue-600" />
-                    <select
-                        value={selectedCell || ''}
-                        onChange={(e) => setSelectedCell(parseInt(e.target.value))}
-                        disabled={!canEdit}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
-                    >
-                        {cells.map(cell => (
-                            <option key={cell.id} value={cell.id}>
-                                {cell.name} - {cell.leader.fullName}
-                            </option>
-                        ))}
-                    </select>
-                    <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                    <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center p-1.5 bg-[var(--ln-bg-panel)] border border-[var(--ln-border-standard)] rounded-2xl shadow-inner">
-                        <button
-                            onClick={() => setViewMode('cards')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'cards' 
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Users className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                        <select
+                            value={selectedCell || ''}
+                            onChange={(e) => setSelectedCell(parseInt(e.target.value))}
+                            disabled={!canEdit}
+                            className="w-full sm:w-72 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                         >
-                            <SquaresFour size={18} weight="bold" />
-                            Tarjetas
-                        </button>
-                        <button
-                            onClick={() => setViewMode('table')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 text-[12px] weight-590 ${viewMode === 'table' 
-                                ? 'bg-[var(--ln-brand-indigo)] text-white shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95' 
-                                : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)]'
-                            }`}
-                        >
-                            <List size={18} weight="bold" />
-                            Tabla
-                        </button>
+                            {cells.map(cell => (
+                                <option key={cell.id} value={cell.id} className="truncate">
+                                    {cell.name} - {cell.leader.fullName}
+                                </option>
+                            ))}
+                        </select>
                     </div>
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <input
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        />
+                    </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 justify-end">
                     <button
                         onClick={() => setShowReportModal(true)}
-                        className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+                        className="flex-1 sm:flex-none px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
                     >
                         <User className="w-4 h-4" />
                         Mi asistencia
@@ -173,7 +154,7 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                     <button
                         onClick={handleSubmit}
                         disabled={saving || !selectedCell || !canEdit}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                        className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                     >
                         {saving ? 'Guardando...' : (!canEdit ? 'Solo Lectura' : 'Guardar Asistencia')}
                     </button>
@@ -223,116 +204,38 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
 
             {loading ? (
                 <div className="text-center py-8">Cargando Discípulos...</div>
-            ) : viewMode === 'table' ? (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-900/50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Nombre
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Email
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                    Asistencia
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-{members.map((member) => {
-                        const status = attendances[member.id]; // undefined, 'PRESENTE', 'AUSENTE'
-
-                        return (
-                            <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                            {member.fullName}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {member.email}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <div className="flex justify-center gap-2">
-                                                <button
-                                                    onClick={() => toggleAttendance(member.id, 'PRESENTE')}
-                                                    disabled={!canEdit}
-                                                    className={`
-                                                      inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-colors
-                                                      ${status === 'PRESENTE'
-                                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 ring-2 ring-green-500'
-                                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                                        }
-                                                        ${!canEdit ? 'cursor-not-allowed opacity-80' : ''}
-                                                    `}
-                                                >
-                                                    <Check className="w-4 h-4" />
-                                                    Presente
-                                                </button>
-                                                <button
-                                                    onClick={() => toggleAttendance(member.id, 'AUSENTE')}
-                                                    disabled={!canEdit}
-                                                    className={`
-                                                      inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-colors
-                                                      ${status === 'AUSENTE'
-                                                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 ring-2 ring-red-500'
-                                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                                        }
-                                                        ${!canEdit ? 'cursor-not-allowed opacity-80' : ''}
-                                                    `}
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                    Ausente
-                                                </button>
-                                                {status && (
-                                                    <button
-                                                        onClick={() => toggleAttendance(member.id, null)}
-                                                        disabled={!canEdit}
-                                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                                    >
-                                                        <XCircle className="w-4 h-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700 overflow-hidden">
                     {members.map((member) => {
                         const status = attendances[member.id]; // undefined, 'PRESENTE', 'AUSENTE'
 
                         return (
-                            <div key={member.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow">
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                                            {member.fullName}
-                                        </h3>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            {member.email}
-                                        </p>
+                            <div key={member.id} className="p-4 sm:p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                        <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     </div>
-                                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                        status === 'PRESENTE' 
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{member.fullName}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{member.email}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`hidden sm:inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                                        status === 'PRESENTE'
                                             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                                             : status === 'AUSENTE'
                                             ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                                             : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
                                     }`}>
                                         {status === 'PRESENTE' ? 'Presente' : status === 'AUSENTE' ? 'Ausente' : 'Sin registrar'}
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
+                                    </span>
                                     <button
                                         onClick={() => toggleAttendance(member.id, 'PRESENTE')}
                                         disabled={!canEdit}
                                         className={`
-                                          flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm
-                                          ${status === 'PRESENTE'
+                                            flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium transition-colors text-sm
+                                            ${status === 'PRESENTE'
                                                 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 ring-2 ring-green-500'
                                                 : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                             }
@@ -346,8 +249,8 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                                         onClick={() => toggleAttendance(member.id, 'AUSENTE')}
                                         disabled={!canEdit}
                                         className={`
-                                          flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm
-                                          ${status === 'AUSENTE'
+                                            flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium transition-colors text-sm
+                                            ${status === 'AUSENTE'
                                                 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 ring-2 ring-red-500'
                                                 : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                                             }
@@ -361,7 +264,7 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                                         <button
                                             onClick={() => toggleAttendance(member.id, null)}
                                             disabled={!canEdit}
-                                            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                            className="inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium transition-colors text-sm bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                                         >
                                             <XCircle className="w-4 h-4" />
                                         </button>
@@ -370,6 +273,9 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                             </div>
                         );
                     })}
+                    {members.length === 0 && (
+                        <div className="p-8 text-center text-gray-500 dark:text-gray-400">No hay discípulos en esta célula.</div>
+                    )}
                 </div>
             )}
 

@@ -1,4 +1,5 @@
 const { execFileSync } = require("child_process");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -66,10 +67,48 @@ const generateBackupFile = (databaseUrl, filePath) => {
    🔄 RESTORE (psql para SQL plain)
 ========================= */
 
+/**
+ * Sanitiza un dump SQL hecho con versiones recientes de pg_dump
+ * (PG 17.6+/18) para que sea restaurable con clientes psql más antiguos:
+ *
+ *  - `SET transaction_timeout = 0;` → GUC añadido en PG 17; los clientes PG 16
+ *    abortan con "unrecognized configuration parameter" bajo ON_ERROR_STOP.
+ *  - `\restrict` / `\unrestrict`     → meta-comandos de psql 17.6+ (CVE-2025-8714)
+ *    que los clientes antiguos podrían ignorar de forma inconsistente.
+ *
+ * Devuelve la ruta del archivo original si no hubo nada que limpiar, o la de
+ * un archivo temporal saneado (responsabilidad del llamador de eliminarlo).
+ */
+const sanitizeBackupSql = (filePath) => {
+    const source = fs.readFileSync(filePath, "utf8");
+    const lines = source.split("\n");
+
+    const filtered = lines.filter((line) => {
+        const trimmed = line.trim();
+        if (/^SET transaction_timeout\b/i.test(trimmed)) return false;
+        if (/^\\restrict\b/i.test(trimmed)) return false;
+        if (/^\\unrestrict\b/i.test(trimmed)) return false;
+        return true;
+    });
+
+    if (filtered.length === lines.length) {
+        return filePath;
+    }
+
+    const sanitizedPath = path.join(
+        os.tmpdir(),
+        `restore_sanitized_${crypto.randomBytes(8).toString("hex")}.sql`
+    );
+    fs.writeFileSync(sanitizedPath, filtered.join("\n"), "utf8");
+    console.log("🧹 Dump saneado (se eliminaron líneas incompatibles con el psql local).");
+    return sanitizedPath;
+};
+
 const restoreBackupFile = async (databaseUrl, filePath, options = {}) => {
     const psql = findExecutable('psql');
     const tempFile = String(filePath);
     const shouldClean = options.cleanBeforeRestore !== false;
+    let sanitizedFile = null;
 
     try {
         console.log("🔄 Restauración PRO iniciada...");
@@ -94,10 +133,13 @@ const restoreBackupFile = async (databaseUrl, filePath, options = {}) => {
         }
 
         try {
+            // Sanea el dump solo si hay líneas incompatibles con el psql local
+            sanitizedFile = sanitizeBackupSql(tempFile);
+
             execFileSync(psql, [
                 '--dbname', databaseUrl,
                 '--set', 'ON_ERROR_STOP=on',
-                '--file', tempFile
+                '--file', sanitizedFile
             ], {
                 stdio: 'inherit' // 🔥 MUESTRA ERRORES REALES
             });
@@ -118,6 +160,12 @@ const restoreBackupFile = async (databaseUrl, filePath, options = {}) => {
             success: false,
             error: error.message
         };
+
+    } finally {
+        // Elimina el archivo saneado si se creó uno (es temporal, solo nuestro)
+        if (sanitizedFile && sanitizedFile !== tempFile) {
+            fs.unlink(sanitizedFile, () => {});
+        }
     }
 };
 

@@ -47,6 +47,23 @@ TruncatedCell.propTypes = {
   className: PropTypes.string
 };
 
+// Helper to render a label/value row in the mobile cards
+const MobileField = ({ label, value }) => {
+  return (
+    <div className="flex justify-between gap-3 text-[13px]">
+      <span className="text-[#86868b] dark:text-[#98989d] shrink-0">{label}</span>
+      <span className="text-right text-[#1d1d1f] dark:text-white/80 break-words min-w-0">
+        {value || '-'}
+      </span>
+    </div>
+  );
+};
+
+MobileField.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+};
+
 const CATEGORY_INFO = {
     'KIDS1': { label: 'Kids 1 (5-7 años)', minAge: 5, maxAge: 7, color: 'pink' },
     'KIDS2': { label: 'Kids 2 (8-10 años)', minAge: 8, maxAge: 10, color: 'purple' },
@@ -500,12 +517,13 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                                 </Button>
                                             </div>
                                         )}
-                                        <div className="overflow-x-auto rounded-lg shadow-inner bg-white dark:bg-black border border-[#d1d1d6] dark:border-[#3a3a3c]">
-                                            {courseSchedules.length === 0 ? (
-                                                <div className="p-8 text-center text-[#86868b] dark:text-[#98989d]">
-                                                    No hay entradas en el cronograma para este curso.
-                                                </div>
-                                            ) : (
+                                        {courseSchedules.length === 0 ? (
+                                            <div className="p-8 mx-4 mb-4 rounded-lg bg-white dark:bg-black text-center text-[#86868b] dark:text-[#98989d] border border-[#d1d1d6] dark:border-[#3a3a3c]">
+                                                No hay entradas en el cronograma para este curso.
+                                            </div>
+                                        ) : (
+                                            <>
+                                            <div className="hidden md:block overflow-x-auto rounded-lg shadow-inner bg-white dark:bg-black border border-[#d1d1d6] dark:border-[#3a3a3c]">
                                                 <table className="w-full text-sm text-left whitespace-nowrap">
                                                     <thead className="text-xs text-[#86868b] dark:text-white/80 uppercase bg-gray-100 dark:bg-[#272729] border-b border-[#d1d1d6] dark:border-[#3a3a3c]">
                                                         <tr>
@@ -571,12 +589,60 @@ const KidsSchedule = ({ moduleCoordinator }) => {
                                                                         </div>
                                                                     </td>
                                                                 )}
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                {/* Mobile Schedule Cards */}
+                                                <div className="md:hidden space-y-3 p-3">
+                                                    {courseSchedules.map((schedule, idx) => (
+                                                        <div key={schedule.id || idx}
+                                                             className="border border-[#d1d1d6] dark:border-[#3a3a3c] rounded-xl bg-white dark:bg-[#1c1c1e] p-4 shadow-sm">
+                                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                                <div className="flex items-center gap-2 min-w-0">
+                                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 shrink-0">
+                                                                        {schedule.unit}
+                                                                    </span>
+                                                                    <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                                                                        {formatDateDisplay(schedule.date)}
+                                                                    </span>
+                                                                </div>
+                                                                {canManageSchedule && (
+                                                                    <div className="flex gap-1 shrink-0">
+                                                                        <button
+                                                                            onClick={() => handleOpenEditModal(course.id, schedule)}
+                                                                            className="p-2 text-blue-600 bg-blue-50 dark:bg-blue-900/40 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/60"
+                                                                            title="Editar"
+                                                                        >
+                                                                            <Pen size={15} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteClicked(schedule)}
+                                                                            className="p-2 text-red-600 bg-red-50 dark:bg-red-900/40 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/60"
+                                                                            title="Eliminar"
+                                                                        >
+                                                                            <Trash size={15} />
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="space-y-1.5 text-sm">
+                                                                <MobileField label="Lección" value={schedule.lesson} />
+                                                                <MobileField label="Lectura Bíblica" value={schedule.bibleReading} />
+                                                                <MobileField label="Memorizar" value={schedule.memoryVerse ? `"${schedule.memoryVerse}"` : null} />
+                                                                <MobileField label="Actividad" value={schedule.activity} />
+                                                                <MobileField label="Maestro" value={schedule.teacher?.profile?.fullName} />
+                                                                <MobileField label="Auxiliar" value={schedule.auxiliary?.profile?.fullName} />
+                                                                <MobileField label="Observaciones" value={schedule.observations} />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </>
                                             )}
-                                        </div>
                                     </div>
                                 )}
                             </div>

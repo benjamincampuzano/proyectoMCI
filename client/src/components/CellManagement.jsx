@@ -1502,8 +1502,116 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                 itemLabel="células"
             />
 
-            {/* List of Cells (table only) */}
-            <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
+            {/* Mobile List of Cells (vertical cards) */}
+            <div className="md:hidden space-y-3">
+                {paginatedCells.map(cell => (
+                    <div key={cell.id} className="bg-white dark:bg-[#272729] rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-gray-900 dark:text-white break-words">{cell.name}</p>
+                                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cell.cellType === 'CERRADA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
+                                        cell.cellType === 'VIRTUAL' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                            'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                    }`}>
+                                        {cell.cellType}
+                                    </span>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                        cell.network === 'HOMBRES' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                        cell.network === 'MUJERES' ? 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300' :
+                                        cell.network === 'JOVENES' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' :
+                                        cell.network === 'NIÑOS' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
+                                        'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300'
+                                    }`}>
+                                        {cell.network === 'MIXTA' ? 'Mixta' :
+                                         cell.network === 'HOMBRES' ? 'Hombres' :
+                                         cell.network === 'MUJERES' ? 'Mujeres' :
+                                         cell.network === 'JOVENES' ? 'Jóvenes' :
+                                         cell.network === 'NIÑOS' ? 'Niños' :
+                                         cell.network || 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
+                            <span className="flex-shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                {(cell._count?.members ?? 0) + (cell._count?.guests ?? 0)} disc.
+                            </span>
+                        </div>
+
+                        <div className="space-y-1.5 text-sm text-[#86868b] dark:text-[#98989d]">
+                            <p className="flex items-center gap-2 min-w-0">
+                                <UserIcon className="w-4 h-4 flex-shrink-0" />
+                                <span className="truncate">Líder: {cell.leader?.fullName || 'N/A'}</span>
+                            </p>
+                            {cell.liderDoce && (
+                                <p className="flex items-center gap-2 min-w-0">
+                                    <Users className="w-4 h-4 flex-shrink-0" />
+                                    <span className="truncate">L12: {cell.liderDoce.fullName}</span>
+                                </p>
+                            )}
+                            <p className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 flex-shrink-0" />
+                                {cell.dayOfWeek} {cell.time}
+                            </p>
+                            <p className="flex items-center gap-2 min-w-0">
+                                <MapPin className="w-4 h-4 flex-shrink-0" />
+                                {cell.cellType === 'VIRTUAL' ? (
+                                    cell.address ? (
+                                        <a href={cell.address} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-800 underline truncate">
+                                            Url de la reunión
+                                        </a>
+                                    ) : (
+                                        <span className="text-gray-400">Sin URL</span>
+                                    )
+                                ) : (
+                                    <span className="truncate">{cell.barrio}</span>
+                                )}
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                            {!isDisciple && (
+                                <Button
+                                    onClick={() => setSelectedCell(cell)}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-blue-600 hover:text-blue-800 flex-1 min-w-[120px]"
+                                >
+                                    Agregar Usuarios
+                                </Button>
+                            )}
+                            {canManageCells() && (
+                                <Button
+                                    onClick={() => handleEditClick(cell)}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-amber-600 hover:text-amber-800 flex-1 min-w-[80px]"
+                                >
+                                    Editar
+                                </Button>
+                            )}
+                            {canManageCells() && (
+                                <Button
+                                    onClick={() => handleDeleteCell(cell.id)}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-500 hover:text-red-700 flex-1 min-w-[80px]"
+                                    icon={Trash}
+                                >
+                                    Eliminar
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                ))}
+                {paginatedCells.length === 0 && (
+                    <div className="bg-white dark:bg-[#272729] rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 px-6 py-12 text-center text-sm text-[#86868b] dark:text-[#98989d]">
+                        No se encontraron células con los filtros aplicados.
+                    </div>
+                )}
+            </div>
+
+            {/* List of Cells (table only) - desktop */}
+            <div className="hidden md:block bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-[#f5f5f7] dark:bg-gray-900/50">

@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     MagnifyingGlass, User, Phone, Users, Funnel,
     X, FileXls, Spinner, IdentificationCard, Trash,
-    SuitcaseSimple, TreeStructure
+    SuitcaseSimple, TreeStructure, UserPlus, Clock, MapPin
 } from '@phosphor-icons/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import api from '../utils/api';
-import { Card, DataTable, Badge, Input, Button, AsyncSearchSelect } from './ui';
+import { Card, DataTable, Badge, Input, Button, AsyncSearchSelect, Modal } from './ui';
 import { ROLE_DISPLAY_NAMES } from '../constants/roles';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
@@ -18,6 +18,12 @@ const UnassignedPeople = () => {
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
+    const [cells, setCells] = useState([]);
+
+    // Assignment state
+    const [assigningPerson, setAssigningPerson] = useState(null);
+    const [selectedCellId, setSelectedCellId] = useState('');
+    const [assigning, setAssigning] = useState(false);
 
     // Filter states
     const [searchTerm, setSearchTerm] = useState('');
@@ -61,6 +67,58 @@ const UnassignedPeople = () => {
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm, liderDoceFilter, roleFilter, networkFilter, fetchPeople]);
+
+    // Load available cells once (to offer assignment options)
+    useEffect(() => {
+        api.get('/enviar/cells')
+            .then(res => setCells(res.data || []))
+            .catch(err => console.error('Error fetching cells:', err));
+    }, []);
+
+    const getPersonLiderDoce = (person) => {
+        const hierarchyLiderDoce = person.hierarchy?.find(h => h.role === 'LIDER_DOCE');
+        return {
+            id: person.liderDoceId || hierarchyLiderDoce?.parentId || null,
+            name: hierarchyLiderDoce?.parentName || person.liderDoceName || 'Sin red'
+        };
+    };
+
+    // Only cells belonging to the person's LIDER_DOCE network
+    const getEligibleCells = (person) => {
+        const liderDoceId = getPersonLiderDoce(person).id;
+        if (!liderDoceId) return [];
+        return cells.filter(cell => cell.liderDoceId === liderDoceId);
+    };
+
+    const openAssignModal = (person) => {
+        setAssigningPerson(person);
+        setSelectedCellId('');
+        const eligible = getEligibleCells(person);
+        if (eligible.length === 1) setSelectedCellId(eligible[0].id);
+    };
+
+    const handleAssignToCell = async () => {
+        if (!assigningPerson || !selectedCellId) return;
+        setAssigning(true);
+        try {
+            await api.post(`/enviar/cells/${selectedCellId}/members`, { memberId: assigningPerson.id });
+            toast.success(`${assigningPerson.fullName || assigningPerson.email} asignado a la célula exitosamente`);
+            setAssigningPerson(null);
+            fetchPeople(1);
+        } catch (error) {
+            const msg = error.response?.data?.error || error.response?.data?.message || 'Error al asignar a la célula';
+            toast.error(msg);
+        } finally {
+            setAssigning(false);
+        }
+    };
+
+    const eligibleCells = useMemo(() => {
+        if (!assigningPerson) return [];
+        const liderDoceId = getPersonLiderDoce(assigningPerson).id;
+        if (!liderDoceId) return [];
+        return cells.filter(cell => cell.liderDoceId === liderDoceId);
+    }, [assigningPerson, cells]);
 
     const clearFilters = () => {
         setSearchTerm('');
@@ -202,6 +260,21 @@ const UnassignedPeople = () => {
                     </div>
                 ) : <span className="text-[var(--ln-text-tertiary)]">Sin red</span>;
             }
+        },
+        {
+            key: 'actions',
+            title: 'Acciones',
+            render: (_, row) => (
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={UserPlus}
+                    onClick={() => openAssignModal(row)}
+                    className="whitespace-nowrap"
+                >
+                    Asignar a Célula
+                </Button>
+            )
         }
     ];
 
@@ -330,15 +403,162 @@ const UnassignedPeople = () => {
             )}
 
             <Card className="p-0 overflow-hidden">
-                <DataTable
-                    columns={columns}
-                    data={people}
-                    loading={loading}
-                    pagination={true}
-                    pageSize={pagination.limit}
-                    emptyMessage={hasActiveFilters ? "No se encontraron personas con los filtros aplicados." : "No hay personas registradas sin célula."}
-                />
+                {/* Desktop table */}
+                <div className="hidden md:block">
+                    <DataTable
+                        columns={columns}
+                        data={people}
+                        loading={loading}
+                        pagination={true}
+                        pageSize={pagination.limit}
+                        emptyMessage={hasActiveFilters ? "No se encontraron personas con los filtros aplicados." : "No hay personas registradas sin célula."}
+                    />
+                </div>
+
+                {/* Mobile list (vertical cards) */}
+                <div className="md:hidden">
+                    {loading ? (
+                        <div className="flex items-center justify-center p-8">
+                            <Spinner className="w-6 h-6 animate-spin text-[var(--ln-accent-violet)]" weight="bold" />
+                        </div>
+                    ) : people.length === 0 ? (
+                        <div className="px-4 py-12 text-center text-[var(--ln-text-tertiary)]">
+                            {hasActiveFilters ? "No se encontraron personas con los filtros aplicados." : "No hay personas registradas sin célula."}
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-[var(--ln-border-standard)]">
+                            {people.map(person => {
+                                const liderDoce = getPersonLiderDoce(person);
+                                return (
+                                    <div key={person.id} className="p-4 space-y-3">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                <div className="w-9 h-9 rounded-full bg-[var(--ln-accent-violet)]/10 flex items-center justify-center flex-shrink-0">
+                                                    <User className="w-4 h-4 text-[var(--ln-accent-violet)]" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-[var(--ln-text-primary)] break-words">{person.fullName || 'N/A'}</p>
+                                                    <p className="text-xs text-[var(--ln-text-tertiary)] truncate">{person.email}</p>
+                                                </div>
+                                            </div>
+                                            <Badge variant="secondary" className="flex-shrink-0">
+                                                {person.network || 'N/A'}
+                                            </Badge>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {person.roles?.map(role => (
+                                                <Badge
+                                                    key={role}
+                                                    variant={role === 'ADMIN' ? 'error' : role === 'PASTOR' ? 'warning' : 'primary'}
+                                                >
+                                                    {ROLE_DISPLAY_NAMES[role] || role}
+                                                </Badge>
+                                            ))}
+                                        </div>
+
+                                        <div className="space-y-1.5 text-sm text-[var(--ln-text-tertiary)]">
+                                            <p className="flex items-center gap-2">
+                                                <Phone className="w-4 h-4 flex-shrink-0" />
+                                                <span className="truncate">{person.phone || 'N/A'}</span>
+                                            </p>
+                                            <p className="flex items-center gap-2 min-w-0">
+                                                <Users className="w-4 h-4 flex-shrink-0" />
+                                                <span className="truncate">Líder 12: {liderDoce.name || 'Sin red'}</span>
+                                            </p>
+                                        </div>
+
+                                        <div className="pt-2 border-t border-[var(--ln-border-standard)]">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                icon={UserPlus}
+                                                onClick={() => openAssignModal(person)}
+                                                className="w-full"
+                                            >
+                                                Asignar a Célula
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
             </Card>
+
+            {/* Assign to Cell Modal */}
+            <Modal
+                isOpen={!!assigningPerson}
+                onClose={() => setAssigningPerson(null)}
+                title="Asignar a Célula"
+                size="md"
+            >
+                {assigningPerson && (
+                    <div className="space-y-4">
+                        <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-lg p-4 space-y-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-[var(--ln-accent-violet)]/10 flex items-center justify-center flex-shrink-0">
+                                    <User className="w-4 h-4 text-[var(--ln-accent-violet)]" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="font-medium text-[var(--ln-text-primary)] break-words">{assigningPerson.fullName || 'N/A'}</p>
+                                    <p className="text-xs text-[var(--ln-text-tertiary)] truncate">{assigningPerson.email}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-[var(--ln-text-tertiary)]">
+                                <Users className="w-4 h-4 flex-shrink-0" />
+                                <span className="truncate">Líder 12: {getPersonLiderDoce(assigningPerson).name}</span>
+                            </div>
+                        </div>
+
+                        {eligibleCells.length === 0 ? (
+                            <div className="px-4 py-6 text-center text-sm text-[var(--ln-text-tertiary)] bg-[rgba(255,255,255,0.02)] border border-dashed border-[rgba(255,255,255,0.1)] rounded-lg">
+                                <TreeStructure className="w-6 h-6 mx-auto mb-2 opacity-60" />
+                                <p className="font-medium text-[var(--ln-text-secondary)] mb-1">No hay células disponibles</p>
+                                <p>
+                                    {getPersonLiderDoce(assigningPerson).id
+                                        ? 'Este usuario no tiene acceso a células de la red de su Líder 12, o no hay células creadas en esa red.'
+                                        : 'Este usuario no tiene un Líder 12 asignado, por lo que no puede ingresarse a una célula.'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-semibold text-[var(--ln-text-tertiary)] uppercase tracking-wider">
+                                    Selecciona una célula de su red
+                                </label>
+                                <select
+                                    value={selectedCellId}
+                                    onChange={(e) => setSelectedCellId(e.target.value)}
+                                    className="w-full h-10 px-3 text-sm rounded-md bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-[var(--ln-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ln-accent-violet)]"
+                                >
+                                    <option value="">Selecciona una célula...</option>
+                                    {eligibleCells.map(cell => (
+                                        <option key={cell.id} value={cell.id}>
+                                            {cell.name} - {cell.dayOfWeek} {cell.time} (Líder: {cell.leader?.fullName || 'N/A'})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button variant="ghost" onClick={() => setAssigningPerson(null)}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleAssignToCell}
+                                disabled={!selectedCellId || assigning}
+                                loading={assigning}
+                                icon={UserPlus}
+                            >
+                                Asignar
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };

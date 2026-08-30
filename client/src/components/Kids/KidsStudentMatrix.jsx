@@ -22,6 +22,18 @@ const CATEGORY_INFO = {
     'JOVENES': { label: 'Jóvenes (14 años en adelante)', minAge: 14, maxAge: 99 }
 };
 
+// Helper to render a label/value row in the mobile cards
+const MobileRow = ({ label, value }) => {
+    return (
+        <div className="flex justify-between gap-3 text-[13px]">
+            <span className="text-[#86868b] dark:text-[#98989d] shrink-0">{label}</span>
+            <span className="text-right text-[#1d1d1f] dark:text-white/80 break-words min-w-0">
+                {value || '-'}
+            </span>
+        </div>
+    );
+};
+
 const KidsStudentMatrix = () => {
     const { user } = useAuth();
     const [students, setStudents] = useState([]);
@@ -453,7 +465,7 @@ const KidsStudentMatrix = () => {
             />
 
             <div className="bg-white dark:bg-[#272729] rounded-lg shadow overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-[#f5f5f7] dark:bg-[#272729]">
                             <tr>
@@ -585,6 +597,77 @@ const KidsStudentMatrix = () => {
                             })}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile Student Cards */}
+                <div className="md:hidden p-4 space-y-3">
+                    {paginatedStudents.length === 0 ? (
+                        <div className="text-center py-8 text-[#86868b] dark:text-[#98989d]">
+                            No se encontraron estudiantes con los filtros seleccionados
+                        </div>
+                    ) : (
+                        paginatedStudents.map((student) => {
+                            const birthDate = student.profile?.birthDate;
+                            const age = calculateAge(birthDate);
+                            const formattedDate = formatDate(birthDate);
+                            const hasEnrollments = student.enrollments && student.enrollments.length > 0;
+
+                            return (
+                                <div
+                                    key={student.id}
+                                    className={`rounded-xl border p-4 shadow-sm dark:border-[#3a3a3c] ${
+                                        !hasEnrollments
+                                            ? 'bg-amber-50 dark:bg-amber-950/25 border-amber-200 dark:border-amber-900/60'
+                                            : 'bg-white dark:bg-[#272729] border-gray-200 dark:border-[#3a3a3c]'
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between gap-2 mb-2">
+                                        <button
+                                            onClick={() => openEditModal(student)}
+                                            className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline text-left cursor-pointer break-words"
+                                        >
+                                            {student.fullName}
+                                        </button>
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
+                                            hasEnrollments
+                                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
+                                                : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+                                        }`}>
+                                            {hasEnrollments ? 'Registrado' : 'Sin clases'}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm mb-3">
+                                        <span className="text-[#86868b] dark:text-[#98989d]">Edad: <span className="text-[#1d1d1f] dark:text-white font-medium">{age || '-'}</span></span>
+                                        <span className="text-[#86868b] dark:text-[#98989d]">Nac.: <span className="text-[#1d1d1f] dark:text-white">{formattedDate}</span></span>
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                            student.cell?.hasCell
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                        }`}>
+                                            {student.cell?.hasCell ? 'En célula' : 'Sin célula'}
+                                        </span>
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200`}>
+                                            Asistencia: {getAttendanceRate(student.enrollments)}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-1.5 text-sm">
+                                        <MobileRow label="Teléfono" value={student.phone} />
+                                        <MobileRow label="Correo" value={student.email} />
+                                        <MobileRow label="Acudiente" value={student.responsible?.fullName} />
+                                        <MobileRow label="Líder" value={student.leaderDoce ? `${student.leaderDoce.fullName} (${student.leaderDoce.role === 'LIDER_DOCE' ? 'Líder 12' : student.leaderDoce.role === 'LIDER_CELULA' ? 'Líder Célula' : student.leaderDoce.role})` : null} />
+                                        <MobileRow label="Últ. Asist. Célula" value={student.lastCellAttendance ? `${formatCellAttendanceDate(student.lastCellAttendance.date)} - ${
+                                            student.lastCellAttendance.status === 'PRESENTE' ? 'Asistió' :
+                                            student.lastCellAttendance.status === 'AUSENTE' ? 'No asistió' :
+                                            student.lastCellAttendance.status === 'JUSTIFICADO' ? 'Justificado' :
+                                            student.lastCellAttendance.status
+                                        }` : null} />
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
 
                 {filteredStudents.length === 0 && (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningCircle, Upload, CameraIcon } from '@phosphor-icons/react';
+import { FloppyDisk, UserPlus, Trash, X, Warning, Pen, WarningCircle, Upload, CameraIcon, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { AsyncSearchSelect, Button, Input } from '../ui';
 import ConfirmationModal from '../ConfirmationModal';
 import { useAuth } from '../../context/AuthContext';
@@ -53,6 +53,17 @@ const KidsClassMatrix = ({ courseId }) => {
     const [photoUrl, setPhotoUrl] = useState('');
     const [photoDescription, setPhotoDescription] = useState('');
     const [uploading, setUploading] = useState(false);
+
+    // Tracks which students have their per-class list expanded in the mobile view
+    const [expandedStudentIds, setExpandedStudentIds] = useState(new Set());
+    const toggleMobileClasses = (enrollmentId) => {
+        setExpandedStudentIds(prev => {
+            const next = new Set(prev);
+            if (next.has(enrollmentId)) next.delete(enrollmentId);
+            else next.add(enrollmentId);
+            return next;
+        });
+    };
 
     // Check permissions based on module assignment (local roles)
     const currentUserId = useMemo(() => JSON.parse(localStorage.getItem('user'))?.id, []);
@@ -323,7 +334,7 @@ const KidsClassMatrix = ({ courseId }) => {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
                 <table className="min-w-full">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
@@ -436,6 +447,146 @@ const KidsClassMatrix = ({ courseId }) => {
                     <div className="text-center py-10 text-gray-500">
                         No hay estudiantes inscritos en esta clase
                     </div>
+                )}
+            </div>
+
+            {/* Mobile Matrix Cards */}
+            <div className="md:hidden space-y-3">
+                {canUploadEvidence && courseInfo?.classCount > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
+                            Evidencia por clase
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {Array.from({ length: courseInfo.classCount }, (_, i) => (
+                                <Button
+                                    key={i}
+                                    onClick={() => openPhotoModal({ classNumber: i + 1 })}
+                                    variant="secondary"
+                                    size="sm"
+                                    className="inline-flex items-center gap-1 text-xs"
+                                    icon={CameraIcon}
+                                >
+                                    Clase {i + 1}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                {matrix.length === 0 ? (
+                    <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                        No hay estudiantes inscritos en esta clase
+                    </div>
+                ) : (
+                    matrix.map((row) => (
+                        <div key={row.enrollmentId} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+                            <div className="flex items-start justify-between gap-2 mb-3">
+                                <div className="min-w-0">
+                                    <div className="text-sm font-semibold text-gray-900 dark:text-white break-words">
+                                        {row.studentName}
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                        Acudiente: {row.responsibleName || 'N/A'}
+                                    </div>
+                                </div>
+                                {canDeleteStudents && (
+                                    <Button
+                                        onClick={() => handleUnenroll(row.enrollmentId)}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-red-500 hover:text-red-700 shrink-0"
+                                    >
+                                        <Trash size={16} />
+                                    </Button>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="flex-1">
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Asistencia</div>
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${calculateAttendance(row.classAttendances) >= 80 ? 'bg-green-100 text-green-800' :
+                                            calculateAttendance(row.classAttendances) >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-red-100 text-red-800'
+                                        }`}>
+                                        {calculateAttendance(row.classAttendances)}%
+                                    </span>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Nota Final</div>
+                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                        {calculateFinalGrade(row.classAttendances) || '-'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {courseInfo?.classCount ? (
+                                <>
+                                    <button
+                                        onClick={() => toggleMobileClasses(row.enrollmentId)}
+                                        className="w-full flex items-center justify-between text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1.5 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200"
+                                    >
+                                        <span>Asistencia por clase</span>
+                                        {expandedStudentIds.has(row.enrollmentId)
+                                            ? <CaretUp size={14} weight="bold" />
+                                            : <CaretDown size={14} weight="bold" />}
+                                    </button>
+                                    {expandedStudentIds.has(row.enrollmentId) && (
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {Array.from({ length: courseInfo.classCount }, (_, i) => {
+                                                const attendance = row.classAttendances?.find(a => a.classNumber === i + 1);
+                                                return (
+                                                    <div key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${attendance?.status === 'ASISTE' ? 'bg-green-50 dark:bg-green-900/20' :
+                                                            attendance?.status === 'AUSENCIA_JUSTIFICADA' ? 'bg-yellow-50 dark:bg-yellow-900/20' :
+                                                                attendance?.status === 'AUSENCIA_NO_JUSTIFICADA' ? 'bg-red-50 dark:bg-red-900/20' :
+                                                                    'bg-gray-50 dark:bg-gray-700/50'
+                                                        }`}>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-xs font-bold text-gray-700 dark:text-gray-200">
+                                                                {i + 1}
+                                                            </span>
+                                                            <span className="text-gray-700 dark:text-gray-300">Clase {i + 1}</span>
+                                                        </div>
+                                                        {canEditAttendance ? (
+                                                            <select
+                                                                value={attendance?.status || 'SIN_CLASE'}
+                                                                onChange={(e) => handleCellUpdate(row.enrollmentId, i + 1, 'status', e.target.value)}
+                                                                className={`text-xs px-1.5 py-1 rounded border-0 cursor-pointer ${attendance?.status === 'ASISTE' ? 'bg-green-100 text-green-800' :
+                                                                        attendance?.status === 'AUSENCIA_JUSTIFICADA' ? 'bg-yellow-100 text-yellow-800' :
+                                                                            attendance?.status === 'AUSENCIA_NO_JUSTIFICADA' ? 'bg-red-100 text-red-800' :
+                                                                                attendance?.status === 'SIN_CLASE' ? 'bg-gray-200 text-gray-600' :
+                                                                                    'bg-gray-100 text-gray-800'
+                                                                    }`}
+                                                            >
+                                                                <option value="SIN_CLASE">-</option>
+                                                                <option value="ASISTE">A</option>
+                                                                <option value="AUSENCIA_JUSTIFICADA">AJ</option>
+                                                                <option value="AUSENCIA_NO_JUSTIFICADA">ANJ</option>
+                                                                <option value="BAJA">BJ</option>
+                                                            </select>
+                                                        ) : (
+                                                            <span className={`text-xs px-1.5 py-1 rounded ${attendance?.status === 'ASISTE' ? 'bg-green-100 text-green-800' :
+                                                                    attendance?.status === 'AUSENCIA_JUSTIFICADA' ? 'bg-yellow-100 text-yellow-800' :
+                                                                        attendance?.status === 'AUSENCIA_NO_JUSTIFICADA' ? 'bg-red-100 text-red-800' :
+                                                                            attendance?.status === 'SIN_CLASE' ? 'bg-gray-200 text-gray-600' :
+                                                                                'bg-gray-100 text-gray-800'
+                                                                }`}>
+                                                                {attendance?.status === 'ASISTE' ? 'A' :
+                                                                    attendance?.status === 'AUSENCIA_JUSTIFICADA' ? 'AJ' :
+                                                                        attendance?.status === 'AUSENCIA_NO_JUSTIFICADA' ? 'ANJ' :
+                                                                            attendance?.status === 'BAJA' ? 'BJ' : '-'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="text-xs text-gray-500 px-1">Sin clases definidas</div>
+                            )}
+                        </div>
+                    ))
                 )}
             </div>
 
