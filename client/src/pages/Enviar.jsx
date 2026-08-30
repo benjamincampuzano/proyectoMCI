@@ -28,49 +28,31 @@ const Enviar = () => {
         isModuleSubCoordinator ||
         isModuleTreasurer;
 
+    const fetchRoles = async () => {
+        setLoading(true);
+        try {
+            const res = await api.get('/coordinators/module/enviar/roles')
+                .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
+
+            setModuleCoordinator(res.data.coordinator);
+            setModuleSubCoordinator(res.data.subCoordinator);
+            setModuleTreasurer(res.data.treasurer);
+            setRefreshTrigger(prev => prev + 1);
+        } catch (error) {
+            console.error('Error fetching module roles:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        let cancelled = false;
-
-        const fetchRoles = async () => {
-            setLoading(true);
-            try {
-                const res = await api.get('/coordinators/module/enviar/roles')
-                    .catch(() => ({ data: { coordinator: null, subCoordinator: null, treasurer: null } }));
-                if (!cancelled) {
-                    const { coordinator, subCoordinator, treasurer } = res.data;
-                    setModuleCoordinator(coordinator);
-                    setModuleSubCoordinator(subCoordinator);
-                    setModuleTreasurer(treasurer);
-                }
-            } catch (error) {
-                if (!cancelled) {
-                    console.error('Error fetching module roles:', error);
-                }
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        };
-
         fetchRoles();
+    }, []);
 
-        return () => {
-            cancelled = true;
-        };
-    }, [refreshTrigger]);
+    const canRead = () => hasViewStatsAccess || hasFullEnviarAccess || hasAnyRole(['DISCIPULO']);
 
     const hasCellsTabAccess = () => {
-        const isModuleCoord = moduleCoordinator?.id === user?.id;
-        const hasRoleAccess = hasAnyRole(ROLE_GROUPS.CAN_MANAGE_CELLS);
-        return hasRoleAccess || hasFullEnviarAccess || isModuleCoord || hasAnyRole(['DISCIPULO']);
-    };
-
-    const hasAttendanceAccess = () => {
-        return hasViewStatsAccess || hasFullEnviarAccess || hasAnyRole(['DISCIPULO']);
-    };
-
-    // Política de acceso: DISCIPULO tiene permiso de solo lectura en todas las pestañas del módulo Enviar
-    const hasStatsAccess = () => {
-        return hasViewStatsAccess || hasFullEnviarAccess || hasAnyRole(['DISCIPULO']);
+        return hasAnyRole(ROLE_GROUPS.CAN_MANAGE_CELLS) || hasFullEnviarAccess || isModuleCoordinator || canRead();
     };
 
     const hasUnassignedAccess = () => {
@@ -78,9 +60,9 @@ const Enviar = () => {
     };
 
     const tabs = [
+        { id: 'attendance', label: 'Reporte de Asistencia', component: CellAttendance, customCheck: canRead },
         { id: 'cells', label: 'Células', component: CellManagement, customCheck: hasCellsTabAccess },
-        { id: 'attendance', label: 'Reporte de Asistencia', component: CellAttendance, customCheck: hasAttendanceAccess },
-        { id: 'stats', label: 'Estadísticas', component: AttendanceChart, customCheck: hasStatsAccess },
+        { id: 'stats', label: 'Estadísticas', component: AttendanceChart, customCheck: canRead },
         { id: 'unassigned', label: 'Personas sin Célula', component: UnassignedPeople, customCheck: hasUnassignedAccess },
     ];
 
@@ -110,7 +92,7 @@ const Enviar = () => {
                     variant="primary"
                     size="sm"
                     icon={ArrowsClockwise}
-                    onClick={() => setRefreshTrigger(prev => prev + 1)}
+                    onClick={fetchRoles}
                     className="shadow-xl"
                 >
                     Actualizar
@@ -119,7 +101,7 @@ const Enviar = () => {
 
             <TabNavigator
                 tabs={tabs}
-                initialTabId="cells"
+                initialTabId="attendance"
                 moduleName="enviar"
                 refreshTrigger={refreshTrigger}
                 componentProps={{
