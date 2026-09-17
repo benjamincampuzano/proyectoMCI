@@ -9,6 +9,7 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
+COPY pnpm-workspace.yaml ./
 COPY package.json ./
 COPY prisma ./prisma/
 COPY prisma.config.cjs ./prisma.config.cjs
