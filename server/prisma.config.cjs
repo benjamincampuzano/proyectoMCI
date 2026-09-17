@@ -3,16 +3,17 @@ require('dotenv/config');
 const { defineConfig, env } = require('prisma/config');
 
 const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+const hasDirectUrl = Boolean(process.env.DIRECT_URL);
 
 module.exports = defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
   },
-  ...(hasDatabaseUrl
+  ...(hasDirectUrl || hasDatabaseUrl
     ? {
         datasource: {
-          url: env('DATABASE_URL'),
+          url: hasDirectUrl ? env('DIRECT_URL') : env('DATABASE_URL'),
         },
       }
     : {}),

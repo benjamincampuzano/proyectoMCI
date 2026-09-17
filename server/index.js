@@ -3,6 +3,8 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const helmet = require("helmet");
 const compression = require("compression");
+const path = require("path");
+const fs = require("fs");
 const { randomInt } = require('crypto');
 const cron = require('node-cron');
 const rateLimit = require('express-rate-limit');
@@ -131,6 +133,7 @@ const publicRoutes = require('./routes/publicRoutes');
 const dashboardTasksRoutes = require('./routes/dashboardTasksRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const bulkImportRoutes = require('./routes/bulkImportRoutes');
+const loginSettingRoutes = require('./routes/loginSettingRoutes');
 
 /* ✅ Proteger directorios sensibles */
 app.use('/backups', (req, res) => {
@@ -149,6 +152,11 @@ app.use('/uploads', (req, res, next) => {
     }
     next();
 });
+
+/* ✅ Servir medios de bienvenida del login (imágenes/videos) */
+const loginMediaDir = path.join(process.cwd(), 'uploads', 'login-media');
+fs.mkdirSync(loginMediaDir, { recursive: true });
+app.use('/media', express.static(loginMediaDir, { maxAge: '1d' }));
 
 /* ✅ API endpoints */
 app.use("/api/auth", authRoutes);
@@ -175,6 +183,7 @@ app.use("/api/public", publicRoutes);
 app.use("/api/dashboard-tasks", dashboardTasksRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/users", bulkImportRoutes);
+app.use("/api/login-setting", loginSettingRoutes);
 
 /* ✅ Healthcheck */
 app.get("/", (req, res) => {

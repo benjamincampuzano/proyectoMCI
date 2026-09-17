@@ -174,9 +174,9 @@ const restoreBackupFile = async (databaseUrl, filePath, options = {}) => {
 ========================= */
 
 const getDatabaseUrl = () => {
-    const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL;
+    const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL;
     if (!databaseUrl) {
-        throw new Error("DATABASE_URL no está configurada en el servidor.");
+        throw new Error("DIRECT_URL o DATABASE_URL no está configurada en el servidor.");
     }
     return databaseUrl;
 };
@@ -186,6 +186,8 @@ const toCliDatabaseUrl = (rawUrl) => {
         const parsed = new URL(rawUrl);
         // `schema` es válido para algunos ORMs (ej. Prisma), pero no para `psql/pg_dump`.
         parsed.searchParams.delete("schema");
+        // `pgbouncer` es solo para el pooler de Supabase; libpq (psql/pg_dump) lo rechaza.
+        parsed.searchParams.delete("pgbouncer");
         return parsed.toString();
     } catch {
         return rawUrl;

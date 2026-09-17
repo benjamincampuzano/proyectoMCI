@@ -156,3 +156,14 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// Origen del servidor (solo API) para construir URLs absolutas de medios subidos
+export const mediaOrigin = baseURL;
+
+// Convierte una URL de medio (relativa tipo /media/archivo o externa) en una URL absoluta
+export const resolveMediaUrl = (url) => {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('/media/')) return `${baseURL}${url}`;
+    return url;
+};

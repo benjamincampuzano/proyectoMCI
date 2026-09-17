@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import useUserManagement from '../hooks/useUserManagement';
 import { useAuth } from '../context/AuthContext';
-import { Users, UserPlus, Download, Upload, Shield, UserList, WhatsappLogo, X } from '@phosphor-icons/react';
+import { Users, UserPlus, Download, Upload, Shield, UserList, WhatsappLogo, MonitorPlay, X } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { getWhatsAppPhone } from '../utils/phone';
@@ -12,6 +12,7 @@ import UserFormModal from '../components/UserManagement/UserFormModal';
 import PasswordResetModal from '../components/UserManagement/PasswordResetModal';
 import ErrorModal from '../components/ErrorModal';
 import CoordinatorManagement from '../components/UserManagement/CoordinatorManagement';
+import LoginSettings from '../components/UserManagement/LoginSettings';
 import BulkImportModal from '../components/BulkImportModal';
 
 const VALID_ROLES = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO', 'INVITADO'];
@@ -305,6 +306,15 @@ const UserManagement = () => {
                         label="Coordinadores de Módulos"
                         activeColor="bg-purple-500"
                     />
+                    {isAdmin && (
+                        <TabButton
+                            active={activeTab === 'login'}
+                            onClick={() => setActiveTab('login')}
+                            icon={MonitorPlay}
+                            label="Configuración del Login"
+                            activeColor="bg-[var(--ln-brand-indigo)]"
+                        />
+                    )}
                 </div>
             </div>
 
@@ -389,6 +399,10 @@ const UserManagement = () => {
                 <div className="animate-in fade-in duration-300">
                     <CoordinatorManagement />
                 </div>
+            )}
+
+            {activeTab === 'login' && isAdmin && (
+                <LoginSettings />
             )}
 
             {/* Modales Informativos y de Acción */}

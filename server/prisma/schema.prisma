@@ -88,6 +88,16 @@ model RegistrarCode {
   @@index([isActive])
 }
 
+model LoginSetting {
+  id              Int      @id @default(autoincrement())
+  mediaType       String   @default("IMAGE")
+  mediaUrl        String
+  welcomeTitle    String?
+  welcomeSubtitle String?
+  updatedBy       Int?
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+}
+
 model User {
   id                       Int                      @id @default(autoincrement())
   email                    String                   @unique
@@ -934,6 +944,7 @@ enum EntityType {
   MODULE_TREASURER
   REGISTRAR_CODE
   DATABASE
+  LOGIN_SETTING
 }
 
 enum ResourceType {
