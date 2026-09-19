@@ -19,7 +19,7 @@ const MODULE_GROUPS = [
 ];
 
 
-const StudentMatrix = () => {
+const StudentMatrix = ({ refreshTrigger }) => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -42,7 +42,7 @@ const StudentMatrix = () => {
     useEffect(() => {
         void Promise.resolve().then(fetchStudentMatrix);
 
-    }, []);
+    }, [refreshTrigger]);
 
     const getClassStatus = (enrollment, level) => {
         if (!enrollment) return null;
@@ -53,7 +53,7 @@ const StudentMatrix = () => {
         // Use finalGrade from enrollment or calculate from classAttendances
         const finalGrade = enrollment.finalGrade;
 
-        if (finalGrade !== null && finalGrade >= 7) {
+        if (finalGrade !== null && finalGrade >= 3) {
             return { completed: true, grade: finalGrade };
         } else if (finalGrade !== null) {
             return { completed: false, grade: finalGrade };

@@ -12,7 +12,7 @@ import { ArrowsClockwise } from '@phosphor-icons/react';
 import api from '../utils/api';
 
 const Enviar = () => {
-    const { user, hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
+    const { hasAnyRole, isCoordinator, isSubCoordinator, isTreasurer } = useAuth();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
@@ -46,7 +46,7 @@ const Enviar = () => {
     };
 
     useEffect(() => {
-        fetchRoles();
+        void Promise.resolve().then(fetchRoles);
     }, []);
 
     const canRead = () => hasViewStatsAccess || hasFullEnviarAccess || hasAnyRole(['DISCIPULO']);

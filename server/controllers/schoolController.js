@@ -577,6 +577,13 @@ const updateMatrixCell = async (req, res) => {
         // Update Logic
         if (type === 'attendance') {
             const classNumber = parseInt(key);
+
+            // Validate class number against module limits
+            const maxClasses = enrollment.module.classCount || enrollment.module._count.materials || 0;
+            if (classNumber < 1 || (maxClasses > 0 && classNumber > maxClasses)) {
+                return res.status(400).json({ error: `El número de clase debe estar entre 1 y ${maxClasses || 'el límite permitido'}.` });
+            }
+
             if (!value) {
                 // If empty value, delete the record (reset) to allow empty state in UI
                 await prisma.classAttendance.deleteMany({
@@ -606,6 +613,17 @@ const updateMatrixCell = async (req, res) => {
             const classNumber = parseInt(key);
             const numValue = value === '' ? null : parseFloat(value);
 
+            // Validate grade range (1-5)
+            if (numValue !== null && (numValue < 1 || numValue > 5)) {
+                return res.status(400).json({ error: 'La nota debe estar entre 1 y 5.' });
+            }
+
+            // Validate class number against module limits
+            const maxClasses = enrollment.module.classCount || enrollment.module._count.materials || 0;
+            if (classNumber < 1 || (maxClasses > 0 && classNumber > maxClasses)) {
+                return res.status(400).json({ error: `El número de clase debe estar entre 1 y ${maxClasses || 'el límite permitido'}.` });
+            }
+
             await prisma.classAttendance.upsert({
                 where: {
                     enrollmentId_classNumber: {
@@ -629,6 +647,12 @@ const updateMatrixCell = async (req, res) => {
             });
         } else if (type === 'finalGrade') {
             const numValue = value === '' ? null : parseFloat(value);
+
+            // Validate final grade range (1-5)
+            if (numValue !== null && (numValue < 1 || numValue > 5)) {
+                return res.status(400).json({ error: 'La nota final debe estar entre 1 y 5.' });
+            }
+
             await prisma.seminarEnrollment.update({
                 where: { id: enrollment.id },
                 data: { finalGrade: numValue }
@@ -847,6 +871,20 @@ const getStudentMatrix = async (req, res) => {
                 const attendedClasses = enrollment.classAttendances.filter(c => c.status === 'ASISTE').length;
                 const attendanceRate = expectedClasses > 0 ? (attendedClasses / expectedClasses) * 100 : 0;
 
+                // Breakdown of attendance statuses per class (AS/AJ/ANJ/BAJA/SIN_CLASE)
+                const attendanceCodes = {
+                    ASISTE: 0,
+                    AUSENCIA_JUSTIFICADA: 0,
+                    AUSENCIA_NO_JUSTIFICADA: 0,
+                    BAJA: 0,
+                    SIN_CLASE: 0
+                };
+                enrollment.classAttendances.forEach(c => {
+                    if (c.status && attendanceCodes[c.status] !== undefined) {
+                        attendanceCodes[c.status] += 1;
+                    }
+                });
+
                 // Calculate grades for this enrollment
                 const grades = enrollment.classAttendances
                     .filter(c => c.grade !== null)
@@ -865,6 +903,7 @@ const getStudentMatrix = async (req, res) => {
                         type: module.type
                     },
                     attendanceRate,
+                    attendanceCodes,
                     avgGrade,
                     isCompleted: isModuleCompleted(enrollment),
                     grades: enrollment.classAttendances.map(c => ({

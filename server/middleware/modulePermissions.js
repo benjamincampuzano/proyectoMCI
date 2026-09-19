@@ -252,9 +252,9 @@ const hasAdminAccessOnModule = (user, moduleName) => {
   }
 
   // Coordinator, Subcoordinator and Treasurer have ADMIN access only for their assigned module
-  return user.moduleCoordinations?.includes(normalizedModule) ||
+  return Boolean(user.moduleCoordinations?.includes(normalizedModule) ||
          user.moduleSubCoordinations?.includes(normalizedModule) ||
-         user.moduleTreasurers?.includes(normalizedModule);
+         user.moduleTreasurers?.includes(normalizedModule));
 };
 
 module.exports = {

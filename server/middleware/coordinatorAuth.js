@@ -45,8 +45,8 @@ const normalizeModuleName = (name) => {
  */
 const getCurrentModule = (req) => {
     const path = req.path || '';
-    const moduleFromParams = req.params.module;
-    const moduleFromQuery = req.query.module;
+    const moduleFromParams = req.params?.module;
+    const moduleFromQuery = req.query?.module;
     
     // Extraer de la ruta: /api/:module/... -> :module
     for (const mod of AVAILABLE_MODULES) {
@@ -58,7 +58,8 @@ const getCurrentModule = (req) => {
     if (moduleFromParams) return normalizeModuleName(moduleFromParams);
     if (moduleFromQuery) return normalizeModuleName(moduleFromQuery);
     
-    return normalizeModuleName(path.split('/')[2] || '');
+    const fromPath = normalizeModuleName(path.split('/')[2] || '');
+    return AVAILABLE_MODULES.includes(fromPath) ? fromPath : '';
 };
 
 /**
@@ -237,9 +238,9 @@ const hasAdminAccessOnModule = (user, moduleName) => {
 
     // Coordinador, Subcoordinador y Tesorero tienen acceso de ADMIN en su módulo asignado
     const normalizedModule = normalizeModuleName(moduleName);
-    return user.moduleCoordinations?.includes(normalizedModule) ||
+    return Boolean(user.moduleCoordinations?.includes(normalizedModule) ||
            user.moduleSubCoordinations?.includes(normalizedModule) ||
-           user.moduleTreasurers?.includes(normalizedModule);
+           user.moduleTreasurers?.includes(normalizedModule));
 };
 
 /**

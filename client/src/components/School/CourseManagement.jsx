@@ -31,7 +31,7 @@ const getCourseModule = (course) => {
     return MODULE_GROUPS.find(g => g.module === parseInt(level.nivel)) || null;
 };
 
-const CourseManagement = () => {
+const CourseManagement = ({ refreshTrigger }) => {
     const { user, hasAnyRole, isCoordinator } = useAuth();
     const isModuleCoordinator = isCoordinator('discipular');
     const [courses, setCourses] = useState([]);
@@ -78,7 +78,7 @@ const CourseManagement = () => {
     useEffect(() => {
         void Promise.resolve().then(fetchCourses);
 
-    }, [user.roles]);
+    }, [user.roles, refreshTrigger]);
 
     const handleDelete = async (e, id) => {
         e.stopPropagation();

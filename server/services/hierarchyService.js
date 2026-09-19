@@ -142,6 +142,7 @@ async function getUserSpouse(userId) {
 module.exports = {
     createsHierarchyCycle,
     countLeadersForRole,
+    validateRoleCoherence,
     assignHierarchy,
     getUserSpouse
 };

@@ -1,5 +1,6 @@
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
+const { MIN_PASSING_GRADE } = require('../utils/schoolUtils');
 
 // Parse date-only strings (YYYY-MM-DD) as noon UTC to avoid timezone shift issues.
 const parseDateSafe = (dateStr) => {
@@ -894,7 +895,7 @@ const getKidsStatsByLeader = async (req, res) => {
                         attendanceCount++;
                     }
 
-                    if (enrollment.finalGrade !== null && enrollment.finalGrade >= 7) {
+                    if (enrollment.finalGrade !== null && enrollment.finalGrade >= MIN_PASSING_GRADE) {
                         passed++;
                     }
                 });
@@ -985,7 +986,7 @@ const getKidsStatsByLeader = async (req, res) => {
                         totalAttendance += rate;
                         attendanceCount++;
                     }
-                    if (enrollment.finalGrade !== null && enrollment.finalGrade >= 7) {
+                    if (enrollment.finalGrade !== null && enrollment.finalGrade >= MIN_PASSING_GRADE) {
                         passed++;
                     }
                 });

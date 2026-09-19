@@ -178,7 +178,7 @@ const ASISTENCIA_TIPOS = [
                         clases.slice(0, 3).map((c, i) => (
                             <div
                                 key={i}
-                                className={`w-8 h-8 rounded-full border-2 border-[var(--ln-bg-panel)] flex items-center justify-center text-[10px] weight-590 shadow-sm relative z-[${10-i}] ${c.finalGrade >= 70 ? 'bg-emerald-500 text-white' : 'bg-[var(--ln-border-standard)] text-[var(--ln-text-tertiary)]'
+                                className={`w-8 h-8 rounded-full border-2 border-[var(--ln-bg-panel)] flex items-center justify-center text-[10px] weight-590 shadow-sm relative z-[${10-i}] ${c.finalGrade >= 3 ? 'bg-emerald-500 text-white' : 'bg-[var(--ln-border-standard)] text-[var(--ln-text-tertiary)]'
                                     }`}
                                 title={`${c.moduleName}: ${c.finalGrade || 'En curso'}`}
                             >

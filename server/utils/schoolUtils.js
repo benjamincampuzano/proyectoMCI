@@ -1,8 +1,13 @@
 const { getLevelByModuleNumber } = require('./levelConstants');
 
 /**
+ * Nota mínima de aprobación en la escala global de notas (1-5).
+ */
+const MIN_PASSING_GRADE = 3;
+
+/**
  * Helper to determine if a module is completed based on the enrollment record.
- * Single source of truth: finalGrade >= 7.
+ * Single source of truth: finalGrade >= MIN_PASSING_GRADE.
  *
  * @param {Object|null} enrollment - The SeminarEnrollment record
  * @returns {boolean} - True if the module is completed, false otherwise.
@@ -12,9 +17,9 @@ const isModuleCompleted = (enrollment) => {
 
     const grade = enrollment.finalGrade;
 
-    // Validates that grade is a number and >= 7
+    // Validates that grade is a number and >= MIN_PASSING_GRADE
     // Handles null, undefined, and NaN
-    return typeof grade === 'number' && !isNaN(grade) && grade >= 7;
+    return typeof grade === 'number' && !isNaN(grade) && grade >= MIN_PASSING_GRADE;
 };
 
 /**
@@ -72,6 +77,7 @@ const getModuleClassNumbers = (moduleGroup) => {
 
 module.exports = {
     isModuleCompleted,
+    MIN_PASSING_GRADE,
     MODULE_GROUPS,
     getModuleGroup,
     getModuleInfo,

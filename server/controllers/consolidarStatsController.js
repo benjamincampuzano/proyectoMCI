@@ -1,6 +1,7 @@
 const { Prisma } = require('../generated/prisma/client');
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
+const { MIN_PASSING_GRADE } = require('../utils/schoolUtils');
 
 const formatUser = (user) => {
     if (!user) return null;
@@ -24,9 +25,9 @@ const formatUser = (user) => {
         liderDoceName = liderDoceParent?.parent?.profile?.fullName || null;
     }
 
-    // Módulos del discipular aprobados (estado COMPLETADO o nota final >= 70)
+    // Módulos del discipular aprobados (estado COMPLETADO o nota final >= MIN_PASSING_GRADE)
     const passedModules = (user.seminarEnrollments || [])
-        .filter(se => se.status === 'COMPLETADO' || (se.finalGrade != null && se.finalGrade >= 70))
+        .filter(se => se.status === 'COMPLETADO' || (se.finalGrade != null && se.finalGrade >= MIN_PASSING_GRADE))
         .map(se => ({
             id: se.module?.id,
             name: se.module?.name || null,
@@ -565,7 +566,7 @@ const getSeminarStatsByLeader = async (req, res) => {
                 COALESCE(up."fullName", 'Sin Asignar') AS leader_name,
                 COUNT(DISTINCT se.id)::int AS total_students,
                 COALESCE(AVG(se."finalGrade"), 0)::float AS avg_grade,
-                COUNT(se.id) FILTER (WHERE se."finalGrade" >= 70)::int AS passed_count,
+                COUNT(se.id) FILTER (WHERE se."finalGrade" >= ${MIN_PASSING_GRADE})::int AS passed_count,
                 COALESCE(
                     AVG(
                         CASE WHEN ca.status = 'ASISTE' THEN 1.0
