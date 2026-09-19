@@ -22,8 +22,8 @@ export default defineConfig({
     name: 'server',
     environment: 'node',
     globals: true,
-    setupFiles: ['../tests/server/setup.js'],
-    include: ['./tests/server/**/*.test.js', '../tests/server/**/*.test.js'],
+    setupFiles: [path.join(repoRoot, 'tests/server/setup.js')],
+    include: [path.join(repoRoot, 'tests/server/**/*.test.js')],
     exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
     coverage: {
       provider: 'v8',

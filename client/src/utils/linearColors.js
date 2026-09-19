@@ -66,6 +66,8 @@ export const linearColors = {
 
 // Obtener color por path con validación
 export const getLinearColor = (path, fallback = '#000000') => {
+  if (typeof path !== 'string' || !path) return fallback;
+
   try {
     const keys = path.split('.');
     let color = linearColors;
@@ -136,9 +138,11 @@ export const blendColors = (color1, color2, ratio = 0.5) => {
   const g2 = parseInt(hex2.substr(2, 2), 16);
   const b2 = parseInt(hex2.substr(4, 2), 16);
   
-  const r = Math.round(r1 * (1 - ratio) + r2 * ratio);
-  const g = Math.round(g1 * (1 - ratio) + g2 * ratio);
-  const b = Math.round(b1 * (1 - ratio) + b2 * ratio);
+  // Al convertir un valor intermedio a un canal de 8 bits usamos el límite
+  // inferior; así una mezcla exacta 50/50 de 0 y 255 produce #7f7f7f.
+  const r = Math.floor(r1 * (1 - ratio) + r2 * ratio);
+  const g = Math.floor(g1 * (1 - ratio) + g2 * ratio);
+  const b = Math.floor(b1 * (1 - ratio) + b2 * ratio);
   
   const newR = r.toString(16).padStart(2, '0');
   const newG = g.toString(16).padStart(2, '0');

@@ -43,23 +43,21 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         setError('');
 
         try {
-            const params = new URLSearchParams();
-            params.append('page', page);
-            params.append('limit', guestsPerPage);
+            const params = { page, limit: guestsPerPage };
 
-            if (statusFilter) params.append('status', statusFilter);
-            if (invitedByFilter && invitedByFilter.id !== undefined) params.append('invitedById', invitedByFilter.id);
-            if (liderDoceFilter && liderDoceFilter.id !== undefined) params.append('liderDoceId', liderDoceFilter.id);
-            if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
-            if (startDate) params.append('startDate', startDate);
-            if (endDate) params.append('endDate', endDate);
-            if (pendingCalls) params.append('pendingCalls', 'true');
-            if (pendingVisits) params.append('pendingVisits', 'true');
-            if (alreadyCalled) params.append('alreadyCalled', 'true');
-            if (alreadyVisited) params.append('alreadyVisited', 'true');
+            if (statusFilter) params.status = statusFilter;
+            if (invitedByFilter && invitedByFilter.id !== undefined) params.invitedById = String(invitedByFilter.id);
+            if (liderDoceFilter && liderDoceFilter.id !== undefined) params.liderDoceId = String(liderDoceFilter.id);
+            if (debouncedSearchTerm) params.search = debouncedSearchTerm;
+            if (startDate) params.startDate = startDate;
+            if (endDate) params.endDate = endDate;
+            if (pendingCalls) params.pendingCalls = 'true';
+            if (pendingVisits) params.pendingVisits = 'true';
+            if (alreadyCalled) params.alreadyCalled = 'true';
+            if (alreadyVisited) params.alreadyVisited = 'true';
 
             const res = await api.get('/guests', {
-                params: Object.fromEntries(params)
+                params
             });
 
             setGuests(res.data.guests || []);
@@ -79,25 +77,23 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
     const fetchAllGuests = useCallback(async (options = {}) => {
         const { ignoreNetworkFilter = false } = options;
         try {
-            const params = new URLSearchParams();
-            params.append('page', 1);
-            params.append('limit', 10000); // Límite alto para obtener todos
+            const params = { page: 1, limit: 10000 }; // Límite alto para obtener todos
 
-            if (statusFilter) params.append('status', statusFilter);
-            if (invitedByFilter && invitedByFilter.id !== undefined) params.append('invitedById', invitedByFilter.id);
+            if (statusFilter) params.status = statusFilter;
+            if (invitedByFilter && invitedByFilter.id !== undefined) params.invitedById = String(invitedByFilter.id);
             // Si el usuario tiene acceso total al módulo (coordinador/subcoordinador/tesorero),
             // no se aplica el filtro de red por Líder de 12 al exportar.
-            if (liderDoceFilter && liderDoceFilter.id !== undefined && !ignoreNetworkFilter) params.append('liderDoceId', liderDoceFilter.id);
-            if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
-            if (startDate) params.append('startDate', startDate);
-            if (endDate) params.append('endDate', endDate);
-            if (pendingCalls) params.append('pendingCalls', 'true');
-            if (pendingVisits) params.append('pendingVisits', 'true');
-            if (alreadyCalled) params.append('alreadyCalled', 'true');
-            if (alreadyVisited) params.append('alreadyVisited', 'true');
+            if (liderDoceFilter && liderDoceFilter.id !== undefined && !ignoreNetworkFilter) params.liderDoceId = String(liderDoceFilter.id);
+            if (debouncedSearchTerm) params.search = debouncedSearchTerm;
+            if (startDate) params.startDate = startDate;
+            if (endDate) params.endDate = endDate;
+            if (pendingCalls) params.pendingCalls = 'true';
+            if (pendingVisits) params.pendingVisits = 'true';
+            if (alreadyCalled) params.alreadyCalled = 'true';
+            if (alreadyVisited) params.alreadyVisited = 'true';
 
             const res = await api.get('/guests', {
-                params: Object.fromEntries(params)
+                params
             });
 
             return res.data.guests || [];
@@ -215,6 +211,8 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         guestsPerPage,
         totalPages,
         pagination,
+        handleNextPage,
+        handlePrevPage,
         updateGuest,
         deleteGuest,
         convertGuestToMember,

@@ -14,13 +14,22 @@ export default defineConfig({
     alias: {
       '@client': path.join(repoRoot, 'client'),
       '@client-src': path.join(repoRoot, 'client/src'),
+      react: path.join(repoRoot, 'client/node_modules/react'),
+      'react-dom': path.join(repoRoot, 'client/node_modules/react-dom'),
+      // Los archivos de prueba viven en la raíz del monorepo, mientras que
+      // estas dependencias pertenecen al paquete `client`. Sin este alias
+      // Vite intenta resolverlas desde /tests y no encuentra los enlaces de
+      // pnpm del frontend.
+      '@testing-library/jest-dom': path.join(repoRoot, 'client/node_modules/@testing-library/jest-dom'),
+      '@testing-library/react': path.join(repoRoot, 'client/node_modules/@testing-library/react'),
+      '@testing-library/user-event': path.join(repoRoot, 'client/node_modules/@testing-library/user-event'),
     },
   },
   test: {
     name: 'client',
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./tests/client/setup.js', '../tests/client/setup.js'],
+    setupFiles: [path.join(repoRoot, 'tests/client/setup.js')],
     css: false,
     include: ['./tests/client/**/*.test.{js,jsx}', '../tests/client/**/*.test.{js,jsx}'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],

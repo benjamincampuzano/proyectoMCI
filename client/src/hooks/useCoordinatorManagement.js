@@ -29,7 +29,7 @@ const useCoordinatorManagement = () => {
     const fetchCoordinators = useCallback(async () => {
         try {
             const response = await api.get('/coordinators');
-            setCoordinators(response.data || []);
+            setCoordinators(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Error fetching coordinators:', error);
             toast.error('Error al cargar coordinadores');
@@ -40,7 +40,7 @@ const useCoordinatorManagement = () => {
     const fetchSubCoordinators = useCallback(async () => {
         try {
             const response = await api.get('/coordinators/subcoordinators');
-            setSubCoordinators(response.data || []);
+            setSubCoordinators(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Error fetching sub-coordinators:', error);
             // Don't show toast for sub-coordinators to avoid spam
@@ -51,7 +51,7 @@ const useCoordinatorManagement = () => {
     const fetchTreasurers = useCallback(async () => {
         try {
             const response = await api.get('/coordinators/treasurers');
-            setTreasurers(response.data || []);
+            setTreasurers(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Error fetching treasurers:', error);
             // Don't show toast for treasurers to avoid spam
