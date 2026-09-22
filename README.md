@@ -31,7 +31,7 @@
 
 ### Backend
 - **Node.js** con Express
-- **PostgreSQL** con Supabase
+- **PostgreSQL** como base de datos
 - **JWT** para autenticación
 - **bcrypt** para encriptación
 
@@ -207,7 +207,7 @@ pnpm run test:run     # Ejecutar tests
    ```
 
 3. **Configurar variables de entorno**:
-   - Crear `.env` en `/server` con credenciales de Supabase
+   - Crear `.env` en `/server` con credenciales de PostgreSQL
    - Crear `.env` en `/client` con URL de API
 
 4. **Iniciar la aplicación**:

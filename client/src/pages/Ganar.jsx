@@ -5,7 +5,6 @@ import CoordinatorDisplay from "../components/CoordinatorDisplay";
 import FloatingRefreshButton from "../components/FloatingRefreshButton";
 import GuestRegistrationForm from "../components/GuestRegistrationForm";
 import GuestList from "../components/GuestList";
-import GuestTracking from "../components/GuestTracking";
 import GuestStats from "../components/GuestStats";
 import OracionDeTresManagement from "../components/OracionDeTresManagement";
 import ServerManager from "../components/ServerManager";
@@ -53,8 +52,7 @@ const Ganar = () => {
     const isPastor = hasRole(ROLES.PASTOR);
 
     const tabs = [
-        { id: 'list', label: 'Lista de Invitados', component: GuestList },
-        { id: 'tracking', label: 'Seguimiento de Invitados', component: GuestTracking },
+        { id: 'guests', label: 'Invitados', component: GuestList },
         {
             id: 'stats',
             label: 'Estadísticas',
@@ -91,7 +89,7 @@ const Ganar = () => {
         }
     ];
 
-    const [activeTab, setActiveTab] = useState('list');
+    const [activeTab, setActiveTab] = useState('guests');
 
     return (
         <div className="space-y-6">
@@ -106,7 +104,7 @@ const Ganar = () => {
                             treasurer={moduleTreasurer}
                             moduleName="Ganar"
                         />
-                        {activeTab === 'list' && (
+                        {activeTab === 'guests' && (
                             <Button
                                 variant={isPastor ? 'outline' : (showRegistration ? 'error' : 'primary')}
                                 onClick={() => !isPastor && setShowRegistration(!showRegistration)}
@@ -130,11 +128,11 @@ const Ganar = () => {
 
             <TabNavigator moduleName="ganar"
                 tabs={tabs}
-                initialTabId="list"
+                initialTabId="guests"
                 refreshTrigger={refreshTrigger}
                 onTabChange={(tabId) => {
                     setActiveTab(tabId);
-                    if (tabId !== 'list') {
+                    if (tabId !== 'guests') {
                         setShowRegistration(false);
                     }
                 }}

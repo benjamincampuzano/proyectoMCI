@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '../utils/api';
 
 const useGuestManagement = ({ refreshTrigger } = {}) => {
@@ -19,6 +19,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
 
     // Paginación numérica (10 registros por página)
     const [currentPage, setCurrentPage] = useState(1);
+    const currentPageRef = useRef(1);
     const [totalGuests, setTotalGuests] = useState(0);
     const [guestsPerPage] = useState(10);
 
@@ -104,15 +105,20 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
 
     // Funciones de paginación
     const handlePageChange = useCallback((newPage) => {
+        currentPageRef.current = newPage;
         setCurrentPage(newPage);
     }, []);
 
     const handleNextPage = useCallback(() => {
-        setCurrentPage(prev => prev + 1);
+        const next = currentPageRef.current + 1;
+        currentPageRef.current = next;
+        setCurrentPage(next);
     }, []);
 
     const handlePrevPage = useCallback(() => {
-        setCurrentPage(prev => Math.max(1, prev - 1));
+        const prev = Math.max(1, currentPageRef.current - 1);
+        currentPageRef.current = prev;
+        setCurrentPage(prev);
     }, []);
 
     // Cuando cambian los filtros, volvemos a la página 1
@@ -123,6 +129,11 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         setCurrentPage(1);
     }
 
+    // Mantiene la ref sincronizada para re-fetch desde acciones de seguimiento
+    useEffect(() => {
+        currentPageRef.current = currentPage;
+    }, [currentPage]);
+
     // Efecto principal para hacer fetch cada vez que cambian los filtros o la página
     useEffect(() => {
         void Promise.resolve().then(() => fetchGuests(currentPage));
@@ -131,7 +142,7 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
     const updateGuest = useCallback(async (guestId, updates) => {
         try {
             await api.put(`/guests/${guestId}`, updates);
-            await fetchGuests(1);
+            await fetchGuests(currentPageRef.current);
             return { success: true };
         } catch (err) {
             const message = err.userMessage || err.response?.data?.message || 'Error al actualizar invitado';
@@ -152,13 +163,67 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         }
     }, [fetchGuests]);
 
-    const convertGuestToMember = useCallback(async (guestId, { email, password }) => {
+    const convertGuestToMember = useCallback(async (guestId, { email, password, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = {}) => {
         try {
-            await api.post(`/guests/${guestId}/convert-to-member`, { email, password });
+            await api.post(`/guests/${guestId}/convert-to-member`, {
+                email,
+                password,
+                dataPolicyAccepted,
+                dataTreatmentAuthorized,
+                minorConsentAuthorized,
+            });
             await fetchGuests(1);
             return { success: true };
         } catch (err) {
             const message = err.userMessage || err.response?.data?.message || 'Error al convertir invitado';
+            setError(message);
+            return { success: false, message };
+        }
+    }, [fetchGuests]);
+
+    const registerCall = useCallback(async (guestId, { date, observation }) => {
+        try {
+            await api.post(`/guests/${guestId}/calls`, { date, observation });
+            await fetchGuests(currentPageRef.current);
+            return { success: true };
+        } catch (err) {
+            const message = err.userMessage || err.response?.data?.message || 'Error al registrar llamada';
+            setError(message);
+            return { success: false, message };
+        }
+    }, [fetchGuests]);
+
+    const registerVisit = useCallback(async (guestId, { date, observation }) => {
+        try {
+            await api.post(`/guests/${guestId}/visits`, { date, observation });
+            await fetchGuests(currentPageRef.current);
+            return { success: true };
+        } catch (err) {
+            const message = err.userMessage || err.response?.data?.message || 'Error al registrar visita';
+            setError(message);
+            return { success: false, message };
+        }
+    }, [fetchGuests]);
+
+    const deleteCall = useCallback(async (guestId, callId) => {
+        try {
+            await api.delete(`/guests/${guestId}/calls/${callId}`);
+            await fetchGuests(currentPageRef.current);
+            return { success: true };
+        } catch (err) {
+            const message = err.userMessage || err.response?.data?.message || 'Error al eliminar llamada';
+            setError(message);
+            return { success: false, message };
+        }
+    }, [fetchGuests]);
+
+    const deleteVisit = useCallback(async (guestId, visitId) => {
+        try {
+            await api.delete(`/guests/${guestId}/visits/${visitId}`);
+            await fetchGuests(currentPageRef.current);
+            return { success: true };
+        } catch (err) {
+            const message = err.userMessage || err.response?.data?.message || 'Error al eliminar visita';
             setError(message);
             return { success: false, message };
         }
@@ -216,6 +281,11 @@ const useGuestManagement = ({ refreshTrigger } = {}) => {
         updateGuest,
         deleteGuest,
         convertGuestToMember,
+        registerCall,
+        registerVisit,
+        deleteCall,
+        deleteVisit,
+        refreshCurrentPage: () => fetchGuests(currentPageRef.current),
     };
 };
 

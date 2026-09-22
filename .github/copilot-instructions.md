@@ -32,16 +32,16 @@ This file helps future Copilot sessions work effectively in this repository. Kee
 ## High-level Architecture (big picture)
 - Monorepo with two main workspaces:
   - client/: React + Vite frontend (ESM, Tailwind, Recharts, React-Leaflet)
-  - server/: Node.js + Express API backed by PostgreSQL via Supabase
+  - server/: Node.js + Express API backed by PostgreSQL
 - Root package.json provides convenience scripts that orchestrate client and server (uses `concurrently`).
 - Auth and data layer:
-  - Authentication uses JWT and bcrypt server-side; data persisted in Supabase/Postgres.
+  - Authentication uses JWT and bcrypt server-side; data persisted in Postgres.
 - Scripts/: utilities for DB backup/restore and user management; useful for CI or local maintenance.
 - Ports (defaults referenced in README): frontend on 5173, backend on 5000. Client expects an API URL configured via environment variables.
 
 ## Key Conventions (repo-specific)
 - Environment files:
-  - server/.env must contain Supabase credentials and DB connection variables.
+  - server/.env must contain DB connection variables.
   - client/.env should include the API base URL for the frontend to call the backend.
 - Roles and permission groups are central to behavior; see README for role constants (ADMIN, PASTOR, LIDER_DOCE, LIDER_CELULA, DISCIPULO). Copilot should prefer these constants when suggesting auth/permission code.
 - Client structure:

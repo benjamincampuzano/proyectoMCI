@@ -137,7 +137,7 @@ Server routes in `server/routes/` map to modules:
 
 ### Key Conventions
 
-- **Environment files**: `server/.env` for Supabase/DB credentials, `client/.env` for API URL
+- **Environment files**: `server/.env` for DB credentials, `client/.env` for API URL
 - **Logging**: Frontend uses `client/src/utils/logger.js` to suppress logs in production or via `VITE_DISABLE_LOGS=true`
 - **Commit messages**: Include `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` for automated commits
 - **Permission checks**: Use `hasAnyRole()` helper with `ROLE_GROUPS` constants rather than hardcoded role arrays

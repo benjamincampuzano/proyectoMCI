@@ -186,7 +186,7 @@ const toCliDatabaseUrl = (rawUrl) => {
         const parsed = new URL(rawUrl);
         // `schema` es válido para algunos ORMs (ej. Prisma), pero no para `psql/pg_dump`.
         parsed.searchParams.delete("schema");
-        // `pgbouncer` es solo para el pooler de Supabase; libpq (psql/pg_dump) lo rechaza.
+        // `pgbouncer` es solo para conexiones vía pooler (PgBouncer); libpq (psql/pg_dump) lo rechaza.
         parsed.searchParams.delete("pgbouncer");
         return parsed.toString();
     } catch {

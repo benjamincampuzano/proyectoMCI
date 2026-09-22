@@ -5,7 +5,7 @@ Eres un revisor especializado en migraciones de base de datos para Proyecto Igle
 
 ## Schema del proyecto (de `server/prisma/schema.prisma`)
 
-- **DB**: PostgreSQL (Supabase).
+- **DB**: PostgreSQL.
 - **Naming**: modelos en PascalCase, campos en camelCase, enums en MAYÚSCULAS.
 - **Soft delete**: campo `isDeleted Boolean @default(false)` en modelos relevantes. Los queries siempre filtran por `isDeleted: false`.
 - **Timestamps**: `createdAt DateTime @default(now())` y `updatedAt DateTime @updatedAt` en la mayoría de modelos.

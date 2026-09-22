@@ -805,7 +805,7 @@ const assignGuest = async (req, res) => {
 const convertGuestToMember = async (req, res) => {
     try {
         const { id } = req.params;
-        const { email, password, phone } = req.body;
+        const { email, password, phone, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized } = req.body;
         const { id: currentUserId } = req.user;
 
         if (!email || !password) {
@@ -858,9 +858,9 @@ const convertGuestToMember = async (req, res) => {
                             documentType: guest.documentType,
                             documentNumber: guest.documentNumber,
                             birthDate: guest.birthDate,
-                            dataPolicyAccepted: guest.dataPolicyAccepted,
-                            dataTreatmentAuthorized: guest.dataTreatmentAuthorized,
-                            minorConsentAuthorized: guest.minorConsentAuthorized,
+                            dataPolicyAccepted: dataPolicyAccepted ?? guest.dataPolicyAccepted ?? false,
+                            dataTreatmentAuthorized: dataTreatmentAuthorized ?? guest.dataTreatmentAuthorized ?? false,
+                            minorConsentAuthorized: minorConsentAuthorized ?? guest.minorConsentAuthorized ?? false,
                         }
                     }
                 },

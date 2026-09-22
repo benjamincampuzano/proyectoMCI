@@ -41,8 +41,6 @@
     "vitest": "^2.1.8"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.105.4",
     "dotenv": "^17.4.2",
     "file-saver": "^2.0.5",
     "next": "^16.2.6",

@@ -124,7 +124,6 @@ tmp/migrate_modules.js
 AUDITORIA_SEGURIDAD_CARGOS.md
 AUDITORIA_IMPLEMENTACION_ESTADO.md
 server/test_prisma_fix.js
-MIGRACION_RAILWAY_A_SUPABASE.md
 .gitignore
 scripts/create-test-users.js
 .gitignore
@@ -181,3 +180,8 @@ tests/client/setup.js
 tests/server/setup.js
 tests/README.md
 tests/server/_helpers/requireServer.js
+AGENTS.md
+CLAUDE.md
+AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
