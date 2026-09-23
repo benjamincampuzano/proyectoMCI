@@ -71,6 +71,11 @@ const GuestCard = ({
                 </div>
               )}
               <div className="text-xs text-[var(--ln-text-tertiary)] space-y-0.5 mb-2">
+                {guest.createdAt && (
+                  <p>
+                    {new Date(guest.createdAt).toLocaleDateString('es-ES')} · Registró: {guest.registeredBy?.fullName || 'N/A'}
+                  </p>
+                )}
                 {guest.phone && <p>Tel: {guest.phone}</p>}
                 <p>Dirección: {guest.address || 'Sin dirección'}</p>
                 {guest.prayerRequest && (

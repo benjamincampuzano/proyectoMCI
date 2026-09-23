@@ -83,6 +83,9 @@ const GuestTable = ({
                     <p className="text-xs text-[var(--ln-text-tertiary)] mt-0.5">
                       {guest.createdAt ? new Date(guest.createdAt).toLocaleDateString('es-ES') : ''}
                     </p>
+                    <p className="text-xs text-[var(--ln-text-tertiary)]">
+                      Registró: {guest.registeredBy?.fullName || 'N/A'}
+                    </p>
                   </td>
                   <td className="px-4 py-3">
                     <p className="text-sm text-[var(--ln-text-secondary)]">{guest.phone || 'N/A'}</p>

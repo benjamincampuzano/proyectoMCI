@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, UserIcon, Users, MoneyIcon, Trash, UserCheck, FileTextIcon, ArrowsClockwise, GuitarIcon, GraduationCap, Pencil } from '@phosphor-icons/react';
+import { Plus, UserIcon, Users, MoneyIcon, Trash, UserCheck, FileTextIcon, GuitarIcon, GraduationCap, Pencil } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import ArtClassDetails from '../components/ArtClassDetails';
@@ -11,6 +11,7 @@ import { AsyncSearchSelect, PageHeader, Button } from '../components/ui';
 import ActionModal from '../components/ActionModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
+import FloatingRefreshButton from '../components/FloatingRefreshButton';
 import { ROLES } from '../constants/roles';
 
 const EscuelaDeArtes = () => {
@@ -19,6 +20,7 @@ const EscuelaDeArtes = () => {
     const [selectedClass, setSelectedClass] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showReport, setShowReport] = useState(false);
+    const [showStatsMobile, setShowStatsMobile] = useState(false);
     const [moduleCoordinator, setModuleCoordinator] = useState(null);
     const [moduleSubCoordinator, setModuleSubCoordinator] = useState(null);
     const [moduleTreasurer, setModuleTreasurer] = useState(null);
@@ -288,17 +290,17 @@ const EscuelaDeArtes = () => {
     // Renderizar contenido
     const renderContent = () => {
         if (showReport) {
-            return (
-                <div className="space-y-6 animate-fade-in">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Reporte de Escuela de Artes</h2>
-                        <Button variant="secondary" onClick={() => setShowReport(false)}>
-                            Volver a Lista
-                        </Button>
+                return (
+                    <div className="space-y-6 animate-fade-in">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Reporte de Escuela de Artes</h2>
+                            <Button variant="secondary" onClick={() => setShowReport(false)}>
+                                Volver a Lista
+                            </Button>
+                        </div>
+                        <ArtSchoolReport classes={classes} />
                     </div>
-                    <ArtSchoolReport classes={classes} />
-                </div>
-            );
+                );
         }
 
         return (
@@ -331,7 +333,7 @@ const EscuelaDeArtes = () => {
                 title="Escuela de Artes"
                 description="Gestión de clases de arte, inscripciones, asistencias y abonos."
                 action={
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
                         <CoordinatorDisplay
                             coordinator={moduleCoordinator}
                             subCoordinator={moduleSubCoordinator}
@@ -343,91 +345,99 @@ const EscuelaDeArtes = () => {
             />
 
             {/* Floating Refresh Button */}
-            <div className="fixed bottom-8 right-8 z-40">
-                <Button
-                    variant="primary"
-                    size="sm"
-                    icon={ArrowsClockwise}
-                    onClick={() => window.location.reload()}
-                    className="shadow-xl"
-                >
-                    Actualizar
-                </Button>
-            </div>
+            <FloatingRefreshButton
+                onClick={() => fetchClasses()}
+                label="Actualizar"
+                ariaLabel="Actualizar datos de la Escuela de Artes"
+            />
 
             {/* Estadísticas Resumidas - Solo cuando no estamos en reporte */}
             {!showReport && classes.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
-                                <GuitarIcon size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Clases</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-purple-900 dark:text-white">{stats.total}</span>
-                            <span className="text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Cantidad de Clases Activas</span>
-                        </div>
+                <>
+                    {/* Botón toggle móvil para Estadísticas */}
+                    <div className="md:hidden flex items-center justify-between mb-3 bg-gray-50 dark:bg-gray-800/40 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Estadísticas Generales</span>
+                        <button
+                            type="button"
+                            onClick={() => setShowStatsMobile(!showStatsMobile)}
+                            className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline focus:outline-none"
+                        >
+                            {showStatsMobile ? 'Ocultar' : 'Ver estadísticas'}
+                        </button>
                     </div>
 
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                                <UserIcon size={20} />
+                    <div className={`${showStatsMobile ? 'grid' : 'hidden'} md:grid grid-cols-2 lg:grid-cols-5 gap-2 md:gap-4 mb-6`}>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 p-3 md:p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
+                                    <GuitarIcon size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Clases</span>
                             </div>
-                            <span className="text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Inscritos</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-3xl font-extrabold text-blue-900 dark:text-white">{stats.inscritos}</span>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-purple-900 dark:text-white">{stats.total}</span>
+                                <span className="hidden md:block text-xs text-purple-600 dark:text-purple-400 font-medium mt-0.5 md:mt-1">Cantidad de Clases Activas</span>
                             </div>
-                            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Total Inscritos</span>
                         </div>
-                    </div>
 
-                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                                <MoneyIcon size={20} />
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
+                                    <UserIcon size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Inscritos</span>
                             </div>
-                            <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
+                            <div className="flex flex-col">
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-xl md:text-3xl font-extrabold text-blue-900 dark:text-white">{stats.inscritos}</span>
+                                </div>
+                                <span className="hidden md:block text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5 md:mt-1">Total Inscritos</span>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-emerald-900 dark:text-white">${stats.recaudado.toLocaleString()}</span>
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Dinero Recaudado</span>
-                        </div>
-                    </div>
 
-                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                                <MoneyIcon size={20} />
+                        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 md:p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
+                                    <MoneyIcon size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
                             </div>
-                            <span className="text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente</span>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-emerald-900 dark:text-white">${stats.recaudado.toLocaleString()}</span>
+                                <span className="hidden md:block text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 md:mt-1">Dinero Recaudado</span>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-red-900 dark:text-white">${stats.pendiente.toLocaleString()}</span>
-                            <span className="text-xs text-red-600 dark:text-red-400 font-medium mt-1">Pendiente por Recaudar</span>
+
+                        <div className="bg-red-50 dark:bg-red-900/20 p-3 md:p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
+                                    <MoneyIcon size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-red-900 dark:text-white">${stats.pendiente.toLocaleString()}</span>
+                                <span className="hidden md:block text-xs text-red-600 dark:text-red-400 font-medium mt-0.5 md:mt-1">Pendiente por Recaudar</span>
+                            </div>
+                        </div>
+                        <div className="bg-amber-50 dark:bg-amber-900/20 p-3 md:p-5 rounded-xl border border-amber-100 dark:border-amber-800 shadow-sm">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="p-1.5 md:p-2 bg-amber-100 dark:bg-amber-800 rounded-lg text-amber-600 dark:text-amber-300">
+                                    <UserCheck size={16} />
+                                </div>
+                                <span className="text-[10px] md:text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Asistencia</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xl md:text-3xl font-extrabold text-amber-900 dark:text-white">{stats.asistenciaPromedio}%</span>
+                                <span className="hidden md:block text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5 md:mt-1">Promedio de Asistencia</span>
+                            </div>
                         </div>
                     </div>
-                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800 shadow-sm">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg text-amber-600 dark:text-amber-300">
-                                <UserCheck size={20} />
-                            </div>
-                            <span className="text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Asistencia</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-3xl font-extrabold text-amber-900 dark:text-white">{stats.asistenciaPromedio}%</span>
-                            <span className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">Promedio de Asistencia</span>
-                        </div>
-                    </div>
-                </div>
+                </>
             )}
             {/* Acciones: Nueva Clase y Reporte */}
             {!showReport && (
-                <div className="flex items-center justify-end gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex flex-wrap items-center justify-end gap-2 md:gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
                     {canCreateOrDelete && (
                         <Button
                             variant="primary"
@@ -486,7 +496,7 @@ const EscuelaDeArtes = () => {
                             placeholder="Descripción de la clase..."
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Donación $</label>
                             <input
@@ -521,7 +531,7 @@ const EscuelaDeArtes = () => {
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-xl border border-purple-100 dark:border-purple-800 space-y-4">
                         <label className="block text-sm font-bold text-purple-800 dark:text-purple-200">Definir Horario</label>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">Día</label>
                                 <select 
@@ -554,7 +564,7 @@ const EscuelaDeArtes = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profesor</label>
                             <AsyncSearchSelect
@@ -686,7 +696,7 @@ const EscuelaDeArtes = () => {
                             rows={3}
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo ($)</label>
                             <input
@@ -719,7 +729,7 @@ const EscuelaDeArtes = () => {
                             required
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profesor</label>
                             <AsyncSearchSelect
