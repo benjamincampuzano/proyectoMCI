@@ -64,9 +64,8 @@ app.use(
 
       const cleanOrigin = origin.replace(/\/$/, '');
       const isAllowed = allowedOrigins.includes(cleanOrigin);
-      const isVercel = cleanOrigin.endsWith('.vercel.app');
 
-      if (isAllowed || isVercel || process.env.NODE_ENV !== "production") {
+      if (isAllowed || process.env.NODE_ENV !== "production") {
         callback(null, true);
       } else {
         const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
@@ -131,6 +130,7 @@ const artSchoolRoutes = require('./routes/artSchoolRoutes');
 const servidorRoutes = require('./routes/servidorRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const dashboardTasksRoutes = require('./routes/dashboardTasksRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const bulkImportRoutes = require('./routes/bulkImportRoutes');
 const loginSettingRoutes = require('./routes/loginSettingRoutes');
@@ -181,6 +181,7 @@ app.use("/api/arts", artSchoolRoutes);
 app.use("/api/servidores", servidorRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/dashboard-tasks", dashboardTasksRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/users", bulkImportRoutes);
 app.use("/api/login-setting", loginSettingRoutes);

@@ -8,9 +8,7 @@ const { normalizeModuleName } = require('../middleware/coordinatorAuth');
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
 
-// --- RATE LIMITING STATE ---
-const loginAttempts = new Map();
-
+// --- RATE LIMITING (Database-backed for multi-replica support) ---
 const getLockTime = (attempts) => {
     if (attempts >= 9) return 60 * 60 * 1000; // 1 hora
     if (attempts >= 8) return 15 * 60 * 1000; // 15 minutos
@@ -18,17 +16,28 @@ const getLockTime = (attempts) => {
     return 0;
 };
 
-// Limpieza periódica para evitar fugas de memoria
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, value] of loginAttempts.entries()) {
-        if (!value.lockUntil && (now - value.lastAttempt) > 60 * 60 * 1000) {
-            loginAttempts.delete(key);
-        } else if (value.lockUntil && now > value.lockUntil + 60 * 60 * 1000) {
-            loginAttempts.delete(key); // Cleanup expired long time ago
+// Contar intentos fallidos en los últimos 15 minutos desde la base de datos
+const getRecentFailedAttempts = async (email) => {
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    return await prisma.loginAttempt.count({
+        where: {
+            email: email.toLowerCase(),
+            success: false,
+            createdAt: { gte: fifteenMinutesAgo }
         }
-    }
-}, 15 * 60 * 1000); // 15 mins
+    });
+};
+
+// Limpiar intentos antiguos (ejecutar periódicamente)
+const cleanOldLoginAttempts = async () => {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    await prisma.loginAttempt.deleteMany({
+        where: { createdAt: { lt: oneDayAgo } }
+    });
+};
+
+// Limpieza periódica cada 6 horas
+setInterval(cleanOldLoginAttempts, 6 * 60 * 60 * 1000);
 // ---------------------------
 
 
@@ -251,6 +260,7 @@ const register = async (req, res) => {
         const token = jwt.sign({ 
             userId: user.id, 
             roles,
+            mustChangePassword: user.mustChangePassword,
             moduleCoordinations 
         }, process.env.JWT_SECRET, {
             expiresIn: '30m',
@@ -305,17 +315,15 @@ const login = async (req, res) => {
 
         const emailLower = email.toLowerCase();
         
-        // --- RATE LIMITING CHECK ---
-        const attemptRecord = loginAttempts.get(emailLower);
-        if (attemptRecord && attemptRecord.lockUntil && Date.now() < attemptRecord.lockUntil) {
-            const remainingTime = Math.ceil((attemptRecord.lockUntil - Date.now()) / 60000);
+        // --- RATE LIMITING CHECK (Database-backed) ---
+        const recentFailedAttempts = await getRecentFailedAttempts(emailLower);
+        const lockDuration = getLockTime(recentFailedAttempts);
+        
+        if (lockDuration > 0 && recentFailedAttempts >= 5) {
+            const remainingTime = Math.ceil(lockDuration / 60000);
             return res.status(429).json({ 
                 message: `Demasiados intentos fallidos. Por favor, intenta de nuevo en ${remainingTime} minuto(s).` 
             });
-        }
-        if (attemptRecord && attemptRecord.lockUntil && Date.now() > attemptRecord.lockUntil) {
-            // El bloqueo expiró, pero mantenemos los attempts para la progresividad
-            attemptRecord.lockUntil = null;
         }
         // ---------------------------
 
@@ -336,13 +344,13 @@ const login = async (req, res) => {
 
         if (!user) {
             // --- REGISTRAR INTENTO FALLIDO ---
-            const currentAttempts = (attemptRecord?.attempts || 0) + 1;
-            const lockDuration = getLockTime(currentAttempts);
-            
-            loginAttempts.set(emailLower, {
-                attempts: currentAttempts,
-                lockUntil: lockDuration > 0 ? Date.now() + lockDuration : null,
-                lastAttempt: Date.now()
+            await prisma.loginAttempt.create({
+                data: {
+                    email: emailLower,
+                    ipAddress: req.ip,
+                    userAgent: req.headers['user-agent'],
+                    success: false
+                }
             });
             // ---------------------------------
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -352,13 +360,13 @@ const login = async (req, res) => {
 
         if (!isMatch) {
             // --- REGISTRAR INTENTO FALLIDO ---
-            const currentAttempts = (attemptRecord?.attempts || 0) + 1;
-            const lockDuration = getLockTime(currentAttempts);
-            
-            loginAttempts.set(emailLower, {
-                attempts: currentAttempts,
-                lockUntil: lockDuration > 0 ? Date.now() + lockDuration : null,
-                lastAttempt: Date.now()
+            await prisma.loginAttempt.create({
+                data: {
+                    email: emailLower,
+                    ipAddress: req.ip,
+                    userAgent: req.headers['user-agent'],
+                    success: false
+                }
             });
             // ---------------------------------
             await logActivity(user.id, 'LOGIN_FAILED', 'USER', user.id, { 
@@ -369,8 +377,15 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // --- LOGIN EXITOSO: RESETEAR INTENTOS ---
-        loginAttempts.delete(emailLower);
+        // --- LOGIN EXITOSO: REGISTRAR INTENTO EXITOSO ---
+        await prisma.loginAttempt.create({
+            data: {
+                email: emailLower,
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent'],
+                success: true
+            }
+        });
         // -----------------------------------------
 
         const moduleCoordinations = {
@@ -649,6 +664,12 @@ const changePassword = async (req, res) => {
             }
         });
 
+        // Revocar todas las sesiones existentes (refresh tokens) tras el cambio de contraseña
+        await prisma.refreshToken.updateMany({
+            where: { userId, isRevoked: false },
+            data: { isRevoked: true }
+        });
+
         await logActivity(userId, 'UPDATE', 'USER', userId, { message: 'Cambio de contraseña' }, req.ip, req.headers['user-agent']);
 
         res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
@@ -706,6 +727,12 @@ const forcePasswordChange = async (req, res) => {
             }
         });
 
+        // Revocar todas las sesiones existentes para el usuario reseteado
+        await prisma.refreshToken.updateMany({
+            where: { userId: targetUserId, isRevoked: false },
+            data: { isRevoked: true }
+        });
+
         res.json({ message: 'Contraseña reseteada exitosamente' });
     } catch (error) {
         console.error('Force password change error:', error);
@@ -727,8 +754,32 @@ const refreshToken = async (req, res) => {
             include: { user: { include: { roles: { include: { role: true } } } } }
         });
 
-        if (!storedToken || storedToken.isRevoked || storedToken.expiresAt < new Date() || !storedToken.user) {
+        if (!storedToken || storedToken.expiresAt < new Date() || !storedToken.user) {
             return res.status(401).json({ message: 'Invalid or expired refresh token' });
+        }
+
+        // Si el usuario está inactivo o eliminado, rechazar
+        if (!storedToken.user.isActive || storedToken.user.isDeleted) {
+            return res.status(401).json({ message: 'Invalid or expired refresh token' });
+        }
+
+        // Si el token ya fue revocado, posible reuso — revocar todos los tokens del usuario
+        if (storedToken.isRevoked) {
+            await prisma.refreshToken.updateMany({
+                where: { userId: storedToken.user.id, isRevoked: false },
+                data: { isRevoked: true }
+            });
+            return res.status(401).json({ message: 'Refresh token has been revoked. All sessions terminated.' });
+        }
+
+        // Rotación atómica: solo el primer request que consiga actualizar isRevoked de false a true continúa
+        const updateResult = await prisma.refreshToken.updateMany({
+            where: { id: storedToken.id, isRevoked: false },
+            data: { isRevoked: true }
+        });
+
+        if (updateResult.count === 0) {
+            return res.status(401).json({ message: 'Refresh token already used or invalid' });
         }
 
         const roles = storedToken.user.roles.map(r => r.role.name);
@@ -742,11 +793,6 @@ const refreshToken = async (req, res) => {
         },
         process.env.JWT_SECRET,
         { expiresIn: '30m' });
-
-        await prisma.refreshToken.update({
-            where: { id: storedToken.id },
-            data: { isRevoked: true }
-        });
 
         const newRefreshToken = await generateRefreshToken(
             storedToken.user.id, 

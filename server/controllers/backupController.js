@@ -79,29 +79,69 @@ const generateBackupFile = (databaseUrl, filePath) => {
  * Devuelve la ruta del archivo original si no hubo nada que limpiar, o la de
  * un archivo temporal saneado (responsabilidad del llamador de eliminarlo).
  */
-const sanitizeBackupSql = (filePath) => {
-    const source = fs.readFileSync(filePath, "utf8");
-    const lines = source.split("\n");
-
-    const filtered = lines.filter((line) => {
-        const trimmed = line.trim();
-        if (/^SET transaction_timeout\b/i.test(trimmed)) return false;
-        if (/^\\restrict\b/i.test(trimmed)) return false;
-        if (/^\\unrestrict\b/i.test(trimmed)) return false;
-        return true;
-    });
-
-    if (filtered.length === lines.length) {
-        return filePath;
-    }
-
+const sanitizeBackupSql = async (filePath) => {
     const sanitizedPath = path.join(
         os.tmpdir(),
         `restore_sanitized_${crypto.randomBytes(8).toString("hex")}.sql`
     );
-    fs.writeFileSync(sanitizedPath, filtered.join("\n"), "utf8");
-    console.log("🧹 Dump saneado (se eliminaron líneas incompatibles con el psql local).");
-    return sanitizedPath;
+
+    // Usar streaming para evitar cargar archivos grandes en memoria
+    const readStream = fs.createReadStream(filePath, { encoding: 'utf8' });
+    const writeStream = fs.createWriteStream(sanitizedPath, { encoding: 'utf8' });
+
+    let buffer = '';
+    let removedCount = 0;
+    let totalCount = 0;
+
+    return new Promise((resolve, reject) => {
+        readStream.on('data', (chunk) => {
+            buffer += chunk;
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Mantener la última línea incompleta en el buffer
+
+            for (const line of lines) {
+                totalCount++;
+                const trimmed = line.trim();
+                if (/^SET transaction_timeout\b/i.test(trimmed) ||
+                    /^\\restrict\b/i.test(trimmed) ||
+                    /^\\unrestrict\b/i.test(trimmed)) {
+                    removedCount++;
+                    continue;
+                }
+                writeStream.write(line + '\n');
+            }
+        });
+
+        readStream.on('end', () => {
+            // Procesar el último chunk del buffer
+            if (buffer) {
+                totalCount++;
+                const trimmed = buffer.trim();
+                if (/^SET transaction_timeout\b/i.test(trimmed) ||
+                    /^\\restrict\b/i.test(trimmed) ||
+                    /^\\unrestrict\b/i.test(trimmed)) {
+                    removedCount++;
+                } else {
+                    writeStream.write(buffer);
+                }
+            }
+
+            writeStream.end();
+            writeStream.on('finish', () => {
+                if (removedCount === 0) {
+                    // No se eliminó nada, usar archivo original
+                    fs.unlink(sanitizedPath, () => {});
+                    resolve(filePath);
+                } else {
+                    console.log(`🧹 Dump saneado (${removedCount} líneas eliminadas de ${totalCount}).`);
+                    resolve(sanitizedPath);
+                }
+            });
+        });
+
+        readStream.on('error', reject);
+        writeStream.on('error', reject);
+    });
 };
 
 const restoreBackupFile = async (databaseUrl, filePath, options = {}) => {
@@ -134,7 +174,7 @@ const restoreBackupFile = async (databaseUrl, filePath, options = {}) => {
 
         try {
             // Sanea el dump solo si hay líneas incompatibles con el psql local
-            sanitizedFile = sanitizeBackupSql(tempFile);
+            sanitizedFile = await sanitizeBackupSql(tempFile);
 
             execFileSync(psql, [
                 '--dbname', databaseUrl,

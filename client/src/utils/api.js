@@ -150,6 +150,17 @@ api.interceptors.response.use(
             }
         }
 
+        // Si el servidor indica que se requiere cambio obligatorio de contraseña (403 mustChangePassword)
+        if (error.response?.status === 403 && error.response?.data?.mustChangePassword) {
+            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            if (!storedUser.mustChangePassword) {
+                storedUser.mustChangePassword = true;
+                localStorage.setItem('user', JSON.stringify(storedUser));
+                // Disparar evento para que AuthContext o componentes se enteren si es necesario
+                window.dispatchEvent(new Event('storage'));
+            }
+        }
+
         error.userMessage = userMessage;
         return Promise.reject(error);
     }

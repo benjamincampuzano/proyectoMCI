@@ -110,6 +110,21 @@ const getUserAncestors = async (userId) => {
     }
 };
 
+/**
+ * Authorization check helper - verifies requester can access target's network
+ * @param {Object} requester - User object with id and roles
+ * @param {number} targetUserId - User whose network is being accessed
+ * @returns {Promise<boolean>} True if authorized
+ */
+const canAccessNetwork = async (requester, targetUserId) => {
+    if (!requester) return false;
+    const requesterRoles = requester.roles || [];
+    if (requesterRoles.includes('ADMIN') || requesterRoles.includes('PASTOR')) return true;
+    if (requester.id === targetUserId) return true;
+    const networkIds = await getUserNetwork(requester.id);
+    return networkIds.includes(targetUserId);
+};
+
 module.exports = {
     getUserNetwork,
     getUserAncestors,
@@ -124,5 +139,6 @@ module.exports = {
 
         const descendants = await getUserNetwork(childId);
         return descendants.includes(parseInt(potentialParentId));
-    }
+    },
+    canAccessNetwork
 };

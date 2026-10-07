@@ -4,6 +4,7 @@ const { randomInt } = require('crypto');
 const { logActivity } = require('../utils/auditLogger');
 const { validatePassword } = require('../utils/passwordValidator');
 const { canManageUser, getVisibleRoles, MANAGABLE_ROLES, PROTECTED_ROLES, hasAdminAccessOnModule } = require('../middleware/coordinatorAuth');
+const { isDescendant } = require('../middleware/hierarchyMiddleware');
 
 const prisma = require('../utils/database');
 
@@ -422,6 +423,12 @@ const changePassword = async (req, res) => {
                 password: hashedPassword,
                 mustChangePassword: false
             },
+        });
+
+        // Revocar todas las sesiones existentes (refresh tokens) tras el cambio de contraseña
+        await prisma.refreshToken.updateMany({
+            where: { userId, isRevoked: false },
+            data: { isRevoked: true }
         });
 
         res.status(200).json({ message: 'Password changed successfully' });
@@ -1490,8 +1497,52 @@ const assignLeader = async (req, res) => {
         const userId = parseInt(id);
         const pId = parseInt(parentId);
 
+        if (isNaN(userId) || isNaN(pId)) {
+            return res.status(400).json({ message: 'Invalid user or parent ID' });
+        }
+
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const parent = await prisma.user.findUnique({
+            where: { id: pId },
+            include: { roles: { include: { role: true } } }
+        });
+        if (!parent) return res.status(404).json({ message: 'Parent user not found' });
+
+        // Verificar que el padre tenga un rol válido en la jerarquía
+        const parentRoles = parent.roles.map(r => r.role.name);
+        const validHierarchyRoles = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'];
+        if (!parentRoles.some(r => validHierarchyRoles.includes(r))) {
+            return res.status(400).json({ message: 'El usuario asignado como líder no tiene un rol válido en la jerarquía' });
+        }
+
+        // Verificar que el solicitante puede gestionar al usuario destino
+        const targetUserRoles = await prisma.userRole.findMany({
+            where: { userId },
+            include: { role: true }
+        });
+        const targetRole = targetUserRoles[0]?.role.name || 'DISCIPULO';
+
+        const manageCheck = await canManageUser(req.user, targetRole, null, null, userId);
+        if (!manageCheck.canManage) {
+            return res.status(403).json({ message: manageCheck.reason || 'No tienes permisos para gestionar este usuario' });
+        }
+
+        // Verificar que el solicitante puede gestionar al padre (debe estar en su jerarquía o ser admin)
+        const requesterRoles = req.user.roles || [];
+        const isAdmin = requesterRoles.includes('ADMIN') || requesterRoles.includes('PASTOR');
+        if (!isAdmin) {
+            const parentManageCheck = await canManageUser(req.user, parentRoles[0], null, null, pId);
+            if (!parentManageCheck.canManage) {
+                return res.status(403).json({ message: 'No tienes permisos para asignar este líder' });
+            }
+        }
+
+        // Verificar que no se cree un ciclo en la jerarquía
+        if (await isDescendant(userId, pId)) {
+            return res.status(400).json({ message: 'No se puede asignar: crearía un ciclo en la jerarquía' });
+        }
 
         // Update hierarchy: remove old for this role, add new
         if (role) {
@@ -1525,6 +1576,15 @@ const getMyNetwork = async (req, res) => {
     try {
         const userId = req.user.id;
         const userRoles = req.user.roles || [];
+        const targetUserId = req.query.userId ? parseInt(req.query.userId) : null;
+
+        // Si se solicita la red de otro usuario, verificar permisos
+        if (targetUserId && targetUserId !== userId) {
+            const isAdmin = userRoles.includes('ADMIN') || userRoles.includes('PASTOR');
+            if (!isAdmin) {
+                return res.status(403).json({ error: 'No tienes permisos para ver la red de otro usuario' });
+            }
+        }
 
         // Si es ADMIN, devolver todos los usuarios (excepto otros admins y el mismo usuario)
         if (userRoles.includes('ADMIN')) {

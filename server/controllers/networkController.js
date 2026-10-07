@@ -1,5 +1,7 @@
 const prisma = require('../utils/database');
 const { getUserNetwork, getLiderDoceName, checkCycle } = require('../utils/networkUtils');
+const { canManageUser } = require('../middleware/coordinatorAuth');
+const { isDescendant } = require('../middleware/hierarchyMiddleware');
 
 /**
  * Get all users with role LIDER_DOCE
@@ -461,6 +463,42 @@ const assignUserToLeader = async (req, res) => {
         if (leaderRoles.includes('PASTOR')) hierarchyRole = 'PASTOR';
         else if (leaderRoles.includes('LIDER_DOCE')) hierarchyRole = 'LIDER_DOCE';
         else if (leaderRoles.includes('LIDER_CELULA')) hierarchyRole = 'LIDER_CELULA';
+
+        // Verificar que el líder tenga un rol válido en la jerarquía
+        const validHierarchyRoles = ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'];
+        if (!leaderRoles.some(r => validHierarchyRoles.includes(r))) {
+            return res.status(400).json({ error: 'El líder asignado no tiene un rol válido en la jerarquía' });
+        }
+
+        // Verificar que el solicitante puede gestionar al usuario destino
+        const targetUserRoles = await prisma.userRole.findMany({
+            where: { userId: childId },
+            include: { role: true }
+        });
+        const targetRole = targetUserRoles[0]?.role.name || 'DISCIPULO';
+
+        const requesterRoles = req.user.roles || [];
+        const isAdmin = requesterRoles.includes('ADMIN') || requesterRoles.includes('PASTOR');
+
+        if (!isAdmin) {
+            const manageCheck = await canManageUser(req.user, targetRole, null, null, childId);
+            if (!manageCheck.canManage) {
+                return res.status(403).json({ error: manageCheck.reason || 'No tienes permisos para gestionar este usuario' });
+            }
+
+            // Verificar que el líder está en la jerarquía del solicitante o es el mismo solicitante
+            if (parentId !== req.user.id) {
+                const leaderManageCheck = await canManageUser(req.user, leaderRoles[0], null, null, parentId);
+                if (!leaderManageCheck.canManage) {
+                    return res.status(403).json({ error: 'No tienes permisos para asignar este líder' });
+                }
+            }
+        }
+
+        // Verificar que no se cree un ciclo en la jerarquía
+        if (await isDescendant(childId, parentId)) {
+            return res.status(400).json({ error: 'No se puede asignar: crearía un ciclo en la jerarquía' });
+        }
 
         // Use Service for centralized logic
         await assignHierarchy({

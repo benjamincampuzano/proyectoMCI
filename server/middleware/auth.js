@@ -16,9 +16,37 @@ const authenticate = (req, res, next) => {
         req.user = {
             id: decoded.id || decoded.userId,
             roles: decoded.roles || (decoded.role ? [decoded.role] : []),
+            mustChangePassword: !!decoded.mustChangePassword,
             // Coordinaciones de módulo desde el token JWT
             moduleCoordinationsFromToken: decoded.moduleCoordinations || null
         };
+
+        // Si el usuario tiene flag mustChangePassword activo, bloquear acceso a cualquier ruta
+        // excepto cambio de contraseña, logout, info de usuario básico y refresh
+        if (req.user.mustChangePassword) {
+            const path = req.path || '';
+            const baseUrl = req.baseUrl || '';
+            const fullPath = `${baseUrl}${path}`;
+
+            const allowedPaths = [
+                '/change-password',
+                '/password',
+                '/logout',
+                '/logout-all',
+                '/refresh-token',
+                '/profile'
+            ];
+
+            const isAllowed = allowedPaths.some(allowed => fullPath.endsWith(allowed) || path.endsWith(allowed));
+
+            if (!isAllowed) {
+                return res.status(403).json({
+                    message: 'Debe cambiar su contraseña antes de continuar',
+                    mustChangePassword: true
+                });
+            }
+        }
+
         next();
     } catch (error) {
         return res.status(401).json({ message: 'Invalid or expired token' });

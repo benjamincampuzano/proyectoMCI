@@ -24,6 +24,14 @@ const refreshLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const publicSearchLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 20, // 20 búsquedas por ventana
+  message: { message: 'Demasiadas solicitudes de búsqueda. Intenta más tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.get('/init-status', checkInitStatus);
 router.post('/setup', authLimiter, registerSetup);
 router.post('/register', authLimiter, register);
@@ -44,7 +52,7 @@ router.get('/sessions', authenticate, getSessions);
 router.post('/logout-all', authenticate, logoutAll);
 
 // Public Guest Registration Routes
-router.get('/public/users/search', searchPublicUsers);
+router.get('/public/users/search', publicSearchLimiter, searchPublicUsers);
 router.post('/public/guests', createPublicGuest);
 
 module.exports = router;

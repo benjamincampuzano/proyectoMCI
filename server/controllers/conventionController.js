@@ -2,6 +2,7 @@ const prisma = require('../utils/database');
 const { logActivity } = require('../utils/auditLogger');
 const { getUserNetwork } = require('../utils/networkUtils');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const ACTIVE_REGISTRATION_STATUSES = ['REGISTERED', 'ATTENDED'];
 const PENDING_REGISTRATION_STATUS = 'PENDING';
@@ -600,7 +601,7 @@ const createPublicConventionRegistration = async (req, res) => {
             return res.status(400).json({ error: 'La convención ya finalizó y no acepta nuevas solicitudes.' });
         }
 
-        const trimmedName = (fullName || '').trim();
+        const trimmedName = (fullName || '').trim().normalize('NFKC');
         const trimmedPhone = (phone || '').trim();
 
         if (!trimmedName) {
@@ -628,8 +629,7 @@ const createPublicConventionRegistration = async (req, res) => {
                 fullName: {
                     equals: trimmedName,
                     mode: 'insensitive'
-                },
-                ...(trimmedPhone ? { phone: trimmedPhone } : { phone: null })
+                }
             },
             select: { id: true }
         });
@@ -651,10 +651,14 @@ const createPublicConventionRegistration = async (req, res) => {
             }
         });
 
-        await logActivity(null, 'CREATE', 'CONVENTION_REGISTRATION', registration.id, {
+        // Use sentinel for unauthenticated public registration; IP is primary identifier
+        const auditUserId = req.user?.id || `public:${req.ip}`;
+        await logActivity(auditUserId, 'CREATE', 'CONVENTION_REGISTRATION', registration.id, {
             type: 'PUBLIC_REGISTRATION',
             conventionId: parseInt(conventionId),
-            fullName: trimmedName
+            fullName: trimmedName,
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent']
         }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({
@@ -733,13 +737,10 @@ const getPendingConventionRegistrations = async (req, res) => {
     }
 };
 
-const generateTempPassword = (length = 12) => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+// Generate cryptographically secure temporary password (12+ chars)
+const generateTempPassword = () => {
+    const randomBytes = crypto.randomBytes(8).toString('base64url');
+    return `Mci${randomBytes}!`;
 };
 
 const approveConventionRegistration = async (req, res) => {
@@ -1072,11 +1073,42 @@ const updateRegistration = async (req, res) => {
         }
 
         const data = {};
-        if (fullName !== undefined) data.fullName = fullName;
+        if (fullName !== undefined) {
+            const trimmedName = String(fullName).trim().normalize('NFKC');
+            if (!trimmedName) {
+                return res.status(400).json({ error: 'El nombre completo es obligatorio.' });
+            }
+
+            // Check for duplicate name in same convention (excluding current registration)
+            const duplicateRegistration = await prisma.conventionRegistration.findFirst({
+                where: {
+                    conventionId: found.conventionId,
+                    fullName: {
+                        equals: trimmedName,
+                        mode: 'insensitive'
+                    },
+                    status: {
+                        in: [PENDING_REGISTRATION_STATUS, 'REGISTERED', 'ATTENDED']
+                    },
+                    NOT: { id: parseInt(registrationId) }
+                },
+                select: { id: true }
+            });
+
+            if (duplicateRegistration) {
+                return res.status(400).json({ error: 'Ya existe un registro con este nombre en la convención.' });
+            }
+
+            data.fullName = trimmedName;
+        }
         if (discountPercentage !== undefined) data.discountPercentage = parseFloat(discountPercentage);
         if (ticketType !== undefined) data.ticketType = ticketType;
         if (needsTransport !== undefined) data.needsTransport = Boolean(needsTransport);
         if (needsAccommodation !== undefined) data.needsAccommodation = Boolean(needsAccommodation);
+
+        if (Object.keys(data).length === 0) {
+            return res.status(400).json({ error: 'No hay campos para actualizar.' });
+        }
 
         const updated = await prisma.conventionRegistration.update({
             where: { id: parseInt(registrationId) },

@@ -2,6 +2,7 @@ const prisma = require('../utils/database');
 const { logActivity } = require('../utils/auditLogger');
 const { getUserNetwork } = require('../utils/networkUtils');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const ACTIVE_REGISTRATION_STATUSES = ['REGISTERED', 'ATTENDED'];
 const PENDING_REGISTRATION_STATUS = 'PENDING';
@@ -669,10 +670,31 @@ const updateRegistration = async (req, res) => {
         }
 
         if (fullName !== undefined) {
-            const trimmedName = String(fullName).trim();
+            const trimmedName = String(fullName).trim().normalize('NFKC');
             if (!trimmedName) {
                 return res.status(400).json({ error: 'El nombre completo es obligatorio.' });
             }
+
+            // Verificar que no exista otro registro con el mismo nombre en este encuentro
+            const duplicateRegistration = await prisma.encuentroRegistration.findFirst({
+                where: {
+                    encuentroId: registration.encuentroId,
+                    fullName: {
+                        equals: trimmedName,
+                        mode: 'insensitive'
+                    },
+                    status: {
+                        in: ['PENDING', 'REGISTERED', 'ATTENDED']
+                    },
+                    NOT: { id: parseInt(registrationId) }
+                },
+                select: { id: true }
+            });
+
+            if (duplicateRegistration) {
+                return res.status(400).json({ error: 'Ya existe un registro con este nombre en el encuentro.' });
+            }
+
             data.fullName = trimmedName;
         }
 
@@ -919,7 +941,7 @@ const createPublicEncuentroRegistration = async (req, res) => {
             return res.status(400).json({ error: 'El encuentro ya finalizó y no acepta nuevas inscripciones.' });
         }
 
-        const trimmedName = (fullName || '').trim();
+        const trimmedName = (fullName || '').trim().normalize('NFKC');
         const trimmedPhone = (phone || '').trim();
 
         if (!trimmedName) {
@@ -938,7 +960,7 @@ const createPublicEncuentroRegistration = async (req, res) => {
             return res.status(400).json({ error: 'Este encuentro es exclusivo para mujeres.' });
         }
 
-        // Check for duplicate registration by name+phone
+        // Check for duplicate registration by name only (phone is user-controlled and unverified)
         const duplicateRegistration = await prisma.encuentroRegistration.findFirst({
             where: {
                 encuentroId: parseInt(encuentroId),
@@ -948,8 +970,7 @@ const createPublicEncuentroRegistration = async (req, res) => {
                 fullName: {
                     equals: trimmedName,
                     mode: 'insensitive'
-                },
-                ...(trimmedPhone ? { phone: trimmedPhone } : { phone: null })
+                }
             },
             select: { id: true }
         });
@@ -970,10 +991,14 @@ const createPublicEncuentroRegistration = async (req, res) => {
             }
         });
 
-        await logActivity(null, 'CREATE', 'ENCUENTRO_REGISTRATION', registration.id, {
+        // Use sentinel for unauthenticated public registration; IP is primary identifier
+        const auditUserId = req.user?.id || `public:${req.ip}`;
+        await logActivity(auditUserId, 'CREATE', 'ENCUENTRO_REGISTRATION', registration.id, {
             type: 'PUBLIC_REGISTRATION',
             encuentroId: parseInt(encuentroId),
-            fullName: trimmedName
+            fullName: trimmedName,
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent']
         }, req.ip, req.headers['user-agent']);
 
         res.status(201).json({
@@ -1057,7 +1082,9 @@ const approveEncuentroRegistration = async (req, res) => {
                 email = `invitado_${registration.id}_${Date.now()}@invitado.iglesia.app`;
             }
 
-            const tempPassword = 'Mci' + Math.random().toString(36).substring(2, 8).toUpperCase() + '!';
+            // Generar contraseña temporal segura usando crypto.randomBytes (12+ caracteres)
+            const randomBytes = crypto.randomBytes(8).toString('base64url');
+            const tempPassword = `Mci${randomBytes}!`;
             const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
             const newUser = await prisma.$transaction(async (tx) => {

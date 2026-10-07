@@ -307,21 +307,18 @@ const canManageUser = async (requester, targetUserRole, targetUserNetworkId, mod
             return { canManage: false, reason: `No tienes permisos para editar usuarios ${targetUserRole}` };
         }
 
-        // Si se proporciona targetUserId, verificar primero si el usuario destino está en la jerarquía del LIDER_DOCE
+        // Si se proporciona targetUserId, verificar que el usuario destino está en la jerarquía del LIDER_DOCE
         if (targetUserId) {
             const inHierarchy = await isDescendant(requester.id, targetUserId);
             if (inHierarchy) {
                 return { canManage: true, level: 'lider_doce' };
             }
+            // Si no está en la jerarquía, denegar acceso (sin fallback por red)
+            return { canManage: false, reason: 'El usuario destino no está en tu jerarquía' };
         }
 
-        // Restringir por red si ambos tienen red asignada Y son diferentes
-        const requesterNetworkId = await getUserNetworkId(requester.id);
-        if (targetUserNetworkId && requesterNetworkId && targetUserNetworkId !== requesterNetworkId) {
-            return { canManage: false, reason: 'Sin permisos para edición de usuarios fuera de tu red' };
-        }
-
-        return { canManage: true, level: 'lider_doce' };
+        // Sin targetUserId específico, denegar acceso (no hay forma de verificar jerarquía)
+        return { canManage: false, reason: 'No se puede gestionar un usuario sin verificar jerarquía' };
     }
 
     //Sin permisos suficientes

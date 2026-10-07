@@ -21,14 +21,14 @@ router.get('/stats', authenticate, authorize(['ADMIN', 'PASTOR']), auditControll
 router.post('/backup', 
     authenticate, 
     authorize(['ADMIN']), 
-    // backupLimiter,  // Temporalmente deshabilitado para pruebas
+    backupLimiter,
     backupController.generateBackup
 );
 
 router.post('/restore', 
     authenticate, 
     authorize(['ADMIN']), 
-    // restoreLimiter,  // Temporalmente deshabilitado para pruebas
+    restoreLimiter,
     upload.single('backupFile'), 
     backupController.restoreBackup
 );
