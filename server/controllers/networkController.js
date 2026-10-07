@@ -1,4 +1,5 @@
 const prisma = require('../utils/database');
+const { Prisma } = require('../generated/prisma/client');
 const { getUserNetwork, getLiderDoceName, checkCycle } = require('../utils/networkUtils');
 const { canManageUser } = require('../middleware/coordinatorAuth');
 const { isDescendant } = require('../middleware/hierarchyMiddleware');
@@ -664,34 +665,90 @@ const getUserActivityList = async (req, res) => {
         const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
         const skip = (page - 1) * limit;
 
+        // Mismos segmentadores tipo Power BI del dashboard unificado
+        const { startDate, endDate, liderDoceId, role } = req.query;
+        const search = typeof req.query.search === 'string' ? req.query.search.trim().slice(0, 60) : '';
+
+        // Ventana de fechas (por defecto últimos 90 días)
+        const end = endDate ? new Date(endDate) : new Date();
+        if (endDate) end.setHours(23, 59, 59, 999);
+        const start = startDate ? new Date(startDate) : new Date(end.getTime() - 90 * 24 * 60 * 60 * 1000);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+            return res.status(400).json({ error: 'Rango de fechas inválido' });
+        }
+        const dateRange = { gte: start, lte: end };
+        const ventana = `${start.toISOString().split('T')[0]} → ${end.toISOString().split('T')[0]}`;
+        const meta = {
+            ventana,
+            appliedFilters: {
+                startDate: startDate || null,
+                endDate: endDate || null,
+                liderDoceId: liderDoceId || null,
+                role: role || null,
+                search: search || null
+            }
+        };
+
+        // Red solicitada (?liderDoceId=): líder + descendencia + cónyuge
+        let redIds = null;
+        if (liderDoceId) {
+            const lId = parseInt(liderDoceId, 10);
+            if (!Number.isNaN(lId)) {
+                const lider = await prisma.user.findUnique({
+                    where: { id: lId },
+                    select: { spouseId: true }
+                }).catch(() => null);
+                redIds = [lId, ...(await getUserNetwork(lId))];
+                if (lider?.spouseId) {
+                    redIds = [...redIds, lider.spouseId, ...(await getUserNetwork(lider.spouseId))];
+                }
+                redIds = [...new Set(redIds)];
+            }
+        }
+
+        const likePattern = search ? `%${search}%` : null;
+
         let targetUserIds = [];
 
         if (isAdmin) {
-            // Admin can see all non-admin users — only fetch count + paginated IDs
-            const [{ totalCount }] = await prisma.$queryRaw`
-                SELECT COUNT(*)::int AS "totalCount"
-                FROM "User" u
-                WHERE u."isDeleted" = false
-                  AND NOT EXISTS (
+            // Admin ve todos los usuarios no-admin, con filtros opcionales de red/rol/búsqueda.
+            // NOTA: excluye ADMIN de forma consistente con el resto del reporte.
+            const conditions = [
+                Prisma.sql`u."isDeleted" = false`,
+                Prisma.sql`NOT EXISTS (
                     SELECT 1 FROM "UserRole" ur
                     JOIN "Role" r ON r.id = ur."roleId"
                     WHERE ur."userId" = u.id AND r.name = 'ADMIN'
-                  )
+                )`
+            ];
+            if (redIds) conditions.push(Prisma.sql`u.id = ANY(${redIds})`);
+            if (role) conditions.push(Prisma.sql`EXISTS (
+                SELECT 1 FROM "UserRole" ur
+                JOIN "Role" r ON r.id = ur."roleId"
+                WHERE ur."userId" = u.id AND r.name = ${role}
+            )`);
+            const joinProfile = likePattern
+                ? Prisma.sql`JOIN "UserProfile" up ON up."userId" = u.id`
+                : Prisma.empty;
+            if (likePattern) conditions.push(Prisma.sql`(up."fullName" ILIKE ${likePattern} OR u.email ILIKE ${likePattern})`);
+            const whereSql = Prisma.join(conditions, ' AND ');
+
+            const [{ totalCount }] = await prisma.$queryRaw`
+                SELECT COUNT(*)::int AS "totalCount"
+                FROM "User" u
+                ${joinProfile}
+                WHERE ${whereSql}
             `;
 
             if (totalCount === 0) {
-                return res.json({ data: [], pagination: { page, limit, total: 0, pages: 0 } });
+                return res.json({ data: [], pagination: { page, limit, total: 0, pages: 0 }, meta });
             }
 
             const pagedUsers = await prisma.$queryRaw`
                 SELECT u.id
                 FROM "User" u
-                WHERE u."isDeleted" = false
-                  AND NOT EXISTS (
-                    SELECT 1 FROM "UserRole" ur
-                    JOIN "Role" r ON r.id = ur."roleId"
-                    WHERE ur."userId" = u.id AND r.name = 'ADMIN'
-                  )
+                ${joinProfile}
+                WHERE ${whereSql}
                 ORDER BY u.id DESC
                 OFFSET ${skip}
                 LIMIT ${limit}
@@ -707,12 +764,12 @@ const getUserActivityList = async (req, res) => {
                     roles: { include: { role: true } },
                     _count: {
                         select: {
-                            invitedGuests: true,
+                            invitedGuests: { where: { createdAt: dateRange } },
                             hostedCells: true,
-                            churchAttendances: { where: { status: 'PRESENTE' } },
-                            cellAttendances: { where: { status: 'PRESENTE' } },
-                            encuentroRegistrations: { where: { status: 'ATTENDED' } },
-                            conventionRegistrations: { where: { status: 'ATTENDED' } }
+                            churchAttendances: { where: { status: 'PRESENTE', date: dateRange } },
+                            cellAttendances: { where: { status: 'PRESENTE', date: dateRange } },
+                            encuentroRegistrations: { where: { status: 'ATTENDED', createdAt: dateRange } },
+                            conventionRegistrations: { where: { status: 'ATTENDED', createdAt: dateRange } }
                         }
                     },
                     cell: { select: { name: true } },
@@ -726,6 +783,7 @@ const getUserActivityList = async (req, res) => {
                         }
                     },
                     classAttendances: {
+                        where: { createdAt: dateRange },
                         select: {
                             enrollmentId: true,
                             classNumber: true,
@@ -743,23 +801,46 @@ const getUserActivityList = async (req, res) => {
                         include: { module: { select: { name: true } } }
                     },
                     auditLogs: {
-                        where: { action: 'LOGIN' },
+                        where: { action: 'LOGIN', createdAt: dateRange },
                         orderBy: { createdAt: 'desc' },
                         take: 1
                     }
                 }
             });
 
-            const activityList = buildActivityList(users);
+            const activityList = buildActivityList(users, ventana);
             return res.json({
                 data: activityList,
-                pagination: { page, limit, total: totalCount, pages: Math.ceil(totalCount / limit) }
+                pagination: { page, limit, total: totalCount, pages: Math.ceil(totalCount / limit) },
+                meta
             });
         }
 
-        // Non-admin path: get leader's network
+        // Non-admin path: get leader's network, intersected with red/search/role filters
         const networkIds = await getUserNetwork(currentUserId);
         targetUserIds = [...new Set([...networkIds, currentUserId])];
+
+        if (redIds) {
+            const redSet = new Set(redIds);
+            targetUserIds = targetUserIds.filter((uid) => redSet.has(uid));
+        }
+
+        if (role || likePattern) {
+            const matched = await prisma.user.findMany({
+                where: {
+                    id: { in: targetUserIds.length > 0 ? targetUserIds : [-1] },
+                    ...(role ? { roles: { some: { role: { name: role } } } } : {}),
+                    ...(likePattern ? {
+                        OR: [
+                            { profile: { fullName: { contains: search, mode: 'insensitive' } } },
+                            { email: { contains: search, mode: 'insensitive' } }
+                        ]
+                    } : {})
+                },
+                select: { id: true }
+            });
+            targetUserIds = matched.map((m) => m.id);
+        }
 
         if (targetUserIds.length === 0) {
             return res.json({ data: [], pagination: { page, limit, total: 0, pages: 0 } });
@@ -782,12 +863,12 @@ const getUserActivityList = async (req, res) => {
                 roles: { include: { role: true } },
                 _count: {
                     select: {
-                        invitedGuests: true,
+                        invitedGuests: { where: { createdAt: dateRange } },
                         hostedCells: true,
-                        churchAttendances: { where: { status: 'PRESENTE' } },
-                        cellAttendances: { where: { status: 'PRESENTE' } },
-                        encuentroRegistrations: { where: { status: 'ATTENDED' } },
-                        conventionRegistrations: { where: { status: 'ATTENDED' } }
+                        churchAttendances: { where: { status: 'PRESENTE', date: dateRange } },
+                        cellAttendances: { where: { status: 'PRESENTE', date: dateRange } },
+                        encuentroRegistrations: { where: { status: 'ATTENDED', createdAt: dateRange } },
+                        conventionRegistrations: { where: { status: 'ATTENDED', createdAt: dateRange } }
                     }
                 },
                 cell: { select: { name: true } },
@@ -801,6 +882,7 @@ const getUserActivityList = async (req, res) => {
                     }
                 },
                 classAttendances: {
+                    where: { createdAt: dateRange },
                     select: {
                         enrollmentId: true,
                         classNumber: true,
@@ -818,17 +900,18 @@ const getUserActivityList = async (req, res) => {
                     include: { module: { select: { name: true } } }
                 },
                 auditLogs: {
-                    where: { action: 'LOGIN' },
+                    where: { action: 'LOGIN', createdAt: dateRange },
                     orderBy: { createdAt: 'desc' },
                     take: 1
                 }
             }
         });
 
-        const activityList = buildActivityList(users);
+        const activityList = buildActivityList(users, ventana);
         res.json({
             data: activityList,
-            pagination: { page, limit, total: totalCount, pages: Math.ceil(totalCount / limit) }
+            pagination: { page, limit, total: totalCount, pages: Math.ceil(totalCount / limit) },
+            meta
         });
     } catch (error) {
         console.error('Error in getUserActivityList:', error);
@@ -839,7 +922,7 @@ const getUserActivityList = async (req, res) => {
 /**
  * Build activity list from user records
  */
-const buildActivityList = (users) => {
+const buildActivityList = (users, ventana = '90 días') => {
     return users.map(u => {
         const churchCount = u._count.churchAttendances;
         const cellCount = u._count.cellAttendances;
@@ -892,7 +975,7 @@ const buildActivityList = (users) => {
                 escuela: schoolCount,
                 encuentro: encuentroCount,
                 ganar: ganarReports,
-                ventana: '90 días'
+                ventana
             },
             clases: classes,
             celula: {

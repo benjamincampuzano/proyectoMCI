@@ -495,16 +495,20 @@ const getCellMembers = async (req, res) => {
 // Get attendance statistics for chart
 const getAttendanceStats = async (req, res) => {
     try {
-        const { startDate, endDate, cellId } = req.query;
+        const { startDate, endDate, cellId, liderDoceId } = req.query;
         const userRoles = req.user.roles || [];
         const userId = req.user.id;
 
         // Check if user has full access on the Enviar module
         const isEnviarCoordinator = hasFullEnviarAccess(req.user);
 
-        // Default to last 30 days if no date range provided
+        // Default to last 30 days if no date range provided (end = end of day)
         const end = endDate ? new Date(endDate) : new Date();
+        if (endDate) end.setHours(23, 59, 59, 999);
         const start = startDate ? new Date(startDate) : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+            return res.status(400).json({ error: 'Rango de fechas inválido' });
+        }
 
         // Get spouse for liderDoce conditions
         const userData = await prisma.user.findUnique({
@@ -562,6 +566,7 @@ const getAttendanceStats = async (req, res) => {
                 const networkUserIds = await getUserNetwork(userId);
                 const networkCells = await prisma.cell.findMany({
                     where: {
+                        isDeleted: false,
                         OR: [
                             { leaderId: { in: networkUserIds } },
                             ...liderDoceConditions
@@ -573,7 +578,7 @@ const getAttendanceStats = async (req, res) => {
                 scopeCellIds = networkCells.map(c => c.id);
             } else if (userRoles.includes('LIDER_CELULA')) {
                 const userCells = await prisma.cell.findMany({
-                    where: { leaderId: userId },
+                    where: { leaderId: userId, isDeleted: false },
                     select: { id: true }
                 });
                 cellFilter.cellId = { in: userCells.map(c => c.id) };
@@ -591,6 +596,42 @@ const getAttendanceStats = async (req, res) => {
                 } else {
                     // No cell assigned — return empty results
                     return res.json([]);
+                }
+            }
+        }
+
+        // Power BI red filter (?liderDoceId=): intersect role scope with the red's cells
+        if (liderDoceId) {
+            const lId = parseInt(liderDoceId, 10);
+            if (!Number.isNaN(lId)) {
+                const lider = await prisma.user.findUnique({
+                    where: { id: lId },
+                    select: { spouseId: true }
+                }).catch(() => null);
+                let redIds = await getUserNetwork(lId);
+                redIds = [lId, ...redIds];
+                if (lider?.spouseId) {
+                    const spouseNetwork = await getUserNetwork(lider.spouseId);
+                    redIds = [...redIds, lider.spouseId, ...spouseNetwork];
+                }
+                redIds = [...new Set(redIds)];
+                const redCells = await prisma.cell.findMany({
+                    where: {
+                        isDeleted: false,
+                        OR: [
+                            { leaderId: { in: redIds } },
+                            { liderDoceId: { in: redIds } }
+                        ]
+                    },
+                    select: { id: true }
+                });
+                const redSet = new Set(redCells.map(c => c.id));
+                if (cellId) {
+                    // Specific cell already authorized above; it must also belong to the red
+                    if (!redSet.has(parseInt(cellId, 10))) return res.json([]);
+                } else {
+                    scopeCellIds = scopeCellIds.filter((id) => redSet.has(id));
+                    cellFilter.cellId = { in: scopeCellIds };
                 }
             }
         }

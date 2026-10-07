@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import {
     Users,
     Calendar,
@@ -29,44 +30,97 @@ const ASISTENCIA_TIPOS = [
     { key: 'encuentro', label: 'Encuentro', icon: GraduationCap },
     { key: 'ganar', label: 'Ganar', icon: PhoneCall }
 ];
-const UserActivityList = () => {
+const ROLE_OPTIONS = ['PASTOR', 'LIDER_DOCE', 'LIDER_CELULA', 'DISCIPULO'];
+
+const defaultWindow = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 90);
+    const iso = (d) => d.toISOString().split('T')[0];
+    return { startDate: iso(start), endDate: iso(end) };
+};
+
+const UserActivityList = ({ filters: externalFilters = null, lideresDoce: externalLideres = null, showFilters = true }) => {
+    const controlled = Boolean(externalFilters);
     const [data, setData] = useState([]);
+    const [meta, setMeta] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [roleFilter, setRoleFilter] = useState('');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [localFilters, setLocalFilters] = useState(defaultWindow);
+    const [localRed, setLocalRed] = useState('');
+    const [localLideres, setLocalLideres] = useState([]);
     const limit = 50;
+
+    const lideres = externalLideres || localLideres;
+    const effStart = controlled ? externalFilters.startDate : localFilters.startDate;
+    const effEnd = controlled ? externalFilters.endDate : localFilters.endDate;
+    const effRed = controlled ? externalFilters.liderDoceId : localRed;
+    const effSearch = controlled ? (externalFilters.search || '') : searchTerm;
+
+    useEffect(() => {
+        if (externalLideres) return;
+        let cancelled = false;
+        api.get('/network/los-doce').then((res) => {
+            if (!cancelled) setLocalLideres(res.data || []);
+        }).catch(() => {});
+        return () => { cancelled = true; };
+    }, [externalLideres]);
 
     const fetchActivityData = useCallback(async () => {
         try {
             setLoading(true);
-            const response = await api.get('/network/activity-list', { params: { page, limit } });
-            setData(response.data.data);
+            const params = { page, limit };
+            if (effStart) params.startDate = effStart;
+            if (effEnd) params.endDate = effEnd;
+            if (effRed) params.liderDoceId = effRed;
+            if (roleFilter) params.role = roleFilter;
+            if (effSearch) params.search = effSearch;
+            const response = await api.get('/network/activity-list', { params });
+            setData(response.data.data || []);
             setTotalPages(response.data.pagination.pages);
             setTotalItems(response.data.pagination.total);
+            setMeta(response.data.meta || null);
         } catch (err) {
-            setError(err.response?.data?.error || 'Error al cargar los datos de actividad');
+            setError(err.response?.data?.error || err.response?.data?.message || 'Error al cargar los datos de actividad');
         } finally {
             setLoading(false);
         }
-    }, [page, limit]);
+    }, [page, limit, effStart, effEnd, effRed, roleFilter, effSearch]);
 
     useEffect(() => {
-        void Promise.resolve().then(fetchActivityData);
-    }, [page, fetchActivityData]);
+        const t = setTimeout(() => {
+            void Promise.resolve().then(fetchActivityData);
+        }, controlled ? 0 : 300);
+        return () => clearTimeout(t);
+    }, [fetchActivityData, controlled]);
 
-    const filteredData = useMemo(() => {
-        return data.filter(item => {
-            const matchesSearch = !searchTerm || 
-                item.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (item.roles || []).some(r => r.toLowerCase().includes(searchTerm.toLowerCase()));
-            return matchesSearch;
-        });
-    }, [data, searchTerm]);
+    const firstRun = useRef(true);
+    useEffect(() => {
+        if (firstRun.current) {
+            firstRun.current = false;
+            return;
+        }
+        setPage(1);
+    }, [effStart, effEnd, effRed, effSearch, roleFilter]);
 
-    const hasActiveFilters = searchTerm;
+    const updateLocal = (patch) => {
+        setLocalFilters((prev) => ({ ...prev, ...patch }));
+    };
+
+    const clearAll = () => {
+        setSearchTerm('');
+        setRoleFilter('');
+        setLocalRed('');
+        setLocalFilters(defaultWindow());
+        setPage(1);
+    };
+
+    const hasActiveFilters = searchTerm || roleFilter || (!controlled && (localRed || localFilters.startDate || localFilters.endDate));
 
     const columns = [
         {
@@ -238,30 +292,81 @@ const ASISTENCIA_TIPOS = [
                             <Medal className="text-amber-500" size={20} sm:size={24} weight="bold" />
                             Reporte de Actividad Ministerial
                         </h3>
-                        <p className="text-xs sm:text-[13px] text-[var(--ln-text-tertiary)] mt-1 opacity-70">Monitoreo preciso de progresos, asistencias y cobertura espiritual.</p>
+                        <p className="text-xs sm:text-[13px] text-[var(--ln-text-tertiary)] mt-1 opacity-70">
+                            Monitoreo preciso de progresos, asistencias y cobertura espiritual.
+                            {meta?.ventana && <span className="block mt-0.5">Ventana: <span className="text-[var(--ln-text-primary)] weight-590 opacity-100">{meta.ventana}</span></span>}
+                            {controlled && <span className="block mt-0.5">Sincronizado con los segmentadores del dashboard.</span>}
+                        </p>
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-4">
                         {hasActiveFilters && (
                             <button
-                                onClick={() => setSearchTerm('')}
+                                onClick={clearAll}
                                 className="text-[10px] sm:text-[12px] weight-590 text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] transition-colors px-2 sm:px-3 py-1 sm:py-1.5"
                             >
                                 Limpiar Filtros
                             </button>
                         )}
-                        <div className="relative group min-w-[0] sm:min-w-[300px] flex-1">
-                            <MagnifyingGlass className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-[var(--ln-text-tertiary)] w-3.5 sm:w-4 h-3.5 sm:h-4 transition-colors group-focus-within:text-[var(--ln-brand-indigo)]" weight="bold" />
-                            <input
-                                type="text"
-                                placeholder="Filtrar por nombre o rol..."
-                                className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-lg sm:rounded-xl text-[10px] sm:text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/40"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
+                        <select
+                            value={roleFilter}
+                            onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+                            className="px-3 py-1.5 sm:py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-lg sm:rounded-xl text-[10px] sm:text-sm focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all"
+                            aria-label="Filtrar por rol"
+                        >
+                            <option value="">Todos los roles</option>
+                            {ROLE_OPTIONS.map((r) => (
+                                <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>
+                            ))}
+                        </select>
+                        {!controlled && showFilters && (
+                            <div className="relative group min-w-[0] sm:min-w-[300px] flex-1">
+                                <MagnifyingGlass className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-[var(--ln-text-tertiary)] w-3.5 sm:w-4 h-3.5 sm:h-4 transition-colors group-focus-within:text-[var(--ln-brand-indigo)]" weight="bold" />
+                                <input
+                                    type="text"
+                                    placeholder="Filtrar por nombre o rol..."
+                                    className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2.5 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-lg sm:rounded-xl text-[10px] sm:text-sm focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/40"
+                                    value={searchTerm}
+                                    onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
+
+                {!controlled && showFilters && (
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
+                        <label className="flex items-center gap-2 text-[11px] text-[var(--ln-text-tertiary)] weight-510">
+                            Desde
+                            <input
+                                type="date"
+                                value={localFilters.startDate}
+                                onChange={(e) => { updateLocal({ startDate: e.target.value }); setPage(1); }}
+                                className="flex-1 px-3 py-1.5 sm:py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-lg text-[11px] sm:text-sm focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all"
+                            />
+                        </label>
+                        <label className="flex items-center gap-2 text-[11px] text-[var(--ln-text-tertiary)] weight-510">
+                            Hasta
+                            <input
+                                type="date"
+                                value={localFilters.endDate}
+                                onChange={(e) => { updateLocal({ endDate: e.target.value }); setPage(1); }}
+                                className="flex-1 px-3 py-1.5 sm:py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-lg text-[11px] sm:text-sm focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all"
+                            />
+                        </label>
+                        <select
+                            value={localRed}
+                            onChange={(e) => { setLocalRed(e.target.value); setPage(1); }}
+                            className="col-span-2 lg:col-span-1 px-3 py-1.5 sm:py-2 bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] rounded-lg text-[11px] sm:text-sm focus:outline-none focus:border-[var(--ln-brand-indigo)] transition-all"
+                            aria-label="Filtrar por red"
+                        >
+                            <option value="">Todas las redes</option>
+                            {lideres.map((l) => (
+                                <option key={l.id} value={l.id}>{l.profile?.fullName || l.fullName || l.email}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-[9px] sm:text-[10px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-widest opacity-60">
                     <div className="flex items-center gap-1.5 sm:gap-2"><House size={12} sm:size={14} weight="bold" className="text-indigo-500" /> Iglesia</div>
@@ -282,7 +387,7 @@ const ASISTENCIA_TIPOS = [
                 ) : (
                     <div className="overflow-x-auto">
                         <Table
-                            data={filteredData}
+                            data={data}
                             columns={columns}
                             emptyMessage="No se encontraron registros activos para los criterios seleccionados."
                             rowClassName="hover:bg-white/[0.02] border-b border-[var(--ln-border-standard)]/50 transition-all duration-300 group"
@@ -323,3 +428,14 @@ const ASISTENCIA_TIPOS = [
 };
 
 export default UserActivityList;
+
+UserActivityList.propTypes = {
+    filters: PropTypes.shape({
+        startDate: PropTypes.string,
+        endDate: PropTypes.string,
+        liderDoceId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        search: PropTypes.string,
+    }),
+    lideresDoce: PropTypes.array,
+    showFilters: PropTypes.bool,
+};

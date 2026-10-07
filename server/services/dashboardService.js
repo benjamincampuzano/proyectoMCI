@@ -1,12 +1,26 @@
 const prisma = require('../utils/database');
 
+const buildDateFilter = (filters = {}, field = 'createdAt') => {
+    const { startDate, endDate } = filters || {};
+    if (!startDate && !endDate) return {};
+    const range = {};
+    if (startDate) range.gte = new Date(startDate);
+    if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        range.lte = end;
+    }
+    return { [field]: range };
+};
+
 /**
  * Estadísticas del módulo Ganar (Invitados)
  */
-const getGanarStats = async (scopeIds = null) => {
+const getGanarStats = async (scopeIds = null, filters = {}) => {
     try {
         const guestFilter = {
             isDeleted: false,
+            ...buildDateFilter(filters, 'createdAt'),
             ...(scopeIds && scopeIds.length > 0 ? {
                 OR: [
                     { invitedById: { in: scopeIds } },
@@ -51,10 +65,11 @@ const getGanarStats = async (scopeIds = null) => {
 /**
  * Estadísticas del módulo Consolidar (Asistencia a la Iglesia)
  */
-const getConsolidarStats = async (scopeIds = null) => {
+const getConsolidarStats = async (scopeIds = null, filters = {}) => {
     try {
         const attendanceFilter = {
             status: 'PRESENTE',
+            ...buildDateFilter(filters, 'date'),
             ...(scopeIds && scopeIds.length > 0 ? { userId: { in: scopeIds } } : {})
         };
 
@@ -96,14 +111,14 @@ const getConsolidarStats = async (scopeIds = null) => {
 /**
  * Estadísticas del módulo Discipular (Escuela de Líderes / Seminario)
  */
-const getDiscipularStats = async (scopeIds = null) => {
+const getDiscipularStats = async (scopeIds = null, filters = {}) => {
     try {
         const activeModules = await prisma.seminarModule.count({
             where: { isDeleted: false }
         });
 
         const enrollmentFilter = {
-            isDeleted: false,
+            ...buildDateFilter(filters, 'createdAt'),
             ...(scopeIds && scopeIds.length > 0 ? { userId: { in: scopeIds } } : {})
         };
 
@@ -138,73 +153,95 @@ const getDiscipularStats = async (scopeIds = null) => {
     }
 };
 
+const PRESENT_CELL_STATUSES = ['PRESENTE', 'VIRTUAL', 'TARDE'];
+
 /**
  * Estadísticas del módulo Enviar (Células)
  */
-const getEnviarStats = async (scopeIds = null) => {
-    try {
-        const cellFilter = {
-            isDeleted: false,
-            ...(scopeIds && scopeIds.length > 0 ? {
-                OR: [
-                    { leaderId: { in: scopeIds } },
-                    { liderDoceId: { in: scopeIds } }
-                ]
-            } : {})
-        };
+const getEnviarStats = async (scopeIds = null, filters = {}) => {
+    const cellFilter = {
+        isDeleted: false,
+        ...(scopeIds && scopeIds.length > 0 ? {
+            OR: [
+                { leaderId: { in: scopeIds } },
+                { liderDoceId: { in: scopeIds } }
+            ]
+        } : {})
+    };
 
-        const totalCells = await prisma.cell.count({ where: cellFilter });
+    // Stock del sistema: total de células creadas (no se recorta por fecha;
+    // los filtros de fecha aplican solo a la asistencia). El scope RBAC/red sí aplica.
+    let totalCells = 0;
+    let activeLeaders = 0;
+    try {
+        totalCells = await prisma.cell.count({ where: cellFilter });
         const distinctLeaders = await prisma.cell.groupBy({
             by: ['leaderId'],
             where: cellFilter
         });
-        const activeLeaders = distinctLeaders.length;
-
-        // Asistencia reciente en células
-        const recentCellAttendances = await prisma.cellAttendance.groupBy({
-            by: ['date'],
-            where: {
-                ...(scopeIds && scopeIds.length > 0 ? {
-                    cell: cellFilter
-                } : {})
-            },
-            _sum: {
-                presentes: true
-            },
-            orderBy: { date: 'desc' },
-            take: 1
-        });
-
-        const recentAttendance = recentCellAttendances.length > 0
-            ? (recentCellAttendances[0]._sum.presentes || 0)
-            : 0;
-
-        return {
-            totalCells,
-            recentAttendance,
-            activeLeaders
-        };
+        activeLeaders = distinctLeaders.length;
     } catch (error) {
-        console.error('Error in getEnviarStats:', error);
-        return {
-            totalCells: 0,
-            recentAttendance: 0,
-            activeLeaders: 0
-        };
+        console.error('Error in getEnviarStats (cells):', error);
     }
+
+    let recentAttendance = 0;
+    let attendanceHistory = [];
+    try {
+        const baseWhere = {
+            ...buildDateFilter(filters, 'date'),
+            status: { in: PRESENT_CELL_STATUSES },
+            ...(scopeIds && scopeIds.length > 0 ? { cell: cellFilter } : {})
+        };
+        const latest = await prisma.cellAttendance.findFirst({
+            where: baseWhere,
+            orderBy: { date: 'desc' },
+            select: { date: true }
+        });
+        if (latest?.date) {
+            recentAttendance = await prisma.cellAttendance.count({
+                where: { ...baseWhere, date: latest.date }
+            });
+        }
+        const groups = await prisma.cellAttendance.groupBy({
+            by: ['date'],
+            where: baseWhere,
+            _count: { id: true },
+            orderBy: { date: 'desc' },
+            take: 6
+        });
+        attendanceHistory = groups
+            .map((g) => ({
+                date: g.date ? g.date.toISOString().split('T')[0] : 'N/A',
+                count: g._count.id
+            }))
+            .reverse();
+    } catch (error) {
+        console.error('Error in getEnviarStats (attendance):', error);
+    }
+
+    return {
+        totalCells,
+        recentAttendance,
+        activeLeaders,
+        attendanceHistory
+    };
 };
 
 /**
  * Estadísticas del módulo Encuentros
  */
-const getEncuentrosStats = async (scopeIds = null) => {
+const getEncuentrosStats = async (scopeIds = null, filters = {}) => {
     try {
         const activeEncuentros = await prisma.encuentro.count({
-            where: { isDeleted: false }
+            where: {
+                isDeleted: false,
+                ...buildDateFilter(filters, 'startDate'),
+            }
         });
 
         const regFilter = {
             status: { not: 'CANCELLED' },
+            ...buildDateFilter(filters, 'createdAt'),
             ...(scopeIds && scopeIds.length > 0 ? { userId: { in: scopeIds } } : {})
         };
 
@@ -216,13 +253,18 @@ const getEncuentrosStats = async (scopeIds = null) => {
             where: { ...regFilter, isBaptized: true }
         });
 
-        // Pagos pendientes (inscripciones con saldo mayor a 0)
+        // Pagos pendientes (saldo > 0 según costos del encuentro, misma fórmula del módulo)
         const registrations = await prisma.encuentroRegistration.findMany({
             where: regFilter,
             select: {
-                totalCost: true,
+                discountPercentage: true,
+                needsTransport: true,
+                needsAccommodation: true,
                 payments: {
                     select: { amount: true }
+                },
+                encuentro: {
+                    select: { cost: true, transportCost: true, accommodationCost: true }
                 }
             }
         });
@@ -230,7 +272,10 @@ const getEncuentrosStats = async (scopeIds = null) => {
         let pendingPayments = 0;
         for (const reg of registrations) {
             const paid = reg.payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-            if (Number(reg.totalCost || 0) > paid) {
+            const baseCost = Number(reg.encuentro?.cost || 0) * (1 - (Number(reg.discountPercentage || 0) / 100));
+            const transportCost = reg.needsTransport ? Number(reg.encuentro?.transportCost || 0) : 0;
+            const accommodationCost = reg.needsAccommodation ? Number(reg.encuentro?.accommodationCost || 0) : 0;
+            if (baseCost + transportCost + accommodationCost - paid > 0) {
                 pendingPayments++;
             }
         }
@@ -255,14 +300,18 @@ const getEncuentrosStats = async (scopeIds = null) => {
 /**
  * Estadísticas del módulo Convenciones
  */
-const getConvencionesStats = async (scopeIds = null) => {
+const getConvencionesStats = async (scopeIds = null, filters = {}) => {
     try {
         const activeConventions = await prisma.convention.count({
-            where: { isDeleted: false }
+            where: {
+                isDeleted: false,
+                ...buildDateFilter(filters, 'startDate'),
+            }
         });
 
         const regFilter = {
             status: { not: 'CANCELLED' },
+            ...buildDateFilter(filters, 'createdAt'),
             ...(scopeIds && scopeIds.length > 0 ? { userId: { in: scopeIds } } : {})
         };
 
@@ -270,20 +319,36 @@ const getConvencionesStats = async (scopeIds = null) => {
             where: regFilter
         });
 
+        // Pagos pendientes (saldo > 0 según tarifa y costos de la convención, misma fórmula del módulo)
         const registrations = await prisma.conventionRegistration.findMany({
             where: regFilter,
             select: {
-                totalCost: true,
+                discountPercentage: true,
+                ticketType: true,
+                needsTransport: true,
+                needsAccommodation: true,
                 payments: {
                     select: { amount: true }
+                },
+                convention: {
+                    select: { cost: true, vipPlateaCost: true, generalCost: true, transportCost: true, accommodationCost: true }
                 }
             }
         });
 
+        const baseCostFor = (conv, reg) => {
+            if (reg.ticketType === 'VIP_PLATEA' && Number(conv?.vipPlateaCost) > 0) return Number(conv.vipPlateaCost);
+            if (reg.ticketType === 'GENERAL' && Number(conv?.generalCost) > 0) return Number(conv.generalCost);
+            return Number(conv?.cost || 0);
+        };
+
         let pendingPayments = 0;
         for (const reg of registrations) {
             const paid = reg.payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-            if (Number(reg.totalCost || 0) > paid) {
+            const baseCost = baseCostFor(reg.convention, reg) * (1 - (Number(reg.discountPercentage || 0) / 100));
+            const transportCost = reg.needsTransport ? Number(reg.convention?.transportCost || 0) : 0;
+            const accommodationCost = reg.needsAccommodation ? Number(reg.convention?.accommodationCost || 0) : 0;
+            if (baseCost + transportCost + accommodationCost - paid > 0) {
                 pendingPayments++;
             }
         }
@@ -304,12 +369,68 @@ const getConvencionesStats = async (scopeIds = null) => {
 };
 
 /**
+ * Estadísticas del módulo Escuela de Artes
+ */
+const getArtesStats = async (scopeIds = null, filters = {}) => {
+    try {
+        const classFilter = {
+            isDeleted: false,
+            ...buildDateFilter(filters, 'createdAt'),
+        };
+        const totalClasses = await prisma.artClass.count({ where: classFilter });
+
+        const enrollmentFilter = {
+            ...buildDateFilter(filters, 'createdAt'),
+            ...(scopeIds && scopeIds.length > 0 ? { userId: { in: scopeIds } } : {})
+        };
+        const enrolledCount = await prisma.artEnrollment.count({ where: enrollmentFilter });
+
+        const enrollments = await prisma.artEnrollment.findMany({
+            where: enrollmentFilter,
+            select: {
+                finalCost: true,
+                payments: { select: { amount: true } }
+            }
+        });
+        let collected = 0;
+        let pending = 0;
+        let pendingCount = 0;
+        for (const e of enrollments) {
+            const paid = e.payments.reduce((s, p) => s + Number(p.amount || 0), 0);
+            collected += paid;
+            const balance = Number(e.finalCost || 0) - paid;
+            if (balance > 0) {
+                pending += balance;
+                pendingCount++;
+            }
+        }
+
+        return { totalClasses, enrolledCount, collected, pending, pendingCount };
+    } catch (error) {
+        console.error('Error in getArtesStats:', error);
+        return { totalClasses: 0, enrolledCount: 0, collected: 0, pending: 0, pendingCount: 0 };
+    }
+};
+
+/**
  * Actividad reciente desde AuditLog
  */
-const getRecentActivity = async (scopeIds = null, limit = 8) => {
+const getRecentActivity = async (scopeIds = null, limit = 8, filters = {}) => {
     try {
         const logs = await prisma.auditLog.findMany({
-            where: scopeIds && scopeIds.length > 0 ? { userId: { in: scopeIds } } : {},
+            where: {
+                AND: [
+                    scopeIds && scopeIds.length > 0 ? { userId: { in: scopeIds } } : {},
+                    buildDateFilter(filters, 'createdAt'),
+                    // Omitir acciones ejecutadas por ADMIN; conservar eventos del sistema (userId null)
+                    {
+                        OR: [
+                            { userId: null },
+                            { user: { roles: { none: { role: { name: 'ADMIN' } } } } }
+                        ]
+                    }
+                ]
+            },
             orderBy: { createdAt: 'desc' },
             take: limit,
             include: {
@@ -347,5 +468,6 @@ module.exports = {
     getEnviarStats,
     getEncuentrosStats,
     getConvencionesStats,
+    getArtesStats,
     getRecentActivity
 };

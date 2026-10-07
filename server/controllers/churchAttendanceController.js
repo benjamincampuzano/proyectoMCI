@@ -394,27 +394,52 @@ const deleteAttendanceByDate = async (req, res) => {
 // Get daily attendance statistics for chart
 const getDailyStats = async (req, res) => {
     try {
-        const { startDate, endDate } = req.query;
+        const { startDate, endDate, liderDoceId } = req.query;
         const end = endDate ? new Date(endDate) : new Date();
+        if (endDate) end.setHours(23, 59, 59, 999);
         const start = startDate ? new Date(startDate) : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-        const where = { date: { gte: start, lte: end } };
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+            return res.status(400).json({ error: 'Rango de fechas inválido' });
+        }
 
         const { id, roles } = req.user;
         const userRoles = roles || [];
+        let scopeUserIds = null;
         if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR') || userRoles.includes('LIDER_CELULA')) {
             const networkIds = await getUserNetwork(id);
             networkIds.push(id);
-            where.OR = [
-                { userId: { in: networkIds } },
-                { guest: { invitedById: { in: networkIds } } },
-                { guest: { assignedToId: { in: networkIds } } }
-            ];
+            scopeUserIds = networkIds;
         } else if (!userRoles.includes('ADMIN')) {
+            scopeUserIds = [id];
+        }
+
+        // Filtro Power BI por Red (?liderDoceId=): intersectar con el scope del rol
+        if (liderDoceId) {
+            const lId = parseInt(liderDoceId, 10);
+            if (!Number.isNaN(lId)) {
+                const lider = await prisma.user.findUnique({
+                    where: { id: lId },
+                    select: { spouseId: true }
+                }).catch(() => null);
+                let redIds = await getUserNetwork(lId);
+                redIds = [lId, ...redIds];
+                if (lider?.spouseId) {
+                    const spouseNetwork = await getUserNetwork(lider.spouseId);
+                    redIds = [...redIds, lider.spouseId, ...spouseNetwork];
+                }
+                redIds = [...new Set(redIds)];
+                scopeUserIds = scopeUserIds
+                    ? scopeUserIds.filter((uid) => redIds.includes(uid))
+                    : redIds;
+            }
+        }
+
+        const where = { date: { gte: start, lte: end } };
+        if (scopeUserIds) {
             where.OR = [
-                { userId: id },
-                { guest: { invitedById: id } },
-                { guest: { assignedToId: id } }
+                { userId: { in: scopeUserIds } },
+                { guest: { invitedById: { in: scopeUserIds } } },
+                { guest: { assignedToId: { in: scopeUserIds } } }
             ];
         }
 
