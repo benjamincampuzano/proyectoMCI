@@ -54,7 +54,7 @@ const validatePassword = (password, email = '') => {
     return { requirements, allMet };
 };
 
-const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
+const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged, onLogout }) => {
     const { user, changePassword } = useAuth();
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -231,6 +231,16 @@ const ChangePasswordModal = ({ isOpen, onClose, onPasswordChanged }) => {
                                         'Cambiar Contraseña'
                                     )}
                                 </button>
+
+                                {onLogout && (
+                                    <button
+                                        type="button"
+                                        onClick={onLogout}
+                                        className="w-full py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                                    >
+                                        Cerrar sesión
+                                    </button>
+                                )}
                             </form>
                         </>
                     ) : (

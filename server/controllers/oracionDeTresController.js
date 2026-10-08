@@ -37,6 +37,9 @@ const createGroup = async (req, res) => {
         const { id: liderDoceId, roles } = req.user;
 
         // 1. Validate role LIDER_DOCE or ADMIN
+        // ADMIN-only intencional (sin PASTOR): el grupo guarda liderDoceId = creador,
+        // por lo que el creador debe ser LIDER_DOCE (o ADMIN supervisando).
+        // PASTOR supervisa vía update/delete (bypass ADMIN/PASTOR más abajo).
         if (!roles.includes('LIDER_DOCE') && !roles.includes('ADMIN')) {
             return res.status(403).json({ error: 'Solo los Líderes de 12 y Administradores pueden crear grupos de Oración de Tres.' });
         }
@@ -191,9 +194,9 @@ const getGroupById = async (req, res) => {
 
         if (!group) return res.status(404).json({ error: 'Grupo no encontrado.' });
 
-        // ACL Check
+        // ACL Check: ADMIN/PASTOR ven todo; creador, miembros o red jerárquica
         let authorized = false;
-        if (roles.includes('ADMIN')) authorized = true;
+        if (roles.includes('ADMIN') || roles.includes('PASTOR')) authorized = true;
         else if (group.liderDoceId === userId) authorized = true;
         else if (group.miembros.some(m => m.discipuloId === userId)) authorized = true;
         else {
@@ -234,11 +237,11 @@ const addMeeting = async (req, res) => {
         if (!group) return res.status(404).json({ error: 'Grupo no encontrado.' });
         if (group.estado !== 'ACTIVO') return res.status(400).json({ error: 'El grupo ya no está activo.' });
 
-        // Permission check: only members, creator or ADMIN can add meetings
+        // Permission check: only members, creator or ADMIN/PASTOR can add meetings
         const isMember = group.miembros.some(m => m.discipuloId === userId);
         const isCreator = group.liderDoceId === userId;
-        const isAdmin = roles.includes('ADMIN');
-        if (!isMember && !isCreator && !isAdmin) {
+        const isAdminOrPastor = roles.includes('ADMIN') || roles.includes('PASTOR');
+        if (!isMember && !isCreator && !isAdminOrPastor) {
             return res.status(403).json({ error: 'Solo los miembros del grupo o administradores pueden registrar reuniones.' });
         }
 
@@ -292,9 +295,9 @@ const updateGroup = async (req, res) => {
 
         if (!group) return res.status(404).json({ error: 'Grupo no encontrado.' });
 
-        // Permission check: Creator or ADMIN
-        const isAdmin = roles.includes('ADMIN');
-        if (group.liderDoceId !== userId && !isAdmin) {
+        // Permission check: Creator or ADMIN/PASTOR
+        const isAdminOrPastor = roles.includes('ADMIN') || roles.includes('PASTOR');
+        if (group.liderDoceId !== userId && !isAdminOrPastor) {
             return res.status(403).json({ error: 'No tienes permiso para editar este grupo.' });
         }
 
@@ -382,9 +385,9 @@ const deleteGroup = async (req, res) => {
 
         if (!group) return res.status(404).json({ error: 'Grupo no encontrado.' });
 
-        // Permission check: Creator or ADMIN
-        const isAdmin = roles.includes('ADMIN');
-        if (group.liderDoceId !== userId && !isAdmin) {
+        // Permission check: Creator or ADMIN/PASTOR
+        const isAdminOrPastor = roles.includes('ADMIN') || roles.includes('PASTOR');
+        if (group.liderDoceId !== userId && !isAdminOrPastor) {
             return res.status(403).json({ error: 'No tienes permiso para eliminar este grupo.' });
         }
 

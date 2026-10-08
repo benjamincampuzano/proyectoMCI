@@ -48,20 +48,25 @@ export const canDeleteFollowUp = (user, auth) => {
   );
 };
 
-/** Puede editar datos del invitado (abre detalle/edición). */
+/** Puede editar datos del invitado (abre detalle/edición).
+ * Alinea UI con servidor (server/controllers/guestController.js updateGuest/
+ * deleteGuest): ADMIN, PASTOR y coordinadores pueden editar/eliminar
+ * cualquier invitado. */
 export const canEditGuest = (user, auth) => {
   if (!user) return false;
   if (hasRole(user, ROLES.ADMIN)) return true;
+  if (hasRole(user, ROLES.PASTOR)) return true;
   if (hasRole(user, ROLES.LIDER_DOCE)) return true;
   if (isGanarCoordinator(auth)) return true;
   if (typeof auth?.isSubCoordinator === 'function' && auth.isSubCoordinator('ganar')) return true;
   return false;
 };
 
-/** Puede convertir a discípulo. La UI actual lo oculta solo a PASTOR. */
+/** Puede convertir a discípulo. El servidor (convertGuestToMember) no restringe
+ * por rol, por lo que cualquier usuario autenticado con acceso al módulo puede. */
 export const canConvertGuest = (user) => {
   if (!user) return false;
-  return !hasRole(user, ROLES.PASTOR);
+  return true;
 };
 
 /** Puede eliminar invitados. Misma matriz que edición. */

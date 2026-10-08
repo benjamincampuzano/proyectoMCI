@@ -5,7 +5,7 @@ const { MODULES, normalizeModuleName } = require('../utils/moduleConstants');
  * Check if user has ADMIN-level permissions for a specific module
  *
  * Permission hierarchy (evaluated in order):
- * 1. Global ADMIN role → full access to all modules
+ * 1. Global ADMIN/PASTOR role → full access to all modules
  * 2. Module Coordinator → ADMIN-equivalent access for THAT module only
  * 3. Base role permissions → standard access per role
  *
@@ -19,8 +19,8 @@ const hasModuleAdminAccess = async (user, moduleName) => {
 
   const normalizedModule = normalizeModuleName(moduleName);
 
-  // 1. Global ADMIN has access to everything
-  if (user.roles.includes('ADMIN')) {
+  // 1. Global ADMIN/PASTOR has access to everything
+  if (user.roles.includes('ADMIN') || user.roles.includes('PASTOR')) {
     return true;
   }
 
@@ -60,7 +60,7 @@ const requireModuleAdmin = (moduleName) => {
 
     if (!hasAccess) {
       return res.status(403).json({
-        message: `Access denied. Requires ADMIN or module coordinator permissions for ${moduleName}.`,
+        message: `Access denied. Requires ADMIN/PASTOR or module coordinator permissions for ${moduleName}.`,
       });
     }
 

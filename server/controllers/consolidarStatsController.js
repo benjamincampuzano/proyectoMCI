@@ -132,9 +132,11 @@ function parseMonthRange(monthValue) {
 
 async function getReportScope(req) {
     const roles = req.user?.roles || [];
-    const isAdmin = roles.includes('ADMIN');
+    // ADMIN y PASTOR ven reportes globales (igual que getSeminarStatsByLeader);
+    // el resto queda con alcance red+cónyuge.
+    const isAdminOrPastor = roles.includes('ADMIN') || roles.includes('PASTOR');
 
-    if (isAdmin) {
+    if (isAdminOrPastor) {
         return {
             isAdmin: true,
             userIds: null,
@@ -548,16 +550,17 @@ const getSeminarStatsByLeader = async (req, res) => {
         const currentUserId = req.user.id ? parseInt(req.user.id) : null;
         let networkIds = [];
         const isAdmin = userRoles.includes('ADMIN');
+        const isPastor = userRoles.includes('PASTOR');
         const isCoordinator = userRoles.includes('COORDINADOR');
         const isModuleCoordinator = req.user.isModuleCoordinator || false;
         const isLeader = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
-        if (isLeader && currentUserId && !isAdmin && !isCoordinator && !isModuleCoordinator) {
+        if (isLeader && currentUserId && !isAdmin && !isPastor && !isCoordinator && !isModuleCoordinator) {
             networkIds = await getUserNetwork(currentUserId);
             networkIds.push(currentUserId);
         }
 
         // ✅ SQL GROUP BY directo en vez de cargar todas las inscripciones + classAttendances
-        const userFilter = (isAdmin || isCoordinator || isModuleCoordinator)
+        const userFilter = (isAdmin || isPastor || isCoordinator || isModuleCoordinator)
             ? Prisma.empty
             : Prisma.sql`AND se."userId" = ANY(${networkIds})`;
 

@@ -45,7 +45,17 @@ export function canEditUser(currentUser) {
 export function canCreateUsers(currentUser) {
     if (!currentUser) return false;
     const roles = currentUser.roles || [currentUser.role];
-    return roles.some((r) => ['ADMIN', 'LIDER_DOCE'].includes(String(r).toUpperCase()));
+    return roles.some((r) => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(String(r).toUpperCase()));
+}
+
+/**
+ * Devuelve true si el usuario puede exportar usuarios a Excel (ADMIN o PASTOR).
+ * PASTOR exporta su alcance visible (sin ADMINs, según el backend).
+ */
+export function canExportUsers(currentUser) {
+    if (!currentUser) return false;
+    const roles = currentUser.roles || [currentUser.role];
+    return roles.some((r) => ['ADMIN', 'PASTOR'].includes(String(r).toUpperCase()));
 }
 
 /**
@@ -58,7 +68,7 @@ export function getAssignableRoles(currentUser) {
         return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'ADMIN'];
     }
     if (upper.includes('PASTOR')) {
-        return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
+        return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE'];
     }
     return ['DISCIPULO', 'LIDER_CELULA'];
 }
@@ -100,6 +110,7 @@ export default {
     getPrimaryRole,
     canEditUser,
     canCreateUsers,
+    canExportUsers,
     getAssignableRoles,
     categorizeError,
 };

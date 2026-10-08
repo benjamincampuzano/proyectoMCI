@@ -1,7 +1,7 @@
 const prisma = require('../utils/database');
 const axios = require('axios');
 const { logActivity } = require('../utils/auditLogger');
-const { getUserNetwork } = require('../utils/networkUtils');
+const { getUserNetwork, getFullUserNetwork } = require('../utils/networkUtils');
 const { hasAdminAccessOnModule } = require('../middleware/coordinatorAuth');
 
 // Helper for Geocoding (Nominatim OpenStreetMap with improved Colombian address handling)
@@ -193,7 +193,7 @@ const assignMember = async (req, res) => {
         }
 
         if (!hasFullEnviarAccess(req.user)) {
-            const networkIds = await getUserNetwork(currentUserId);
+            const networkIds = await getFullUserNetwork(currentUserId);
             if (!networkIds.includes(cell.leaderId) && cell.leaderId !== currentUserId) {
                 return res.status(403).json({ error: 'No autorizado para asignar miembros a esta célula' });
             }
@@ -310,27 +310,20 @@ const getEligibleHosts = async (req, res) => {
         // If no liderDoceId, return empty
         if (!liderDoceId) return res.json([]);
 
-        // Get the LIDER_DOCE's network (includes all LIDER_CELULA and DISCIPULO)
-        const liderDoceNetwork = await getUserNetwork(parseInt(liderDoceId));
-        
-        // Start with the LIDER_DOCE themselves
-        let ids = [parseInt(liderDoceId)];
-        
-        // Add all users from LIDER_DOCE's network
-        if (liderDoceNetwork && liderDoceNetwork.length > 0) {
-            ids = [...ids, ...liderDoceNetwork];
-        }
+        // Get the LIDER_DOCE's network (includes all LIDER_CELULA and DISCIPULO).
+        // Includes the spouse's network: LIDER_DOCE marriages share the red.
+        const targetLiderId = parseInt(liderDoceId);
+        let ids = await getFullUserNetwork(targetLiderId);
 
-        // For non-module leadership users, filter by their network
+        // For non-module leadership users, filter by their network (also spouse-inclusive)
         if (!hasFullEnviarAccess(req.user)) {
-            const currentUserNetwork = await getUserNetwork(parseInt(currentUserId));
-            const allValidIds = [...currentUserNetwork, parseInt(currentUserId)];
+            const allValidIds = await getFullUserNetwork(parseInt(currentUserId));
             ids = ids.filter(id => allValidIds.includes(id));
         }
 
         // If no valid IDs, at least return the LIDER_DOCE themselves
         if (ids.length === 0) {
-            ids = [parseInt(liderDoceId)];
+            ids = [targetLiderId];
         }
 
         // Filter by roles: LIDER_DOCE, LIDER_CELULA, or DISCIPULO
@@ -477,10 +470,11 @@ const deleteCell = async (req, res) => {
         const { roles, id: userId } = req.user;
 
         // 1. Permission check
-        const isAuthorized = hasFullEnviarAccess(req.user) || roles.some(r => ['LIDER_DOCE'].includes(r));
+        const isAuthorized = hasFullEnviarAccess(req.user) || roles.includes('LIDER_DOCE');
         if (!isAuthorized) {
             return res.status(403).json({ error: 'Not authorized to delete cells' });
         }
+
 
         // Find cell to verify ownership/existence
         const cell = await prisma.cell.findUnique({
@@ -491,11 +485,13 @@ const deleteCell = async (req, res) => {
             return res.status(404).json({ error: 'Cell not found' });
         }
 
-        // If LIDER_DOCE or PASTOR, verify cell is in their network
+        // If not full module access, verify cell is in their network.
+        // Applies to LIDER_DOCE as well: initial role gate above only lets
+        // them attempt the operation, it does not authorize any cell.
         if (!hasFullEnviarAccess(req.user)) {
-            // Check if cell leader is in their network or is themselves
-            const networkIds = await getUserNetwork(userId);
-            if (!networkIds.includes(cell.leaderId) && cell.leaderId !== userId) {
+            const networkIds = await getFullUserNetwork(userId);
+            const normalizedUserId = parseInt(userId);
+            if (!networkIds.includes(cell.leaderId) && cell.leaderId !== normalizedUserId) {
                 return res.status(403).json({ error: 'Cannot delete a cell outside your network' });
             }
         }
@@ -555,8 +551,9 @@ const updateCellCoordinates = async (req, res) => {
         }
 
         if (!hasFullEnviarAccess(req.user)) {
-            const networkIds = await getUserNetwork(userId);
-            if (!networkIds.includes(cell.leaderId) && cell.leaderId !== userId) {
+            const networkIds = await getFullUserNetwork(userId);
+            const normalizedUserId = parseInt(userId);
+            if (!networkIds.includes(cell.leaderId) && cell.leaderId !== normalizedUserId) {
                 return res.status(403).json({ error: 'No autorizado para actualizar coordenadas de esta célula' });
             }
         }
@@ -589,7 +586,7 @@ const updateCell = async (req, res) => {
         const cellId = parseInt(id);
         const { name, leaderId, hostId, address, city, dayOfWeek, time, liderDoceId, cellType, latitude, longitude, barrio, network, spiritualMappingUrl, fastingDate, rhemaWord, pastorsMeeting } = req.body;
 
-        const { roles, id: userId } = req.user;
+        const { id: userId } = req.user;
 
         // Find existing cell
         const existingCell = await prisma.cell.findUnique({
@@ -600,11 +597,33 @@ const updateCell = async (req, res) => {
             return res.status(404).json({ error: 'Célula no encontrada' });
         }
 
-        // Permission check
-        if (!hasFullEnviarAccess(req.user) && !roles.includes('LIDER_DOCE')) {
-            const networkIds = await getUserNetwork(userId);
-            if (!networkIds.includes(existingCell.leaderId) && existingCell.leaderId !== userId) {
+        // Permission check: full module access (ADMIN/PASTOR/coordinator) skips
+        // network check; everyone else (incl. LIDER_DOCE) must own the cell
+        // via their hierarchy network.
+        if (!hasFullEnviarAccess(req.user)) {
+            const networkIds = await getFullUserNetwork(userId);
+            const normalizedUserId = parseInt(userId);
+
+            // A LIDER_DOCE must be the leader of the cell, or the cell leader must be in their network
+            if (!networkIds.includes(existingCell.leaderId) && existingCell.leaderId !== normalizedUserId) {
                 return res.status(403).json({ error: 'No autorizado para editar esta célula' });
+            }
+
+            // Additional Security: validate that the NEW leader/LiderDoce are also
+            // within the actor's network to prevent moving cells between networks.
+            // (Only truthy values are validated; falsy clears the field per data building below.)
+            if (leaderId) {
+                const requestedLeaderId = parseInt(leaderId);
+                if (!networkIds.includes(requestedLeaderId) && requestedLeaderId !== normalizedUserId) {
+                    return res.status(400).json({ error: 'El nuevo líder debe pertenecer a tu red' });
+                }
+            }
+
+            if (liderDoceId) {
+                const requestedLiderDoceId = parseInt(liderDoceId);
+                if (!networkIds.includes(requestedLiderDoceId) && requestedLiderDoceId !== normalizedUserId) {
+                    return res.status(400).json({ error: 'El nuevo Líder de 12 debe pertenecer a tu red' });
+                }
             }
         }
 
@@ -715,8 +734,12 @@ const getEligibleDoceLeaders = async (req, res) => {
         const spouseId = user?.spouseId;
 
         // If user is ADMIN, show all LIDER_DOCE, otherwise filter by network
-        if (hasFullEnviarAccess(req.user)) {
+        if (!hasFullEnviarAccess(req.user)) {
+            const networkIds = await getFullUserNetwork(userId);
+            // Include spouse in the network if they exist
+            const allIds = [...networkIds, userId];
             where = {
+                id: { in: allIds },
                 roles: {
                     some: {
                         role: { name: 'LIDER_DOCE' }
@@ -780,7 +803,7 @@ const getAdvancedCellStats = async (req, res) => {
 
         if (!isEnviarCoordinator && !roles.includes('ADMIN')) {
             if (roles.includes('LIDER_DOCE') || roles.includes('PASTOR')) {
-                const networkUserIds = await getUserNetwork(userId);
+                const networkUserIds = await getFullUserNetwork(userId);
                 const user = await prisma.user.findUnique({
                     where: { id: userId },
                     select: { spouseId: true }
@@ -910,7 +933,7 @@ const getAdvancedCellStats = async (req, res) => {
         };
 
         if (!isEnviarCoordinator && !roles.includes('ADMIN')) {
-            const networkUserIds = await getUserNetwork(userId);
+            const networkUserIds = await getFullUserNetwork(userId);
             unassignedUserWhere.id = { in: networkUserIds };
         }
 

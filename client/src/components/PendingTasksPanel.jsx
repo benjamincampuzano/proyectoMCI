@@ -20,7 +20,7 @@ const PendingTasksPanel = () => {
     const { hasAnyRole } = useAuth();
     const menuRef = useRef(null);
 
-    const isAuthorized = hasAnyRole(['LIDER_DOCE', 'ADMIN']);
+    const isAuthorized = hasAnyRole(['LIDER_DOCE', 'ADMIN', 'PASTOR']);
 
     useEffect(() => {
         if (!isAuthorized) {

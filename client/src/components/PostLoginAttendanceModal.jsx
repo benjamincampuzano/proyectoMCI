@@ -8,12 +8,17 @@ import { format } from 'date-fns';
 const STORAGE_PREFIX = 'selfAttendance_';
 
 const PostLoginAttendanceModal = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, hasAnyRole } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
 
   useEffect(() => {
     if (!loading && user && !hasChecked) {
+      // ADMIN, PASTOR y LIDER_DOCE no reportan asistencia propia
+      if (hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE'])) {
+        void Promise.resolve().then(() => setHasChecked(true));
+        return;
+      }
       const today = format(new Date(), 'yyyy-MM-dd');
       const key = `${STORAGE_PREFIX}${user.id}_${today}`;
       if (!localStorage.getItem(key)) {

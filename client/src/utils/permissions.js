@@ -11,7 +11,7 @@ export function isAncestorOrSelfPartner(ancestors, node, currentUserId) {
 export function canAddToNode({ node, ancestors = [], currentUser }) {
   const roles = currentUser?.roles || [];
   const uid = currentUser?.id;
-  if (roles.includes('ADMIN')) return true;
+  if (roles.includes('ADMIN') || roles.includes('PASTOR')) return true;
   if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
     return isAncestorOrSelfPartner(ancestors, node, uid);
   }
@@ -22,7 +22,7 @@ export function canRemoveFromNode({ node, ancestors = [], currentUser, level = 0
   const roles = currentUser?.roles || [];
   const uid = currentUser?.id;
   if (level === 0) return false;
-  if (roles.includes('ADMIN')) return true;
+  if (roles.includes('ADMIN') || roles.includes('PASTOR')) return true;
   if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
     return isAncestorOrSelfPartner(ancestors, node, uid);
   }

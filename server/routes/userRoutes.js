@@ -47,6 +47,7 @@ router.get('/:id', getUserById);
 // Write access
 router.post('/', authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), createUser);
 router.put('/:id', updateUser);
+// ADMIN-only intencional: solo ADMIN puede eliminar usuarios (ni PASTOR ni LIDER_DOCE)
 router.delete('/:id', isAdmin, deleteUser);
 router.post('/assign-leader/:id', authorize(['ADMIN', 'PASTOR', 'LIDER_DOCE']), assignLeader);
 router.post('/:id/whatsapp-log', logWhatsApp);

@@ -413,7 +413,13 @@ const useUserManagement = () => {
         if (!currentUser) return false;
         // Check both roles array and single role property for backward compatibility
         const roles = currentUser.roles || [currentUser.role];
-        return roles.some(r => ['ADMIN', 'LIDER_DOCE'].includes(r));
+        return roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r));
+    })();
+
+    const canExportUsers = (() => {
+        if (!currentUser) return false;
+        const roles = currentUser.roles || [currentUser.role];
+        return roles.some(r => ['ADMIN', 'PASTOR'].includes(r));
     })();
 
     // isAdmin is now taken from useAuth()
@@ -421,7 +427,7 @@ const useUserManagement = () => {
     const getAssignableRoles = useCallback(() => {
         if (!currentUser || !currentUser.roles) return [];
         if (currentUser.roles.includes('ADMIN')) return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR', 'ADMIN'];
-        if (currentUser.roles.includes('PASTOR')) return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE', 'PASTOR'];
+        if (currentUser.roles.includes('PASTOR')) return ['DISCIPULO', 'LIDER_CELULA', 'LIDER_DOCE'];
         return ['DISCIPULO', 'LIDER_CELULA'];
     }, [currentUser]);
 
@@ -492,7 +498,7 @@ const useUserManagement = () => {
 
     // Función para exportar usuarios a Excel
     const exportToExcel = useCallback(async () => {
-        if (!isUserAdmin) {
+        if (!canExportUsers) {
             setError('No tienes permisos para exportar datos');
             return;
         }
@@ -594,7 +600,7 @@ const useUserManagement = () => {
         } finally {
             setLoading(false);
         }
-    }, [isUserAdmin, nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, handleError]);
+    }, [canExportUsers, nombreFilter, liderDoceFilter, redFilter, sexoFilter, rolFilter, asignacionesFilter, handleError]);
 
     return {
         users,
@@ -637,6 +643,7 @@ const useUserManagement = () => {
         getAssignableRoles,
         canEdit,
         canCreateUsers,
+        canExportUsers,
         isAdmin: isUserAdmin,
         showErrorModal,
         setShowErrorModal,

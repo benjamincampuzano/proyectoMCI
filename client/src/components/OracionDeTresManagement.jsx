@@ -161,7 +161,7 @@ const OracionDeTresManagement = ({ refreshTrigger: externalRefresh }) => {
                             <p className="text-gray-500 dark:text-gray-400">Líder responsable: {selectedGroup.liderDoce?.profile?.fullName}</p>
                         </div>
                         <div className="flex items-center gap-4">
-                            {(hasRole('ADMIN') || selectedGroup.liderDoceId === user.id) && (
+                            {(hasRole('ADMIN') || hasRole('PASTOR') || selectedGroup.liderDoceId === user.id) && (
                                 <>
                                     <button
                                         onClick={() => {

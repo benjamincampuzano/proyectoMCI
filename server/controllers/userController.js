@@ -483,12 +483,13 @@ const getAllUsers = async (req, res) => {
             });
         }
 
-        // Si export=true, devolver todos los usuarios con select reducido (solo ADMIN)
+        // Si export=true, devolver todos los usuarios con select reducido (ADMIN y PASTOR;
+        // PASTOR exporta su alcance visible, que excluye ADMINs más abajo)
         const isExport = exportAll === 'true';
 
-        // Solo ADMIN puede exportar todos los usuarios
-        if (isExport && !req.user.roles.includes('ADMIN')) {
-            return res.status(403).json({ message: 'Solo los administradores pueden exportar todos los usuarios' });
+        // Solo ADMIN y PASTOR pueden exportar usuarios
+        if (isExport && !req.user.roles.includes('ADMIN') && !req.user.roles.includes('PASTOR')) {
+            return res.status(403).json({ message: 'Solo los administradores y pastores pueden exportar usuarios' });
         }
 
         // ✅ ADMIN sin límite explícito obtiene todos los usuarios (paginación client-side).
@@ -1170,6 +1171,11 @@ const createUser = async (req, res) => {
             return res.status(400).json({ message: 'Email and full name are required' });
         }
 
+        // Solo ADMIN puede crear usuarios ADMIN o PASTOR (igual que updateUser)
+        if (role && !req.user.roles.includes('ADMIN') && ['ADMIN', 'PASTOR'].includes(role)) {
+            return res.status(403).json({ message: `No tienes permisos para asignar el rol ${role}` });
+        }
+
         // Forzar cambio de contraseña solo si se genera contraseña temporal
         let finalPassword = password;
         let shouldChangePassword = false;
@@ -1586,8 +1592,8 @@ const getMyNetwork = async (req, res) => {
             }
         }
 
-        // Si es ADMIN, devolver todos los usuarios (excepto otros admins y el mismo usuario)
-        if (userRoles.includes('ADMIN')) {
+        // Si es ADMIN o PASTOR, devolver todos los usuarios (excepto otros admins y el mismo usuario)
+        if (userRoles.includes('ADMIN') || userRoles.includes('PASTOR')) {
             const search = req.query.search ? req.query.search.trim() : '';
             const page = Math.max(1, parseInt(req.query.page) || 1);
             const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));

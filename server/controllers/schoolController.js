@@ -68,10 +68,13 @@ const resolveLeaderName = (userWithParents) => {
 const createModule = async (req, res) => {
     try {
         const roles = req.user.roles || [];
-        const isAdmin = roles.some(r => r.role?.name === 'ADMIN');
+        const hasRole = (name) => roles.includes(name) || roles.some(r => r?.role?.name === name);
+        const isAdmin = hasRole('ADMIN');
+        const isPastor = hasRole('PASTOR');
+        const isLiderDoce = hasRole('LIDER_DOCE');
         const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
 
-        if (!isAdmin && !isCoordinator) {
+        if (!isAdmin && !isPastor && !isLiderDoce && !isCoordinator) {
             return res.status(403).json({ error: 'Solo los administradores o coordinadores pueden crear clases.' });
         }
 
@@ -187,9 +190,11 @@ const updateModule = async (req, res) => {
 
         const roles = req.user.roles || [];
         const isAdmin = roles.includes('ADMIN');
+        const isPastor = roles.includes('PASTOR');
+        const isLiderDoce = roles.includes('LIDER_DOCE');
         const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
 
-        if (!isAdmin && !isCoordinator) {
+        if (!isAdmin && !isPastor && !isLiderDoce && !isCoordinator) {
             return res.status(403).json({ error: 'Solo los administradores o coordinadores pueden editar la configuración de las clases.' });
         }
 
@@ -232,9 +237,11 @@ const deleteModule = async (req, res) => {
         const moduleId = parseInt(id);
         const roles = req.user.roles || [];
         const isAdmin = roles.includes('ADMIN');
+        const isPastor = roles.includes('PASTOR');
+        const isLiderDoce = roles.includes('LIDER_DOCE');
         const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
 
-        if (!isAdmin && !isCoordinator) {
+        if (!isAdmin && !isPastor && !isLiderDoce && !isCoordinator) {
             return res.status(403).json({ error: 'Solo los administradores o coordinadores pueden eliminar clases.' });
         }
 
@@ -296,9 +303,11 @@ const enrollStudent = async (req, res) => {
         const { moduleId, studentId, assignedAuxiliarId } = req.body;
         const roles = req.user.roles || [];
         const isAdmin = roles.includes('ADMIN');
+        const isPastor = roles.includes('PASTOR');
+        const isLiderDoce = roles.includes('LIDER_DOCE');
         const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
 
-        if (!isAdmin && !isCoordinator) {
+        if (!isAdmin && !isPastor && !isLiderDoce && !isCoordinator) {
             return res.status(403).json({ error: 'Solo los administradores o coordinadores pueden inscribir estudiantes.' });
         }
 
@@ -387,9 +396,10 @@ const unenrollStudent = async (req, res) => {
 
         const roles = req.user.roles || [];
         const isAdmin = roles.includes('ADMIN');
+        const isPastor = roles.includes('PASTOR');
         const isCoordinator = await isUserCoordinator(req.user.id, 'discipular');
 
-        if (!isAdmin && !roles.includes('LIDER_DOCE') && !isCoordinator) {
+        if (!isAdmin && !isPastor && !roles.includes('LIDER_DOCE') && !isCoordinator) {
             return res.status(403).json({ error: 'Not authorized to remove students' });
         }
 
@@ -557,9 +567,10 @@ const updateMatrixCell = async (req, res) => {
         // Permission Check
         const roles = user.roles || [];
         const isAdmin = roles.includes('ADMIN');
+        const isPastor = roles.includes('PASTOR');
 
         // LIDER_DOCE can only edit if they are the Professor of the module or ADMIN
-        const isProfessorOfModule = enrollment.module.professorId === user.id || isAdmin;
+        const isProfessorOfModule = enrollment.module.professorId === user.id || isAdmin || isPastor;
 
         // LIDER_CELULA can only edit if they are the assigned Auxiliar for this specific student
         const isAssignedAuxiliar = enrollment.assignedAuxiliarId === user.id;
@@ -570,7 +581,7 @@ const updateMatrixCell = async (req, res) => {
             return res.status(403).json({ error: 'Estudiantes no pueden modificar notas o asistencia.' });
         }
 
-        if (!isProfessorOfModule && !isAssignedAuxiliar && !isCoordinator) {
+        if (!isProfessorOfModule && !isAssignedAuxiliar && !isCoordinator && !isPastor) {
             return res.status(403).json({ error: 'No tienes permiso para editar este estudiante. Solo el profesor de la clase, el auxiliar asignado o el coordinador pueden realizar cambios.' });
         }
 
@@ -1017,9 +1028,10 @@ const updateClassMaterial = async (req, res) => {
 
         const roles = user.roles || [];
         const isAdmin = roles.includes('ADMIN');
+        const isPastor = roles.includes('PASTOR');
         const isCoordinator = await isUserCoordinator(user.id, 'discipular');
         const isProfesorRole = roles.includes('PROFESOR');
-        const isModuleProfessor = moduleData.professorId === user.id || isAdmin || isProfesorRole || isCoordinator;
+        const isModuleProfessor = moduleData.professorId === user.id || isAdmin || isPastor || isProfesorRole || isCoordinator;
 
         if (!isModuleProfessor) {
             return res.status(403).json({ error: 'Only professors or coordinators can manage materials' });

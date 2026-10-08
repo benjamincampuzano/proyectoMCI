@@ -41,7 +41,8 @@ const Layout = () => {
     useEffect(() => {
         const checkKidsAccess = async () => {
             try {
-                if (isAdmin()) {
+                // ADMIN, PASTOR y LIDER_DOCE tienen acceso directo (igual que KidsModuleRoute)
+                if (isAdmin() || hasAnyRole(['PASTOR', 'LIDER_DOCE'])) {
                     setHasKidsAccess(true);
                     return;
                 }
@@ -73,8 +74,8 @@ const Layout = () => {
         { to: '/escuela-de-artes', icon: GuitarIcon, label: 'Artes' },
         { to: '/encuentros', icon: CrossIcon, label: 'Encuentros' },
         { to: '/convenciones', icon: Calendar, label: 'Convenciones' },
-        ...(hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) ? [{ to: '/usuarios', icon: Users, label: 'Gestion de Usuarios' }] : []),
-        ...(hasAnyRole(['ADMIN']) ? [{ to: '/auditoria', icon: TreeStructure, label: 'Auditoria' } ] : [])
+        ...(hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA']) ? [{ to: '/usuarios', icon: Users, label: 'Gestion de Usuarios' }] : []),
+        ...(hasAnyRole(['ADMIN', 'PASTOR']) ? [{ to: '/auditoria', icon: TreeStructure, label: 'Auditoria' } ] : [])
     ];
 
     return (
@@ -183,6 +184,7 @@ const Layout = () => {
             <ChangePasswordModal
                 isOpen={user?.mustChangePassword}
                 onClose={() => { }}
+                onLogout={logout}
             />
         </div>
     );

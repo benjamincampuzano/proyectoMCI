@@ -1,12 +1,12 @@
 const prisma = require('../utils/database');
 const { logActivity } = require('../utils/auditLogger');
-const { getUserNetwork } = require('../utils/networkUtils');
+const { getFullUserNetwork } = require('../utils/networkUtils');
 
 // Crear nuevo invitado
 const createGuest = async (req, res) => {
     try {
         let { name, phone, address, city, prayerRequest, observations, invitedById, assignedToId, called, callObservation, visited, visitObservation, documentType, documentNumber, birthDate, sex, dataPolicyAccepted, dataTreatmentAuthorized, minorConsentAuthorized, servidorCode } = req.body;
-        const { roles, id: currentUserId } = req.user;
+        const { id: currentUserId } = req.user;
 
         if (!name || !phone) {
             return res.status(400).json({ message: 'Name and phone are required' });
@@ -42,15 +42,6 @@ const createGuest = async (req, res) => {
             if (!registrarCode) {
                 return res.status(400).json({ message: 'Código de servidor inválido o inactivo' });
             }
-        }
-
-        // Security: PASTOR only consumes network data, doesn't create guests directly (optional historical rule)
-        // Allow ADMIN and ADMIN to bypass this
-        const isAdmin = roles.includes('ADMIN');
-        if (roles.includes('PASTOR') && !isAdmin) {
-            return res.status(403).json({
-                message: 'Los usuarios con rol PASTOR no pueden crear invitados directamente. Los invitados deben ser creados por LIDER_DOCE, LIDER_CELULA o DISCIPULO.'
-            });
         }
 
         if (!invitedById) {
@@ -156,10 +147,10 @@ const getAllGuests = async (req, res) => {
             // Coordinators of "Ganar" or "Consolidar" can see all guests
             securityFilter = {};
         } else if (roles.some(r => ['LIDER_DOCE', 'LIDER_CELULA', 'COORDINADOR'].includes(r)) || isModuleCoordinator) {
-            // Regular leaders and other coordinators can only see guests from their network hierarchy or assigned cells
-            const networkUserIds = await getUserNetwork(currentUserId);
-            const ids = [...networkUserIds, currentUserId];
-            
+            // Regular leaders and other coordinators can only see guests from their network hierarchy or assigned cells.
+            // Includes the spouse's network: LIDER_DOCE marriages share the red.
+            const ids = await getFullUserNetwork(currentUserId);
+
             securityFilter = {
                 OR: [
                     { invitedById: { in: ids } },
@@ -219,10 +210,9 @@ const getAllGuests = async (req, res) => {
             }
         }
 
-        // Lider Doce & Invited By Logic
+        // Lider Doce & Invited By Logic (includes the spouse's network: marriages share the red)
         if (liderDoceId) {
-            const networkIds = await getUserNetwork(liderDoceId);
-            const idsToCheck = [...networkIds, parseInt(liderDoceId)];
+            const idsToCheck = await getFullUserNetwork(liderDoceId);
 
             if (invitedById) {
                 if (!idsToCheck.includes(parseInt(invitedById))) {
@@ -588,9 +578,8 @@ const updateGuest = async (req, res) => {
                 ...(minorConsentAuthorized !== undefined && { minorConsentAuthorized: Boolean(minorConsentAuthorized) }),
             };
         } else if (isNetworkLeader) {
-            // Regular leaders can only edit guests in their network
-            const networkUserIds = await getUserNetwork(currentUserId);
-            const ids = [...networkUserIds, currentUserId];
+            // Regular leaders can only edit guests in their network (spouse-inclusive)
+            const ids = await getFullUserNetwork(currentUserId);
             
             const isInNetwork = ids.includes(existingGuest.invitedById) ||
                 (existingGuest.assignedToId && ids.includes(existingGuest.assignedToId)) ||
@@ -711,9 +700,8 @@ const deleteGuest = async (req, res) => {
             // Admin, Pastor, and Coordinators can delete any guest
             // No additional checks needed for these roles
         } else if (isNetworkLeader) {
-            // Regular leaders can only delete guests in their network
-            const networkUserIds = await getUserNetwork(currentUserId);
-            const ids = [...networkUserIds, currentUserId];
+            // Regular leaders can only delete guests in their network (spouse-inclusive)
+            const ids = await getFullUserNetwork(currentUserId);
             
             const canDelete = ids.includes(existingGuest.invitedById) ||
                 (existingGuest.assignedToId && ids.includes(existingGuest.assignedToId)) ||
@@ -1013,10 +1001,9 @@ const deleteCall = async (req, res) => {
             return res.status(403).json({ message: 'Only Admin or coordinators can delete calls' });
         }
 
-        // If coordinator, check if the guest is in their network
+        // If coordinator, check if the guest is in their network (spouse-inclusive)
         if (!isAdmin && isCoordinator) {
-            const networkUserIds = await getUserNetwork(currentUserId);
-            const ids = [...networkUserIds, currentUserId];
+            const ids = await getFullUserNetwork(currentUserId);
             
             const isInNetwork = ids.includes(guest.invitedById) ||
                 (guest.assignedToId && ids.includes(guest.assignedToId)) ||
@@ -1090,10 +1077,9 @@ const deleteVisit = async (req, res) => {
             return res.status(403).json({ message: 'Only Admin or coordinators can delete visits' });
         }
 
-        // If coordinator, check if the guest is in their network
+        // If coordinator, check if the guest is in their network (spouse-inclusive)
         if (!isAdmin && isCoordinator) {
-            const networkUserIds = await getUserNetwork(currentUserId);
-            const ids = [...networkUserIds, currentUserId];
+            const ids = await getFullUserNetwork(currentUserId);
             
             const isInNetwork = ids.includes(guest.invitedById) ||
                 (guest.assignedToId && ids.includes(guest.assignedToId)) ||

@@ -82,8 +82,10 @@ const serializeConventionRegistration = (convention, registration) => {
 };
 
 // Helper to check if user has modification access to a convention
+// ADMIN y PASTOR tienen acceso global (igual que encuentroController);
+// coordinadores/subcoordinadores/tesoreros solo en su módulo.
 const checkConventionAccess = async (user, conventionId) => {
-    if (user.roles.includes('ADMIN')) return true;
+    if (user.roles.includes('ADMIN') || user.roles.includes('PASTOR')) return true;
 
     const convention = await prisma.convention.findUnique({
         where: { id: parseInt(conventionId) },

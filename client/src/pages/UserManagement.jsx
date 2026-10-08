@@ -100,6 +100,7 @@ const UserManagement = () => {
         setPasswordResetUser,
         canEdit,
         canCreateUsers,
+        canExportUsers,
         isAdmin,
         getAssignableRoles,
         showErrorModal,
@@ -256,25 +257,25 @@ const UserManagement = () => {
                 description="Panel administrativo para el control de perfiles, roles y permisos de la red ministerial."
                 action={
                     <div className="flex gap-3">
+                        {canExportUsers && (
+                            <Button
+                                onClick={exportToExcel}
+                                icon={Download}
+                                variant="secondary"
+                                className="shadow-lg"
+                            >
+                                Exportar
+                            </Button>
+                        )}
                         {isAdmin && (
-                            <>
-                                <Button
-                                    onClick={exportToExcel}
-                                    icon={Download}
-                                    variant="secondary"
-                                    className="shadow-lg"
-                                >
-                                    Exportar
-                                </Button>
-                                <Button
-                                    onClick={() => setShowBulkImport(true)}
-                                    icon={Upload}
-                                    variant="secondary"
-                                    className="shadow-lg"
-                                >
-                                    Importar
-                                </Button>
-                            </>
+                            <Button
+                                onClick={() => setShowBulkImport(true)}
+                                icon={Upload}
+                                variant="secondary"
+                                className="shadow-lg"
+                            >
+                                Importar
+                            </Button>
                         )}
                         {canCreateUsers && (
                             <Button

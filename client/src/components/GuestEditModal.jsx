@@ -15,7 +15,7 @@ const GuestEditModal = ({ isOpen, onClose, guest, onGuestUpdated }) => {
 
     const canEditAllFields = () => {
         const roles = currentUser?.roles || [];
-        return roles.includes('ADMIN') || roles.includes('LIDER_DOCE');
+        return roles.includes('ADMIN') || roles.includes('PASTOR') || roles.includes('LIDER_DOCE');
     };
 
     const handleSubmit = async (values) => {

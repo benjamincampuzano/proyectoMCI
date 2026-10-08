@@ -142,7 +142,11 @@ export const AuthProvider = ({ children }) => {
 
     const changePassword = async (currentPassword, newPassword) => {
         try {
-            await api.post('/auth/change-password', { currentPassword, newPassword });
+            const res = await api.post('/auth/change-password', { currentPassword, newPassword });
+            // Guardar tokens nuevos si el servidor los emite (traen mustChangePassword:false).
+            // Sin esto el JWT viejo sigue bloqueando todas las rutas y el modal reaparece.
+            if (res.data?.token) localStorage.setItem('token', res.data.token);
+            if (res.data?.refreshToken) localStorage.setItem('refreshToken', res.data.refreshToken);
             // Update user state to reflect password change
             const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
             const updatedUser = { ...storedUser, mustChangePassword: false };
@@ -243,15 +247,15 @@ export const AuthProvider = ({ children }) => {
 
     /**
      * Check if user has ADMIN-level access for a specific module
-     * Returns true if user is global ADMIN OR coordinator of the specified module
+     * Returns true if user is global ADMIN/PASTOR OR coordinator of the specified module
      * @param {string} moduleName - Module to check access for
      * @returns {boolean} - True if user has ADMIN-level access for the module
      */
     const hasModuleAdminAccess = (moduleName) => {
         if (!user || !moduleName) return false;
 
-        // Global ADMIN has access to all modules
-        if (hasRole('ADMIN')) return true;
+        // Global ADMIN/PASTOR has access to all modules
+        if (hasRole('ADMIN') || hasRole('PASTOR')) return true;
 
         // Check if user is coordinator of this specific module
         const normalizedModule = moduleName.toLowerCase().trim().replace(/\s+/g, '-');

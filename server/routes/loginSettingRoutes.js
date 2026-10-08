@@ -54,6 +54,7 @@ const handleUpload = (req, res, next) => {
 
 router.get('/', loginSettingController.getLoginSetting);
 
+// ADMIN-only intencional: la pantalla de login es global del sistema
 router.put('/', authenticate, isAdmin, loginSettingController.updateLoginSetting);
 
 router.post('/upload', authenticate, isAdmin, handleUpload, loginSettingController.uploadLoginMedia);

@@ -5,9 +5,10 @@ const getPendingTasks = async (req, res) => {
     try {
         const isLiderDoce = req.user.roles.includes('LIDER_DOCE');
         const isAdmin = req.user.roles.includes('ADMIN');
+        const isPastor = req.user.roles.includes('PASTOR');
 
-        // Solo visible para LIDER_DOCE (y ADMIN por gestión)
-        if (!isLiderDoce && !isAdmin) {
+        // Visible para LIDER_DOCE, PASTOR y ADMIN (PASTOR con alcance global como ADMIN)
+        if (!isLiderDoce && !isAdmin && !isPastor) {
             return res.json({
                 uncontactedGuestsCount: 0,
                 unassignedDisciplesCount: 0,
@@ -18,7 +19,7 @@ const getPendingTasks = async (req, res) => {
         }
 
         let networkIds = [];
-        if (isLiderDoce && !isAdmin) {
+        if (isLiderDoce && !isAdmin && !isPastor) {
             const descendants = await getUserNetwork(req.user.id);
             networkIds = [req.user.id, ...descendants];
         }

@@ -1,5 +1,5 @@
 const prisma = require('../utils/database');
-const { getUserNetwork } = require('../utils/networkUtils');
+const { getUserNetwork, getFullUserNetwork } = require('../utils/networkUtils');
 
 // Create or update church attendance for a specific date
 const recordAttendance = async (req, res) => {
@@ -147,21 +147,24 @@ const getAllMembers = async (req, res) => {
 
         let where = {};
 
+        // Scope: own network + spouse's network (LIDER_DOCE marriages share the red).
+        // Computed once and reused for the member filter and the guest filter below.
+        const isLeaderScope = userRoles.some(r => ['LIDER_DOCE', 'PASTOR', 'LIDER_CELULA'].includes(r));
+        const scopeIds = isLeaderScope ? await getFullUserNetwork(userId) : null;
+
         if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR')) {
-            const networkIds = await getUserNetwork(userId);
             where = {
-                id: { in: [...networkIds, userId] }
+                id: { in: scopeIds }
             };
         } else if (userRoles.includes('LIDER_CELULA')) {
-            const networkIds = await getUserNetwork(userId);
             const cellMembers = await prisma.user.findMany({
                 where: { cell: { leaderId: userId } },
                 select: { id: true }
             });
             const cellMemberIds = cellMembers.map(u => u.id);
-            const allIds = [...new Set([...networkIds, ...cellMemberIds, userId])];
+            const allIds = [...new Set([...scopeIds, ...cellMemberIds])];
             where = { id: { in: allIds } };
-        } else if (!userRoles.includes('ADMIN') && !userRoles.includes('ADMIN')) {
+        } else if (!userRoles.includes('ADMIN')) {
             where = { id: userId };
         }
 
@@ -182,11 +185,9 @@ const getAllMembers = async (req, res) => {
         if (userRoles.includes('ADMIN')) {
             // Admin sees all guests
         } else if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR') || userRoles.includes('LIDER_CELULA')) {
-            const networkIds = await getUserNetwork(userId);
-            const idsToCheck = [...networkIds, userId];
             guestWhere.OR = [
-                { invitedById: { in: idsToCheck } },
-                { assignedToId: { in: idsToCheck } }
+                { invitedById: { in: scopeIds } },
+                { assignedToId: { in: scopeIds } }
             ];
         } else {
             guestWhere.OR = [
@@ -320,12 +321,12 @@ const getAttendanceStats = async (req, res) => {
         }
 
         if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR') || userRoles.includes('LIDER_CELULA')) {
-            const networkIds = await getUserNetwork(id);
-            networkIds.push(id);
+            // Includes the spouse's network: LIDER_DOCE marriages share the red
+            const scopeIds = await getFullUserNetwork(id);
             where.OR = [
-                { userId: { in: networkIds } },
-                { guest: { invitedById: { in: networkIds } } },
-                { guest: { assignedToId: { in: networkIds } } }
+                { userId: { in: scopeIds } },
+                { guest: { invitedById: { in: scopeIds } } },
+                { guest: { assignedToId: { in: scopeIds } } }
             ];
         } else if (!userRoles.includes('ADMIN')) {
             where.OR = [
@@ -367,8 +368,8 @@ const deleteAttendanceByDate = async (req, res) => {
 
         if (isAdmin) {
         } else if (isLeader) {
-            const networkIds = await getUserNetwork(parseInt(id));
-            networkIds.push(parseInt(id));
+            // Spouse-inclusive scope
+            const networkIds = await getFullUserNetwork(parseInt(id));
             where.OR = [
                 { userId: { in: networkIds } },
                 { guest: { invitedById: { in: networkIds } } },
@@ -406,9 +407,8 @@ const getDailyStats = async (req, res) => {
         const userRoles = roles || [];
         let scopeUserIds = null;
         if (userRoles.includes('LIDER_DOCE') || userRoles.includes('PASTOR') || userRoles.includes('LIDER_CELULA')) {
-            const networkIds = await getUserNetwork(id);
-            networkIds.push(id);
-            scopeUserIds = networkIds;
+            // Spouse-inclusive: LIDER_DOCE marriages share the red
+            scopeUserIds = await getFullUserNetwork(id);
         } else if (!userRoles.includes('ADMIN')) {
             scopeUserIds = [id];
         }

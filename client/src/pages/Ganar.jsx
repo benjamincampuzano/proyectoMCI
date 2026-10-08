@@ -70,7 +70,7 @@ const Ganar = () => {
             label: 'Oración de Tres',
             component: OracionDeTresManagement,
             customCheck: () => {
-                const hasRoleAccess = hasAnyRole([ROLES.ADMIN, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA, ROLES.DISCIPULO]);
+                const hasRoleAccess = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR, ROLES.LIDER_DOCE, ROLES.LIDER_CELULA, ROLES.DISCIPULO]);
                 const isModuleCoord = isCoordinator('ganar');
                 const isModuleSubCoord = isSubCoordinator('ganar');
                 return hasRoleAccess || isModuleCoord || isModuleSubCoord;

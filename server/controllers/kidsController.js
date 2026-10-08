@@ -391,6 +391,15 @@ const enrollStudent = async (req, res) => {
     try {
         const { userId, moduleId, guardianId } = req.body;
 
+        // Solo liderazgo y coordinadores de Kids pueden inscribir
+        // (la ruta no lleva authorizeKidsModuleAccess para no bloquear a maestros LIDER_DOCE/CELULA)
+        const { hasFullAccess } = await getRequesterKidsAccess(req);
+        const enrollRoles = req.user.roles || [];
+        const isTeacher = enrollRoles.includes('LIDER_DOCE') || enrollRoles.includes('LIDER_CELULA');
+        if (!hasFullAccess && !isTeacher) {
+            return res.status(403).json({ message: 'No tienes permiso para inscribir estudiantes.' });
+        }
+
         const existing = await prisma.seminarEnrollment.findUnique({
             where: {
                 userId_moduleId: {
@@ -454,6 +463,14 @@ const unenrollStudent = async (req, res) => {
     try {
         const { enrollmentId } = req.params;
 
+        // Solo liderazgo y coordinadores de Kids pueden desinscribir
+        const { hasFullAccess: canUnenroll } = await getRequesterKidsAccess(req);
+        const unenrollRoles = req.user.roles || [];
+        const isUnenrollTeacher = unenrollRoles.includes('LIDER_DOCE') || unenrollRoles.includes('LIDER_CELULA');
+        if (!canUnenroll && !isUnenrollTeacher) {
+            return res.status(403).json({ message: 'No tienes permiso para desinscribir estudiantes.' });
+        }
+
         // First delete class attendances associated with the enrollment
         await prisma.classAttendance.deleteMany({
             where: { enrollmentId: parseInt(enrollmentId) }
@@ -474,6 +491,14 @@ const unenrollStudent = async (req, res) => {
 const updateMatrixCell = async (req, res) => {
     try {
         const { enrollmentId, classNumber, status, grade, notes } = req.body;
+
+        // Solo liderazgo y coordinadores de Kids pueden registrar asistencia/notas
+        const { hasFullAccess: canEditMatrix } = await getRequesterKidsAccess(req);
+        const matrixRoles = req.user.roles || [];
+        const isMatrixTeacher = matrixRoles.includes('LIDER_DOCE') || matrixRoles.includes('LIDER_CELULA');
+        if (!canEditMatrix && !isMatrixTeacher) {
+            return res.status(403).json({ message: 'No tienes permiso para editar la matriz.' });
+        }
 
         const enrollment = await prisma.seminarEnrollment.findUnique({
             where: { id: parseInt(enrollmentId) },

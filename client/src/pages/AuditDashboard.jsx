@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import useAuditDashboard from '../hooks/useAuditDashboard';
+import { useAuth } from '../hooks/useAuth';
 import DataTable from '../components/ui/DataTable';
 import Modal from '../components/ui/Modal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -18,6 +19,10 @@ const LN_COLORS = ['var(--ln-brand-indigo)', '#10b981', '#f59e0b', '#ef4444', '#
 
 const AuditDashboard = () => {
     const { logs, stats, loading, pagination, filters, setFilters, handleFilterChange } = useAuditDashboard();
+    const { isAdmin } = useAuth();
+    // Backup/restore es solo ADMIN (el backend lo restringe a ADMIN).
+    // PASTOR puede ver logs/stats pero no estas herramientas.
+    const isAdminUser = isAdmin();
     const [selectedLog, setSelectedLog] = useState(null);
     const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
     const [pendingRestoreFile, setPendingRestoreFile] = useState(null);
@@ -483,7 +488,8 @@ const AuditDashboard = () => {
                 />
             </div>
 
-            {/* Database Tools */}
+            {/* Database Tools - solo ADMIN (backup/restore restringidos en el backend) */}
+            {isAdminUser && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
                 <div className="p-8 bg-emerald-500/[0.03] border border-emerald-500/20 rounded-[32px] group hover:border-emerald-500/40 transition-all duration-500">
                     <div className="flex items-center gap-4 mb-6">
@@ -542,6 +548,7 @@ const AuditDashboard = () => {
                     </button>
                 </div>
             </div>
+            )}
 
             {/* Modal de Detalles y Restauración se mantienen con lógica similar pero refinando UI en los componentes compartidos */}
             <ConfirmationModal

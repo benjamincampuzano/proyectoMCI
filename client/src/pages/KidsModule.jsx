@@ -82,7 +82,7 @@ const KidsModule = () => {
             id: "documents",
             label: "Documentos Legales",
             component: (props) => {
-                const canEdit = hasAnyRole([ROLES.ADMIN]) ||
+                const canEdit = hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) ||
                     isCoordinator('kids') || isSubCoordinator('kids') || isTreasurer('kids');
                 return <LegalDocuments {...props} canEdit={canEdit} />;
             },

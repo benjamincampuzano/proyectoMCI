@@ -505,7 +505,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                 <>
                     {/* Actions */}
                     <div className="flex flex-wrap justify-end gap-2 md:gap-3">
-                        {hasAnyRole(['ADMIN', 'LIDER_DOCE']) && (
+                        {hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']) && (
                             <button
                                 onClick={handleExportToExcel}
                                 className="flex items-center px-3 md:px-4 py-2 text-xs md:text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"

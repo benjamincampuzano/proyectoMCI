@@ -171,7 +171,7 @@ const GuestList = ({ refreshTrigger }) => {
 
   const editorUser = currentUser || user;
   const detailCanEdit = canEditGuest(editorUser, auth);
-  const detailCanEditAllFields = ['ADMIN', 'LIDER_DOCE'].some((r) => (editorUser?.roles || []).includes(r));
+  const detailCanEditAllFields = ['ADMIN', 'PASTOR', 'LIDER_DOCE'].some((r) => (editorUser?.roles || []).includes(r));
 
   const handleDetailSubmitEdit = useCallback(
     async (values) => {

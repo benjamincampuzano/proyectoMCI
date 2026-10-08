@@ -670,9 +670,30 @@ const changePassword = async (req, res) => {
             data: { isRevoked: true }
         });
 
+        // Emitir tokens nuevos con mustChangePassword:false. Sin esto, el JWT viejo
+        // (que aún trae mustChangePassword:true) sigue bloqueando todas las rutas
+        // en el middleware authenticate y el modal reaparece en bucle.
+        const fullUser = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { roles: { include: { role: true } } }
+        });
+        const roles = (fullUser?.roles || []).map(r => r.role.name);
+        const moduleCoordinations = await getUserModuleCoordinations(userId);
+        const token = jwt.sign(
+            { userId, roles, mustChangePassword: false, moduleCoordinations },
+            process.env.JWT_SECRET,
+            { expiresIn: '30m' }
+        );
+        const refreshToken = await generateRefreshToken(userId, req.headers['user-agent'], req.ip);
+
         await logActivity(userId, 'UPDATE', 'USER', userId, { message: 'Cambio de contraseña' }, req.ip, req.headers['user-agent']);
 
-        res.status(200).json({ message: 'Contraseña actualizada exitosamente' });
+        res.status(200).json({
+            message: 'Contraseña actualizada exitosamente',
+            token,
+            refreshToken,
+            mustChangePassword: false
+        });
     } catch (error) {
         console.error('Change password error:', error);
         res.status(500).json({ message: 'Error al cambiar la contraseña' });

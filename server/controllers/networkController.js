@@ -524,7 +524,7 @@ const removeUserFromNetwork = async (req, res) => {
         const targetUserId = parseInt(userId);
         const requesterId = Number(req.user?.id);
         const requesterRoles = req.user.roles || [];
-        const isAdmin = requesterRoles.includes('ADMIN');
+        const isAdminOrPastor = requesterRoles.includes('ADMIN') || requesterRoles.includes('PASTOR');
 
         if (Number.isNaN(targetUserId) || Number.isNaN(requesterId)) {
             return res.status(400).json({ error: 'Invalid user id' });
@@ -535,12 +535,12 @@ const removeUserFromNetwork = async (req, res) => {
             select: { spouseId: true },
         });
 
-        const requesterNetworkIds = isAdmin ? [] : await getUserNetwork(requesterId);
+        const requesterNetworkIds = isAdminOrPastor ? [] : await getUserNetwork(requesterId);
         const isSameUser = targetUserId === requesterId;
         const isSpouse = requester?.spouseId ? Number(requester.spouseId) === targetUserId : false;
         const isInRequesterNetwork = requesterNetworkIds.includes(targetUserId);
 
-        if (!isAdmin && !isSameUser && !isSpouse && !isInRequesterNetwork) {
+        if (!isAdminOrPastor && !isSameUser && !isSpouse && !isInRequesterNetwork) {
             return res.status(403).json({ error: 'No tienes permisos para remover este usuario de la red' });
         }
 
@@ -659,7 +659,7 @@ const getUserActivityList = async (req, res) => {
     try {
         const { id: requesterId, roles: requesterRoles } = req.user;
         const currentUserId = parseInt(requesterId);
-        const isAdmin = requesterRoles.includes('ADMIN');
+        const isAdminOrPastor = requesterRoles.includes('ADMIN') || requesterRoles.includes('PASTOR');
 
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
@@ -710,8 +710,8 @@ const getUserActivityList = async (req, res) => {
 
         let targetUserIds = [];
 
-        if (isAdmin) {
-            // Admin ve todos los usuarios no-admin, con filtros opcionales de red/rol/búsqueda.
+        if (isAdminOrPastor) {
+            // Admin/Pastor ve todos los usuarios no-admin, con filtros opcionales de red/rol/búsqueda.
             // NOTA: excluye ADMIN de forma consistente con el resto del reporte.
             const conditions = [
                 Prisma.sql`u."isDeleted" = false`,

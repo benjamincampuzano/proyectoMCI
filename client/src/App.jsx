@@ -66,11 +66,29 @@ const AdminRoute = ({ children }) => {
   return user && authorized ? children : <Navigate to="/" />;
 };
 
+// Auditoría: ADMIN y PASTOR pueden ver logs/stats (el backend autoriza ambos).
+// Backup/restore siguen siendo solo ADMIN (a nivel API y ocultos en la UI).
+const AuditRoute = ({ children }) => {
+  const { user, loading, hasAnyRole } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  const authorized = hasAnyRole(['ADMIN', 'PASTOR']);
+  return user && authorized ? children : <Navigate to="/" />;
+};
+
 const UserManagementRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div>Loading...</div>;
   const roles = user?.roles || [];
   const authorized = roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE', 'LIDER_CELULA'].includes(r));
+  return user && authorized ? children : <Navigate to="/" />;
+};
+
+// Metas: visible para ADMIN/PASTOR/LIDER_DOCE (igual que el sidebar).
+// La edición sigue gated en Metas.jsx (CAN_MANAGE_GOALS = ADMIN/PASTOR).
+const MetasRoute = ({ children }) => {
+  const { user, loading, hasAnyRole } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  const authorized = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
   return user && authorized ? children : <Navigate to="/" />;
 };
 
@@ -209,7 +227,7 @@ function App() {
 
                   <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
                     <Route index element={<Home />} />
-                    <Route path="metas" element={<Metas />} />
+                    <Route path="metas" element={<MetasRoute><Metas /></MetasRoute>} />
                     <Route path="ganar" element={<Ganar />} />
                     <Route path="consolidar" element={<Consolidar />} />
                     <Route path="discipular" element={<Discipular />} />
@@ -220,7 +238,7 @@ function App() {
                     <Route path="convenciones" element={<Convenciones />} />
                     <Route path="network" element={<NetworkAssignment />} />
                     <Route path="usuarios" element={<UserManagementRoute><UserManagement /></UserManagementRoute>} />
-                    <Route path="auditoria" element={<AdminRoute><AuditDashboard /></AdminRoute>} />
+                    <Route path="auditoria" element={<AuditRoute><AuditDashboard /></AuditRoute>} />
                   </Route>
                 </Routes>
               </Suspense>

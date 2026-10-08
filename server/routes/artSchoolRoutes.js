@@ -68,6 +68,7 @@ router.delete('/classes/:id', isModuleCoordinator, canManageArtsClasses, artScho
 router.post('/classes/:id/enroll', artSchoolController.enrollStudent);
 router.post('/enrollments', artSchoolController.enrollStudent); // Mantener para compatibilidad
 router.get('/enrollments/:id', artSchoolController.getEnrollmentById);
+// ADMIN-only intencional: cambiar estado o eliminar inscripciones (ni PASTOR ni coordinadores)
 router.put('/enrollments/:id', isAdmin, artSchoolController.updateEnrollmentStatus);
 router.delete('/enrollments/:id', isAdmin, artSchoolController.deleteEnrollment);
 

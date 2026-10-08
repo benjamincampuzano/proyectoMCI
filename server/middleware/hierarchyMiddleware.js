@@ -38,8 +38,8 @@ function withinHierarchy(param = "userId") {
             const currentUserId = req.user.id;
             const roles = req.user.roles || [];
 
-            // Super Admin bypass
-            if (roles.includes('ADMIN') || roles.includes('ADMIN')) {
+            // Super Admin / Pastor bypass
+            if (roles.includes('ADMIN') || roles.includes('PASTOR')) {
                 return next();
             }
 

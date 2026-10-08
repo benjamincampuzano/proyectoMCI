@@ -8,6 +8,7 @@ const router = express.Router();
 router.use(authenticate);
 
 router.get('/import-template', downloadTemplate);
+// ADMIN-only intencional: la importación masiva puede crear muchos usuarios/roles de una vez
 router.post('/bulk-import', isAdmin, importLimiter, uploadExcel.single('file'), bulkImport);
 
 module.exports = router;

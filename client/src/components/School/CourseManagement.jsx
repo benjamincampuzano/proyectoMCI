@@ -198,7 +198,7 @@ const CourseManagement = ({ refreshTrigger }) => {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Escuelas de Discipulado</h2>
                 <div className="flex items-center gap-2">
-                    {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
+                    {(hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isModuleCoordinator) && (
                         <Button
                             onClick={() => { setShowCreateModal(true); setFormData({ ...formData, name: '' }); }}
                             variant="primary"
@@ -306,7 +306,7 @@ const CourseManagement = ({ refreshTrigger }) => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                  <div className="flex justify-end gap-2">
-                                                        {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
+                                                        {(hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isModuleCoordinator) && (
                                                             <>
                                                                 <Button
                                                                     onClick={(e) => openEditModal(e, course)}
@@ -384,7 +384,7 @@ const CourseManagement = ({ refreshTrigger }) => {
                                             <span className="text-gray-700 dark:text-gray-300">{course.startDate ? new Date(course.startDate).toLocaleDateString() : 'Sin fecha'}</span>
                                         </div>
                                     </div>
-                                    {(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator) && (
+                                    {(hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isModuleCoordinator) && (
                                         <div className="mt-2 flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
                                             <Button onClick={(e) => openEditModal(e, course)} variant="ghost" size="sm" className="text-amber-600 hover:text-amber-800" icon={Pencil}>
                                                 <span className="md:hidden lg:inline">Editar</span>
@@ -571,7 +571,7 @@ const CourseManagement = ({ refreshTrigger }) => {
                 <ClassMaterialManager
                     moduleId={selectedMaterialModuleId}
                     classNumber={1} // Defaulting to class 1 when opened from the main course list
-                    readOnly={!(hasAnyRole([ROLES.ADMIN]) || isModuleCoordinator || isAuxiliarAssignedToCourse(courses.find(c => c.id === selectedMaterialModuleId)))}
+                    readOnly={!(hasAnyRole([ROLES.ADMIN, ROLES.PASTOR]) || isModuleCoordinator || isAuxiliarAssignedToCourse(courses.find(c => c.id === selectedMaterialModuleId)))}
                     onClose={() => setShowMaterialModal(false)}
                 />
             )}

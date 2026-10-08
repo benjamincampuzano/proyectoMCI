@@ -32,8 +32,8 @@ const validateDriveUrl = (url) => {
 };
 
 const LegalDocuments = ({ canEdit: canEditProp }) => {
-    const { isAdmin } = useAuth();
-    const canEdit = canEditProp !== undefined ? canEditProp : isAdmin();
+    const { isAdmin, hasAnyRole } = useAuth();
+    const canEdit = canEditProp !== undefined ? canEditProp : (isAdmin() || hasAnyRole(['PASTOR']));
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');

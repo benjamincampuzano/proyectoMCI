@@ -125,8 +125,42 @@ const canAccessNetwork = async (requester, targetUserId) => {
     return networkIds.includes(targetUserId);
 };
 
+/**
+ * Get the combined scope for a leader: own id + own network + spouse id +
+ * spouse's network (deduplicated). LIDER_DOCE marriages share the red, so
+ * visibility queries must use this instead of getUserNetwork alone —
+ * otherwise a spouse only sees half of the network.
+ * @param {number|string} userId
+ * @returns {Promise<number[]>} Array of user IDs
+ */
+const getFullUserNetwork = async (userId) => {
+    const id = parseInt(userId);
+    if (isNaN(id)) return [];
+
+    const networkIds = await getUserNetwork(id);
+
+    let spouseId = null;
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id },
+            select: { spouseId: true }
+        });
+        if (user?.spouseId) {
+            const parsed = parseInt(user.spouseId);
+            if (!isNaN(parsed)) spouseId = parsed;
+        }
+    } catch (error) {
+        console.error('Error fetching spouse in getFullUserNetwork:', error.message);
+    }
+
+    const spouseNetworkIds = spouseId ? await getUserNetwork(spouseId) : [];
+
+    return [...new Set([...networkIds, ...spouseNetworkIds, id, ...(spouseId ? [spouseId] : [])])];
+};
+
 module.exports = {
     getUserNetwork,
+    getFullUserNetwork,
     getUserAncestors,
     getLiderDoceName,
     checkCycle: async (childId, potentialParentId) => {

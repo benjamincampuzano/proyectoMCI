@@ -54,6 +54,14 @@ const createModule = async (req, res) => {
     try {
         const { name, description, moduleNumber, code, type, professorId, auxiliaryIds } = req.body;
 
+        // Solo ADMIN, PASTOR, LIDER_DOCE o coordinadores pueden crear módulos
+        // (la ruta usa isModuleCoordinator que solo enriquece req.user, no bloquea)
+        const roles = req.user.roles || [];
+        const isManager = roles.includes('ADMIN') || roles.includes('PASTOR') || roles.includes('LIDER_DOCE') || req.user.isModuleCoordinator;
+        if (!isManager) {
+            return res.status(403).json({ error: 'No tienes permiso para crear módulos.' });
+        }
+
         if (!name) {
             return res.status(400).json({ error: 'Name is required' });
         }
@@ -110,6 +118,13 @@ const updateModule = async (req, res) => {
             return res.status(404).json({ error: 'Module not found' });
         }
 
+        // Solo ADMIN, PASTOR, LIDER_DOCE o coordinadores pueden editar módulos
+        const roles = req.user.roles || [];
+        const isManager = roles.includes('ADMIN') || roles.includes('PASTOR') || roles.includes('LIDER_DOCE') || req.user.isModuleCoordinator;
+        if (!isManager) {
+            return res.status(403).json({ error: 'No tienes permiso para editar módulos.' });
+        }
+
         const updateData = {
             ...(name && { name }),
             ...(description && { description }),
@@ -153,6 +168,13 @@ const updateProgress = async (req, res) => {
         const { enrollmentId } = req.params;
         const { assignmentsDone, status, finalProjectGrade } = req.body;
 
+        // Solo ADMIN, PASTOR, LIDER_DOCE o coordinadores pueden modificar progreso/notas
+        const progressRoles = req.user.roles || [];
+        const canEditProgress = progressRoles.includes('ADMIN') || progressRoles.includes('PASTOR') || progressRoles.includes('LIDER_DOCE') || req.user.isModuleCoordinator;
+        if (!canEditProgress) {
+            return res.status(403).json({ error: 'No tienes permiso para modificar el progreso.' });
+        }
+
         const updateData = {};
         if (assignmentsDone !== undefined) updateData.assignmentsDone = parseInt(assignmentsDone);
         if (status) updateData.status = status;
@@ -178,7 +200,7 @@ const deleteModule = async (req, res) => {
 
         const roles = user.roles || [];
         // Strict Role Check - NEW
-        if (!roles.includes('ADMIN') && !roles.includes('ADMIN') && !roles.includes('LIDER_DOCE')) {
+        if (!roles.includes('ADMIN') && !roles.includes('PASTOR') && !roles.includes('LIDER_DOCE')) {
             return res.status(403).json({ error: 'No tienes permiso para eliminar módulos.' });
         }
 
@@ -200,8 +222,8 @@ const deleteEnrollment = async (req, res) => {
         const user = req.user;
 
         const roles = user.roles || [];
-        // Role Check: Only Admin or Lider Doce
-        if (!roles.includes('ADMIN') && !roles.includes('ADMIN') && !roles.includes('LIDER_DOCE')) {
+        // Role Check: Only Admin, Pastor or Lider Doce
+        if (!roles.includes('ADMIN') && !roles.includes('PASTOR') && !roles.includes('LIDER_DOCE')) {
             return res.status(403).json({ error: 'No tienes permiso para eliminar inscripciones.' });
         }
 
@@ -231,14 +253,14 @@ const enrollStudent = async (req, res) => {
         const roles = requestingUser.roles || [];
         // --- Refinement: Role and Network Check ---
         // "Solo los lideres de 12 pueden inscribir"
-        // Also allow ADMIN for testing/management
-        if (!roles.includes('LIDER_DOCE') && !roles.includes('ADMIN') && !roles.includes('ADMIN')) {
+        // Also allow ADMIN/PASTOR for testing/management
+        if (!roles.includes('LIDER_DOCE') && !roles.includes('ADMIN') && !roles.includes('PASTOR')) {
             return res.status(403).json({ error: 'Solo los Líderes de 12 pueden inscribir estudiantes.' });
         }
 
         // "Personas de su red"
-        // If ADMIN, bypass check.
-        if (roles.includes('LIDER_DOCE') && !roles.includes('ADMIN') && !roles.includes('ADMIN')) {
+        // If ADMIN or PASTOR, bypass check.
+        if (roles.includes('LIDER_DOCE') && !roles.includes('ADMIN') && !roles.includes('PASTOR')) {
             const networkIds = await getUserNetwork(requestingUser.id);
             if (!networkIds.includes(parseInt(userId))) {
                 return res.status(403).json({ error: 'Solo puedes inscribir a personas de tu red.' });
@@ -298,7 +320,7 @@ const getModuleEnrollments = async (req, res) => {
 
         const roles = user.roles || [];
         // Security Filter
-        if (roles.includes('ADMIN') || roles.includes('ADMIN')) {
+        if (roles.includes('ADMIN') || roles.includes('PASTOR')) {
             // See all
         } else if (roles.includes('LIDER_DOCE') || roles.includes('LIDER_CELULA')) {
             const userId = parseInt(user.id);
