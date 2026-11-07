@@ -473,6 +473,7 @@ model Convention {
   cost              Float
   vipPlateaCost     Float                    @default(0)
   generalCost       Float                    @default(0)
+  mezzanineCost     Float                    @default(0)
   transportCost     Float                    @default(0)
   accommodationCost Float                    @default(0)
   startDate         DateTime                 @db.Timestamptz(6)
@@ -486,7 +487,6 @@ model Convention {
   registrations     ConventionRegistration[]
   goals             Goal[]
 
-  @@unique([type, year])
   @@index([type])
   @@index([startDate])
 }
@@ -506,6 +506,8 @@ model ConventionRegistration {
   conventionId       Int
   fullName           String?
   phone              String?
+  email              String?
+  documentNumber     String?
   status             RegistrationStatus  @default(PENDING)
   discountPercentage Float               @default(0)
   ticketType         TicketType           @default(GENERAL)
@@ -1046,6 +1048,7 @@ enum RegistrationStatus {
 enum TicketType {
   VIP_PLATEA
   GENERAL
+  MEZZANINE
 }
 
 enum ConventionPaymentType {

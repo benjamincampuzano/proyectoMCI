@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "TicketType" ADD VALUE 'MEZZANINE';
+
+-- AlterTable
+ALTER TABLE "Convention" ADD COLUMN "mezzanineCost" DOUBLE PRECISION NOT NULL DEFAULT 0;

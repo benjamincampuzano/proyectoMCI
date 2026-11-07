@@ -4,8 +4,8 @@ import { ArrowsClockwise } from "@phosphor-icons/react";
 /**
  * FloatingRefreshButton
  *
- * Botón flotante de "Actualizar" usado en páginas de módulo (Kids, Ganar, Consolidar)
- * que refresca los datos mostrados en el tab activo.
+ * Botón flotante de "Actualizar" usado en páginas de módulo (Kids, Ganar, Consolidar).
+ * Refresca los datos mostrados en el tab activo.
  *
  * Diseño:
  * - Posición fija esquina inferior derecha.
@@ -13,7 +13,17 @@ import { ArrowsClockwise } from "@phosphor-icons/react";
  * - Tokens de color del design system (var(--ln-brand-indigo)).
  * - Accesible: aria-label descriptivo, role="button", focus visible.
  */
-const FloatingRefreshButton = ({ onClick, label = "Actualizar", ariaLabel = "Actualizar datos del módulo" }) => {
+const FloatingRefreshButton = ({
+  onClick,
+  label = "Actualizar",
+  loadingLabel = "Actualizando...",
+  ariaLabel = "Actualizar datos del módulo",
+  loading = false,
+  disabled = false,
+}) => {
+  const isDisabled = disabled || loading;
+  const spin = loading;
+
   return (
     <div
       className="fixed bottom-8 right-8 z-40"
@@ -22,11 +32,13 @@ const FloatingRefreshButton = ({ onClick, label = "Actualizar", ariaLabel = "Act
       <button
         type="button"
         onClick={onClick}
+        disabled={isDisabled}
         aria-label={ariaLabel}
-        className="flex items-center gap-2 px-4 py-2 bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] text-white rounded-xl font-medium text-[13px] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ln-accent-violet)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ln-bg-marketing)]"
+        aria-busy={loading}
+        className="flex items-center gap-2 px-4 py-2 bg-[var(--ln-brand-indigo)] hover:bg-[var(--ln-accent-hover)] text-white rounded-xl font-medium text-[13px] transition-all shadow-lg shadow-[var(--ln-brand-indigo)]/20 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ln-accent-violet)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ln-bg-marketing)] disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        <ArrowsClockwise className="w-4 h-4" weight="bold" />
-        {label}
+        <ArrowsClockwise className={`w-4 h-4 ${spin ? 'animate-spin' : ''}`} weight="bold" />
+        {loading ? loadingLabel : label}
       </button>
     </div>
   );
@@ -35,7 +47,10 @@ const FloatingRefreshButton = ({ onClick, label = "Actualizar", ariaLabel = "Act
 FloatingRefreshButton.propTypes = {
   onClick: PropTypes.func.isRequired,
   label: PropTypes.string,
+  loadingLabel: PropTypes.string,
   ariaLabel: PropTypes.string,
+  loading: PropTypes.bool,
+  disabled: PropTypes.bool,
 };
 
 export { FloatingRefreshButton };

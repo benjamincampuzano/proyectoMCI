@@ -1,14 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plus, Calendar, Users, UserIcon, MoneyIcon, Trash, Pen, UserCheck, FileTextIcon, ArrowsClockwise, Clock } from '@phosphor-icons/react';
+import { Plus, Calendar, Users, MoneyIcon, FileTextIcon, Clock } from '@phosphor-icons/react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import ConventionDetails from '../components/ConventionDetails';
 import ConvencionTable from '../components/ConvencionTable';
 import ConvencionesReport from '../components/ConvencionesReport';
-import { Button, Modal, PageHeader, AsyncSearchSelect } from '../components/ui';
+import { Button, Modal, PageHeader, AsyncSearchSelect, StatCard } from '../components/ui';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CoordinatorDisplay from '../components/CoordinatorDisplay';
+import FloatingRefreshButton from '../components/FloatingRefreshButton';
 import { ROLES } from '../constants/roles';
 
 const Convenciones = () => {
@@ -27,6 +28,7 @@ const Convenciones = () => {
     const [conventionToDelete, setConventionToDelete] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [showStatsMobile, setShowStatsMobile] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     // Edit State
     const [showEditModal, setShowEditModal] = useState(false);
@@ -37,6 +39,7 @@ const Convenciones = () => {
         theme: '',
         vipPlateaCost: '',
         generalCost: '',
+        mezzanineCost: '',
         transportCost: '',
         accommodationCost: '',
         startDate: '',
@@ -54,6 +57,7 @@ const Convenciones = () => {
         cost: '',
         vipPlateaCost: '',
         generalCost: '',
+        mezzanineCost: '',
         transportCost: '',
         accommodationCost: '',
         startDate: '',
@@ -97,10 +101,33 @@ const Convenciones = () => {
         try {
             const res = await api.get('/convenciones');
             setConventions(res.data);
+            return true;
         } catch (error) {
             console.error('Error fetching conventions:', error);
+            return false;
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleRefresh = async () => {
+        if (refreshing) return;
+        setRefreshing(true);
+        try {
+            const [conventionsOk] = await Promise.all([
+                fetchConventions(),
+                fetchModuleCoordinator(),
+                fetchModuleSubCoordinator(),
+                fetchModuleTreasurer()
+            ]);
+
+            if (conventionsOk) {
+                toast.success('Datos actualizados');
+            } else {
+                toast.error('No se pudieron actualizar las convenciones');
+            }
+        } finally {
+            setRefreshing(false);
         }
     };
 
@@ -130,6 +157,7 @@ const Convenciones = () => {
                 cost: parseFloat(formData.generalCost || 0),
                 vipPlateaCost: parseFloat(formData.vipPlateaCost || 0),
                 generalCost: parseFloat(formData.generalCost || 0),
+                mezzanineCost: parseFloat(formData.mezzanineCost || 0),
                 transportCost: parseFloat(formData.transportCost || 0),
                 accommodationCost: parseFloat(formData.accommodationCost || 0)
             });
@@ -142,6 +170,7 @@ const Convenciones = () => {
                 cost: '',
                 vipPlateaCost: '',
                 generalCost: '',
+                mezzanineCost: '',
                 transportCost: '',
                 accommodationCost: '',
                 startDate: '',
@@ -185,6 +214,7 @@ const Convenciones = () => {
             theme: convention.theme || '',
             vipPlateaCost: convention.vipPlateaCost || '',
             generalCost: convention.generalCost || '',
+            mezzanineCost: convention.mezzanineCost || '',
             transportCost: convention.transportCost || '',
             accommodationCost: convention.accommodationCost || '',
             startDate: convention.startDate ? new Date(convention.startDate).toISOString().split('T')[0] : '',
@@ -204,6 +234,7 @@ const Convenciones = () => {
                 ...editFormData,
                 vipPlateaCost: parseFloat(editFormData.vipPlateaCost || 0),
                 generalCost: parseFloat(editFormData.generalCost || 0),
+                mezzanineCost: parseFloat(editFormData.mezzanineCost || 0),
                 transportCost: parseFloat(editFormData.transportCost || 0),
                 accommodationCost: parseFloat(editFormData.accommodationCost || 0)
             });
@@ -332,100 +363,59 @@ const Convenciones = () => {
             />
 
             {/* Floating Refresh Button */}
-            <div className="fixed bottom-8 right-8 z-40">
-                <Button
-                    variant="primary"
-                    size="sm"
-                    icon={ArrowsClockwise}
-                    onClick={fetchConventions}
-                    className="shadow-xl"
-                >
-                    Actualizar
-                </Button>
-            </div>
+            <FloatingRefreshButton onClick={handleRefresh} loading={refreshing} />
 
             {/* Estadísticas Resumidas */}
             {!showReport && (
                 <>
                     {/* Botón toggle móvil para Estadísticas */}
-                    <div className="md:hidden flex items-center justify-between mb-3 bg-gray-50 dark:bg-gray-800/40 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
-                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Estadísticas Generales</span>
+                    <div className="md:hidden flex items-center justify-between mb-3 bg-[var(--ln-bg-panel)] p-2.5 rounded-xl border border-[var(--ln-border-standard)]">
+                        <span className="text-[10px] weight-590 text-[var(--ln-text-tertiary)] uppercase tracking-wider">Estadísticas generales</span>
                         <button
                             type="button"
                             onClick={() => setShowStatsMobile(!showStatsMobile)}
-                            className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline focus:outline-none"
+                            className="text-[11px] weight-590 text-[var(--ln-brand-indigo)] hover:underline focus:outline-none"
                         >
                             {showStatsMobile ? 'Ocultar' : 'Ver estadísticas'}
                         </button>
                     </div>
 
-                    <div className={`${showStatsMobile ? 'grid' : 'hidden'} md:grid grid-cols-2 lg:grid-cols-5 gap-2 md:gap-4 mb-6`}>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
-                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                                <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                                    <Users size={16} />
-                                </div>
-                                <span className="text-[10px] md:text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Convenciones</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-xl md:text-3xl font-extrabold text-blue-900 dark:text-white">{stats.total}</span>
-                                <span className="hidden md:block text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5 md:mt-1">Cantidad de Convenciones</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-purple-50 dark:bg-purple-900/20 p-3 md:p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
-                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                                <div className="p-1.5 md:p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
-                                    <UserIcon size={16} />
-                                </div>
-                                <span className="text-[10px] md:text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-xl md:text-3xl font-extrabold text-purple-900 dark:text-white">{stats.inscritos}</span>
-                                </div>
-                                <span className="hidden md:block text-xs text-purple-600 dark:text-purple-400 font-medium mt-0.5 md:mt-1">Total Inscritos</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 md:p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                                <div className="p-1.5 md:p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                                    <MoneyIcon size={16} />
-                                </div>
-                                <span className="text-[10px] md:text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-xl md:text-3xl font-extrabold text-emerald-900 dark:text-white">${stats.recaudado.toLocaleString()}</span>
-                                <span className="hidden md:block text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 md:mt-1">Dinero Recaudado</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-red-50 dark:bg-red-900/20 p-3 md:p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
-                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                                <div className="p-1.5 md:p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                                    <MoneyIcon size={16} />
-                                </div>
-                                <span className="text-[10px] md:text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-xl md:text-3xl font-extrabold text-red-900 dark:text-white">${stats.pendiente.toLocaleString()}</span>
-                                <span className="hidden md:block text-xs text-red-600 dark:text-red-400 font-medium mt-0.5 md:mt-1">Pendiente por Recaudar</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-amber-50 dark:bg-amber-900/20 p-3 md:p-5 rounded-xl border border-amber-100 dark:border-amber-800 shadow-sm">
-                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                                <div className="p-1.5 md:p-2 bg-amber-100 dark:bg-amber-800 rounded-lg text-amber-600 dark:text-amber-300">
-                                    <Clock size={16} />
-                                </div>
-                                <span className="text-[10px] md:text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-tight">Pendientes</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-xl md:text-3xl font-extrabold text-amber-900 dark:text-white">{stats.pendientes}</span>
-                                <span className="hidden md:block text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5 md:mt-1">Solicitudes por Aprobar</span>
-                            </div>
-                        </div>
+                    <div className={`${showStatsMobile ? 'grid' : 'hidden'} md:grid grid-cols-2 lg:grid-cols-5 gap-2 md:gap-3 mb-6`}>
+                        <StatCard
+                            title="Total Convenciones"
+                            value={stats.total}
+                            icon={Calendar}
+                            color="var(--ln-brand-indigo)"
+                            subtitle="Cantidad de convenciones"
+                        />
+                        <StatCard
+                            title="Total Inscritos"
+                            value={stats.inscritos}
+                            icon={Users}
+                            color="#8b5cf6"
+                            subtitle="Personas inscritas"
+                        />
+                        <StatCard
+                            title="Recaudado"
+                            value={`$${stats.recaudado.toLocaleString()}`}
+                            icon={MoneyIcon}
+                            color="#10b981"
+                            subtitle="Dinero recaudado"
+                        />
+                        <StatCard
+                            title="Pendiente"
+                            value={`$${stats.pendiente.toLocaleString()}`}
+                            icon={MoneyIcon}
+                            color="#ef4444"
+                            subtitle="Pendiente por recaudar"
+                        />
+                        <StatCard
+                            title="Preinscritos"
+                            value={stats.pendientes}
+                            icon={Clock}
+                            color="#f59e0b"
+                            subtitle="Personas por aprobar"
+                        />
                     </div>
                 </>
             )}
@@ -488,7 +478,7 @@ const Convenciones = () => {
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo VIP Platea ($)</label>
                                 <input
@@ -505,6 +495,16 @@ const Convenciones = () => {
                                     type="number"
                                     value={formData.generalCost}
                                     onChange={(e) => setFormData({ ...formData, generalCost: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Mezzanine ($)</label>
+                                <input
+                                    type="number"
+                                    value={formData.mezzanineCost}
+                                    onChange={(e) => setFormData({ ...formData, mezzanineCost: e.target.value })}
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                     placeholder="0.00"
                                 />
@@ -643,7 +643,7 @@ const Convenciones = () => {
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo VIP Platea ($)</label>
                                 <input
@@ -660,6 +660,16 @@ const Convenciones = () => {
                                     type="number"
                                     value={editFormData.generalCost}
                                     onChange={(e) => setEditFormData({ ...editFormData, generalCost: e.target.value })}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Mezzanine ($)</label>
+                                <input
+                                    type="number"
+                                    value={editFormData.mezzanineCost}
+                                    onChange={(e) => setEditFormData({ ...editFormData, mezzanineCost: e.target.value })}
                                     className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                     placeholder="0.00"
                                 />

@@ -8,11 +8,19 @@ import AsyncSearchSelect from '../components/ui/AsyncSearchSelect';
 
 const INITIAL_FORM = {
     fullName: '',
+    documentNumber: '',
     phone: '',
+    email: '',
+    ticketType: 'GENERAL',
     sex: '',
-    needsTransport: false,
     needsAccommodation: false,
+    needsTransport: false,
     liderDoce: null
+};
+
+const formatCost = (value) => {
+    const numericValue = Number(value);
+    return numericValue > 0 ? ` - $${numericValue.toLocaleString('es-CO')}` : '';
 };
 
 const PublicConventionRegistration = () => {
@@ -94,6 +102,21 @@ const PublicConventionRegistration = () => {
             return;
         }
 
+        if (!formData.documentNumber.trim()) {
+            setError('La cédula o documento es obligatoria.');
+            return;
+        }
+
+        if (!formData.email.trim()) {
+            setError('El correo electrónico es obligatorio.');
+            return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+            setError('El correo electrónico no tiene un formato válido.');
+            return;
+        }
+
         setSubmitting(true);
         setError('');
         setSuccess('');
@@ -102,7 +125,9 @@ const PublicConventionRegistration = () => {
             await api.post(`/public/convenciones/${selectedConventionId}/registrations`, {
                 ...formData,
                 fullName: formData.fullName.trim(),
+                documentNumber: formData.documentNumber.trim(),
                 phone: formData.phone.trim(),
+                email: formData.email.trim().toLowerCase(),
                 liderDoceId: formData.liderDoce?.id || null
             });
 
@@ -275,6 +300,21 @@ const PublicConventionRegistration = () => {
 
                             <div>
                                 <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">
+                                    Cédula o Documento *
+                                </label>
+                                <input
+                                    type="text"
+                                    name="documentNumber"
+                                    value={formData.documentNumber}
+                                    onChange={handleChange}
+                                    className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
+                                    placeholder="Escribe tu cédula o documento"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">
                                     Teléfono
                                 </label>
                                 <input
@@ -284,6 +324,84 @@ const PublicConventionRegistration = () => {
                                     onChange={handleChange}
                                     className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
                                     placeholder="Opcional"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">
+                                    Correo electrónico *
+                                </label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all placeholder:text-[var(--ln-text-tertiary)]/50 text-sm"
+                                    placeholder="Escribe tu correo electrónico"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">
+                                    Tipo de convención *
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        name="ticketType"
+                                        value={formData.ticketType}
+                                        onChange={handleChange}
+                                        className="w-full bg-[var(--ln-input-bg)] border border-[var(--ln-border-standard)] text-[var(--ln-text-primary)] px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--ln-brand-indigo)]/20 focus:border-[var(--ln-brand-indigo)] transition-all text-sm appearance-none cursor-pointer pr-10"
+                                        required
+                                    >
+                                        <option value="VIP_PLATEA">VIP{formatCost(selectedConvention?.vipPlateaCost)}</option>
+                                        <option value="GENERAL">General{formatCost(selectedConvention?.generalCost)}</option>
+                                        <option value="MEZZANINE">Mezzanine{formatCost(selectedConvention?.mezzanineCost)}</option>
+                                    </select>
+                                    <CaretDown
+                                        size={16}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ln-text-tertiary)] pointer-events-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="bg-white/[0.02] p-4 sm:p-5 rounded-xl border border-[var(--ln-border-standard)] space-y-3">
+                                <label className="flex items-start gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        name="needsAccommodation"
+                                        checked={formData.needsAccommodation}
+                                        onChange={handleChange}
+                                        className="mt-1 w-5 h-5 rounded border-[var(--ln-border-standard)] bg-[var(--ln-input-bg)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)] transition-colors"
+                                    />
+                                    <span className="text-[12px] sm:text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">Necesito hospedaje</span>
+                                </label>
+                                <label className="flex items-start gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        name="needsTransport"
+                                        checked={formData.needsTransport}
+                                        onChange={handleChange}
+                                        className="mt-1 w-5 h-5 rounded border-[var(--ln-border-standard)] bg-[var(--ln-input-bg)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)] transition-colors"
+                                    />
+                                    <span className="text-[12px] sm:text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">Necesito transporte</span>
+                                </label>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">
+                                    Líder 12
+                                </label>
+                                <AsyncSearchSelect
+                                    fetchItems={(term) => {
+                                        const params = { search: term, role: 'LIDER_DOCE' };
+                                        return api.get('/public/users/search', { params })
+                                            .then(res => res.data);
+                                    }}
+                                    onSelect={handleLiderDoceSelect}
+                                    selectedValue={formData.liderDoce}
+                                    placeholder="Buscar líder..."
+                                    labelKey="fullName"
                                 />
                             </div>
 
@@ -311,46 +429,6 @@ const PublicConventionRegistration = () => {
                                     </div>
                                 </div>
                             )}
-
-                            <div>
-                                <label className="block text-[11px] weight-590 uppercase tracking-widest mb-2 text-[var(--ln-text-tertiary)] ml-1">
-                                    Selecciona tu Líder Doce
-                                </label>
-                                <AsyncSearchSelect
-                                    fetchItems={(term) => {
-                                        const params = { search: term, role: 'LIDER_DOCE' };
-                                        return api.get('/public/users/search', { params })
-                                            .then(res => res.data);
-                                    }}
-                                    onSelect={handleLiderDoceSelect}
-                                    selectedValue={formData.liderDoce}
-                                    placeholder="Buscar líder..."
-                                    labelKey="fullName"
-                                />
-                            </div>
-
-                            <div className="bg-white/[0.02] p-4 sm:p-5 rounded-xl border border-[var(--ln-border-standard)] space-y-3">
-                                <label className="flex items-start gap-3 cursor-pointer group">
-                                    <input
-                                        type="checkbox"
-                                        name="needsTransport"
-                                        checked={formData.needsTransport}
-                                        onChange={handleChange}
-                                        className="mt-1 w-5 h-5 rounded border-[var(--ln-border-standard)] bg-[var(--ln-input-bg)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)] transition-colors"
-                                    />
-                                    <span className="text-[12px] sm:text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">Necesito transporte</span>
-                                </label>
-                                <label className="flex items-start gap-3 cursor-pointer group">
-                                    <input
-                                        type="checkbox"
-                                        name="needsAccommodation"
-                                        checked={formData.needsAccommodation}
-                                        onChange={handleChange}
-                                        className="mt-1 w-5 h-5 rounded border-[var(--ln-border-standard)] bg-[var(--ln-input-bg)] text-[var(--ln-brand-indigo)] focus:ring-[var(--ln-brand-indigo)] transition-colors"
-                                    />
-                                    <span className="text-[12px] sm:text-sm text-[var(--ln-text-secondary)] group-hover:text-[var(--ln-text-primary)] transition-colors leading-relaxed">Necesito hospedaje</span>
-                                </label>
-                            </div>
 
                             <button
                                 type="submit"

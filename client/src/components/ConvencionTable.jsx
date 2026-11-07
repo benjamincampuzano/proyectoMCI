@@ -18,7 +18,7 @@ const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify })
                             <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fechas</th>
                             <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Coordinador</th>
                             <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Costo</th>
-                            <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Inscritos</th>
+                            <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Inscritos / Preinscritos</th>
                             <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
@@ -70,9 +70,15 @@ const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify })
                                         <span className="text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(conv.cost)}</span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                                            <Users size={14} />
-                                            {conv.stats?.registeredCount || 0}
+                                        <div className="flex items-center justify-center gap-2">
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                                                <Users size={14} />
+                                                {conv.stats?.registeredCount || 0} inscritos
+                                            </div>
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                                <Users size={14} />
+                                                {conv.stats?.pendingCount || 0} preinscritos
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -172,10 +178,14 @@ const ConvencionTable = ({ conventions, onSelect, onEdit, onDelete, canModify })
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 pt-1">
+                            <div className="flex items-center gap-2 pt-1 flex-wrap">
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
                                     <Users size={13} />
                                     {conv.stats?.registeredCount || 0} Inscritos
+                                </span>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                    <Users size={13} />
+                                    {conv.stats?.pendingCount || 0} Preinscritos
                                 </span>
                             </div>
                         </div>

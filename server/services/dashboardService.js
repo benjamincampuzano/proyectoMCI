@@ -331,7 +331,7 @@ const getConvencionesStats = async (scopeIds = null, filters = {}) => {
                     select: { amount: true }
                 },
                 convention: {
-                    select: { cost: true, vipPlateaCost: true, generalCost: true, transportCost: true, accommodationCost: true }
+                    select: { cost: true, vipPlateaCost: true, generalCost: true, mezzanineCost: true, transportCost: true, accommodationCost: true }
                 }
             }
         });
@@ -339,6 +339,7 @@ const getConvencionesStats = async (scopeIds = null, filters = {}) => {
         const baseCostFor = (conv, reg) => {
             if (reg.ticketType === 'VIP_PLATEA' && Number(conv?.vipPlateaCost) > 0) return Number(conv.vipPlateaCost);
             if (reg.ticketType === 'GENERAL' && Number(conv?.generalCost) > 0) return Number(conv.generalCost);
+            if (reg.ticketType === 'MEZZANINE' && Number(conv?.mezzanineCost) > 0) return Number(conv.mezzanineCost);
             return Number(conv?.cost || 0);
         };
 

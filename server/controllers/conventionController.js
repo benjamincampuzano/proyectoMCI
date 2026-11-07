@@ -15,6 +15,9 @@ const getBaseCostForRegistration = (convention, registration) => {
   if (registration.ticketType === 'GENERAL' && convention.generalCost > 0) {
     return convention.generalCost;
   }
+  if (registration.ticketType === 'MEZZANINE' && convention.mezzanineCost > 0) {
+    return convention.mezzanineCost;
+  }
   return convention.cost;
 };
 
@@ -138,6 +141,7 @@ const getConventions = async (req, res) => {
                 cost: true,
                 vipPlateaCost: true,
                 generalCost: true,
+                mezzanineCost: true,
                 transportCost: true,
                 accommodationCost: true,
                 startDate: true,
@@ -152,6 +156,8 @@ const getConventions = async (req, res) => {
                         status: true,
                         fullName: true,
                         phone: true,
+                        email: true,
+                        documentNumber: true,
                         userId: true,
                         discountPercentage: true,
                         ticketType: true,
@@ -241,6 +247,7 @@ const getConventionById = async (req, res) => {
                 cost: true,
                 vipPlateaCost: true,
                 generalCost: true,
+                mezzanineCost: true,
                 transportCost: true,
                 accommodationCost: true,
                 startDate: true,
@@ -255,6 +262,8 @@ const getConventionById = async (req, res) => {
                         userId: true,
                         fullName: true,
                         phone: true,
+                        email: true,
+                        documentNumber: true,
                         status: true,
                         discountPercentage: true,
                         ticketType: true,
@@ -345,21 +354,7 @@ const createConvention = async (req, res) => {
         if (!roles.some(r => ['ADMIN', 'PASTOR', 'LIDER_DOCE'].includes(r))) {
             return res.status(403).json({ error: 'Not authorized' });
         }
-        const { type, year, theme, cost, vipPlateaCost, generalCost, transportCost, accommodationCost, startDate, endDate, liderDoceIds, coordinatorId } = req.body;
-
-        const existing = await prisma.convention.findUnique({
-            where: {
-                type_year: {
-                    type,
-                    year: parseInt(year)
-                }
-            },
-            select: { id: true }
-        });
-
-        if (existing) {
-            return res.status(400).json({ error: `Convention ${type} ${year} already exists` });
-        }
+        const { type, year, theme, cost, vipPlateaCost, generalCost, mezzanineCost, transportCost, accommodationCost, startDate, endDate, liderDoceIds, coordinatorId } = req.body;
 
         const convention = await prisma.convention.create({
             data: {
@@ -369,6 +364,7 @@ const createConvention = async (req, res) => {
                 cost: parseFloat(cost),
                 vipPlateaCost: parseFloat(vipPlateaCost || 0),
                 generalCost: parseFloat(generalCost || 0),
+                mezzanineCost: parseFloat(mezzanineCost || 0),
                 transportCost: parseFloat(transportCost || 0),
                 accommodationCost: parseFloat(accommodationCost || 0),
                 startDate: new Date(startDate),
@@ -403,7 +399,7 @@ const updateConvention = async (req, res) => {
             return res.status(403).json({ error: 'No tienes permisos para modificar esta convención. Solo el coordinador asignado o un administrador pueden hacerlo.' });
         }
 
-        const { type, year, theme, cost, vipPlateaCost, generalCost, transportCost, accommodationCost, startDate, endDate, liderDoceIds, coordinatorId } = req.body;
+        const { type, year, theme, cost, vipPlateaCost, generalCost, mezzanineCost, transportCost, accommodationCost, startDate, endDate, liderDoceIds, coordinatorId } = req.body;
 
         const updateData = {};
         if (type !== undefined) updateData.type = type;
@@ -412,6 +408,7 @@ const updateConvention = async (req, res) => {
         if (cost !== undefined) updateData.cost = parseFloat(cost);
         if (vipPlateaCost !== undefined) updateData.vipPlateaCost = parseFloat(vipPlateaCost);
         if (generalCost !== undefined) updateData.generalCost = parseFloat(generalCost);
+        if (mezzanineCost !== undefined) updateData.mezzanineCost = parseFloat(mezzanineCost);
         if (transportCost !== undefined) updateData.transportCost = parseFloat(transportCost);
         if (accommodationCost !== undefined) updateData.accommodationCost = parseFloat(accommodationCost);
         if (startDate !== undefined) updateData.startDate = new Date(startDate);
@@ -545,6 +542,9 @@ const getPublicConventions = async (req, res) => {
                 year: true,
                 theme: true,
                 cost: true,
+                vipPlateaCost: true,
+                generalCost: true,
+                mezzanineCost: true,
                 startDate: true,
                 endDate: true,
                 coordinator: {
@@ -582,7 +582,7 @@ const getPublicConventions = async (req, res) => {
 const createPublicConventionRegistration = async (req, res) => {
     try {
         const { conventionId } = req.params;
-        const { fullName, phone, sex, needsTransport, needsAccommodation, liderDoceId } = req.body;
+        const { fullName, phone, email, documentNumber, sex, ticketType, needsTransport, needsAccommodation, liderDoceId } = req.body;
 
         const convention = await prisma.convention.findUnique({
             where: { id: parseInt(conventionId) },
@@ -605,9 +605,25 @@ const createPublicConventionRegistration = async (req, res) => {
 
         const trimmedName = (fullName || '').trim().normalize('NFKC');
         const trimmedPhone = (phone || '').trim();
+        const trimmedEmail = (email || '').trim().toLowerCase();
+        const trimmedDocument = (documentNumber || '').trim();
+        const allowedTicketTypes = ['VIP_PLATEA', 'GENERAL', 'MEZZANINE'];
+        const normalizedTicketType = allowedTicketTypes.includes(ticketType) ? ticketType : 'GENERAL';
 
         if (!trimmedName) {
             return res.status(400).json({ error: 'El nombre es obligatorio.' });
+        }
+
+        if (!trimmedDocument) {
+            return res.status(400).json({ error: 'La cédula o documento es obligatoria.' });
+        }
+
+        if (!trimmedEmail) {
+            return res.status(400).json({ error: 'El correo electrónico es obligatorio.' });
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+            return res.status(400).json({ error: 'El correo electrónico no tiene un formato válido.' });
         }
 
         if ((convention.type === 'HOMBRES' || convention.type === 'MUJERES') && !sex) {
@@ -628,16 +644,32 @@ const createPublicConventionRegistration = async (req, res) => {
                 status: {
                     in: [PENDING_REGISTRATION_STATUS, 'REGISTERED', 'ATTENDED']
                 },
-                fullName: {
-                    equals: trimmedName,
-                    mode: 'insensitive'
-                }
+                OR: [
+                    {
+                        fullName: {
+                            equals: trimmedName,
+                            mode: 'insensitive'
+                        }
+                    },
+                    {
+                        documentNumber: {
+                            equals: trimmedDocument,
+                            mode: 'insensitive'
+                        }
+                    },
+                    {
+                        email: {
+                            equals: trimmedEmail,
+                            mode: 'insensitive'
+                        }
+                    }
+                ]
             },
             select: { id: true }
         });
 
         if (duplicateRegistration) {
-            return res.status(400).json({ error: 'Ya existe una solicitud o inscripción con este nombre en la convención.' });
+            return res.status(400).json({ error: 'Ya existe una solicitud o inscripción con estos datos en la convención.' });
         }
 
         const registration = await prisma.conventionRegistration.create({
@@ -645,8 +677,10 @@ const createPublicConventionRegistration = async (req, res) => {
                 conventionId: parseInt(conventionId),
                 fullName: trimmedName,
                 phone: trimmedPhone || null,
+                email: trimmedEmail,
+                documentNumber: trimmedDocument,
                 status: PENDING_REGISTRATION_STATUS,
-                ticketType: 'GENERAL',
+                ticketType: normalizedTicketType,
                 needsTransport: Boolean(needsTransport),
                 needsAccommodation: Boolean(needsAccommodation),
                 liderDoceId: liderDoceId ? parseInt(liderDoceId) : null
@@ -685,6 +719,7 @@ const getPendingConventionRegistrations = async (req, res) => {
                 cost: true,
                 vipPlateaCost: true,
                 generalCost: true,
+                mezzanineCost: true,
                 transportCost: true,
                 accommodationCost: true,
                 type: true,
@@ -711,6 +746,8 @@ const getPendingConventionRegistrations = async (req, res) => {
                 id: true,
                 fullName: true,
                 phone: true,
+                email: true,
+                documentNumber: true,
                 status: true,
                 ticketType: true,
                 needsTransport: true,
@@ -759,6 +796,8 @@ const approveConventionRegistration = async (req, res) => {
                 status: true,
                 fullName: true,
                 phone: true,
+                email: true,
+                documentNumber: true,
                 ticketType: true,
                 needsTransport: true,
                 needsAccommodation: true
@@ -805,10 +844,11 @@ const approveConventionRegistration = async (req, res) => {
         // Create new user from registration data
         if (createUser) {
             const cleanPhone = (registration.phone || '').trim();
+            const registrationEmail = (registration.email || '').trim().toLowerCase();
             const emailLocalPart = cleanPhone
                 ? cleanPhone.replace(/[^a-zA-Z0-9]/g, '_')
                 : `invitado_${registration.id}_${Date.now()}`;
-            let email = `${emailLocalPart}@invitado.iglesia.app`;
+            let email = registrationEmail || `${emailLocalPart}@invitado.iglesia.app`;
 
             const existingEmail = await prisma.user.findUnique({ where: { email } });
             if (existingEmail) {
@@ -827,7 +867,8 @@ const approveConventionRegistration = async (req, res) => {
                         mustChangePassword: true,
                         profile: {
                             create: {
-                                fullName: registration.fullName || 'Invitado'
+                                fullName: registration.fullName || 'Invitado',
+                                documentNumber: registration.documentNumber || null
                             }
                         }
                     },
@@ -1169,6 +1210,7 @@ const getConventionBalanceReport = async (req, res) => {
                 cost: true,
                 vipPlateaCost: true,
                 generalCost: true,
+                mezzanineCost: true,
                 transportCost: true,
                 accommodationCost: true,
                 coordinatorId: true,
@@ -1181,6 +1223,8 @@ const getConventionBalanceReport = async (req, res) => {
                         userId: true,
                         fullName: true,
                         phone: true,
+                        email: true,
+                        documentNumber: true,
                         status: true,
                         discountPercentage: true,
                         ticketType: true,

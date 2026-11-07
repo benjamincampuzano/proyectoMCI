@@ -6,9 +6,27 @@ import api from '../utils/api';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { useAuth } from '../context/AuthContext';
-import { AsyncSearchSelect } from './ui';
+import { AsyncSearchSelect, StatCard } from './ui';
 import BalanceReport from './BalanceReport';
 import ConfirmationModal from './ConfirmationModal';
+
+const TICKET_TYPE_LABELS = {
+    VIP_PLATEA: 'VIP Platea',
+    GENERAL: 'General',
+    MEZZANINE: 'Mezzanine'
+};
+
+const getTicketTypeLabel = (ticketType) => TICKET_TYPE_LABELS[ticketType] || TICKET_TYPE_LABELS.GENERAL;
+
+const getTicketTypeBadgeClass = (ticketType) => {
+    if (ticketType === 'VIP_PLATEA') {
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
+    }
+    if (ticketType === 'MEZZANINE') {
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+    }
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+};
 
 const ConventionDetails = ({ convention, onBack, onRefresh }) => {
     const { user, hasAnyRole, isCoordinator, isTreasurer } = useAuth();
@@ -53,6 +71,9 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
         year: '',
         theme: '',
         cost: '',
+        vipPlateaCost: '',
+        generalCost: '',
+        mezzanineCost: '',
         transportCost: '',
         accommodationCost: '',
         startDate: '',
@@ -202,6 +223,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             cost: convention.cost,
             vipPlateaCost: convention.vipPlateaCost || 0,
             generalCost: convention.generalCost || 0,
+            mezzanineCost: convention.mezzanineCost || 0,
             transportCost: convention.transportCost || 0,
             accommodationCost: convention.accommodationCost || 0,
             startDate: new Date(convention.startDate).toISOString().split('T')[0],
@@ -243,6 +265,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             worksheet.columns = [
                 { header: '#', key: 'index', width: 5 },
                 { header: 'Nombre', key: 'fullName', width: 30 },
+                { header: 'Documento', key: 'document', width: 18 },
                 { header: 'Email', key: 'email', width: 25 },
                 { header: 'Rol', key: 'roles', width: 20 },
                 { header: 'Tipo Entrada', key: 'ticketTypeLabel', width: 15 },
@@ -261,9 +284,10 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                 worksheet.addRow({
                     index: index + 1,
                     fullName: reg.fullName || reg.user?.fullName,
-                    email: reg.user?.email || reg.phone || '',
+                    document: reg.documentNumber || '',
+                    email: reg.email || reg.user?.email || reg.phone || '',
                     roles: reg.user?.roles?.join(', '),
-                    ticketTypeLabel: reg.ticketType === 'VIP_PLATEA' ? 'VIP Platea' : 'General',
+                    ticketTypeLabel: getTicketTypeLabel(reg.ticketType),
                     cost: reg.ticketBaseCost || convention.cost,
                     discount: reg.discountPercentage,
                     finalCost: reg.finalCost,
@@ -457,47 +481,28 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             </div>
 
             {/* General Stats - Always Visible */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-10">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
-                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                        <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                            <MoneyIcon size={16} />
-                        </div>
-                        <span className="text-[10px] md:text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Inscritos</span>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-xl md:text-3xl font-extrabold text-blue-900 dark:text-white">{convention.stats?.registeredCount || 0}</span>
-                        <span className="hidden md:block text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5 md:mt-1">Cantidad Inscritos</span>
-                    </div>
-                </div>
-
-                <div className="bg-purple-50 dark:bg-emerald-900/20 p-3 md:p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                        <div className="p-1.5 md:p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                            <MoneyIcon size={16} />
-                        </div>
-                        <span className="text-[10px] md:text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Recaudado</span>
-                    </div>
-                    <div className="flex flex-col">
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-sm md:text-3xl font-extrabold text-emerald-900 dark:text-white">{formatCurrency(convention.registrations?.reduce((acc, reg) => acc + (reg.totalPaid || 0), 0) || 0)}</span>
-                        </div>
-                        <span className="hidden md:block text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5 md:mt-1">Dinero Recaudado</span>
-                    </div>
-                </div>
-
-                <div className="bg-red-50 dark:bg-red-900/20 p-3 md:p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
-                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                        <div className="p-1.5 md:p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                            <MoneyIcon size={16} />
-                        </div>
-                        <span className="text-[10px] md:text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Pendiente por Cobrar</span>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-sm md:text-3xl font-extrabold text-red-900 dark:text-white">{formatCurrency(convention.registrations?.reduce((acc, reg) => acc + (reg.balance || 0), 0) || 0)}</span>
-                        <span className="hidden md:block text-xs text-red-600 dark:text-red-400 font-medium mt-0.5 md:mt-1">Dinero Pendiente</span>
-                    </div>
-                </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 mb-6 md:mb-10">
+                <StatCard
+                    title="Inscritos"
+                    value={convention.registrations?.length || 0}
+                    icon={Users}
+                    color="var(--ln-brand-indigo)"
+                    subtitle="Personas inscritas"
+                />
+                <StatCard
+                    title="Recaudado"
+                    value={formatCurrency(convention.registrations?.reduce((acc, reg) => acc + (reg.totalPaid || 0), 0) || 0)}
+                    icon={MoneyIcon}
+                    color="#10b981"
+                    subtitle="Dinero recaudado"
+                />
+                <StatCard
+                    title="Pendiente por Cobrar"
+                    value={formatCurrency(convention.registrations?.reduce((acc, reg) => acc + (reg.balance || 0), 0) || 0)}
+                    icon={MoneyIcon}
+                    color="#ef4444"
+                    subtitle="Dinero pendiente"
+                />
             </div>
 
             {/* Content for Tabs */}
@@ -563,20 +568,19 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                         {reg.fullName}
                                                     </div>
                                                     <div className="text-xs text-gray-500">
-                                                        {reg.user?.email || reg.phone || 'Registro público'}
+                                                        {reg.email || reg.user?.email || reg.phone || 'Registro público'}
                                                     </div>
+                                                    {reg.documentNumber && (
+                                                        <div className="text-xs text-gray-400">Doc: {reg.documentNumber}</div>
+                                                    )}
                                                     {reg.liderDoce?.fullName && (
                                                         <div className="text-xs text-gray-400">Líder: {reg.liderDoce.fullName}</div>
                                                     )}
                                                 </button>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                                                    reg.ticketType === 'VIP_PLATEA'
-                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                                                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                                }`}>
-                                                    {reg.ticketType === 'VIP_PLATEA' ? 'VIP Platea' : 'General'}
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTicketTypeBadgeClass(reg.ticketType)}`}>
+                                                    {getTicketTypeLabel(reg.ticketType)}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -618,7 +622,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 {canManagePayments && (
                                                     <button
                                                         onClick={() => openPaymentModal(reg)}
@@ -679,15 +683,14 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                     {reg.fullName}
                                                 </button>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                    {reg.user?.email || reg.phone || 'Registro público'}
+                                                    {reg.email || reg.user?.email || reg.phone || 'Registro público'}
                                                 </p>
+                                                {reg.documentNumber && (
+                                                    <p className="text-xs text-gray-400 dark:text-gray-500">Doc: {reg.documentNumber}</p>
+                                                )}
                                             </div>
-                                            <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
-                                                reg.ticketType === 'VIP_PLATEA'
-                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                            }`}>
-                                                {reg.ticketType === 'VIP_PLATEA' ? 'VIP Platea' : 'General'}
+                                            <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${getTicketTypeBadgeClass(reg.ticketType)}`}>
+                                                {getTicketTypeLabel(reg.ticketType)}
                                             </span>
                                         </div>
 
@@ -774,7 +777,6 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Entrada</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Transporte</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hospedaje</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                                     </tr>
                                 </thead>
@@ -790,18 +792,16 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                {reg.phone || 'Sin teléfono'}
+                                                <div>{reg.phone || 'Sin teléfono'}</div>
+                                                <div className="text-xs">{reg.email || 'Sin correo'}</div>
+                                                {reg.documentNumber && <div className="text-xs">Doc: {reg.documentNumber}</div>}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {reg.liderDoce?.fullName || 'N/A'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                                                    reg.ticketType === 'VIP_PLATEA'
-                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                                                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                                }`}>
-                                                    {reg.ticketType === 'VIP_PLATEA' ? 'VIP Platea' : 'General'}
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTicketTypeBadgeClass(reg.ticketType)}`}>
+                                                    {getTicketTypeLabel(reg.ticketType)}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -810,14 +810,11 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {reg.needsAccommodation ? 'Sí' : 'No'}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                {reg.createdAt ? new Date(reg.createdAt).toLocaleString() : 'N/A'}
-                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div className="flex items-center justify-end gap-3">
+                                                <div className="flex items-center justify-end gap-2">
                                                     <button
                                                         onClick={() => handleOpenApproveModal(reg)}
-                                                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-white transition-colors hover:bg-emerald-700"
+                                                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                         disabled={loading}
                                                     >
                                                         <CheckCircle size={16} />
@@ -825,9 +822,10 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                                     </button>
                                                     <button
                                                         onClick={() => handleRejectPendingRegistration(reg.id)}
-                                                        className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-2 text-white transition-colors hover:bg-red-700"
+                                                        className="inline-flex items-center gap-2 rounded-lg bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                         disabled={loading}
                                                     >
+                                                        <XCircle size={16} />
                                                         Rechazar
                                                     </button>
                                                 </div>
@@ -836,7 +834,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                     ))}
                                     {pendingRegistrations.length === 0 && (
                                         <tr>
-                                            <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                                            <td colSpan="7" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                                 No hay solicitudes pendientes.
                                             </td>
                                         </tr>
@@ -858,13 +856,13 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                             <div>
                                                 <h4 className="font-bold text-gray-900 dark:text-white text-sm">{reg.fullName}</h4>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400">Tel: {reg.phone || 'Sin teléfono'}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">Correo: {reg.email || 'Sin correo'}</p>
+                                                {reg.documentNumber && (
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">Doc: {reg.documentNumber}</p>
+                                                )}
                                             </div>
-                                            <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
-                                                reg.ticketType === 'VIP_PLATEA'
-                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                            }`}>
-                                                {reg.ticketType === 'VIP_PLATEA' ? 'VIP Platea' : 'General'}
+                                            <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${getTicketTypeBadgeClass(reg.ticketType)}`}>
+                                                {getTicketTypeLabel(reg.ticketType)}
                                             </span>
                                         </div>
 
@@ -881,20 +879,21 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                             </span>
                                         </div>
 
-                                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                                        <div className="flex flex-col gap-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
                                             <button
                                                 onClick={() => handleOpenApproveModal(reg)}
-                                                className="px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center gap-1"
+                                                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                 disabled={loading}
                                             >
-                                                <CheckCircle size={14} />
+                                                <CheckCircle size={16} />
                                                 Aprobar
                                             </button>
                                             <button
                                                 onClick={() => handleRejectPendingRegistration(reg.id)}
-                                                className="px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors"
+                                                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                 disabled={loading}
                                             >
+                                                <XCircle size={16} />
                                                 Rechazar
                                             </button>
                                         </div>
@@ -957,6 +956,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 >
                                     <option value="VIP_PLATEA">VIP Platea {convention.vipPlateaCost > 0 && `(+${formatCurrency(convention.vipPlateaCost)})`}</option>
                                     <option value="GENERAL">General {convention.generalCost > 0 && `(+${formatCurrency(convention.generalCost)})`}</option>
+                                    <option value="MEZZANINE">Mezzanine {convention.mezzanineCost > 0 && `(+${formatCurrency(convention.mezzanineCost)})`}</option>
                                 </select>
                             </div>
                             <div>
@@ -1123,6 +1123,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 >
                                     <option value="VIP_PLATEA">VIP Platea</option>
                                     <option value="GENERAL">General</option>
+                                    <option value="MEZZANINE">Mezzanine</option>
                                 </select>
                             </div>
                             <div>
@@ -1410,7 +1411,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo VIP Platea ($)</label>
                                     <input
@@ -1426,6 +1427,15 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                         type="number"
                                         value={editData.generalCost}
                                         onChange={(e) => setEditData({ ...editData, generalCost: e.target.value })}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo Mezzanine ($)</label>
+                                    <input
+                                        type="number"
+                                        value={editData.mezzanineCost}
+                                        onChange={(e) => setEditData({ ...editData, mezzanineCost: e.target.value })}
                                         className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>

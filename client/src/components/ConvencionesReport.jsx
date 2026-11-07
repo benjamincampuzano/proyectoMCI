@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { MicrosoftExcelLogoIcon, FunnelIcon, MoneyIcon, Users, CreditCard, TrendUpIcon, TrendDownIcon,UserCheck } from '@phosphor-icons/react';
+import { MicrosoftExcelLogoIcon, FunnelIcon, Users, TrendUpIcon, TrendDownIcon,UserCheck } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
+import { StatCard } from './ui';
 
 const ConvencionesReport = ({ conventions }) => {
     const { user } = useAuth();
@@ -105,59 +106,35 @@ const ConvencionesReport = ({ conventions }) => {
             </div>
 
             {/* Stats Cards */}
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-10">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 md:p-5 rounded-xl border border-blue-100 dark:border-blue-800 shadow-sm">
-                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                        <div className="p-1.5 md:p-2 bg-blue-100 dark:bg-blue-800 rounded-lg text-blue-600 dark:text-blue-300">
-                            <Users size={16} />
-                        </div>
-                        <span className="text-[10px] md:text-sm font-bold text-blue-800 dark:text-blue-200 uppercase tracking-tight">Total Convenciones</span>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-xl md:text-3xl font-extrabold text-blue-900 dark:text-white">{filteredData.length}</span>
-                        <span className="hidden md:block text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">Cantidad de Convenciones Creadas</span>
-                    </div>
-                </div>
-                
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-3 md:p-5 rounded-xl border border-purple-100 dark:border-purple-800 shadow-sm">
-                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                        <div className="p-1.5 md:p-2 bg-purple-100 dark:bg-purple-800 rounded-lg text-purple-600 dark:text-purple-300">
-                            <UserCheck size={16} />
-                        </div>
-                        <span className="text-[10px] md:text-sm font-bold text-purple-800 dark:text-purple-200 uppercase tracking-tight">Total Inscritos</span>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-xl md:text-3xl font-extrabold text-purple-900 dark:text-white">{filteredData.reduce((acc, conv) => acc + (conv.registeredCount || 0), 0).toLocaleString()}</span>
-                        <span className="hidden md:block text-xs text-purple-600 dark:text-purple-400 font-medium mt-1">Total de Consolidados</span>
-                    </div>
-                </div>
-
-                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 md:p-5 rounded-xl border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                        <div className="p-1.5 md:p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-300">
-                            <TrendUpIcon size={16} />
-                        </div>
-                        <span className="text-[10px] md:text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight">Total Recaudado</span>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-xl md:text-3xl font-extrabold text-emerald-900 dark:text-white">${totals.paid.toLocaleString()}</span>
-                        <span className="hidden md:block text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">Recaudo Total</span>
-                    </div>
-                </div>
-
-                <div className="bg-red-50 dark:bg-red-900/20 p-3 md:p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-sm">
-                    <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
-                        <div className="p-1.5 md:p-2 bg-red-100 dark:bg-red-800 rounded-lg text-red-600 dark:text-red-300">
-                            <TrendDownIcon size={16} />
-                        </div>
-                        <span className="text-[10px] md:text-sm font-bold text-red-800 dark:text-red-200 uppercase tracking-tight">Total Pendiente</span>
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-xl md:text-3xl font-extrabold text-red-900 dark:text-white">${totals.balance.toLocaleString()}</span>
-                        <span className="hidden md:block text-xs text-red-600 dark:text-red-400 font-medium mt-1">Pendiente por Recaudar</span>
-                    </div>
-                </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 mb-6">
+                <StatCard
+                    title="Total Convenciones"
+                    value={filteredData.length}
+                    icon={Users}
+                    color="var(--ln-brand-indigo)"
+                    subtitle="Cantidad de convenciones creadas"
+                />
+                <StatCard
+                    title="Total Inscritos"
+                    value={filteredData.reduce((acc, conv) => acc + (conv.registeredCount || 0), 0).toLocaleString()}
+                    icon={UserCheck}
+                    color="#8b5cf6"
+                    subtitle="Total de consolidados"
+                />
+                <StatCard
+                    title="Total Recaudado"
+                    value={`$${totals.paid.toLocaleString()}`}
+                    icon={TrendUpIcon}
+                    color="#10b981"
+                    subtitle="Recaudo total"
+                />
+                <StatCard
+                    title="Total Pendiente"
+                    value={`$${totals.balance.toLocaleString()}`}
+                    icon={TrendDownIcon}
+                    color="#ef4444"
+                    subtitle="Pendiente por recaudar"
+                />
             </div>
 
             {/* Table Header & Export */}
