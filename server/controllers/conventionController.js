@@ -845,60 +845,97 @@ const approveConventionRegistration = async (req, res) => {
         if (createUser) {
             const cleanPhone = (registration.phone || '').trim();
             const registrationEmail = (registration.email || '').trim().toLowerCase();
-            const emailLocalPart = cleanPhone
-                ? cleanPhone.replace(/[^a-zA-Z0-9]/g, '_')
-                : `invitado_${registration.id}_${Date.now()}`;
-            let email = registrationEmail || `${emailLocalPart}@invitado.iglesia.app`;
+            const documentNumber = (registration.documentNumber || '').trim();
 
-            const existingEmail = await prisma.user.findUnique({ where: { email } });
-            if (existingEmail) {
-                email = `invitado_${registration.id}_${Date.now()}@invitado.iglesia.app`;
+            // 1. Check for existing phone
+            if (cleanPhone) {
+                const existingPhone = await prisma.user.findUnique({
+                    where: { phone: cleanPhone }
+                });
+                if (existingPhone) {
+                    return res.status(400).json({ error: `El número de teléfono ${cleanPhone} ya está registrado en el sistema.` });
+                }
             }
 
-            const tempPassword = generateTempPassword();
-            const hashedPassword = await bcrypt.hash(tempPassword, 10);
-
-            const newUser = await prisma.$transaction(async (tx) => {
-                const user = await tx.user.create({
-                    data: {
-                        email,
-                        password: hashedPassword,
-                        phone: cleanPhone || null,
-                        mustChangePassword: true,
-                        profile: {
-                            create: {
-                                fullName: registration.fullName || 'Invitado',
-                                documentNumber: registration.documentNumber || null
-                            }
-                        }
-                    },
-                    include: { profile: true }
+            // 2. Check for existing email
+            if (registrationEmail) {
+                const existingEmail = await prisma.user.findUnique({
+                    where: { email: registrationEmail }
                 });
+                if (existingEmail) {
+                    return res.status(400).json({ error: `El correo electrónico ${registrationEmail} ya está registrado en el sistema.` });
+                }
+            }
 
-                const targetRole = await tx.role.upsert({
-                    where: { name: 'DISCIPULO' },
-                    update: {},
-                    create: { name: 'DISCIPULO' }
+            // 3. Check for existing document number
+            if (documentNumber) {
+                const existingDoc = await prisma.userProfile.findFirst({
+                    where: { documentNumber: documentNumber }
                 });
+                if (existingDoc) {
+                    return res.status(400).json({ error: `El documento de identidad ${documentNumber} ya está registrado en el sistema.` });
+                }
+            }
 
-                await tx.userRole.create({
-                    data: { userId: user.id, roleId: targetRole.id }
-                });
+            // Proceed to create new user if no duplicates were found
+            if (!targetUserId) {
+                const emailLocalPart = cleanPhone
+                    ? cleanPhone.replace(/[^a-zA-Z0-9]/g, '_')
+                    : `invitado_${registration.id}_${Date.now()}`;
+                let email = registrationEmail || `${emailLocalPart}@invitado.iglesia.app`;
 
-                if (leaderId) {
-                    await tx.userHierarchy.create({
-                        data: {
-                            parentId: parseInt(leaderId),
-                            childId: user.id,
-                            role: 'DISCIPULO'
-                        }
-                    });
+                // Even though we checked registrationEmail, we might be using a generated one.
+                // We check again just to be safe for the generated email.
+                const existingEmail = await prisma.user.findUnique({ where: { email } });
+                if (existingEmail) {
+                    email = `invitado_${registration.id}_${Date.now()}@invitado.iglesia.app`;
                 }
 
-                return user;
-            });
+                const tempPassword = generateTempPassword();
+                const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-            targetUserId = newUser.id;
+                const newUser = await prisma.$transaction(async (tx) => {
+                    const user = await tx.user.create({
+                        data: {
+                            email,
+                            password: hashedPassword,
+                            phone: cleanPhone || null,
+                            mustChangePassword: true,
+                            profile: {
+                                create: {
+                                    fullName: registration.fullName || 'Invitado',
+                                    documentNumber: documentNumber || null
+                                }
+                            }
+                        },
+                        include: { profile: true }
+                    });
+
+                    const targetRole = await tx.role.upsert({
+                        where: { name: 'DISCIPULO' },
+                        update: {},
+                        create: { name: 'DISCIPULO' }
+                    });
+
+                    await tx.userRole.create({
+                        data: { userId: user.id, roleId: targetRole.id }
+                    });
+
+                    if (leaderId) {
+                        await tx.userHierarchy.create({
+                            data: {
+                                parentId: parseInt(leaderId),
+                                childId: user.id,
+                                role: 'DISCIPULO'
+                            }
+                        });
+                    }
+
+                    return user;
+                });
+
+                targetUserId = newUser.id;
+            }
         }
 
         // Check for duplicate registration if linking a user

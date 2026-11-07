@@ -771,18 +771,38 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                             <table className="w-full">
                                 <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                                     <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nombre</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contacto</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Líder Doce</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Entrada</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Transporte</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hospedaje</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                     {pendingRegistrations.map((reg) => (
                                         <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleOpenApproveModal(reg)}
+                                                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        disabled={loading}
+                                                    >
+                                                        <CheckCircle size={16} />
+                                                        Aprobar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRejectPendingRegistration(reg.id)}
+                                                        className="inline-flex items-center gap-2 rounded-lg bg-red-600 hover:bg-red-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        disabled={loading}
+                                                    >
+                                                        <XCircle size={16} />
+                                                        Rechazar
+                                                    </button>
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="text-sm font-medium text-gray-900 dark:text-white">
                                                     {reg.fullName}
@@ -809,26 +829,6 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                 {reg.needsAccommodation ? 'Sí' : 'No'}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={() => handleOpenApproveModal(reg)}
-                                                        className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        disabled={loading}
-                                                    >
-                                                        <CheckCircle size={16} />
-                                                        Aprobar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleRejectPendingRegistration(reg.id)}
-                                                        className="inline-flex items-center gap-2 rounded-lg bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        disabled={loading}
-                                                    >
-                                                        <XCircle size={16} />
-                                                        Rechazar
-                                                    </button>
-                                                </div>
                                             </td>
                                         </tr>
                                     ))}
