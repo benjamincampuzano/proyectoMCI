@@ -1,48 +1,34 @@
-import { X, Key, Warning, Copy, CheckCircle, Spinner } from '@phosphor-icons/react';
-import { useState, useEffect } from 'react';
+import { X, Key, Warning, Copy, CheckCircle, Spinner, ShieldCheck } from '@phosphor-icons/react';
+import { useState } from 'react';
 import ActionModal from '../ActionModal';
 import { Button } from '../ui';
 import PropTypes from 'prop-types';
 
+/**
+ * Modal de reseteo de contraseña.
+ *
+ * La contraseña temporal NO se genera en el navegador: el cliente sólo pide el
+ * reset y el servidor la genera con un CSPRNG (crypto.randomInt). Así el
+ * resultado no depende de Math.random(), que es predecible.
+ *
+ * La contraseña se muestra una única vez (vuelve en la respuesta del servidor)
+ * para que el administrador pueda comunicarla al usuario.
+ */
 const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) => {
     const [tempPassword, setTempPassword] = useState('');
     const [copied, setCopied] = useState(false);
+    const [error, setError] = useState('');
 
-    const generateTempPassword = () => {
-        const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const lower = 'abcdefghijklmnopqrstuvwxyz';
-        const nums = '0123456789';
-        const syms = '!@#$%^&*+-_';
-        const all = upper + lower + nums + syms;
-        
-        let tempPass = '';
-        tempPass += upper.charAt(Math.floor(Math.random() * upper.length));
-        tempPass += lower.charAt(Math.floor(Math.random() * lower.length));
-        tempPass += nums.charAt(Math.floor(Math.random() * nums.length));
-        tempPass += syms.charAt(Math.floor(Math.random() * syms.length));
-        
-        for (let i = 0; i < 8; i++) {
-            tempPass += all.charAt(Math.floor(Math.random() * all.length));
-        }
-        
-        return tempPass.split('').sort(() => 0.5 - Math.random()).join('');
-    };
-
-    useEffect(() => {
-        void Promise.resolve().then(() => {
-            if (isOpen && user) {
-                setTempPassword(generateTempPassword());
-                setCopied(false);
-            }
-        });
-    }, [isOpen, user]);
+    // El estado se reinicia al remountar el componente: el padre usa
+    // `key={user?.id}` para forzar el remount al abrir/cerrar el modal.
+    // (Evita el setState dentro de un efecto, que provoca renders en cascada.)
 
     const copyToClipboard = async (event) => {
         if (event) {
             event.preventDefault();
             event.stopPropagation();
         }
-        
+
         try {
             await navigator.clipboard.writeText(tempPassword);
             setCopied(true);
@@ -71,9 +57,21 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
         }
     };
 
-    const handleConfirm = () => {
-        onConfirm(user, tempPassword);
+    const handleConfirm = async () => {
+        setError('');
+        try {
+            // El servidor genera la contraseña y la devuelve en la respuesta.
+            const result = await onConfirm(user);
+            if (result?.tempPassword) {
+                setTempPassword(result.tempPassword);
+                setCopied(false);
+            }
+        } catch {
+            setError('No se pudo resetear la contraseña. Inténtalo de nuevo.');
+        }
     };
+
+    const generated = Boolean(tempPassword);
 
     return (
         <ActionModal
@@ -99,38 +97,62 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
                 </div>
 
                 <div className="space-y-6">
-                    <div className="space-y-3">
-                        <label className="text-[11px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-widest px-1">
-                            Contraseña Temporal Generada
-                        </label>
-                        <div className="relative group/copy">
-                            <div className="w-full bg-[var(--ln-bg-panel)]/50 border border-[var(--ln-border-standard)] rounded-2xl p-6 font-mono text-[18px] weight-700 text-[var(--ln-text-primary)] tracking-wider shadow-inner text-center backdrop-blur-sm group-hover/copy:border-[var(--ln-brand-indigo)]/50 transition-all duration-300">
-                                {tempPassword}
+                    {generated ? (
+                        <div className="space-y-3">
+                            <label className="text-[11px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-widest px-1">
+                                Contraseña Temporal Generada
+                            </label>
+                            <div className="relative group/copy">
+                                <div className="w-full bg-[var(--ln-bg-panel)]/50 border border-[var(--ln-border-standard)] rounded-2xl p-6 font-mono text-[18px] weight-700 text-[var(--ln-text-primary)] tracking-wider shadow-inner text-center backdrop-blur-sm group-hover/copy:border-[var(--ln-brand-indigo)]/50 transition-all duration-300">
+                                    {tempPassword}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={copyToClipboard}
+                                    className={`absolute right-4 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl text-[12px] weight-700 flex items-center gap-2 transition-all duration-300 shadow-xl ${
+                                        copied
+                                            ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                                            : 'bg-[var(--ln-brand-indigo)] text-white hover:bg-[var(--ln-brand-indigo-hover)] opacity-0 group-hover/copy:opacity-100'
+                                    }`}
+                                >
+                                    {copied ? (
+                                        <>
+                                            <CheckCircle size={16} weight="bold" />
+                                            Copiado
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy size={16} weight="bold" />
+                                            Copiar
+                                        </>
+                                    )}
+                                </button>
                             </div>
-                            
-                            <button
-                                type="button"
-                                onClick={copyToClipboard}
-                                className={`absolute right-4 top-1/2 -translate-y-1/2 px-4 py-2 rounded-xl text-[12px] weight-700 flex items-center gap-2 transition-all duration-300 shadow-xl ${
-                                    copied 
-                                        ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
-                                        : 'bg-[var(--ln-brand-indigo)] text-white hover:bg-[var(--ln-brand-indigo-hover)] opacity-0 group-hover/copy:opacity-100'
-                                }`}
-                            >
-                                {copied ? (
-                                    <>
-                                        <CheckCircle size={16} weight="bold" />
-                                        Copiado
-                                    </>
-                                ) : (
-                                    <>
-                                        <Copy size={16} weight="bold" />
-                                        Copiar
-                                    </>
-                                )}
-                            </button>
+
+                            <p className="text-[11.5px] weight-500 text-[var(--ln-text-tertiary)] leading-relaxed">
+                                Esta contraseña sólo se muestra ahora. Cópiala y comunícasela al usuario por un canal seguro: no se guarda en ningún sitio en texto plano.
+                            </p>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <label className="text-[11px] weight-700 text-[var(--ln-text-quaternary)] uppercase tracking-widest px-1">
+                                Contraseña Temporal
+                            </label>
+                            <div className="bg-[var(--ln-bg-panel)]/50 border border-[var(--ln-border-standard)] rounded-2xl p-6 flex items-start gap-4">
+                                <ShieldCheck size={22} weight="bold" className="text-[var(--ln-brand-indigo)] shrink-0 mt-0.5" />
+                                <p className="text-[12.5px] weight-510 text-[var(--ln-text-secondary)] leading-relaxed">
+                                    Al confirmar, el <span className="font-bold">servidor</span> generará una contraseña temporal aleatoria con un generador criptográfico seguro. El navegador no participa en su generación.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-[12.5px] font-510 text-red-400">
+                            {error}
+                        </div>
+                    )}
 
                     <div className="bg-[var(--ln-brand-indigo)]/5 border border-[var(--ln-brand-indigo)]/10 rounded-2xl p-5 flex items-center gap-4">
                         <div className="w-2 h-2 rounded-full bg-[var(--ln-brand-indigo)] animate-pulse shadow-[0_0_8px_var(--ln-brand-indigo)]" />
@@ -147,17 +169,19 @@ const PasswordResetModal = ({ isOpen, onClose, user, onConfirm, submitting }) =>
                     onClick={onClose}
                     disabled={submitting}
                 >
-                    Cancelar
+                    {generated ? 'Cerrar' : 'Cancelar'}
                 </Button>
-                <Button
-                    variant="primary"
-                    onClick={handleConfirm}
-                    disabled={submitting}
-                    icon={submitting ? Spinner : Key}
-                    className={submitting ? 'animate-pulse' : 'bg-orange-600 hover:bg-orange-700 border-orange-500/20'}
-                >
-                    {submitting ? 'Reseteando...' : 'Confirmar Reset'}
-                </Button>
+                {!generated && (
+                    <Button
+                        variant="primary"
+                        onClick={handleConfirm}
+                        disabled={submitting}
+                        icon={submitting ? Spinner : Key}
+                        className={submitting ? 'animate-pulse' : 'bg-orange-600 hover:bg-orange-700 border-orange-500/20'}
+                    >
+                        {submitting ? 'Generando...' : 'Generar y resetear'}
+                    </Button>
+                )}
             </div>
         </ActionModal>
     );
@@ -167,6 +191,7 @@ PasswordResetModal.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
     user: PropTypes.object,
+    // Devuelve una promesa con { tempPassword } generada por el servidor.
     onConfirm: PropTypes.func.isRequired,
     submitting: PropTypes.bool
 };

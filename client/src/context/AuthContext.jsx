@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext, useMemo, useCallback } from 'react';
-import api from '../utils/api';
+import api, { setAccessToken, clearAccessToken, getAccessToken, refreshSession } from '../utils/api';
 import toast from 'react-hot-toast';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -33,18 +33,14 @@ export const AuthProvider = ({ children }) => {
     const [isInitialized, setIsInitialized] = useState(false);
 
     const logout = useCallback(async () => {
-        const refreshToken = localStorage.getItem('refreshToken');
-        
         try {
-            if (refreshToken) {
-                await api.post('/auth/logout', { refreshToken });
-            }
+            // El refresh token viaja en la cookie HttpOnly: no hay nada que leer aquí.
+            await api.post('/auth/logout');
         } catch (error) {
             console.error('Logout API error:', error);
         }
 
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
+        clearAccessToken();
         localStorage.removeItem('user');
         setUser(null);
         
@@ -90,47 +86,67 @@ export const AuthProvider = ({ children }) => {
         };
 
         const checkAuth = async () => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    const res = await api.get('/users/profile');
-                    if (res.data.user) {
-                        const normalizedUser = normalizeUserRoles(res.data.user);
-                        setUser(normalizedUser);
-                        localStorage.setItem('user', JSON.stringify(normalizedUser));
-                    }
-                } catch (error) {
-                    // Silently handle network errors (server not available)
-                    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-                        // Fallback to stored user if server fails
-                        const storedUser = JSON.parse(localStorage.getItem('user'));
-                        if (storedUser) setUser(normalizeUserRoles(storedUser));
-                    } else {
-                        console.error('Auth check error:', error);
-                        toast.error('Error al cargar perfil de usuario.');
-                        // If error is 401 or 404 (user not found/stale token), logout
-                        if (error.response?.status === 401 || error.response?.status === 404) {
-                            logout();
-                        } else {
-                            // Fallback to stored user if server fails but not 401/404
-                            const storedUser = JSON.parse(localStorage.getItem('user'));
-                            if (storedUser) setUser(normalizeUserRoles(storedUser));
-                        }
-                    }
+            // El access token no se persiste: al cargar la app se pide uno nuevo
+            // usando la cookie HttpOnly del refresh token (refresh silencioso).
+            try {
+                await refreshSession();
+            } catch {
+                // Sin cookie (o cookie caducada). Si ya hay un access token en
+                // memoria se intenta validar con él; si no, no hay sesión.
+                if (!getAccessToken()) {
+                    clearAccessToken();
+                    setLoading(false);
+                    return;
                 }
             }
-            setLoading(false);
+
+            try {
+                const res = await api.get('/users/profile');
+                if (res.data.user) {
+                    const normalizedUser = normalizeUserRoles(res.data.user);
+                    setUser(normalizedUser);
+                    localStorage.setItem('user', JSON.stringify(normalizedUser));
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                toast.error('Error al cargar perfil de usuario.');
+                // 401/404 → token inválido o usuario inexistente: cerrar sesión.
+                if (error.response?.status === 401 || error.response?.status === 404) {
+                    logout();
+                }
+            } finally {
+                setLoading(false);
+            }
         };
 
         checkInit();
         checkAuth();
     }, [logout]);
 
+    // El interceptor de la API avisa cuando el servidor exige cambio de contraseña:
+    // se actualiza el estado para que aparezca el modal (antes se relied en localStorage).
+    useEffect(() => {
+        const handleMustChangePassword = () => {
+            setUser(prev => (prev ? { ...prev, mustChangePassword: true } : prev));
+            try {
+                const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                if (storedUser && storedUser.id) {
+                    localStorage.setItem('user', JSON.stringify({ ...storedUser, mustChangePassword: true }));
+                }
+            } catch (error) {
+                console.error('Error updating cached user:', error);
+            }
+        };
+
+        window.addEventListener('auth:must-change-password', handleMustChangePassword);
+        return () => window.removeEventListener('auth:must-change-password', handleMustChangePassword);
+    }, []);
+
     const login = async (email, password) => {
         try {
             const res = await api.post('/auth/login', { email, password });
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('refreshToken', res.data.refreshToken);
+            // El access token vive sólo en memoria; el refresh token llegó en una cookie HttpOnly.
+            setAccessToken(res.data.token);
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);
@@ -143,10 +159,9 @@ export const AuthProvider = ({ children }) => {
     const changePassword = async (currentPassword, newPassword) => {
         try {
             const res = await api.post('/auth/change-password', { currentPassword, newPassword });
-            // Guardar tokens nuevos si el servidor los emite (traen mustChangePassword:false).
+            // El servidor emite un token nuevo (mustChangePassword:false) y rota la cookie.
             // Sin esto el JWT viejo sigue bloqueando todas las rutas y el modal reaparece.
-            if (res.data?.token) localStorage.setItem('token', res.data.token);
-            if (res.data?.refreshToken) localStorage.setItem('refreshToken', res.data.refreshToken);
+            if (res.data?.token) setAccessToken(res.data.token);
             // Update user state to reflect password change
             const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
             const updatedUser = { ...storedUser, mustChangePassword: false };
@@ -161,8 +176,7 @@ export const AuthProvider = ({ children }) => {
     const register = async (userData) => {
         try {
             const res = await api.post('/auth/register', userData);
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('refreshToken', res.data.refreshToken);
+            setAccessToken(res.data.token);
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);
@@ -175,8 +189,7 @@ export const AuthProvider = ({ children }) => {
     const setup = async (userData) => {
         try {
             const res = await api.post('/auth/setup', userData);
-            localStorage.setItem('token', res.data.token);
-            localStorage.setItem('refreshToken', res.data.refreshToken);
+            setAccessToken(res.data.token);
             const normalizedUser = normalizeUserRoles(res.data.user);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
             setUser(normalizedUser);

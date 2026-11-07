@@ -23,7 +23,11 @@
     "test:client": "pnpm --filter client run test",
     "test:server": "pnpm --filter server run test",
     "test:e2e": "playwright test --config=e2e/playwright.config.js",
-    "test:e2e:ui": "playwright test --config=e2e/playwright.config.js --ui"
+    "test:e2e:ui": "playwright test --config=e2e/playwright.config.js --ui",
+    "sast": "node tools/sast/sast.js",
+    "sast:json": "node tools/sast/sast.js --format json --out reports/sast-report.json",
+    "sast:sarif": "node tools/sast/sast.js --format sarif --out reports/sast-report.sarif",
+    "sast:test": "node tools/sast/test/sast.test.js"
   },
   "keywords": [],
   "author": "Benjamin Campuzano Castañeda",

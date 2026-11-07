@@ -3,7 +3,14 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { logActivity } = require('../utils/auditLogger');
 const { validatePassword } = require('../utils/passwordValidator');
+const { generateCompliantTempPassword } = require('../utils/passwordGenerator');
 const { normalizeModuleName } = require('../middleware/coordinatorAuth');
+const {
+    REFRESH_COOKIE_NAME,
+    getCookie,
+    issueSessionCookies,
+    clearSessionCookies
+} = require('../utils/authCookies');
 
 const prisma = require('../utils/database');
 const { getUserNetwork } = require('../utils/networkUtils');
@@ -272,9 +279,13 @@ const register = async (req, res) => {
         // Clean expired tokens periodically
         cleanExpiredTokens().catch(err => console.error('Token cleanup error:', err));
 
+        // El refresh token viaja en una cookie HttpOnly: nunca en el cuerpo,
+        // de modo que JavaScript no pueda leerlo.
+        const csrfToken = issueSessionCookies(res, req, refreshToken);
+
         res.status(201).json({
             token,
-            refreshToken,
+            csrfToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -416,9 +427,12 @@ const login = async (req, res) => {
             userAgent: req.headers['user-agent']
         }, req.ip, req.headers['user-agent']);
 
+        // El refresh token se entrega en una cookie HttpOnly + Secure.
+        const csrfToken = issueSessionCookies(res, req, refreshToken);
+
         res.json({
             token,
-            refreshToken,
+            csrfToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -584,9 +598,11 @@ const registerSetup = async (req, res) => {
 
         await logActivity(user.id, 'CREATE', 'USER', user.id, { message: 'Inicialización del sistema: Primer Usuario (ADMIN)' }, req.ip, req.headers['user-agent']);
 
+        const csrfToken = issueSessionCookies(res, req, refreshToken);
+
         res.status(201).json({
             token,
-            refreshToken,
+            csrfToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -688,10 +704,13 @@ const changePassword = async (req, res) => {
 
         await logActivity(userId, 'UPDATE', 'USER', userId, { message: 'Cambio de contraseña' }, req.ip, req.headers['user-agent']);
 
+        // Se rotan las cookies: el refresh token anterior queda revocado.
+        const csrfToken = issueSessionCookies(res, req, refreshToken);
+
         res.status(200).json({
             message: 'Contraseña actualizada exitosamente',
             token,
-            refreshToken,
+            csrfToken,
             mustChangePassword: false
         });
     } catch (error) {
@@ -704,7 +723,6 @@ const changePassword = async (req, res) => {
 const forcePasswordChange = async (req, res) => {
     try {
         const { userId } = req.params;
-        const { newTempPassword } = req.body;
 
         // Security check: Only ADMIN can reset any password. PASTOR and LIDER_DOCE only their network.
         const currentUserRoles = req.user.roles || [];
@@ -728,16 +746,15 @@ const forcePasswordChange = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
 
-        const validation = validatePassword(newTempPassword, {
+        // La contraseña temporal la genera SIEMPRE el servidor con un CSPRNG
+        // (crypto.randomInt). El cliente ya no puede proponerla: si lo hiciera,
+        // su generador no sería criptográficamente seguro.
+        const { password: tempPassword } = generateCompliantTempPassword({
             email: user.email,
             fullName: user.profile?.fullName
         });
 
-        if (!validation.isValid) {
-            return res.status(400).json({ message: validation.message });
-        }
-
-        const hashedPassword = await bcrypt.hash(newTempPassword, 10);
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
         
         await prisma.user.update({
             where: { id: targetUserId },
@@ -754,7 +771,24 @@ const forcePasswordChange = async (req, res) => {
             data: { isRevoked: true }
         });
 
-        res.json({ message: 'Contraseña reseteada exitosamente' });
+        // Auditoría: nunca se registra la contraseña en claro.
+        await logActivity(
+            targetUserId,
+            'UPDATE',
+            'USER',
+            targetUserId,
+            { message: 'Reseteo de contraseña: contraseña temporal generada por el servidor' },
+            req.ip,
+            req.headers['user-agent']
+        );
+
+        // La contraseña se devuelve una única vez para que el administrador
+        // pueda comunicarla al usuario (el servidor sólo almacena el hash).
+        res.json({
+            message: 'Contraseña reseteada exitosamente',
+            tempPassword,
+            mustChangePassword: true
+        });
     } catch (error) {
         console.error('Force password change error:', error);
         res.status(500).json({ message: 'Error resetting password' });
@@ -764,7 +798,9 @@ const forcePasswordChange = async (req, res) => {
 // Refresh token endpoint
 const refreshToken = async (req, res) => {
     try {
-        const { refreshToken } = req.body;
+        // El refresh token se lee exclusivamente de la cookie HttpOnly.
+        // Ya no se acepta en el cuerpo de la petición.
+        const refreshToken = getCookie(req, REFRESH_COOKIE_NAME);
 
         if (!refreshToken) {
             return res.status(401).json({ message: 'Refresh token is required' });
@@ -838,9 +874,12 @@ const refreshToken = async (req, res) => {
             req.headers['user-agent']
         );
 
+        // Rotación: la cookie se reemplaza por el nuevo refresh token.
+        const csrfToken = issueSessionCookies(res, req, newRefreshToken);
+
         res.json({
             token: newAccessToken,
-            refreshToken: newRefreshToken
+            csrfToken
         });
 
     } catch (error) {
@@ -852,7 +891,7 @@ const refreshToken = async (req, res) => {
 // Logout endpoint
 const logout = async (req, res) => {
     try {
-        const { refreshToken } = req.body;
+        const refreshToken = getCookie(req, REFRESH_COOKIE_NAME);
 
         if (refreshToken) {
             await prisma.refreshToken.updateMany({
@@ -860,6 +899,9 @@ const logout = async (req, res) => {
                 data: { isRevoked: true }
             });
         }
+
+        // Se borran las cookies de sesión del navegador.
+        clearSessionCookies(res, req);
 
         res.json({ message: 'Logged out successfully' });
 

@@ -8,6 +8,8 @@ const fs = require("fs");
 const { randomInt } = require('crypto');
 const cron = require('node-cron');
 const rateLimit = require('express-rate-limit');
+const { csrfProtection, verifyOrigin } = require('./middleware/csrf');
+const { getAllowedOrigins, isAllowedOrigin } = require('./utils/origins');
 
 // Trigger restart after fixing Prisma client
 
@@ -51,21 +53,15 @@ app.use(compression());
 
 /* ✅ CORS dinámico */
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://proyecto-mci.vercel.app",
-  process.env.FRONTEND_URL
-].filter(Boolean).map(url => url.replace(/\/$/, ''));
+// Lista única de orígenes permitidos (compartida con el middleware CSRF).
+const allowedOrigins = getAllowedOrigins();
 app.use(
   cors({
     origin: (origin, callback) => {
       // Permitir peticiones sin origen (como apps móviles o curl)
       if (!origin) return callback(null, true);
 
-      const cleanOrigin = origin.replace(/\/$/, '');
-      const isAllowed = allowedOrigins.includes(cleanOrigin);
-
-      if (isAllowed || process.env.NODE_ENV !== "production") {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
       } else {
         const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
@@ -73,8 +69,9 @@ app.use(
       }
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    // Imprescindible para que el navegador envíe la cookie del refresh token.
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization", "X-Restore-Password"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Restore-Password", "X-CSRF-Token"],
     exposedHeaders: ["Content-Disposition"]
   })
 );
@@ -83,6 +80,16 @@ app.use(
 app.use(express.json());
 // ✅ Límite reducido a 5mb (el original de 100mb permitía picos de heap enormes)
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+
+/* ✅ Protección CSRF
+ * - Exige token CSRF (double submit firmado) en las peticiones que modifican
+ *   estado y arrastran la cookie de sesión.
+ * - Verifica el header Origin en las peticiones que modifican estado.
+ * El access token viaja en la cabecera Authorization, por lo que el resto de
+ * la API no es vulnerable a CSRF por construcción.
+ */
+app.use(csrfProtection);
+app.use(verifyOrigin);
 
 /* ✅ Rate Limiting */
 const authLimiter = rateLimit({

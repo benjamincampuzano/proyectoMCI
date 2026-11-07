@@ -17,7 +17,7 @@ const backupLimiter = rateLimit({
     legacyHeaders: false,
     keyGenerator: (req) => {
         // Usar user ID si está autenticado, sino usar IP con manejo IPv6
-        return req.user?.id || ipKeyGenerator(req);
+        return req.user?.id || ipKeyGenerator(req.ip);
     }
 });
 
@@ -36,7 +36,7 @@ const restoreLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => {
-        return req.user?.id || ipKeyGenerator(req);
+        return req.user?.id || ipKeyGenerator(req.ip);
     }
 });
 

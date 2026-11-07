@@ -1022,6 +1022,75 @@ const getAdvancedCellStats = async (req, res) => {
     }
 };
 
+const bulkAssignMembers = async (req, res) => {
+    try {
+        const { cellId, memberIds, guestIds } = req.body;
+        const { id: currentUserId } = req.user;
+
+        if (!cellId) {
+            return res.status(400).json({ error: 'Missing cellId' });
+        }
+
+        const targetCellId = parseInt(cellId);
+        const cell = await prisma.cell.findUnique({
+            where: { id: targetCellId },
+            select: { leaderId: true }
+        });
+
+        if (!cell) {
+            return res.status(404).json({ error: 'Cell not found' });
+        }
+
+        // Permission check: Same as assignMember
+        if (!hasFullEnviarAccess(req.user)) {
+            const networkIds = await getFullUserNetwork(currentUserId);
+            if (!networkIds.includes(cell.leaderId) && cell.leaderId !== currentUserId) {
+                return res.status(403).json({ error: 'No autorizado para asignar miembros masivamente a esta célula' });
+            }
+        }
+
+        await prisma.$transaction(async (tx) => {
+            // 1. Bulk update Users
+            if (memberIds && memberIds.length > 0) {
+                const numericMemberIds = memberIds.map(id => parseInt(id));
+                await tx.user.updateMany({
+                    where: { id: { in: numericMemberIds } },
+                    data: { cellId: targetCellId }
+                });
+
+                // Individual audit logs for users
+                for (const userId of numericMemberIds) {
+                    await logActivity(currentUserId, 'UPDATE', 'USER', userId, { action: 'BULK_ASSIGN_CELL', cellId: targetCellId }, req.ip, req.headers['user-agent']);
+                }
+            }
+
+            // 2. Bulk update Guests
+            if (guestIds && guestIds.length > 0) {
+                const numericGuestIds = guestIds.map(id => parseInt(id));
+                await tx.guest.updateMany({
+                    where: { id: { in: numericGuestIds } },
+                    data: { cellId: targetCellId }
+                });
+
+                // Individual audit logs for guests
+                for (const guestId of numericGuestIds) {
+                    await logActivity(currentUserId, 'UPDATE', 'GUEST', guestId, { action: 'BULK_ASSIGN_CELL', cellId: targetCellId }, req.ip, req.headers['user-agent']);
+                }
+            }
+        });
+
+        res.json({
+            message: 'Bulk assignment completed successfully',
+            assignedMembers: memberIds?.length || 0,
+            assignedGuests: guestIds?.length || 0
+        });
+    } catch (error) {
+        console.error('Error in bulkAssignMembers:', error);
+        res.status(500).json({ error: 'Error processing bulk assignment' });
+    }
+};
+
+
 module.exports = {
     createCell,
     deleteCell,
@@ -1033,5 +1102,6 @@ module.exports = {
     getEligibleDoceLeaders,
     getAdvancedCellStats,
     updateCell,
-    unassignMember
+    unassignMember,
+    bulkAssignMembers
 };

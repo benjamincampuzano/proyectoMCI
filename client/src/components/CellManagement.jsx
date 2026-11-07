@@ -40,16 +40,25 @@ const MapUpdater = ({ center }) => {
     return null;
 };
 
-const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasurer }) => {
+const CellManagement = ({
+    moduleCoordinator,
+    moduleSubCoordinator,
+    moduleTreasurer,
+    selectedCellId,
+    setSelectedCellId,
+    cells,
+    setCells
+}) => {
     const { user, hasAnyRole } = useAuth();
-    const [cells, setCells] = useState([]);
+    // const [cells, setCells] = useState([]); // Now provided as prop
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editingCellId, setEditingCellId] = useState(null);
     const [assignedMembers, setAssignedMembers] = useState([]);
 
-    // Check if user can manage cells
+    // Management State
+    const [selectedCell, setSelectedCell] = useState(null);
     const canManageCells = () => {
         const hasRoleAccess = hasAnyRole(['ADMIN', 'PASTOR', 'LIDER_DOCE']);
         const isModuleCoordinator = moduleCoordinator &&
@@ -102,8 +111,7 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
     const PAGE_SIZE = 10;
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Management State
-    const [selectedCell, setSelectedCell] = useState(null);
+    // Selection and Member State
     const [selectedMember, setSelectedMember] = useState(null);
     const [selectedGuestId, setSelectedGuestId] = useState(null);
     const [selectedGuest, setSelectedGuest] = useState(null);
@@ -129,11 +137,12 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
     const fetchCells = async () => {
         try {
             const response = await api.get('/enviar/cells');
-            setCells(response.data);
+            const data = response.data;
+            setCells(data);
 
             // If we are currently managing a cell, update its data too
-            if (selectedCell) {
-                const updated = response.data.find(c => c.id === selectedCell.id);
+            if (selectedCellId) {
+                const updated = data.find(c => c.id === selectedCellId);
                 if (updated) setSelectedCell(updated);
             }
         } catch (error) {
@@ -264,6 +273,16 @@ const CellManagement = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
             }
         }
     }, [showCreateForm, currentUser]);
+
+    // When a cell is selected in the workspace, sync it to the management view
+    useEffect(() => {
+        if (selectedCellId && cells.length > 0) {
+            const cell = cells.find(c => c.id === selectedCellId);
+            if (cell) setSelectedCell(cell);
+        } else {
+            setSelectedCell(null);
+        }
+    }, [selectedCellId, cells]);
 
     // Fetch eligible members and assigned members when manage view opens
     useEffect(() => {

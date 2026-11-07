@@ -216,3 +216,13 @@ agents/hunter-users/artifacts/canmanageuser-observed.txt
 agents/hunter-users/artifacts/observed-output.txt
 .opencode/skills/security-audit/report-schema.json
 verify-security-fixes.js
+
+# Informes generados por el SAST (tools/sast)
+reports/
+AGENTS.md
+docs/AUTH_SECURITY.md
+docs/CODIGOS_SERVIDOR.md
+docs/DB_LOCAL.md
+tools/sast/test/fixtures/vulnerable.js
+tools/sast/test/fixtures/vulnerable.jsx
+AGENTS.md

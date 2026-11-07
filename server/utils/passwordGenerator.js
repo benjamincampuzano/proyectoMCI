@@ -1,5 +1,16 @@
-const { randomInt } = require('crypto');
+const { randomInt, randomBytes } = require('crypto');
+const { validatePassword } = require('./passwordValidator');
 
+/**
+ * Genera una contraseña temporal aleatoria con un CSPRNG (crypto.randomInt).
+ *
+ * Garantiza al menos una mayúscula, una minúscula, un número y un símbolo, y
+ * baraja los caracteres con el mismo generador criptográfico (un `sort()` con
+ * `Math.random()` introduciría sesgo y es predecible).
+ *
+ * @param {number} length Longitud total (mínimo 8).
+ * @returns {string} Contraseña temporal.
+ */
 const generateTempPassword = (length = 10) => {
   const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const lower = 'abcdefghijklmnopqrstuvwxyz';
@@ -25,4 +36,27 @@ const generateTempPassword = (length = 10) => {
   return chars.join('');
 };
 
-module.exports = { generateTempPassword };
+/**
+ * Genera una contraseña temporal que cumple la política de contraseñas del
+ * proyecto. Si por azar la cadena aleatoria incumple la política (p. ej. que
+ * contenga el nombre del usuario), se regenera.
+ *
+ * @param {{email?: string, fullName?: string}} context Datos del usuario destino.
+ * @param {{length?: number, maxAttempts?: number}} options
+ * @returns {{password: string, validation: {isValid: boolean, message: string}}}
+ */
+const generateCompliantTempPassword = (context = {}, { length = 12, maxAttempts = 10 } = {}) => {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const password = generateTempPassword(length);
+    const validation = validatePassword(password, context);
+    if (validation.isValid) {
+      return { password, validation };
+    }
+  }
+
+  // Red de seguridad: prefijo fijo + 11 bytes aleatorios en base64url.
+  const fallback = `Mci${randomBytes(8).toString('base64url')}!`;
+  return { password: fallback, validation: validatePassword(fallback, context) };
+};
+
+module.exports = { generateTempPassword, generateCompliantTempPassword };

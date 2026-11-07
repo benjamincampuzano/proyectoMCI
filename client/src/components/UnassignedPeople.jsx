@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     MagnifyingGlass, User, Phone, Users, Funnel,
     X, FileXls, Spinner, IdentificationCard, Trash,
-    SuitcaseSimple, TreeStructure, UserPlus, Clock, MapPin
+    SuitcaseSimple, TreeStructure, UserPlus, Clock, MapPin, UserPlus as UserPlusIcon
 } from '@phosphor-icons/react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import api from '../utils/api';
 import { Card, DataTable, Badge, Input, Button, AsyncSearchSelect, Modal } from './ui';
+import BulkAssignmentModal from './BulkAssignmentModal';
 import { ROLE_DISPLAY_NAMES } from '../constants/roles';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
@@ -19,6 +20,7 @@ const UnassignedPeople = () => {
     const [exporting, setExporting] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const [cells, setCells] = useState([]);
+    const [showBulkModal, setShowBulkModal] = useState(false);
 
     // Assignment state
     const [assigningPerson, setAssigningPerson] = useState(null);
@@ -305,6 +307,15 @@ const UnassignedPeople = () => {
 
                     <Button
                         variant="primary"
+                        onClick={() => setShowBulkModal(true)}
+                        icon={UserPlusIcon}
+                        className="bg-blue-600 hover:bg-blue-700 border-none"
+                    >
+                        Asignación Masiva
+                    </Button>
+
+                    <Button
+                        variant="primary"
                         onClick={exportToExcel}
                         loading={exporting}
                         icon={FileXls}
@@ -486,6 +497,13 @@ const UnassignedPeople = () => {
                     )}
                 </div>
             </Card>
+
+            {/* Bulk Assignment Modal */}
+            <BulkAssignmentModal
+                isOpen={showBulkModal}
+                onClose={() => setShowBulkModal(false)}
+                onSuccess={() => fetchPeople(1)}
+            />
 
             {/* Assign to Cell Modal */}
             <Modal

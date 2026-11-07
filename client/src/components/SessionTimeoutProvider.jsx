@@ -1,33 +1,19 @@
 import { useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import useSessionTimeout from '../hooks/useSessionTimeout';
-import axios from 'axios';
-
-const baseURL = import.meta.env.DEV
-    ? 'http://localhost:5000'
-    : (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+import { refreshSession, clearAccessToken } from '../utils/api';
 
 export default function SessionTimeoutProvider({ children }) {
     const { user, logout } = useAuth();
 
+    // El refresh se hace con la cookie HttpOnly: no hay token que leer ni guardar.
     const refreshToken = useCallback(async () => {
-        const storedRefreshToken = localStorage.getItem('refreshToken');
-        if (!storedRefreshToken) throw new Error('No refresh token');
-
-        const { data } = await axios.post(
-            `${baseURL}/api/auth/refresh-token`,
-            { refreshToken: storedRefreshToken },
-            { headers: { 'Content-Type': 'application/json' } }
-        );
-
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('refreshToken', data.refreshToken);
+        const data = await refreshSession();
         return data;
     }, []);
 
     const handleLogout = useCallback(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
+        clearAccessToken();
         localStorage.removeItem('user');
         logout();
     }, [logout]);

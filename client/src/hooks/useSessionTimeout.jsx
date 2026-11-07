@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { getMillisecondsUntilExpiration } from '../utils/tokenUtils';
 import toast from 'react-hot-toast';
+import { getAccessToken } from '../utils/api';
 
 const TOKEN_EXPIRY_WARNING_MINUTES = 5;
 const INACTIVITY_TIMEOUT_MINUTES = 30;
@@ -49,7 +50,8 @@ export default function useSessionTimeout({ onLogout, onRefreshToken }) {
             clearTimeout(inactivityTimerRef.current);
         }
 
-        const token = localStorage.getItem('token');
+        // El access token vive sólo en memoria: se lee del módulo de API.
+        const token = getAccessToken();
         if (!token) return;
 
         inactivityTimerRef.current = setTimeout(() => {
@@ -65,7 +67,7 @@ export default function useSessionTimeout({ onLogout, onRefreshToken }) {
         clearAllTimers();
         warningShownRef.current = false;
 
-        const token = localStorage.getItem('token');
+        const token = getAccessToken();
         if (!token) return;
 
         const msUntilExpiry = getMillisecondsUntilExpiration(token);
@@ -153,32 +155,33 @@ export default function useSessionTimeout({ onLogout, onRefreshToken }) {
     }, [resetInactivityTimer]);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            clearAllTimers();
-            return;
-        }
+        // Cuando llega un access token nuevo (login, refresh silencioso o
+        // extensión de sesión) se recalculan los temporizadores de caducidad.
+        const handleTokenChanged = () => {
+            if (!getAccessToken()) {
+                clearAllTimers();
+                return;
+            }
+            setupExpiryTimer();
+            resetInactivityTimer();
+        };
 
-        setupExpiryTimer();
-        resetInactivityTimer();
+        handleTokenChanged();
 
         ACTIVITY_EVENTS.forEach((event) => {
             window.addEventListener(event, handleActivity, { passive: true });
         });
 
-        const handleStorageChange = (e) => {
-            if (e.key === 'token' && !e.newValue) {
-                clearAllTimers();
-            }
-        };
-        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('auth:token-changed', handleTokenChanged);
+        window.addEventListener('auth:logout', handleTokenChanged);
 
         return () => {
             clearAllTimers();
             ACTIVITY_EVENTS.forEach((event) => {
                 window.removeEventListener(event, handleActivity);
             });
-            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('auth:token-changed', handleTokenChanged);
+            window.removeEventListener('auth:logout', handleTokenChanged);
         };
     }, [setupExpiryTimer, resetInactivityTimer, handleActivity, clearAllTimers]);
 

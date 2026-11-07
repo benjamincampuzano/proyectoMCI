@@ -2,11 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import api from '../utils/api';
 import { getTodayString } from '../utils/dateUtils';
 
-const useCellAttendance = () => {
+const useCellAttendance = (externalSelectedCellId = null, externalSetSelectedCell = null) => {
     const [date, setDate] = useState(getTodayString());
 
     const [cells, setCells] = useState([]);
-    const [selectedCell, setSelectedCell] = useState(null);
+    const [internalSelectedCell, setInternalSelectedCell] = useState(null);
+
+    const selectedCell = externalSelectedCellId !== null ? externalSelectedCellId : internalSelectedCell;
+    const setSelectedCell = externalSetSelectedCell !== null ? externalSetSelectedCell : setInternalSelectedCell;
 
     const [members, setMembers] = useState([]);
     const [attendances, setAttendances] = useState({});

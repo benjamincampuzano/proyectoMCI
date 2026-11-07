@@ -1,4 +1,4 @@
-import { useMemo } from 'react';import {
+import { useMemo, useState, useEffect } from 'react';import {
     SquaresFour, UserPlus, CheckCircle, GraduationCap, Users, Handshake,
     Palette, ChartBar, Pulse,
 } from '@phosphor-icons/react';
@@ -52,8 +52,28 @@ const UnifiedDashboard = () => {
         activityRows, activityTotal,
         funnel, topInviters, byRed,
         dailyChurch, cellTrend,
+        cellsBreakdown, cellsLoading, loadCellsBreakdown,
         loading, error, refresh,
     } = useUnifiedDashboard();
+    const [cellsOpen, setCellsOpen] = useState(false);
+
+    const openCellsDrilldown = () => setCellsOpen((v) => !v);
+
+    // Si el drill-down está abierto, mantenerlo sincronizado con el filtro de Red
+    useEffect(() => {
+        if (cellsOpen) loadCellsBreakdown(filters.liderDoceId);
+    }, [cellsOpen, filters.liderDoceId, loadCellsBreakdown]);
+
+    const cellsLeadersChart = useMemo(
+        () => (cellsBreakdown?.leaders || []).slice(0, 12).map((g) => ({
+            name: (g.liderDoceName || 'Sin asignar').split(' ').slice(0, 2).join(' '),
+            fullName: g.liderDoceName,
+            liderDoceId: g.liderDoceId,
+            celulas: g.totalCells,
+            inscritos: g.totalMembers,
+        })),
+        [cellsBreakdown]
+    );
 
     const ganar = useMemo(() => dashboard?.ganar || {}, [dashboard]);
     const consolidar = useMemo(() => dashboard?.consolidar || {}, [dashboard]);
@@ -126,7 +146,7 @@ const UnifiedDashboard = () => {
                         <StatCard title="Invitados" value={ganar.totalGuests ?? guestStats?.totalGuests ?? 0} icon={UserPlus} color="var(--ln-brand-indigo)" subtitle={`${ganar.ganadosGuests ?? 0} ganados (${ganar.conversionRate ?? 0}%)`} onClick={() => setModule('ganar')} />
                         <StatCard title="Asistencia reciente" value={consolidar.recentAttendance ?? 0} icon={CheckCircle} color="#10b981" subtitle={`Promedio: ${consolidar.averageWeekly ?? 0}`} onClick={() => setModule('consolidar')} />
                         <StatCard title="Estudiantes" value={discipular.enrolledStudents ?? 0} icon={GraduationCap} color="#8b5cf6" subtitle={`${discipular.activeModules ?? 0} módulos · ${discipular.graduatedStudents ?? 0} grad.`} onClick={() => setModule('discipular')} />
-                        <StatCard title="Células creadas" value={enviar.totalCells ?? 0} icon={Users} color="#f59e0b" subtitle={`${enviar.activeLeaders ?? 0} líderes`} onClick={() => setModule('enviar')} />
+                        <StatCard title="Células creadas" value={enviar.totalCells ?? 0} icon={Users} color="#f59e0b" subtitle={`${enviar.activeLeaders ?? 0} líderes`} onClick={() => { setModule('enviar'); setCellsOpen(true); }} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <StatCard title="Encuentros activos" value={encuentros.activeEncuentros ?? 0} icon={Handshake} color="#ec4899" subtitle={`${encuentros.registeredCount ?? 0} inscritos · ${encuentros.baptizedCount ?? 0} bautizados`} onClick={() => setModule('encuentros')} />
@@ -246,10 +266,69 @@ const UnifiedDashboard = () => {
             {module === 'enviar' && (
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <StatCard title="Células creadas" value={enviar.totalCells ?? 0} icon={Users} color="#f59e0b" />
+                        <StatCard title="Células creadas" value={enviar.totalCells ?? 0} icon={Users} color="#f59e0b" subtitle="Clic para ver desglose por Líder 12" onClick={openCellsDrilldown} />
                         <StatCard title="Líderes activos" value={enviar.activeLeaders ?? 0} icon={Users} color="var(--ln-brand-indigo)" />
                         <StatCard title="Asistencia reciente" value={enviar.recentAttendance ?? 0} icon={Users} color="#10b981" />
                     </div>
+                    {cellsOpen && (
+                        <ChartCard
+                            title="Células por Líder 12"
+                            subtitle={cellsBreakdown ? `${cellsBreakdown.totals.totalCells} células · ${cellsBreakdown.totals.totalMembers} inscritos · ${cellsBreakdown.totals.totalLeaders} líderes. Clic en una barra para filtrar todo el dashboard por esa red.` : 'Cargando desglose...'}
+                            isLoading={cellsLoading && !cellsBreakdown}
+                            isEmpty={!cellsLoading && (!cellsBreakdown || cellsBreakdown.leaders.length === 0)}
+                            emptyMessage="No hay células para los filtros seleccionados."
+                        >
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={cellsLeadersChart} margin={{ left: -10 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                    <XAxis dataKey="name" tick={{ fill: 'var(--ln-text-tertiary)', fontSize: 11 }} tickLine={false} interval={0} angle={-18} dy={10} height={60} />
+                                    <YAxis tick={{ fill: 'var(--ln-text-tertiary)', fontSize: 12 }} tickLine={false} allowDecimals={false} />
+                                    <Tooltip contentStyle={tooltipStyle} labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName || ''} />
+                                    <Bar dataKey="celulas" name="Células" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={44} onClick={(d) => d?.liderDoceId && updateFilter({ liderDoceId: String(d.liderDoceId) })} className="cursor-pointer" />
+                                    <Bar dataKey="inscritos" name="Inscritos" fill="var(--ln-brand-indigo)" radius={[6, 6, 0, 0]} maxBarSize={44} onClick={(d) => d?.liderDoceId && updateFilter({ liderDoceId: String(d.liderDoceId) })} className="cursor-pointer" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                            {(cellsBreakdown?.leaders || []).map((g) => (
+                                <div key={g.liderDoceId ?? 'none'} className="mt-6 first:mt-2 overflow-x-auto">
+                                    <button
+                                        type="button"
+                                        onClick={() => g.liderDoceId && updateFilter({ liderDoceId: String(g.liderDoceId) })}
+                                        className="flex flex-wrap items-center gap-2 mb-2 text-left"
+                                        title={g.liderDoceId ? 'Filtrar dashboard por esta red' : undefined}
+                                    >
+                                        <span className="text-sm weight-590 text-[var(--ln-text-primary)]">{g.liderDoceName}</span>
+                                        <span className="px-2 py-0.5 rounded-full bg-[var(--ln-brand-indigo)]/12 border border-[var(--ln-brand-indigo)]/25 text-[var(--ln-brand-indigo)] text-[11px] weight-590">{g.totalCells} células</span>
+                                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11px] weight-590">{g.totalMembers} inscritos</span>
+                                        {g.totalGuests > 0 && (
+                                            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[11px] weight-590">{g.totalGuests} invitados</span>
+                                        )}
+                                    </button>
+                                    <table className="w-full text-sm min-w-[520px]">
+                                        <thead>
+                                            <tr className="text-left text-[10px] weight-590 uppercase tracking-widest text-[var(--ln-text-tertiary)] opacity-70 border-b border-[var(--ln-border-standard)]">
+                                                <th className="py-2 pr-3">Célula</th>
+                                                <th className="py-2 pr-3">Líder de célula</th>
+                                                <th className="py-2 pr-3">Horario</th>
+                                                <th className="py-2 px-3 text-right">Inscritos</th>
+                                                <th className="py-2 pl-3 text-right">Invitados</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[var(--ln-border-standard)]/50">
+                                            {g.cells.map((c) => (
+                                                <tr key={c.id} className="hover:bg-white/[0.02] transition-colors">
+                                                    <td className="py-2 pr-3 weight-510 text-[var(--ln-text-primary)]">{c.name}</td>
+                                                    <td className="py-2 pr-3 text-[var(--ln-text-secondary)]">{c.leaderName}</td>
+                                                    <td className="py-2 pr-3 text-[var(--ln-text-tertiary)] text-xs">{c.schedule}</td>
+                                                    <td className="py-2 px-3 text-right weight-590 text-[var(--ln-text-primary)] tabular-nums">{c.memberCount}</td>
+                                                    <td className="py-2 pl-3 text-right text-[var(--ln-text-tertiary)] tabular-nums">{c.guestCount}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ))}
+                        </ChartCard>
+                    )}
                     <ChartCard title="Tendencia células (presentes vs ausentes)" subtitle="" isEmpty={cellChart.length === 0}>
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={cellChart}>

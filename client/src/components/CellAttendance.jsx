@@ -7,27 +7,31 @@ import { useAuth } from '../context/AuthContext';
 import CellMap from './CellMap';
 import ModalAttendance from './ModalAttendance';
 
-const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasurer }) => {
+const CellAttendance = ({
+    moduleCoordinator,
+    moduleSubCoordinator,
+    moduleTreasurer,
+    selectedCellId,
+    setSelectedCellId,
+    cells
+}) => {
     const {
         date,
         setDate,
-        cells,
-        selectedCell,
-        setSelectedCell,
         members,
         attendances,
         toggleAttendance,
         loading,
         saving,
         saveAttendance,
-    } = useCellAttendance();
+    } = useCellAttendance(selectedCellId, setSelectedCellId);
     const [showMap, setShowMap] = useState(false);
     const [showReportModal, setShowReportModal] = useState(false);
     const { user, isAdmin, hasAnyRole } = useAuth();
 
     // Check if user is a standard member (DISCIPULO or MIEMBRO) without administrative roles
     // or being the leader of the selected cell
-    const currentCell = useMemo(() => cells.find(c => c.id === selectedCell), [cells, selectedCell]);
+    const currentCell = useMemo(() => cells.find(c => c.id === selectedCellId), [cells, selectedCellId]);
 
     const isModuleCoordinator = moduleCoordinator?.id === user?.id;
     const isModuleSubCoordinator = moduleSubCoordinator?.id === user?.id;
@@ -46,19 +50,8 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
 
     // Auto-select cell for disciple users
     useEffect(() => {
-        if (isStandardMember && !isCellLeader && cells.length > 0 && !selectedCell) {
-            // Find the cell the disciple belongs to
-            const userCell = cells.find(cell =>
-                cell.members?.some(memberId => memberId === user?.id) ||
-                cell.leaderId === user?.id
-            );
-            if (userCell) {
-                setSelectedCell(userCell.id);
-            } else if (cells.length > 0) {
-                setSelectedCell(cells[0].id);
-            }
-        }
-    }, [isStandardMember, isCellLeader, cells, user, selectedCell, setSelectedCell]);
+        // Logic moved to CellWorkspace
+    }, [isStandardMember, isCellLeader, cells, user, selectedCellId, setSelectedCellId]);
 
     const handleSubmit = async () => {
         if (!canEdit) return;
@@ -121,8 +114,8 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                     <div className="flex items-center gap-3 min-w-0">
                         <Users className="w-5 h-5 text-blue-600 flex-shrink-0" />
                         <select
-                            value={selectedCell || ''}
-                            onChange={(e) => setSelectedCell(parseInt(e.target.value))}
+                            value={selectedCellId || ''}
+                            onChange={(e) => setSelectedCellId(parseInt(e.target.value))}
                             disabled={!canEdit}
                             className="w-full sm:w-72 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                         >
@@ -153,7 +146,7 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={saving || !selectedCell || !canEdit}
+                        disabled={saving || !selectedCellId || !canEdit}
                         className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                     >
                         {saving ? 'Guardando...' : (!canEdit ? 'Solo Lectura' : 'Guardar Asistencia')}
@@ -172,7 +165,6 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                             <p className="text-xs text-gray-500 dark:text-gray-400">A: {currentCell.host?.fullName || 'N/A'}</p>
                         </div>
                     </div>
-
                     <div className="flex items-start gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                         <MapPin className="w-5 h-5 text-red-500 mt-0.5" />
                         <div>
@@ -183,7 +175,6 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                             <p className="text-xs text-gray-500 dark:text-gray-400">{currentCell.city || 'N/A'}</p>
                         </div>
                     </div>
-
                     <div className="flex items-start gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                         <Calendar className="w-5 h-5 text-green-500 mt-0.5" />
                         <div>
@@ -191,7 +182,6 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                             <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{currentCell.dayOfWeek || 'N/A'}</p>
                         </div>
                     </div>
-
                     <div className="flex items-start gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                         <Clock className="w-5 h-5 text-orange-500 mt-0.5" />
                         <div>
@@ -213,7 +203,7 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                             <div key={member.id} className="p-4 sm:p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                        <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{member.fullName}</p>
@@ -249,12 +239,12 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                                         onClick={() => toggleAttendance(member.id, 'AUSENTE')}
                                         disabled={!canEdit}
                                         className={`
-                                            flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium transition-colors text-sm
-                                            ${status === 'AUSENTE'
-                                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 ring-2 ring-red-500'
-                                                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                                            }
-                                            ${!canEdit ? 'cursor-not-allowed opacity-80' : ''}
+                                        flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-medium transition-colors text-sm
+                                        ${status === 'AUSENTE'
+                                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 ring-2 ring-red-500'
+                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                        }
+                                        ${!canEdit ? 'cursor-not-allowed opacity-80' : ''}
                                         `}
                                     >
                                         <X className="w-4 h-4" />
@@ -262,11 +252,11 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                                     </button>
                                     {status && (
                                         <button
-                                            onClick={() => toggleAttendance(member.id, null)}
-                                            disabled={!canEdit}
-                                            className="inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium transition-colors text-sm bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                        onClick={() => toggleAttendance(member.id, null)}
+                                        disabled={!canEdit}
+                                        className="inline-flex items-center justify-center px-3 py-2 rounded-lg font-medium transition-colors text-sm bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                                         >
-                                            <XCircle className="w-4 h-4" />
+                                        <XCircle className="w-4 h-4" />
                                         </button>
                                     )}
                                 </div>
@@ -278,7 +268,6 @@ const CellAttendance = ({ moduleCoordinator, moduleSubCoordinator, moduleTreasur
                     )}
                 </div>
             )}
-
             <ModalAttendance
                 isOpen={showReportModal}
                 onClose={() => setShowReportModal(false)}

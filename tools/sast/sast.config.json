@@ -1,0 +1,19 @@
+{
+  "include": ["client/src", "server"],
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/generated/**",
+    "**/uploads/**",
+    "**/backups/**",
+    "**/*.test.js",
+    "**/*.test.jsx",
+    "**/__tests__/**",
+    "**/cypress/**",
+    "**/e2e/**"
+  ],
+  "rules": {
+    "url.insecure": "off",
+    "link.target-blank": "off"
+  }
+}

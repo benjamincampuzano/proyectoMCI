@@ -374,18 +374,27 @@ const useUserManagement = () => {
         }
     }, [fetchUsers, handleError]);
 
-    const resetPassword = async (user, tempPassword) => {
+    /**
+     * Resetea la contraseña de un usuario.
+     * La contraseña temporal la genera el SERVIDOR con un CSPRNG y la devuelve
+     * una única vez en la respuesta; el cliente no propone ni almacena ninguna.
+     * @returns {Promise<{tempPassword: string}>} Datos del reseteo.
+     */
+    const resetPassword = async (user) => {
         setError('');
         setSuccess('');
-        
+        setSubmitting(true);
+
         try {
-            await api.post(`/auth/force-password-change/${user.id}`, { newTempPassword: tempPassword });
-            
-            setSuccess(`Contraseña de ${user.fullName} reseteada exitosamente. Contraseña temporal: ${tempPassword}`);
-            setPasswordResetUser(null);
+            const res = await api.post(`/auth/force-password-change/${user.id}`);
+
+            // El mensaje NO incluye la contraseña: se muestra en el modal.
+            setSuccess(`Contraseña de ${user.fullName} reseteada exitosamente. Comunica la contraseña temporal al usuario.`);
             fetchUsers();
+            return res.data;
         } catch (err) {
             handleError(err, 'password_reset');
+            throw err;
         } finally {
             setSubmitting(false);
         }

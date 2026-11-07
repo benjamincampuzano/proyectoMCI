@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDashboardData } = require('../controllers/dashboardController');
+const { getDashboardData, getCellsByLeader } = require('../controllers/dashboardController');
 const { authenticate } = require('../middleware/auth');
 
 /**
@@ -9,5 +9,12 @@ const { authenticate } = require('../middleware/auth');
  * @access  Privado (requiere autenticación JWT)
  */
 router.get('/', authenticate, getDashboardData);
+
+/**
+ * @route   GET /api/dashboard/enviar/cells-by-leader
+ * @desc    Drill-down de células por Líder 12 con inscritos por célula
+ * @access  Privado (requiere autenticación JWT)
+ */
+router.get('/enviar/cells-by-leader', authenticate, getCellsByLeader);
 
 module.exports = router;

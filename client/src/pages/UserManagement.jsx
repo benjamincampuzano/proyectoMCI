@@ -432,6 +432,7 @@ const UserManagement = () => {
             )}
 
             <PasswordResetModal
+                key={passwordResetUser?.id ?? 'closed'}
                 isOpen={!!passwordResetUser}
                 onClose={() => setPasswordResetUser(null)}
                 user={passwordResetUser}

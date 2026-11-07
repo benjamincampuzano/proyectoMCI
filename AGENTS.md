@@ -138,6 +138,7 @@ Server routes in `server/routes/` map to modules:
 ### Key Conventions
 
 - **Environment files**: `server/.env` for DB credentials, `client/.env` for API URL
+- **Base de datos local**: PostgreSQL 16 en `127.0.0.1:5433` (base `iglesia`). Antes de `pnpm start` ejecútalo: `./scripts/dev-db.sh start` (helper) — ver `docs/DB_LOCAL.md`
 - **Logging**: Frontend uses `client/src/utils/logger.js` to suppress logs in production or via `VITE_DISABLE_LOGS=true`
 - **Commit messages**: Include `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` for automated commits
 - **Permission checks**: Use `hasAnyRole()` helper with `ROLE_GROUPS` constants rather than hardcoded role arrays
@@ -147,5 +148,9 @@ Server routes in `server/routes/` map to modules:
 
 - `DESIGN.md` - Linear-inspired design system with color palette, typography, and component styles
 - `Informe_Modulo_*.md` - Module-specific documentation with role permissions and component details
+- `docs/AUTH_SECURITY.md` - Session model: access token in memory, refresh token in an HttpOnly cookie, CSRF protection
+- `docs/CODIGOS_SERVIDOR.md` - 6-digit server codes: CSPRNG generation and per-IP rate limiting
+- `docs/DB_LOCAL.md` - Base de datos local (PostgreSQL 16 en el 5433), restauración de backups y acceso a la BD de producción en Railway
+- `tools/sast/README.md` - Static analysis tool (`pnpm run sast`): rules, usage and limitations
 - `.github/copilot-instructions.md` - Additional Copilot guidance
 - **Environment Variables**: See `server/.env.example` and `client/.env.example` for required variables

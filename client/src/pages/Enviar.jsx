@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import TabNavigator from '../components/TabNavigator';
-import CellManagement from '../components/CellManagement';
-import CellAttendance from '../components/CellAttendance';
+import CellWorkspace from '../components/CellWorkspace';
 import AttendanceChart from '../components/AttendanceChart';
 import UnassignedPeople from '../components/UnassignedPeople';
 import { ROLE_GROUPS } from '../constants/roles';
@@ -60,8 +59,7 @@ const Enviar = () => {
     };
 
     const tabs = [
-        { id: 'attendance', label: 'Reporte de Asistencia', component: CellAttendance, customCheck: canRead },
-        { id: 'cells', label: 'Células', component: CellManagement, customCheck: hasCellsTabAccess },
+        { id: 'workspace', label: 'Gestión de Células', component: CellWorkspace, customCheck: hasCellsTabAccess },
         { id: 'stats', label: 'Estadísticas', component: AttendanceChart, customCheck: canRead },
         { id: 'unassigned', label: 'Personas sin Célula', component: UnassignedPeople, customCheck: hasUnassignedAccess },
     ];
@@ -101,7 +99,7 @@ const Enviar = () => {
 
             <TabNavigator
                 tabs={tabs}
-                initialTabId="attendance"
+                initialTabId="workspace"
                 moduleName="enviar"
                 refreshTrigger={refreshTrigger}
                 componentProps={{

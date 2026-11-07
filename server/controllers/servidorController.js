@@ -1,7 +1,13 @@
 const prisma = require('../utils/database');
 const { logActivity } = require('../utils/auditLogger');
+const { randomInt } = require('crypto');
 
-// Generar un código numérico aleatorio único de 6 dígitos
+// Formato del código: 6 dígitos numéricos.
+const CODE_PATTERN = /^\d{6}$/;
+
+// Generar un código numérico aleatorio único de 6 dígitos.
+// randomInt() es un CSPRNG (crypto): Math.random() es predecible y no debe
+// usarse para nada que se adivine por fuerza bruta.
 const generateUniqueCode = async () => {
     let code;
     let exists = true;
@@ -9,7 +15,7 @@ const generateUniqueCode = async () => {
     const maxAttempts = 100;
 
     while (exists && attempts < maxAttempts) {
-        code = Math.floor(100000 + Math.random() * 900000).toString();
+        code = randomInt(100000, 999999).toString();
         const existing = await prisma.registrarCode.findUnique({
             where: { code },
         });
@@ -191,7 +197,9 @@ const getServidorByCode = async (req, res) => {
     try {
         const { code } = req.params;
 
-        if (!code || code.length !== 6) {
+        // Formato estricto: 6 dígitos. Se rechaza antes de tocar la base de
+        // datos para no permitir sondeos con entradas arbitrarias.
+        if (!code || !CODE_PATTERN.test(code)) {
             return res.status(400).json({ message: 'Código inválido' });
         }
 
@@ -209,6 +217,13 @@ const getServidorByCode = async (req, res) => {
         });
 
         if (!registrarCode) {
+            // Registro del intento fallido: permite detectar barridos por
+            // fuerza bruta. Se usa console.warn (no se silencia en producción)
+            // y no una fila de auditoría, para no generar escritura en base de
+            // datos bajo ataque.
+            console.warn(
+                `[servidor] Intento de validación con código inexistente: ${code} desde ${req.ip}`
+            );
             return res.status(404).json({ message: 'Código de servidor no encontrado o inactivo' });
         }
 

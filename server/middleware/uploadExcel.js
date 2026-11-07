@@ -43,7 +43,7 @@ const importLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.user?.id || ipKeyGenerator(req);
+    return req.user?.id || ipKeyGenerator(req.ip);
   },
 });
 

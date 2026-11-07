@@ -45,6 +45,8 @@ export const useUnifiedDashboard = () => {
     const [lideresDoce, setLideresDoce] = useState([]);
     const [activityRows, setActivityRows] = useState([]);
     const [activityTotal, setActivityTotal] = useState(0);
+    const [cellsBreakdown, setCellsBreakdown] = useState(null);
+    const [cellsLoading, setCellsLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
     const [error, setError] = useState(null);
@@ -68,6 +70,20 @@ export const useUnifiedDashboard = () => {
     const clearFilters = useCallback(() => {
         const d = lastMonthsDefault();
         setFilters({ startDate: d.startDate, endDate: d.endDate, liderDoceId: '', search: '', guestStatus: '', preset: '90d' });
+    }, []);
+
+    const loadCellsBreakdown = useCallback(async (liderDoceId) => {
+        setCellsLoading(true);
+        try {
+            const params = {};
+            if (liderDoceId) params.liderDoceId = liderDoceId;
+            const res = await api.get('/dashboard/enviar/cells-by-leader', { params });
+            setCellsBreakdown(res.data);
+        } catch {
+            setCellsBreakdown(null);
+        } finally {
+            setCellsLoading(false);
+        }
     }, []);
 
     const fetchAll = useCallback(async (currentFilters) => {
@@ -149,6 +165,7 @@ export const useUnifiedDashboard = () => {
         activityRows: filtered.activity, activityTotal,
         funnel: filtered.funnel, topInviters: filtered.topInviters, byRed: filtered.byRed,
         dailyChurch: filtered.dailyChurch, cellTrend: filtered.cellTrend,
+        cellsBreakdown, cellsLoading, loadCellsBreakdown,
         loading, error, refresh: () => setRefreshKey((k) => k + 1),
     };
 };
