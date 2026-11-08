@@ -217,8 +217,8 @@ const Convenciones = () => {
             mezzanineCost: convention.mezzanineCost || '',
             transportCost: convention.transportCost || '',
             accommodationCost: convention.accommodationCost || '',
-            startDate: convention.startDate ? new Date(convention.startDate).toISOString().split('T')[0] : '',
-            endDate: convention.endDate ? new Date(convention.endDate).toISOString().split('T')[0] : '',
+            startDate: convention.startDate ? new Date(convention.startDate + 'T00:00:00').toISOString().split('T')[0] : '',
+            endDate: convention.endDate ? new Date(convention.endDate + 'T00:00:00').toISOString().split('T')[0] : '',
             coordinatorId: convention.coordinatorId || null,
             coordinator: convention.coordinator || null
         });

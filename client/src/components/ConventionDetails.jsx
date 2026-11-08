@@ -226,8 +226,8 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
             mezzanineCost: convention.mezzanineCost || 0,
             transportCost: convention.transportCost || 0,
             accommodationCost: convention.accommodationCost || 0,
-            startDate: new Date(convention.startDate).toISOString().split('T')[0],
-            endDate: new Date(convention.endDate).toISOString().split('T')[0],
+            startDate: new Date(convention.startDate + 'T00:00:00').toISOString().split('T')[0],
+            endDate: new Date(convention.endDate + 'T00:00:00').toISOString().split('T')[0],
             liderDoceIds: convention.liderDoceIds || [],
             coordinatorId: convention.coordinatorId || null
         });
@@ -433,7 +433,7 @@ const ConventionDetails = ({ convention, onBack, onRefresh }) => {
                             {convention.type} {convention.year}
                         </h2>
                         <p className="text-gray-500 dark:text-gray-400">
-                            {new Date(convention.startDate).toLocaleDateString()} - {new Date(convention.endDate).toLocaleDateString()}
+                            {new Date(convention.startDate).toLocaleDateString('es-CO', { timeZone: 'UTC' })} - {new Date(convention.endDate).toLocaleDateString('es-CO', { timeZone: 'UTC' })}
                         </p>
                     </div>
                 </div>
