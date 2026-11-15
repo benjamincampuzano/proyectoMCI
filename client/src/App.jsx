@@ -84,7 +84,8 @@ const UserManagementRoute = ({ children }) => {
 };
 
 // Metas: visible para ADMIN/PASTOR/LIDER_DOCE (igual que el sidebar).
-// La edición sigue gated en Metas.jsx (CAN_MANAGE_GOALS = ADMIN/PASTOR).
+// El cuadro Asistencia es de solo lectura/edición local (localStorage),
+// no consume endpoints, así que no hay gating adicional de edición.
 const MetasRoute = ({ children }) => {
   const { user, loading, hasAnyRole } = useAuth();
   if (loading) return <div>Loading...</div>;
