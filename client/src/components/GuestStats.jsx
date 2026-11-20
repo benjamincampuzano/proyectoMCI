@@ -405,49 +405,6 @@ const GuestStats = ({ refreshTrigger }) => {
 
                         </div>
 
-                        {/* Top Inviters Table */}
-                        {stats.topInviters && stats.topInviters.length > 0 && (
-                            <div className="bg-white dark:bg-[#272729] rounded-lg p-6 border border-[#d1d1d6] dark:border-[#3a3a3c]">
-                                <h3 className="text-lg font-semibold text-[#1d1d1f] dark:text-white mb-4">Detalle de Invitadores</h3>
-                                {/* Desktop Table */}
-                                <div className="hidden md:block overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead className="bg-[#f5f5f7] dark:bg-[#272729]">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold text-[#1d1d1f] dark:text-gray-200">#</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold text-[#1d1d1f] dark:text-gray-200">Nombre</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-[#1d1d1f] dark:text-gray-200">Total Invitados</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-600">
-                                            {stats.topInviters.map((inviter, index) => (
-                                                <tr key={inviter.name} className="hover:bg-white dark:hover:bg-gray-600/50 transition-colors">
-                                                    <td className="px-4 py-3 text-[#86868b] dark:text-white/80">{index + 1}</td>
-                                                    <td className="px-4 py-3 text-[#1d1d1f] dark:text-white">{inviter.name}</td>
-                                                    <td className="px-4 py-3 text-right text-[#1d1d1f] dark:text-white font-semibold">{inviter.count}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                {/* Mobile Vertical Cards */}
-                                <div className="md:hidden divide-y divide-[#d1d1d6] dark:divide-[#3a3a3c]">
-                                    {stats.topInviters.map((inviter, index) => (
-                                        <div key={inviter.name} className="flex items-center justify-between py-3">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-xs font-semibold text-[#86868b] dark:text-[#98989d] w-5 text-center">{index + 1}</span>
-                                                <span className="text-sm text-[#1d1d1f] dark:text-white">{inviter.name}</span>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="text-sm font-bold text-[#1d1d1f] dark:text-white">{inviter.count}</span>
-                                                <span className="block text-[10px] text-[#86868b] dark:text-[#98989d]">invitados</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
                         {/* Reporte de Seguimiento por Líder */}
                         {trackingStats && trackingStats.length > 0 && (
                             <div className="bg-white dark:bg-[#272729] rounded-lg p-6 border border-[#d1d1d6] dark:border-[#3a3a3c] mt-6">
