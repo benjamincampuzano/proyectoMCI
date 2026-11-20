@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
  * TabNavigator - Unified tab system for module pages
  * Replaces manual tab logic in Ganar, Consolidar, Discipular, Enviar
  */
-const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange = null, moduleName = null, componentProps = {}, refreshTrigger = 0 }) => {
+const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange = null, moduleName = null, componentProps = {}, refreshTrigger = 0, appearance = 'pills' }) => {
   const { hasAnyRole, isCoordinator } = useAuth();
   const [activeTabId, setActiveTabId] = useState(initialTabId);
 
@@ -55,16 +55,20 @@ const TabNavigator = ({ tabs, initialTabId = null, className = '', onTabChange =
     <div className={`space-y-6 ${className}`}>
       {/* Tab Navigation */}
       <div className="border-b border-[var(--ln-border-standard)]">
-        <nav className="flex space-x-1 overflow-x-auto flex-nowrap scrollbar-none touch-pan-x" aria-label="Tabs">
+        <nav className={`flex overflow-x-auto flex-nowrap scrollbar-none touch-pan-x ${appearance === 'underline' ? 'gap-0' : 'space-x-1'}`} aria-label="Tabs">
           {allowedTabs.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => handleTabChange(tab.id)}
+              style={appearance === 'underline' ? {
+                borderBottomColor: activeTabId === tab.id ? 'var(--ln-accent-violet)' : 'transparent'
+              } : undefined}
               className={`
-                py-2.5 px-4 rounded-lg text-[13px] weight-510 transition-all duration-200
-                ${activeTabId === tab.id
-                  ? 'bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-brand-indigo)]'
-                  : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.04]'
+                relative z-[1] -mb-px border-b-2 transition-all duration-200 focus:outline-none whitespace-nowrap
+                ${appearance === 'underline'
+                  ? `px-4 py-3 text-[13px] font-[510] ${activeTabId === tab.id ? 'text-[var(--ln-accent-violet)]' : 'border-b-transparent text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:border-[rgba(255,255,255,0.05)]'}`
+                  : `border-b-transparent rounded-lg px-4 py-2.5 text-[13px] weight-510 ${activeTabId === tab.id ? 'bg-[var(--ln-brand-indigo)]/10 text-[var(--ln-brand-indigo)]' : 'text-[var(--ln-text-tertiary)] hover:text-[var(--ln-text-primary)] hover:bg-white/[0.04]'}`
                 }
               `}
               aria-current={activeTabId === tab.id ? 'page' : undefined}

@@ -127,6 +127,7 @@ const Ganar = () => {
             />
 
             <TabNavigator moduleName="ganar"
+                appearance="underline"
                 tabs={tabs}
                 initialTabId="guests"
                 refreshTrigger={refreshTrigger}

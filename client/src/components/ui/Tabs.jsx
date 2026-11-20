@@ -81,8 +81,11 @@ const Tabs = ({
             type="button"
             onClick={() => handleTabClick(index)}
             disabled={item.disabled}
+            style={variant === 'default' ? {
+              borderBottomColor: activeIndex === index ? 'var(--ln-accent-violet)' : 'transparent'
+            } : undefined}
             className={`
-              flex items-center gap-2 transition-all duration-200 focus:outline-none
+              relative z-[1] -mb-px flex items-center gap-2 transition-all duration-200 focus:outline-none
               ${currentVariant.tab}
               ${currentSize.tab}
               ${activeIndex === index ? currentVariant.active : currentVariant.inactive}
